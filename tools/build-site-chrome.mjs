@@ -54,7 +54,7 @@ function footer() {
   const tabs = [['Products', [['products.html#slab-pos', 'AUZsPOS'], ['products.html#slab-payroll', 'AUZsPay'], ['products.html#slab-accounting', 'AUZsLedger'], ['products.html#slab-scan', 'AUZsScan'], ['products.html#slab-mobile', 'AUZsMob'], ['products.html#slab-salon', 'AUZslab Salon'], ['products.html#slab-qr', 'QR ordering']]],
     ['Business types', BIZ.map(([h, t]) => [h, t.replace(/&amp;/g, '&').replace(/&eacute;/g, 'e')])],
     ['Resources', RES.map(([h, t]) => [h, t.replace(/&amp;/g, '&')])],
-    ['Company', [['platform.html', 'Why AUZslab'], ['live-demo.html', 'Live demo'], ['download-apps.html', 'Download apps'], ['join-team.html', 'Join our team'], ['sitemap.html', 'Sitemap']]]];
+    ['Company', [['platform.html', 'Why AUZslab'], ['live-demo.html', 'Live demo'], ['download-apps.html', 'Download apps'], ['sitemap.html', 'Sitemap']]]];
   return `<div class="ftwrap" id="ftwrap">
     <button class="ftt" aria-expanded="false"><span class="ftti">${svg('ship', 15)}${svg('tag', 15)}${svg('chat', 15)}${svg('globe', 15)}</span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
     <div class="ftinfo">
@@ -65,7 +65,7 @@ function footer() {
     <footer><div class="cols">
       <div class="col"><span class="lbl">Connect with us</span><a href="tel:${TEL}">Call</a><a href="https://wa.me/${WA}" target="_blank" rel="noopener">Text (WhatsApp)</a><a href="${IG}" target="_blank" rel="noopener">Instagram</a><a href="${FB}" target="_blank" rel="noopener">Facebook</a><a href="mailto:${MAIL}">Email</a></div>
       <div class="col"><span class="lbl">Explore</span><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="platform.html">Why AUZslab</a></div>
-      <div class="col"><span class="lbl">Company</span><a href="contact.html">Contact</a><a href="join-team.html">Join our team</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
+      <div class="col"><span class="lbl">Company</span><a href="contact.html">Contact</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
       <div class="ftbrand"><div class="big">AUZslab</div></div></div>
       <div class="fin"><span>&copy; 2026 AUZslab. All rights reserved</span><a href="sitemap.html">Sitemap</a></div></footer>
   </div>`;

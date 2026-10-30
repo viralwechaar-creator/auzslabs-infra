@@ -17,7 +17,7 @@
   window.addEventListener('unhandledrejection', function (e) { note('promise: ' + (e.reason && e.reason.message || e.reason)); });
 
   var APPS = [['mob.html', 'AUZsMob'], ['payroll.html', 'AUZsPay (Payroll)'], ['accounts.html', 'AUZsLedger (Accounting)'], ['backoffice.html', 'Back Office'],
-    ['dashboard.html', 'Admin console'], ['builder.html', 'Website Builder'], ['account.html', 'Client dashboard'], ['/salon/', 'AUZslab Salon'], ['index.html', 'AUZsPOS']];
+    ['dashboard.html', 'Admin console'], ['account.html', 'Client dashboard'], ['/salon/', 'AUZslab Salon'], ['index.html', 'AUZsPOS']];
   function appName() { var p = location.pathname; for (var i = 0; i < APPS.length; i++) if (p.indexOf(APPS[i][0]) >= 0) return APPS[i][1]; return 'AUZsPOS'; }
 
   function el(tag, css, text) { var n = document.createElement(tag); if (css) n.style.cssText = css; if (text != null) n.textContent = text; return n; }

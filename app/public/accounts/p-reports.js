@@ -175,13 +175,32 @@ function budgetSheet(fy, done) {
   sheet({ title: 'Budgets for ' + fy.label, full: true, body: h('div', { class: 'grid' }, h('p', { class: 'muted' }, 'Enter one monthly amount per account; it is applied to all 12 months of ' + fy.label + '. Leave blank to keep what is already set.'), h('div', { class: 'list' }, accs.map(mk))),
     actions: [{ label: 'Save budgets', primary: true, onclick: async (c) => { const rows = []; Object.entries(vals).forEach(([id, x]) => { if (x !== '' && !isNaN(N(x))) months.forEach((m) => rows.push({ account_id: id, month: m, amount: N(x) })); }); if (!rows.length) { toast('Enter at least one amount', { err: true }); return false; } await api('acc_save_budget', { p_fy: fy.id, p_rows: rows }); c(); toast('Budgets saved'); done(); } }] });
 }
+// Audit entries store before/after values as raw data; show them as plain "Label: value" lines, never as code.
+const auditName = (k) => cap1(String(k || '').replace(/_/g, ' ').trim());
+function auditWords(val) {
+  if (val == null || val === '') return null;
+  if (typeof val !== 'object') return h('div', null, String(val));
+  const rows = [];
+  const walk = (o, pre) => Object.keys(o).forEach((k) => {
+    const x = o[k];
+    if (x == null || x === '' || /(^|_)id$|^id$|tenant|^meta$|hash|token/i.test(k)) return;
+    if (Array.isArray(x)) { rows.push([pre + auditName(k), x.length + (x.length === 1 ? ' item' : ' items')]); return; }
+    if (typeof x === 'object') { walk(x, auditName(k) + ' · '); return; }
+    let t = x === true ? 'Yes' : x === false ? 'No' : String(x);
+    if (typeof x === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(x)) t = fmtDT(x);
+    rows.push([pre + auditName(k), t]);
+  });
+  walk(Array.isArray(val) ? { items: val } : val, '');
+  if (!rows.length) return null;
+  return h('div', { class: 'list' }, rows.map(([a, b]) => liRow({ title: a, value: b })));
+}
 async function rAudit(host, from, to, v) {
   const q = v.q.get('q') || '', ent = v.q.get('entity') || '';
   const r = (await api('acc_list_audit', { p: { search: q, entity: ent, from: from, limit: 300 } })).rows;
   const si = searchField('Search action, user or entity', debounce((x) => go('reports/audit?from=' + from + '&q=' + encodeURIComponent(x) + '&entity=' + ent), 400), q);
   host.append(si, h('div', { class: 'row' }, h('button', { class: 'btn', onclick: (e) => exportMenu(e.currentTarget, 'audit-log', ['When', 'User', 'Action', 'Entity', 'Id', 'Reason'], r.map((x) => [x.at, x.actor_email || '', x.action, x.entity, x.entity_id || '', x.reason || ''])) }, icon('download', 18), 'Export')),
-    dataView([{ key: 'action', label: 'Action', title: true, render: (x) => cap1(x.action) + ' · ' + cap1(x.entity) }, { key: 'actor_email', label: 'User', sub: true, render: (x) => (x.actor_email || 'system') + (x.reason ? ' · ' + x.reason : '') }, { key: 'entity', label: 'Entity', render: (x) => cap1(x.entity) }, { key: 'entity_id', label: 'Reference', render: (x) => h('span', { class: 'mono' }, (x.entity_id || '').slice(0, 24)) }, { key: 'reason', label: 'Reason', render: (x) => x.reason || '' }, { key: 'at', label: 'When', value: true, render: (x) => fmtDT(x.at), sortVal: (x) => x.at }],
-      r.map((x) => ({ ...x, id: x.id })), { sortKey: 'at', sortDir: -1, onRow: (x) => { sheet({ title: cap1(x.action) + ' · ' + cap1(x.entity), closeLabel: 'Close', body: h('div', { class: 'grid' }, h('div', { class: 'small muted' }, fmtDT(x.at) + ' · ' + (x.actor_email || 'system')), x.reason ? h('div', null, 'Reason: ' + x.reason) : null, x.old_value ? h('div', null, h('div', { class: 'cap' }, 'Before'), h('pre', { class: 'mono', style: { whiteSpace: 'pre-wrap', margin: 0 } }, JSON.stringify(x.old_value, null, 2))) : null, x.new_value ? h('div', null, h('div', { class: 'cap' }, 'After / details'), h('pre', { class: 'mono', style: { whiteSpace: 'pre-wrap', margin: 0 } }, JSON.stringify(x.new_value, null, 2))) : null) }); }, empty: empty('shield', 'No audit entries') }));
+    dataView([{ key: 'action', label: 'Action', title: true, render: (x) => auditName(x.action) + ' · ' + auditName(x.entity) }, { key: 'actor_email', label: 'User', sub: true, render: (x) => (x.actor_email || 'system') + (x.reason ? ' · ' + x.reason : '') }, { key: 'entity', label: 'What', render: (x) => auditName(x.entity) }, { key: 'reason', label: 'Reason', render: (x) => x.reason || '' }, { key: 'at', label: 'When', value: true, render: (x) => fmtDT(x.at), sortVal: (x) => x.at }],
+      r.map((x) => ({ ...x, id: x.id })), { sortKey: 'at', sortDir: -1, onRow: (x) => { sheet({ title: auditName(x.action) + ' · ' + auditName(x.entity), closeLabel: 'Close', body: h('div', { class: 'grid' }, h('div', { class: 'small muted' }, fmtDT(x.at) + ' · ' + (x.actor_email || 'system')), x.reason ? h('div', null, 'Reason: ' + x.reason) : null, auditWords(x.old_value) ? h('div', null, h('div', { class: 'cap' }, 'Before'), auditWords(x.old_value)) : null, auditWords(x.new_value) ? h('div', null, h('div', { class: 'cap' }, 'After / details'), auditWords(x.new_value)) : null) }); }, empty: empty('shield', 'No audit entries') }));
 }
 async function rHealth(host) {
   const r = await api('acc_integrity_check');

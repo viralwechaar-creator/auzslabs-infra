@@ -9,13 +9,10 @@ V.more = () => {
   if (S.role === 'owner' || S.role === 'manager') {
     links.push(liRow({ ic: 'home', tone: 'purple', title: 'Admin console', sub: 'Reports, menu, stock, customers, team, settings', chev: true, onclick: () => (location.href = '/dashboard.html') }));
     if (featureOn('self_order') && S.features && S.features.self_order) links.push(liRow({ ic: 'globe', tone: 'teal', title: 'QR Ordering', sub: 'Customize what customers see when they scan a table', chev: true, onclick: () => (location.href = '/dashboard.html#qr/ordering') }));
-    if (featureOn('payroll') && S.features && S.features.payroll) links.push(liRow({ ic: 'payroll', tone: 'orange', title: 'Payroll', chev: true, onclick: () => window.auzGo('/payroll.html') }));
-    if (featureOn('mobile') && S.features && S.features.mobile) links.push(liRow({ ic: 'phone', tone: 'blue', title: 'AUZsMob', chev: true, onclick: () => window.auzGo('/mob.html') }));
-    if (featureOn('accounting') && S.features && S.features.accounting) links.push(liRow({ ic: 'receipt', tone: 'green', title: 'Accounting', chev: true, onclick: () => window.auzGo('/accounts.html') }));
-    if (can('o') && featureOn('website_builder')) links.push(liRow({ ic: 'globe', tone: 'teal', title: 'Website builder', chev: true, onclick: () => window.auzGo('/builder.html') }));
     // Chapter One's bespoke one-off website (app/public/chapterone/), not the generic Website Builder.
     if (window.TENANT_SLUG === 'chapterone') links.push(liRow({ ic: 'globe', tone: 'teal', title: 'Our website', sub: 'Menu, reservations and takeaway ordering', chev: true, onclick: () => (location.href = '/chapterone/index.html') }));
   }
+  links.push(liRow({ ic: 'globe', tone: 'gray', title: 'AUZslab', sub: 'auzslab.in', chev: true, onclick: () => (location.href = 'https://auzslab.in') }));
   // Every staff member (not just owner/manager): a stripped-down stock screen, nothing else -- see pos/inventory.js.
   if (can('inventory')) links.push(liRow({ ic: 'box', tone: 'gray', title: 'Inventory', sub: 'Check stock levels and adjust quantity on hand', chev: true, onclick: () => go('inventory') }));
   // Retail only (same gate orders.js's own "Return or exchange" action already uses) -- see pos/returns.js.

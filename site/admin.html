@@ -1002,11 +1002,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="onboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>Onboard new</button>
         <button class="a-side-btn" data-section="setup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>Client setup<span class="a-row-badge" id="notifBadgeSetupSide" style="display:none"></span></button>
 
-        <div class="a-side-group-label">Team &amp; sales</div>
-        <button class="a-side-btn" data-section="team"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/></svg>Team<span class="a-row-badge" id="teamAppBadge" style="display:none"></span></button>
-        <button class="a-side-btn" data-section="trialBlocks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Trial blocks</button>
-        <button class="a-side-btn" data-section="tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12l2.2 2.2L15.5 9.5"/></svg>Tasks<span class="a-row-badge" id="tasksBadgeSide" style="display:none"></span></button>
-        <button class="a-side-btn" data-section="salesWork"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Salesman work</button>
+        <div class="a-side-group-label">Website</div>
 
         <div class="a-side-group-label">Money</div>
         <button class="a-side-btn" data-section="clientPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Client payments &amp; bills</button>
@@ -1024,9 +1020,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="postStudio"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3.5" width="16" height="17" rx="2.4"/><circle cx="9" cy="9" r="1.6"/><path d="M4.5 17l5-4.5 3.5 3 3-2.5 3.5 3.5"/></svg>Post studio</button>
         <a class="a-side-btn" href="https://agents.auzslab.in" id="agentsLinkSide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="9" cy="10" r="1.3"/><circle cx="15" cy="10" r="1.3"/></svg>Agents Office</a>
       </nav>
-      <a href="design-system/nav-kit.html" target="_blank" rel="noopener" class="a-side-link" style="margin-top:auto">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>UI Kit
-      </a>
     </aside>
 
     <main class="a-main" id="aMain">
@@ -1182,62 +1175,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="usersList" style="margin-top:14px">Loading&hellip;</div>
       </section>
 
-      <section class="a-page" id="teamSection" data-title="Team" data-parent="more">
-        <div class="label">The AUZslab team</div>
-        <h2 class="h-2">Team</h2>
-        <p class="p">Salesmen, client setup staff, support staff and managers. Each person signs in once with Google (or the login you gave them) and lands on their own workspace at <code>app.auzslab.in</code>. Add them here after that first sign-in.</p>
-        <div class="tm-bar">
-          <label class="lbl tm-period">Show work for
-            <select id="teamDays" class="inp"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option></select>
-          </label>
-          <button class="btn btn-primary" id="teamAddOpen" type="button">Add a team member</button>
-        </div>
-        <form id="teamForm" class="card tm-form" hidden>
-          <div class="tm-form-grid">
-            <label class="lbl">Their email (signed in once)<input id="tmEmail" class="inp" type="email" required></label>
-            <label class="lbl">Name<input id="tmName" class="inp" type="text"></label>
-            <label class="lbl">Role
-              <select id="tmRole" class="inp"><option value="salesman">Salesman</option><option value="setup">Client setup</option><option value="support">Support</option><option value="manager">Manager</option></select>
-            </label>
-            <label class="lbl">Phone<input id="tmPhone" class="inp" type="tel"></label>
-          </div>
-          <p class="tm-role-note" id="tmRoleNote"></p>
-          <button class="btn btn-primary" type="submit">Add to the team</button>
-          <div id="tmErr" class="err"></div>
-        </form>
-        <form id="noticeForm" class="card tm-form" style="margin-top:10px">
-          <div class="label">Notice to the team</div>
-          <p class="p" style="margin:2px 0 8px">Sends an alert to the team's phones (in the app) and shows in their workspace.</p>
-          <div class="tm-form-grid">
-            <label class="lbl">Title<input id="ntTitle" class="inp" type="text" maxlength="120" required></label>
-            <label class="lbl">Send to
-              <select id="ntAud" class="inp"><option value="all">Everyone</option><option value="salesman">Salesmen</option><option value="setup">Client setup</option><option value="support">Support</option><option value="manager">Managers</option></select>
-            </label>
-          </div>
-          <label class="lbl">Message<textarea id="ntBody" class="inp" rows="2" maxlength="1000"></textarea></label>
-          <button class="btn btn-primary" type="submit">Send notice</button>
-          <div id="ntMsg" class="err"></div>
-        </form>
-        <div class="label" style="margin-top:6px">Applications</div>
-        <h2 class="h-2">People who want to join</h2>
-        <p class="p">Sent from the “Join our team” page. Approve with a role: if they already have an AUZslab login they are on the team at once, otherwise they are added automatically the first time they sign in with Google using that email.</p>
-        <div id="teamApps" style="margin:10px 0 26px">Loading&hellip;</div>
-        <div id="teamList" style="margin-top:14px">Loading&hellip;</div>
-
-        <div class="label" style="margin-top:34px">Client setups</div>
-        <h2 class="h-2">Who is setting up which client</h2>
-        <p class="p">Give a new client to a setup person. They get a checklist and a one-tap way into the client's own business for a limited time. Every opening is logged, and access ends when they mark it finished.</p>
-        <form id="setupForm" class="card tm-form">
-          <div class="tm-form-grid">
-            <label class="lbl">Client<select id="suClient" class="inp"></select></label>
-            <label class="lbl">Setup person<select id="suUser" class="inp"></select></label>
-            <label class="lbl">Access for<select id="suDays" class="inp"><option value="3">3 days</option><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option></select></label>
-          </div>
-          <button class="btn btn-primary" type="submit">Assign the setup</button>
-          <div id="suErr" class="err"></div>
-        </form>
-        <div id="teamSetupList" style="margin-top:14px">Loading&hellip;</div>
-      </section>
 
       <section class="a-page" id="websiteSection" data-title="Website" data-parent="more">
         <p class="p" style="margin:0 0 10px">Change the words and pictures on auzslab.in. Leave a box empty to use the original. Pictures are shrunk automatically.</p>
@@ -1245,50 +1182,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
       </section>
 
 
-      <section class="a-page" id="trialBlocksSection" data-title="Trial blocks" data-parent="more">
-        <div class="label">Build your own software</div>
-        <h2 class="h-2">Trial blocks</h2>
-        <p class="p">Visitors tick these blocks on the Build page and get a 3-day trial. The price is what the quote starts at when they subscribe (0 = you make the quote by hand). You can still change any quote before the client pays.</p>
-        <label class="lbl" style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="tbAuto"> Send the quote link automatically when every block has a price</label>
-        <div id="trialBlocksList">Loading&hellip;</div>
-        <button class="btn btn-ghost" id="tbNew" type="button" style="margin-top:10px">Add a block</button>
-      </section>
-      <section class="a-page" id="tasksSection" data-title="Tasks" data-parent="more">
-        <div class="label">General task list</div>
-        <h2 class="h-2">Tasks</h2>
-        <p class="p">Hand anyone on the team an arbitrary task with a due date, and see it tracked to completion. Auto-created tasks (unassigned leads, setup deadlines, a payment just confirmed) show a tag so you can tell at a glance which is which.</p>
-        <div class="tm-bar">
-          <label class="lbl tm-period">Status
-            <select id="taskFilterStatus" class="inp"><option value="open" selected>Open</option><option value="done">Done</option><option value="cancelled">Cancelled</option><option value="all">All</option></select>
-          </label>
-          <label class="lbl tm-period">Assigned to
-            <select id="taskFilterAssignee" class="inp"><option value="">Everyone</option></select>
-          </label>
-          <button class="btn btn-primary" id="taskAddOpen" type="button">New task</button>
-        </div>
-        <form id="taskForm" class="card tm-form" hidden>
-          <div class="tm-form-grid">
-            <label class="lbl">Title<input id="tkTitle" class="inp" type="text" maxlength="200" required></label>
-            <label class="lbl">Assign to<select id="tkAssignee" class="inp"></select></label>
-            <label class="lbl">Due<input id="tkDue" class="inp" type="datetime-local"></label>
-            <label class="lbl">Priority<select id="tkPriority" class="inp"><option value="">Normal (default)</option><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label>
-          </div>
-          <label class="lbl">Description<textarea id="tkDesc" class="inp" rows="2" maxlength="2000"></textarea></label>
-          <button class="btn btn-primary" type="submit">Create task</button>
-          <div id="tkErr" class="err"></div>
-        </form>
-        <div id="tasksList" style="margin-top:14px">Loading&hellip;</div>
-      </section>
 
-            <section class="a-page" id="salesWorkSection" data-title="Salesman work" data-parent="more">
-        <div class="label">Work updates</div>
-        <h2 class="h-2">Salesman work</h2>
-        <p class="p">Who created which prospects, who became a paying client, and the money received from them. A prospect counts as converted once a payment is recorded for it.</p>
-        <label class="lbl" style="max-width:220px">Period
-          <select id="swDays" class="inp"><option value="0">All time</option><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
-        </label>
-        <div id="salesWorkBody" style="margin-top:16px">Loading&hellip;</div>
-      </section>
 
       <section class="a-page" id="billMakeSection" data-title="Make a bill" data-parent="more">
         <div class="label">Money</div>
@@ -1427,31 +1321,11 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           </button>
         </div>
 
-        <div class="a-more-group-label">Team &amp; sales</div>
+        <div class="a-more-group-label">Website</div>
         <div class="a-nav-list">
-          <button class="a-nav-row" data-section="team">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2a5 5 0 0 1 5 5.3"/></svg>
-            <span class="grow">Team</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
           <button class="a-nav-row" data-section="website">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg>
             <span class="grow">Website text and pictures</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="trialBlocks">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-            <span class="grow">Trial blocks</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="tasks">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 12l2.2 2.2L15.5 9.5"/></svg>
-            <span class="grow">Tasks</span><span class="a-row-badge" id="tasksBadgeMore" style="display:none"></span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="salesWork">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-            <span class="grow">Salesman work</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
         </div>
@@ -1515,10 +1389,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="9" cy="10" r="1.3"/><circle cx="15" cy="10" r="1.3"/></svg>
             <span class="grow">Agents Office</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </a>
-          <a class="a-nav-row" href="design-system/nav-kit.html" target="_blank" rel="noopener">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>
-            <span class="grow">UI Kit</span>
           </a>
         </div>
 
@@ -1746,7 +1616,7 @@ function resetMainScroll() {
 const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
-  team: () => { loadTeam(); loadSetups(); loadTeamApps(); }, tasks: () => loadTasks(), trialBlocks: () => loadTrialBlocks(), postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, salesWork: () => loadSalesWork(), clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(),
+  postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(),
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -1817,7 +1687,7 @@ async function refreshAdminNotifBadges() {
   setBadge(['notifBadgeAddonSide', 'notifBadgeAddonMore'], counts.addon_request || 0);
   const moreTotal = (counts.signup_request || 0) + (counts.addon_request || 0) + (document.querySelectorAll('#notifBadgeSetupSide:not([style*="display: none"])').length ? Number(document.getElementById('notifBadgeSetupSide').textContent) || 0 : 0);
   setBadge(['notifBadgeMoreTab'], moreTotal);
-  try { const oc = await sb.rpc('admin_open_counts'); if (!oc.error && oc.data) { setBadge(['privReqBadge'], Number(oc.data.privacy) || 0); setBadge(['teamAppBadge'], Number(oc.data.team) || 0); setBadge(['tasksBadgeSide', 'tasksBadgeMore'], Number(oc.data.tasks) || 0); } } catch (e) { /* the badges are only a hint */ }
+  try { const oc = await sb.rpc('admin_open_counts'); if (!oc.error && oc.data) { setBadge(['privReqBadge'], Number(oc.data.privacy) || 0); } } catch (e) { /* the badges are only a hint */ }
 }
 async function markAdminNotifsRead(type) {
   const { data } = await sb.from('notifications').select('id').eq('read', false).eq('type', type);
@@ -1909,28 +1779,19 @@ async function loadLeads() {
   const { data, error } = await sb.from('leads').select('*').order('created_at');
   if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
   if (!data || !data.length) { listEl.innerHTML = emptyDoodle('No leads yet.'); return; }
-  const assignOpts = (l) => { const people = teamCache.filter((m) => m.active && ['salesman', 'support', 'manager'].includes(m.role)); return '<option value="">Nobody</option>' + (people.length ? people.map((m) => `<option value="${m.id}"${m.id === l.assigned_to ? ' selected' : ''}>${esc(m.name)} (${esc(ROLE_LABEL[m.role])})</option>`).join('') : (l.assigned_to ? `<option value="${l.assigned_to}" selected>Assigned (tap to see who)</option>` : '')); };
   const today = new Date().toISOString().slice(0, 10);
   const rows = data.slice().reverse().map((l) => {
-    const overdue = l.next_followup && l.next_followup < today && !['converted', 'declined'].includes(l.status);
     return `
     <div class="req-card" data-id="${l.id}">
       <div class="req-head">
         <div>
           <div class="req-name">${esc(l.name)}${l.business ? ' &middot; ' + esc(l.business) : ''}</div>
-          <div class="req-sub">${esc(l.contact)}${l.niche ? ' &middot; ' + esc(l.niche) : ''}${l.source === 'team' ? ' &middot; added by the team' : ''}</div>
+          <div class="req-sub">${esc(l.contact)}${l.niche ? ' &middot; ' + esc(l.niche) : ''}</div>
         </div>
-        <span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(STAGE_LABEL[l.status] || l.status)}</span>
+        <span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span>
       </div>
       ${l.message ? `<div class="req-section req-body">${esc(l.message)}</div>` : ''}
-      <div class="req-section lead-ctl">
-        <label>Assigned to<select data-assign>${assignOpts(l)}</select></label>
-        <label>Stage<select data-stage>${LEAD_STAGES.map(([k, v]) => `<option value="${k}"${k === l.status ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
-        <label>Follow up${overdue ? ' <span class="od">overdue</span>' : ''}<input type="date" data-fu value="${esc(l.next_followup || '')}"></label>
-      </div>
-      <div class="lead-notes" hidden></div>
       <div class="req-actions">
-        <button data-history>History &amp; notes</button>
         <button data-use>Use for onboarding</button>
         <button data-demo>Copy demo link</button>
         <button data-del class="req-danger">Delete</button>
@@ -1942,27 +1803,6 @@ async function loadLeads() {
   listEl.querySelectorAll('[data-id]').forEach((tr) => {
     const id = tr.dataset.id;
     const lead = data.find((l) => l.id === id);
-    const upd = async (patch) => { const { error: e2 } = await sb.rpc('team_update_lead', { p_id: id, p: patch }); if (e2) { alert(e2.message); } loadLeads(); };
-    tr.querySelector('[data-stage]').onchange = (e) => upd({ status: e.target.value });
-    tr.querySelector('[data-fu]').onchange = (e) => upd({ next_followup: e.target.value || '' });
-    const asel = tr.querySelector('[data-assign]');
-    let filled = false;
-    const fillAssign = async () => { if (filled) return; filled = true; await ensureTeam(); const cur = asel.value; asel.innerHTML = assignOpts(lead); asel.value = cur; };
-    asel.addEventListener('focus', fillAssign); asel.addEventListener('pointerdown', fillAssign);
-    asel.onchange = async (e) => {
-      const { error: e2 } = await sb.rpc('team_assign_lead', { p_lead: id, p_user: e.target.value || null });
-      if (e2) { alert(e2.message); } loadLeads();
-    };
-    tr.querySelector('[data-history]').onclick = async () => {
-      const box = tr.querySelector('.lead-notes');
-      if (!box.hidden) { box.hidden = true; return; }
-      box.hidden = false; box.textContent = 'Loading…';
-      const { data: notes, error: e3 } = await sb.rpc('team_lead_notes', { p_id: id });
-      if (e3) { box.innerHTML = `<div class="err">${esc(e3.message)}</div>`; return; }
-      box.innerHTML = `<form class="lead-note-form"><input type="text" maxlength="1000" placeholder="Add a note" required><button type="submit">Add</button></form>` +
-        ((notes && notes.length) ? notes.map((n) => `<div class="tm-feed-row"><span><b>${esc(n.author || 'Someone')}</b> · ${esc(n.kind === 'note' ? n.body : (n.kind === 'stage' ? 'stage: ' + n.body : n.kind === 'followup' ? 'follow-up: ' + n.body : n.body))}</span><i>${when(n.created_at)}</i></div>`).join('') : '<p class="p">Nothing yet.</p>');
-      box.querySelector('form').onsubmit = (ev) => { ev.preventDefault(); upd({ note: ev.target.querySelector('input').value }); };
-    };
     const useBtn = tr.querySelector('[data-use]');
     if (useBtn) useBtn.onclick = () => {
       openSection('onboard');
@@ -1982,7 +1822,7 @@ const NICHE_LABEL = { custom: 'Custom-built', cafe: 'Café / restaurant / bar / 
 const TONE = { pos: 'wine', crm: 'wine', billing: 'wine', inventory: 'wine', kds: 'wine', purchases: 'wine', membership: 'wine', self_order: 'wine', salon: 'sand', booking: 'sand', website_builder: 'sand', payroll: 'slate', tasks: 'slate', helpdesk: 'slate', accounting: 'sage', mobile: 'amber' };
 const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
 const FEATURE_LABEL = { salon: 'AUZslab Salon', pos: 'AUZsPOS', crm: 'CRM', booking: 'Booking', billing: 'Billing', self_order: 'AUZsPOS QR', kds: 'Kitchen display', inventory: 'Inventory', website_builder: 'Website Builder', payroll: 'AUZsPay', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', mobile: 'AUZsMob', style: 'AUZsStyle', finance: 'AUZsFinance', scan: 'AUZsScan' };
-const PRODUCT_KEYS = new Set(['pos', 'self_order', 'payroll', 'accounting', 'mobile', 'scan', 'salon', 'website_builder']);
+const PRODUCT_KEYS = new Set(['pos', 'self_order', 'payroll', 'accounting', 'mobile', 'scan', 'salon']);
 
 async function loadSignupRequests() {
   const listEl = document.getElementById('signupRequestsList');
@@ -2447,7 +2287,6 @@ const SELLABLE = [
   { id: 'fin', label: 'AUZsFinance', keys: ['finance'], note: 'Money in and out, owner capital, loans, dues, accounts' },
   { id: 'sty', label: 'AUZsStyle', keys: ['style'], note: 'Clothing and footwear shop: sizes, colours, billing, analytics' },
   { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
-  { id: 'web', label: 'Website Builder', keys: ['website_builder'], note: 'Drag-and-drop website editor' },
 ];
 
 function openEditModal(id) {
@@ -2639,234 +2478,6 @@ document.getElementById('userSearch').addEventListener('input', (e) => {
   userSearchTimer = setTimeout(() => loadUsers(q), 250);
 });
 
-// ---------- Team: salesmen, client setup, support, managers (db/176) ----------
-const ROLE_LABEL = { salesman: 'Salesman', setup: 'Client setup', support: 'Support', manager: 'Manager' };
-const ROLE_NOTE = {
-  salesman: 'Finds prospects, makes trial businesses and demos, and keeps their leads up to date.',
-  setup: 'Sets up paying clients from a checklist. Can open only the clients you assign, for a limited time.',
-  support: 'Helps clients after go-live. Can see the leads and work assigned to them.',
-  manager: 'Sees the whole team, every lead and every setup, and can assign work. Never sees money, pricing or deletes anything.',
-};
-const LEAD_STAGES = [['new', 'New'], ['contacted', 'Contacted'], ['demo', 'Demo shown'], ['quoted', 'Quote sent'], ['converted', 'Won'], ['declined', 'Lost']];
-const STAGE_LABEL = Object.fromEntries(LEAD_STAGES);
-const ACT_LABEL = {
-  lead_added: 'Added a lead', lead_stage: 'Moved a lead', lead_note: 'Wrote a note on a lead', lead_followup: 'Set a follow-up',
-  lead_assigned: 'Was given a lead', trial_created: 'Created a trial business', setup_assigned: 'Was given a client to set up',
-  setup_open: 'Opened the client’s business', setup_checklist: 'Updated a setup checklist', setup_done: 'Finished a setup',
-};
-let teamCache = [];
-const when = (t) => { if (!t) return 'never'; const m = Math.floor((Date.now() - new Date(t)) / 6e4); if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; const h = Math.floor(m / 60); if (h < 24) return h + ' h ago'; return Math.floor(h / 24) + ' d ago'; };
-async function ensureTeam(force) {
-  if (teamCache.length && !force) return teamCache;
-  const { data } = await sb.rpc('team_overview', { p_days: 30 });
-  teamCache = data || [];
-  return teamCache;
-}
-function teamStats(m) {
-  const chip = (n, label, warn) => `<span class="tm-stat${warn && n ? ' warn' : ''}"><b>${n}</b> ${label}</span>`;
-  const out = [];
-  if (m.role === 'salesman') out.push(chip(m.leads_open, 'open leads'), chip(m.leads_overdue, 'overdue', true), chip(m.updates, 'updates'), chip(m.trials, 'trials'), chip(m.leads_converted, 'won'));
-  else if (m.role === 'setup') out.push(chip(m.setups_open, 'setups open'), chip(m.setups_done, 'finished'));
-  else if (m.role === 'support') out.push(chip(m.leads_open, 'open leads'), chip(m.updates, 'updates'));
-  else out.push(chip(m.updates, 'updates'), chip(m.leads_open, 'open leads'));
-  return out.join('');
-}
-async function loadTeam() {
-  const listEl = document.getElementById('teamList');
-  const days = Number(document.getElementById('teamDays').value);
-  const { data, error } = await sb.rpc('team_overview', { p_days: days });
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  teamCache = data || [];
-  fillSetupPeople();
-  if (!teamCache.length) { listEl.innerHTML = emptyDoodle('No team members yet — add one above once they have signed in.'); return; }
-  listEl.innerHTML = `<div class="lc-list">${teamCache.map((m) => `
-    <div class="tm-card" data-id="${m.id}">
-      <div class="tm-top">
-        <div class="lc-avatar">${esc((m.name || m.email || '?').trim()[0].toUpperCase())}</div>
-        <div class="lc-body">
-          <div class="lc-name">${esc(m.name)} <span class="role-pill role-${m.role}">${esc(ROLE_LABEL[m.role] || m.role)}</span>${m.active ? '' : ' <span class="status-pill status-suspended">off</span>'}</div>
-          <div class="lc-sub">${esc(m.email)}${m.phone ? ' · ' + esc(m.phone) : ''} · last active ${when(m.last_active)}</div>
-        </div>
-        <div class="lc-side">
-          <select class="tm-role-sel" data-role aria-label="Role">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}"${k === m.role ? ' selected' : ''}>${v}</option>`).join('')}</select>
-          <button class="lc-action" data-toggle="${m.active ? 'off' : 'on'}">${m.active ? 'Turn off' : 'Turn on'}</button>
-        </div>
-      </div>
-      <div class="tm-stats">${teamStats(m)}<button class="lc-action tm-more" data-feed type="button">Recent work</button></div>
-      <div class="tm-feed" hidden></div>
-    </div>`).join('')}</div>`;
-  listEl.querySelectorAll('.tm-card').forEach((card) => {
-    const id = card.dataset.id;
-    card.querySelector('[data-toggle]').onclick = async (e) => {
-      const { error: e2 } = await sb.rpc('admin_set_salesman_active', { p_id: id, p_active: e.target.dataset.toggle === 'on' });
-      if (e2) { alert(e2.message); return; }
-      loadTeam();
-    };
-    card.querySelector('[data-role]').onchange = async (e) => {
-      const { error: e2 } = await sb.rpc('admin_set_team_role', { p_id: id, p_role: e.target.value });
-      if (e2) { alert(e2.message); }
-      loadTeam();
-    };
-    card.querySelector('[data-feed]').onclick = async () => {
-      const box = card.querySelector('.tm-feed');
-      if (!box.hidden) { box.hidden = true; return; }
-      box.hidden = false; box.textContent = 'Loading…';
-      const { data: feed, error: e3 } = await sb.rpc('team_activity_feed', { p_uid: id, p_limit: 40 });
-      if (e3) { box.innerHTML = `<div class="err">${esc(e3.message)}</div>`; return; }
-      box.innerHTML = (feed && feed.length) ? feed.map((a) => `<div class="tm-feed-row"><span>${esc(ACT_LABEL[a.kind] || a.kind)}${a.label ? ' · <b>' + esc(a.label) + '</b>' : ''}</span><i>${when(a.at)}</i></div>`).join('') : '<p class="p">No work recorded yet.</p>';
-    };
-  });
-}
-document.getElementById('teamDays').onchange = loadTeam;
-async function loadTeamApps() {
-  const box = document.getElementById('teamApps');
-  const { data, error } = await sb.rpc('admin_list_team_applications', { p_status: 'new' });
-  if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  { const b = document.getElementById('teamAppBadge'); const n = (data || []).length; if (b) { b.style.display = n ? '' : 'none'; b.textContent = n ? String(n) : ''; } }
-  if (!data || !data.length) { box.innerHTML = '<p class="p">No new applications.</p>'; return; }
-  box.innerHTML = `<div class="lc-list">${data.map((a) => { const preRole = ['salesman', 'setup', 'support', 'manager'].includes(a.role_wanted) ? a.role_wanted : 'support'; return `
-    <div class="tm-card" data-id="${a.id}">
-      <div class="lc-name">${esc(a.name)} <span class="role-pill role-${preRole}">wants: ${esc(ROLE_LABEL[a.role_wanted] || (a.role_wanted === 'not_sure' ? 'Not sure yet' : 'Something else'))}</span>${a.user_id ? ' <span class="status-pill status-active">has an account</span>' : ''}</div>
-      <div class="lc-sub">${esc(a.email)} · ${esc(a.phone || '')}${a.city ? ' · ' + esc(a.city) : ''} · ${when(a.created_at)}</div>
-      ${a.years_experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.years_experience)}</p>` : (a.experience ? `<p class="p" style="margin:6px 0 0"><b>Experience:</b> ${esc(a.experience)}</p>` : '')}
-      ${a.skills ? `<p class="p" style="margin:4px 0 0"><b>Good at:</b> ${esc(a.skills)}</p>` : ''}
-      ${a.availability ? `<p class="p" style="margin:4px 0 0"><b>Can start:</b> ${esc(a.availability)}</p>` : ''}
-      ${a.links ? `<p class="p" style="margin:4px 0 0"><b>Links:</b> ${esc(a.links)}</p>` : ''}
-      ${a.about ? `<p class="p" style="margin:4px 0 0">${esc(a.about)}</p>` : ''}
-      <div class="tm-stats">
-        <select class="tm-role-sel" data-role aria-label="Role to give">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}"${k === preRole ? ' selected' : ''}>${v}</option>`).join('')}</select>
-        <button class="btn btn-primary" data-approve type="button">Approve</button>
-        <button class="lc-action" data-reject type="button">Reject</button>
-        <a class="lc-action" href="https://wa.me/${esc(String(a.phone || '').replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp</a>
-      </div>
-    </div>`; }).join('')}</div>`;
-  box.querySelectorAll('.tm-card').forEach((card) => {
-    const id = card.dataset.id;
-    const decide = async (decision) => {
-      const { data: r, error: e2 } = await sb.rpc('admin_decide_team_application', { p_id: id, p_decision: decision, p_role: card.querySelector('[data-role]').value });
-      if (e2) { alert(e2.message); return; }
-      if (decision === 'approve') alert(r && r.active ? 'Approved. They are on the team now.' : 'Approved. They are added automatically when they first sign in with Google using that email at app.auzslab.in.');
-      loadTeamApps(); loadTeam();
-    };
-    card.querySelector('[data-approve]').onclick = () => decide('approve');
-    card.querySelector('[data-reject]').onclick = () => { if (confirm('Reject this application?')) decide('reject'); };
-  });
-}
-document.getElementById('teamAddOpen').onclick = () => { const f = document.getElementById('teamForm'); f.hidden = !f.hidden; };
-const tmRoleNote = () => { document.getElementById('tmRoleNote').textContent = ROLE_NOTE[document.getElementById('tmRole').value] || ''; };
-document.getElementById('tmRole').onchange = tmRoleNote; tmRoleNote();
-document.getElementById('teamForm').onsubmit = async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById('tmErr'); errEl.textContent = '';
-  const { error } = await sb.rpc('admin_add_team_member', {
-    p_email: document.getElementById('tmEmail').value.trim(), p_name: document.getElementById('tmName').value.trim() || null,
-    p_role: document.getElementById('tmRole').value, p_phone: document.getElementById('tmPhone').value.trim() || null,
-  });
-  if (error) { errEl.textContent = error.message; return; }
-  e.target.reset(); tmRoleNote(); e.target.hidden = true;
-  loadTeam();
-};
-
-document.getElementById('noticeForm').onsubmit = async (e) => {
-  e.preventDefault();
-  const msg = document.getElementById('ntMsg'); msg.style.color = ''; msg.textContent = '';
-  const { data, error } = await sb.rpc('admin_post_team_notice', { p_title: document.getElementById('ntTitle').value.trim(), p_body: document.getElementById('ntBody').value.trim(), p_audience: document.getElementById('ntAud').value });
-  if (error) { msg.textContent = error.message; return; }
-  e.target.reset(); msg.style.color = '#1a7f37'; msg.textContent = 'Sent to ' + ((data && data.sent_to) || 0) + ' team member(s).';
-};
-
-// ----- client setups -----
-function fillSetupPeople() {
-  const sel = document.getElementById('suUser'); if (!sel) return;
-  const people = teamCache.filter((m) => m.role === 'setup' && m.active);
-  sel.innerHTML = people.length ? people.map((m) => `<option value="${m.id}">${esc(m.name)}</option>`).join('') : '<option value="">No setup staff yet</option>';
-}
-async function fillSetupClients() {
-  const sel = document.getElementById('suClient'); if (!sel) return;
-  if (!clientsCache.length) { const { data } = await sb.rpc('list_clients', {}); clientsCache = data || []; }
-  sel.innerHTML = clientsCache.map((c) => `<option value="${c.id}">${esc(c.name)} (${esc(c.slug)})</option>`).join('');
-}
-async function loadSetups() {
-  const el = document.getElementById('teamSetupList');
-  fillSetupClients();
-  const { data, error } = await sb.rpc('team_list_setups');
-  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  if (!data || !data.length) { el.innerHTML = emptyDoodle('No setups assigned yet.'); return; }
-  el.innerHTML = `<div class="lc-list">${data.map((a) => {
-    const done = (a.checklist || []).filter((x) => x.done).length, total = (a.checklist || []).length;
-    const state = a.status === 'done' ? '<span class="status-pill status-active">finished</span>' : a.expired ? '<span class="status-pill status-suspended">access ended</span>' : '<span class="status-pill">open</span>';
-    return `<div class="list-card" data-id="${a.id}">
-      <div class="lc-avatar" style="background:var(--ink)">${esc((a.client || '?')[0].toUpperCase())}</div>
-      <div class="lc-body">
-        <div class="lc-name">${esc(a.client)} ${state}</div>
-        <div class="lc-sub">${esc(a.slug)}.auzslab.in · with ${esc(a.assignee || '—')} · ${done}/${total} steps${a.status === 'open' ? ' · access until ' + esc(String(a.expires_at).slice(0, 10)) : ''}</div>
-        ${a.note ? `<div class="lc-meta">Note: ${esc(a.note)}</div>` : ''}
-      </div>
-      <div class="lc-side">${a.status === 'open' ? '<button class="lc-action" data-cancel>Cancel</button>' : ''}</div>
-    </div>`;
-  }).join('')}</div>`;
-  el.querySelectorAll('[data-cancel]').forEach((b) => {
-    b.onclick = async () => {
-      if (!confirm('Cancel this setup? The person loses access to the client straight away.')) return;
-      const { error: e2 } = await sb.rpc('team_setup_cancel', { p_id: b.closest('[data-id]').dataset.id });
-      if (e2) { alert(e2.message); return; }
-      loadSetups();
-    };
-  });
-}
-document.getElementById('setupForm').onsubmit = async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById('suErr'); errEl.textContent = '';
-  const tenant = document.getElementById('suClient').value, user = document.getElementById('suUser').value;
-  if (!tenant || !user) { errEl.textContent = 'Pick a client and a setup person (add one with the Client setup role first).'; return; }
-  const { error } = await sb.rpc('team_assign_setup', { p_tenant: tenant, p_user: user, p_days: Number(document.getElementById('suDays').value) });
-  if (error) { errEl.textContent = error.message; return; }
-  loadSetups(); loadTeam();
-};
-
-// ---------- Tasks: a general, assignable, trackable task list (db/186) ----------
-const TASK_STATUS_LABEL = { open: 'Open', done: 'Done', cancelled: 'Cancelled' };
-const TASK_SOURCE_LABEL = {
-  manual: null, // nothing shown for a hand-assigned task
-  'auto:unassigned_lead': 'Auto · unassigned lead', 'auto:setup_deadline': 'Auto · setup deadline', 'auto:payment_welcome': 'Auto · payment confirmed',
-};
-let tasksCache = [];
-function fillTaskAssigneeSelects() {
-  const people = teamCache.filter((m) => m.active);
-  const opts = people.map((m) => `<option value="${m.id}">${esc(m.name)} (${esc(ROLE_LABEL[m.role])})</option>`).join('');
-  const filt = document.getElementById('taskFilterAssignee');
-  if (filt) { const cur = filt.value; filt.innerHTML = '<option value="">Everyone</option>' + opts; filt.value = cur; }
-  const tk = document.getElementById('tkAssignee');
-  if (tk) tk.innerHTML = opts || '<option value="">No active team members yet</option>';
-}
-function taskCard(t) {
-  const srcLabel = TASK_SOURCE_LABEL[t.source] !== undefined ? TASK_SOURCE_LABEL[t.source] : 'Auto · ' + esc(t.source || '');
-  const due = t.due_at ? new Date(t.due_at) : null;
-  const overdue = due && t.status === 'open' && due.getTime() < Date.now();
-  const related = t.related_tenant_name ? `Client: ${esc(t.related_tenant_name)}` : t.related_lead_name ? `Lead: ${esc(t.related_lead_name)}` : '';
-  return `<div class="req-card" data-id="${t.id}">
-    <div class="req-head">
-      <div>
-        <div class="req-name">${esc(t.title)}</div>
-        <div class="req-sub">To ${esc(t.assignee || '—')}${t.created_by_name ? ' · by ' + esc(t.created_by_name) : ''}${t.priority ? ' · ' + esc(t.priority) + ' priority' : ''}</div>
-      </div>
-      <span class="status-pill ${t.status === 'open' ? (overdue ? 'status-suspended' : '') : t.status === 'done' ? 'status-active' : ''}">${esc(TASK_STATUS_LABEL[t.status] || t.status)}</span>
-    </div>
-    ${t.description ? `<div class="req-section req-body">${esc(t.description)}</div>` : ''}
-    <div class="req-section req-body" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      ${due ? `<span style="color:${overdue ? '#b00020' : 'var(--ink-faint)'}">Due ${esc(due.toLocaleString())}</span>` : ''}
-      ${srcLabel ? `<span class="feature-tag">${esc(srcLabel)}</span>` : ''}
-      ${related ? `<span style="color:var(--ink-faint)">${related}</span>` : ''}
-    </div>
-    <div class="req-section lead-ctl">
-      <label>Reassign<select data-reassign><option value="">Keep as is</option></select></label>
-    </div>
-    <div class="req-actions">
-      ${t.status === 'open' ? '<button data-done>Mark done</button><button data-cancel class="req-danger">Cancel</button>' : ''}
-    </div>
-  </div>`;
-}
-/* ---- Website editor: words and pictures of the public site (site_content) ---- */
 const WEB_FIELDS = [
   ['Home', [['home.hero','Top picture','img'],['home.h','Headline','text'],['home.sub','Short line','long'],['home.l1','List 1 title','text'],['home.l1s','List 1 note','text'],['home.l2','List 2 title','text'],['home.l2s','List 2 note','text'],['home.l3','List 3 title','text'],['home.l3s','List 3 note','text'],['home.a','Picture A','img'],['home.ca','Caption A','text'],['home.b','Picture B','img'],['home.cb','Caption B','text']]],
   ['Products page', [['products.h','Headline','text'],['products.sub','Short line','long'],['products.pos','AUZsPOS picture','img'],['products.crm','CRM picture','img'],['products.billing','Billing picture','img'],['products.inventory','Inventory picture','img'],['products.qr','QR ordering picture','img'],['products.payroll','AUZsPay picture','img'],['products.salon','Salon picture','img'],['products.accounting','AUZsLedger picture','img'],['products.mobile','AUZsMob picture','img'],['products.scan','AUZsScan picture','img']]],
@@ -2922,89 +2533,6 @@ async function webSave() {
   const { error } = await sb.rpc('admin_site_content_save', { p: body });
   msg.textContent = error ? 'Could not save: ' + error.message : 'Saved. The site shows it within a minute.';
 }
-async function loadTrialBlocks() {
-  const box = document.getElementById('trialBlocksList');
-  const { data, error } = await sb.rpc('admin_list_trial_blocks', {});
-  if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  document.getElementById('tbAuto').checked = data.auto_pay === 'on';
-  document.getElementById('tbAuto').onchange = async (e) => { const r = await sb.rpc('admin_save_trial_block', { p: { auto_pay: e.target.checked } }); if (r.error) alert(r.error.message); };
-  box.innerHTML = '<div class="req-grid">' + data.blocks.map((b) => `<div class="req-card" data-k="${esc(b.key)}">
-    <b>${esc(b.key)}</b>
-    <label class="lbl">Name<input class="inp" data-f="label" value="${esc(b.label)}"></label>
-    <label class="lbl">One line<input class="inp" data-f="blurb" value="${esc(b.blurb)}"></label>
-    <label class="lbl">Features it switches on (comma separated)<input class="inp" data-f="features" value="${esc((b.features || []).join(', '))}"></label>
-    <label class="lbl">Monthly price (0 = quote by hand)<input class="inp" data-f="price_month" type="number" min="0" value="${esc(b.price_month)}"></label>
-    <label class="lbl" style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-f="active" ${b.active ? 'checked' : ''}> Shown to visitors</label>
-    <button class="btn" type="button" data-save>Save</button></div>`).join('') + '</div>';
-  box.querySelectorAll('[data-save]').forEach((btn) => btn.onclick = async () => {
-    const c = btn.closest('[data-k]'), g = (f) => c.querySelector('[data-f=' + f + ']');
-    const r = await sb.rpc('admin_save_trial_block', { p: { key: c.dataset.k, label: g('label').value, blurb: g('blurb').value, features: g('features').value.split(',').map((x) => x.trim()).filter(Boolean), price_month: Number(g('price_month').value) || 0, active: g('active').checked, sort: (data.blocks.find((b) => b.key === c.dataset.k) || {}).sort || 100 } });
-    if (r.error) alert(r.error.message); else { btn.textContent = 'Saved'; setTimeout(() => btn.textContent = 'Save', 1200); }
-  });
-}
-document.getElementById('tbNew').onclick = async () => {
-  const k = (prompt('Block key (small letters, e.g. rentals)') || '').trim().toLowerCase();
-  if (!k) return;
-  const r = await sb.rpc('admin_save_trial_block', { p: { key: k, label: k, features: [], price_month: 0, active: false, sort: 200 } });
-  if (r.error) alert(r.error.message); else loadTrialBlocks();
-};
-
-async function loadTasks() {
-  const listEl = document.getElementById('tasksList');
-  await ensureTeam();
-  fillTaskAssigneeSelects();
-  const status = document.getElementById('taskFilterStatus').value;
-  const assignee = document.getElementById('taskFilterAssignee').value;
-  const { data, error } = await sb.rpc('team_all_tasks', {});
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  tasksCache = data || [];
-  const rows = tasksCache.filter((t) => (status === 'all' || t.status === status) && (!assignee || t.assigned_to === assignee));
-  if (!rows.length) { listEl.innerHTML = emptyDoodle('No tasks match this filter.'); return; }
-  listEl.innerHTML = `<div class="req-grid">${rows.map(taskCard).join('')}</div>`;
-  listEl.querySelectorAll('[data-id]').forEach((card) => {
-    const id = card.dataset.id;
-    const sel = card.querySelector('[data-reassign]');
-    sel.innerHTML += teamCache.filter((m) => m.active).map((m) => `<option value="${m.id}">${esc(m.name)}</option>`).join('');
-    sel.onchange = async () => {
-      if (!sel.value) return;
-      const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { assigned_to: sel.value } });
-      if (e2) { alert(e2.message); }
-      loadTasks();
-    };
-    const doneBtn = card.querySelector('[data-done]');
-    if (doneBtn) doneBtn.onclick = async () => { const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { status: 'done' } }); if (e2) { alert(e2.message); } loadTasks(); };
-    const cancelBtn = card.querySelector('[data-cancel]');
-    if (cancelBtn) cancelBtn.onclick = async () => {
-      if (!confirm('Cancel this task?')) return;
-      const { error: e2 } = await sb.rpc('team_update_task', { p_id: id, p: { status: 'cancelled' } });
-      if (e2) { alert(e2.message); }
-      loadTasks();
-    };
-  });
-}
-document.getElementById('taskFilterStatus').onchange = loadTasks;
-document.getElementById('taskFilterAssignee').onchange = loadTasks;
-document.getElementById('taskAddOpen').onclick = async () => {
-  const f = document.getElementById('taskForm');
-  if (f.hidden) { await ensureTeam(); fillTaskAssigneeSelects(); }
-  f.hidden = !f.hidden;
-};
-document.getElementById('taskForm').onsubmit = async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById('tkErr'); errEl.textContent = '';
-  const due = document.getElementById('tkDue').value;
-  const { error } = await sb.rpc('team_create_task', { p: {
-    title: document.getElementById('tkTitle').value.trim(),
-    description: document.getElementById('tkDesc').value.trim(),
-    assigned_to: document.getElementById('tkAssignee').value || null,
-    due_at: due ? new Date(due).toISOString() : '',
-    priority: document.getElementById('tkPriority').value,
-  } });
-  if (error) { errEl.textContent = error.message; return; }
-  e.target.reset(); e.target.hidden = true;
-  loadTasks();
-};
-
 // ---------- Client payments (db/148) ----------
 const MODE_LABEL = { upi: 'UPI', bank: 'Bank transfer', cash: 'Cash', cheque: 'Cheque', card: 'Card', other: 'Other' };
 const inr = (n) => '&#8377;' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -3244,39 +2772,9 @@ document.getElementById('mkForm').onsubmit = async (e) => {
   if (error) { g('mkErr').textContent = error.message; return; }
   g('mkOverlay').classList.remove('open'); sectionLoadedAt.clientPay = 0; if (mkReload) mkReload(); loadBills();
 };
-// ---------- Salesman work dashboard (db/148) ----------
-async function loadSalesWork() {
-  const el = document.getElementById('salesWorkBody');
-  const { data, error } = await sb.rpc('admin_salesman_work', { p_days: Number(document.getElementById('swDays').value) });
-  if (error) { el.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  if (!data || !data.length) { el.innerHTML = emptyDoodle('No salesmen yet.'); return; }
-  const ago = (t) => { if (!t) return '—'; const d = Math.floor((Date.now() - new Date(t)) / 864e5); return d <= 0 ? 'today' : d + 'd ago'; };
-  const tot = data.reduce((a, s) => ({ c: a.c + s.created, v: a.v + s.converted, p: a.p + Number(s.paid_total) }), { c: 0, v: 0, p: 0 });
-  el.innerHTML = `<p class="p">Prospects created: <b>${tot.c}</b> &middot; Converted: <b>${tot.v}</b> &middot; Received from them: <b>${inr(tot.p)}</b></p>
-  <div class="admin-table-wrap"><table class="admin-table">
-    <tr><th>Salesman</th><th>Prospects</th><th>Converted</th><th>Received</th><th>Last prospect</th><th></th></tr>
-    ${data.map((s) => `<tr data-sid="${s.id}">
-      <td data-label="Salesman"><b>${esc(s.name)}</b>${s.active ? '' : ' <span class="status-pill status-suspended">off</span>'}<br><span style="color:var(--ink-faint)">${esc(s.email)}</span></td>
-      <td data-label="Prospects">${s.created}</td><td data-label="Converted">${s.converted}</td>
-      <td data-label="Received">${inr(s.paid_total)}</td><td data-label="Last prospect">${ago(s.last_activity)}</td>
-      <td class="row-actions"><button class="btn btn-ghost" data-sw>Prospects</button></td></tr>
-      <tr class="hidden" data-detail="${s.id}"><td colspan="6">${s.prospects.length ? `<div class="admin-table-wrap"><table class="admin-table">
-        <tr><th>Business</th><th>Type</th><th>Created</th><th>Status</th><th>Received</th></tr>
-        ${s.prospects.map((p) => `<tr><td data-label="Business"><b>${esc(p.name)}</b><br><span style="color:var(--ink-faint)">${esc(p.slug)}.auzslab.in</span></td>
-          <td data-label="Type">${esc(NICHE_LABEL[p.niche] || p.niche)}</td><td data-label="Created">${esc(String(p.created_at).slice(0, 10))}</td>
-          <td data-label="Status"><span class="status-pill ${p.status === 'converted' ? 'status-active' : ''}">${p.status}${p.has_owner ? ' · owner login' : ''}</span></td>
-          <td data-label="Received">${p.paid ? inr(p.paid) : '&mdash;'}</td></tr>`).join('')}
-      </table></div>` : '<p class="p">No prospects in this period.</p>'}</td></tr>`).join('')}
-  </table></div>`;
-  el.querySelectorAll('[data-sw]').forEach((b) => {
-    b.onclick = () => { const id = b.closest('tr').dataset.sid; el.querySelector(`[data-detail="${id}"]`).classList.toggle('hidden'); };
-  });
-}
-document.getElementById('swDays').onchange = loadSalesWork;
-
 // ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
 const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
-const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['finance', 'AUZsFinance'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon'], ['website_builder', 'Website Builder']];
+const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['finance', 'AUZsFinance'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon']];
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 0;

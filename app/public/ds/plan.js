@@ -6,8 +6,8 @@
 (function () {
   var SITE = 'https://auzslab.in';
   var me = document.currentScript, APP = (me && me.getAttribute('data-app')) || 'pos';
-  var KEY = { pos: 'pos', payroll: 'payroll', accounts: 'accounting', mob: 'mobile', builder: 'website_builder' };
-  var LABEL = { pos: 'POS', payroll: 'Payroll', accounts: 'Accounting', mob: 'AUZsMob', builder: 'Website Builder', backoffice: 'Back Office', console: 'Console' };
+  var KEY = { pos: 'pos', payroll: 'payroll', accounts: 'accounting', mob: 'mobile' };
+  var LABEL = { pos: 'POS', payroll: 'Payroll', accounts: 'Accounting', mob: 'AUZsMob', backoffice: 'Back Office', console: 'Console' };
   function el(tag, props) {
     var n = document.createElement(tag), kids = Array.prototype.slice.call(arguments, 2);
     for (var k in props || {}) { if (k === 'style') n.style.cssText = props[k]; else if (k.slice(0, 2) === 'on') n[k] = props[k]; else n.setAttribute(k, props[k]); }

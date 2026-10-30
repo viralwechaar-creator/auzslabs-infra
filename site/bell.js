@@ -6,7 +6,7 @@
   var VAPID = 'BFQTtl3U3YPPl7qBOO00GjCNsW4N-T5jyq4UGs2Mk9s3lHoichGl0_B4yYrPCmCfscnw63XbHtpOp2Iy1nWMmZA';
   var onSite = /^(www\.)?auzslab\.in$/.test(location.hostname);
   var SW = onSite ? '/push-sw.js' : '/sw.js';
-  var ADMIN_TYPES = /^(lead|signup_request|addon_request|client_order|client_order_paid|health|daily_summary|system_wa|renewal|team_work)$/;
+  var ADMIN_TYPES = /^(lead|signup_request|addon_request|client_order|client_order_paid|health|daily_summary|system_wa|renewal)$/;
   var items = [], unread = 0, open = false, btn, badge, panel, list, timer, tabs, filt = 'all';
 
   function session() { try { return JSON.parse(localStorage.getItem('auz_session') || 'null'); } catch (e) { return null; } }
@@ -94,7 +94,6 @@
     if (!n.read) rpc('inbox_mark_read', { p_ids: [n.id] }).then(refresh);
     var u = n.link;
     if (!u && ADMIN_TYPES.test(n.type || '') && !/admin\.html$/.test(location.pathname)) u = onSite ? '/admin.html' : '';
-    if (!u && /^(team_|task)/.test(n.type || '') && !/salesman\.html$/.test(location.pathname)) u = onSite ? '' : '/salesman.html';
     if (u) location.href = u;
     else toggle(false);
   }

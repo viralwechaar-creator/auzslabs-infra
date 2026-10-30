@@ -9,7 +9,7 @@ self.addEventListener('push', function (e) {
     data: { url: d.url || '' }
   }));
 });
-// The hub on app.auzslab.in sends each person to their own place (admin, team workspace, client requests).
+// The hub on app.auzslab.in sends each person to their own place (admin, client requests).
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();
   var u = (e.notification.data && e.notification.data.url) || '';

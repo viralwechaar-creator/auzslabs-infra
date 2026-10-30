@@ -41,7 +41,7 @@ export async function appIcon(tenant, settings, size) {
   const bg = hex6((s.brand || {}).plum || s.col, '#800020');
   const fg = '#F5F4F2';
   // settings.logo is saved as an ABSOLUTE url (https://api.<domain>/uploads/...
-  // -- every uploader, console's own uploadImage() and salesman.html's logo
+  // -- every uploader, console's own uploadImage()
   // upload alike, builds it as `base + path`), never a bare /uploads/... path
   // -- so a literal startsWith('/uploads/') on the raw string never matched
   // anything and every tenant's real logo silently fell through to initials

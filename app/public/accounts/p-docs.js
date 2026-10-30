@@ -257,7 +257,7 @@ page('doc', {
     // attachments
     v.root.append(attachmentsCard('document', d.id, r.attachments, can(perm), () => v.refresh()));
     // history
-    v.root.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'History')), h('div', { class: 'list' }, r.audit.length ? r.audit.map((a) => liRow({ title: cap1(a.action), sub: (a.actor || 'system') + (a.reason ? ' · ' + a.reason : ''), value: fmtDT(a.at) })) : [liRow({ title: 'No history yet' })])));
+    v.root.append(h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'History')), h('div', { class: 'list' }, r.audit.length ? r.audit.map((a) => liRow({ title: String(a.action||'').replace(/_/g,' ').replace(/^./,(c)=>c.toUpperCase()), sub: (a.actor || 'system') + (a.reason ? ' · ' + a.reason : ''), value: fmtDT(a.at) })) : [liRow({ title: 'No history yet' })])));
   },
 });
 async function postDoc(d) {

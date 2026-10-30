@@ -224,13 +224,13 @@ export async function handleSalon(req, res, ip) {
       setSession(res, tid);
       return send(200, { ok: true, role: 'owner' });
     }
-    // A salesman's "Open their admin console" (salesman.html): the page passes the trial owner's
+    // The hub passes the trial owner's
     // AUZslab session in the URL fragment, the console posts it here, and if it really is the owner
     // of THIS salon we start the console session. Nothing else changes about how sign-in works.
     if (method === 'POST' && p === '/admin/handoff') {
       if (limited(`salonhand:${ip}`, 30, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
       const u = verifyToken(String(body.token || ''));
-      if (!u) fail(401, 'This link has expired. Open it again from the salesman page.');
+      if (!u) fail(401, 'This link has expired. Please sign in again.');
       const prof = await withAuth(u.id, async (c) => (await c.query('select tenant_id, role from profiles where id = $1', [u.id])).rows[0]);
       if (!prof || prof.tenant_id !== tid || prof.role !== 'owner') fail(403, 'Not the owner of this salon.');
       setSession(res, tid, { role: 'owner' });

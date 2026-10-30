@@ -28,7 +28,7 @@ export function familyOf(pathname) {
     if (/(^|_)acc_/.test(f)) return 'AUZsLedger / AUZsScan';
     if (/^mob_|_mob_/.test(f)) return 'AUZsMob';
     if (/^salon_/.test(f)) return 'Salon';
-    if (/^(admin_|team_|salesman_|hub_)/.test(f)) return 'Admin and team';
+    if (/^(admin_|hub_)/.test(f)) return 'Admin and team';
     if (/^(pos_|place_order|call_waiter|public_menu|next_kot|claim_guest|redeem_gift|public_invoice|submit_feedback|public_reviews)/.test(f)) return 'AUZsPOS and QR ordering';
     return 'Other functions';
   }

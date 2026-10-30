@@ -173,7 +173,6 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <a href="#" id="openPosLink" target="_blank" rel="noopener" class="" style="display:none"><span id="openPosLabel">Open POS system</span></a>
       <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open POS (add-on)</span></a>
       <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open Payroll</span></a>
-      <a href="#" id="openBuilderLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open Website Builder</span></a>
       <button class="" id="helpLink" type="button"><span>Help &amp; report a problem</span></button>
       <a href="#" id="openAccountsLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open Accounting</span></a>
       <a href="#" id="openMobLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open AUZsMob</span></a>
@@ -234,7 +233,7 @@ function visiblePermKeys() {
   });
 }
 
-const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['scan', 'AUZsScan (scan, bill and add stock)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['website_builder', 'Website Builder'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
+const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['scan', 'AUZsScan (scan, bill and add stock)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
 const BIZ_TYPES = ['Cafe / restaurant / bar', 'Salon / spa', 'Retail shop', 'Clothing / boutique', 'Mobile phone shop', 'Office / services', 'Other'];
 const START_WHEN = [['', 'Choose'], ['now', 'As soon as possible'], ['month', 'Within a month'], ['quarter', 'In 2 to 3 months'], ['exploring', 'Just exploring']];
 let PROFILE = null, LOGIN_EMAIL = '';
@@ -427,8 +426,6 @@ async function boot() {
   }
   const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
   if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://auzspay.auzslab.in/payroll.html'; }
-  const builderOn = (DASH.features || {}).website_builder === true && (DASH.enabled_features || {}).website_builder !== false;
-  if (builderOn) { $('#openBuilderLink').style.display = ''; $('#openBuilderLink').href = 'https://app.auzslab.in/builder.html'; }
   const accountingOn = (DASH.features || {}).accounting === true && (DASH.enabled_features || {}).accounting !== false;
   if (accountingOn) { $('#openAccountsLink').style.display = ''; $('#openAccountsLink').href = 'https://auzsledger.auzslab.in/accounts.html'; }
   const mobileOn = (DASH.features || {}).mobile === true && (DASH.enabled_features || {}).mobile !== false;
@@ -768,7 +765,7 @@ async function render2fa() {
 }
 
 // Products the marketing site (products.html) actually sells are POS,
-// Payroll and Website Builder -- everything else (CRM, billing,
+// Payroll -- everything else (CRM, billing,
 // inventory, QR ordering, kitchen display, reports, bookings,
 // expenses, and the 4 newer ERP modules) are add-ons/sub-features of
 // the POS line, not separate products. The flat, alphabetical-ish list
@@ -780,7 +777,6 @@ const SALON_SERVICE_GROUPS = [
   ['AUZslab Salon', ['salon', 'booking', 'crm', 'billing', 'expenses', 'membership', 'helpdesk', 'tasks']],
   ['AUZsPOS', ['pos', 'self_order', 'inventory', 'kds', 'reports', 'purchases']],
   ['AUZsPay', ['payroll']],
-  ['Website Builder', ['website_builder']],
   ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
   ['AUZsStyle', ['style']],
@@ -789,7 +785,6 @@ const SALON_SERVICE_GROUPS = [
 const SERVICE_GROUPS = [
   ['AUZsPOS', ['pos', 'self_order', 'inventory', 'crm', 'kds', 'billing', 'reports', 'booking', 'expenses', 'membership', 'helpdesk', 'tasks', 'purchases']],
   ['AUZsPay', ['payroll']],
-  ['Website Builder', ['website_builder']],
   ['AUZsLedger', ['accounting']],
   ['AUZsMob', ['mobile']],
   ['AUZsStyle', ['style']],
@@ -799,20 +794,7 @@ function renderServices() {
   const entitled = DASH.features || {}, enabled = DASH.enabled_features || {};
   const keys = Object.keys(entitled).filter((k) => entitled[k] === true);
   const isOwner = DASH.my_role === 'owner';
-  const builderOn = entitled.website_builder === true;
-  // The Website Builder's own editor (builder.html) always shows the same
-  // link per-page, but a non-technical owner won't necessarily go looking
-  // there -- surface the site's home page here too, where "your services"
-  // already lives. Visitors never see the builder or its draft blocks,
-  // only /w.html?page=... (see w.html + public_page RPC) -- your bare
-  // subdomain root is the staff POS app, not this site.
-  const siteUrl = 'https://' + DASH.tenant.slug + '.auzslab.in/w.html?page=home';
   $('#pane-services').innerHTML = `
-    ${builderOn ? `<div class="card">
-      <h3 class="h-2">Your website</h3>
-      <p class="muted">Built with Website Builder. This is the link to give customers — your subdomain's own home page is your staff POS app, not this.</p>
-      <div class="acct-row"><span style="font-family:monospace;font-size:13px;word-break:break-all">${esc(siteUrl)}</span></div>
-    </div>` : ''}
     <div class="card">
       <h3 class="h-2">Your subscribed services</h3>
       <p class="muted">${isOwner ? 'Turn any of these off temporarily — turning one back on takes effect instantly, no need to contact us.' : 'Only the business owner can change these.'}</p>
@@ -836,7 +818,7 @@ function renderServices() {
     </div>
     ${isOwner ? `<div class="card">
       <h3 class="h-2">Add more products</h3>
-      <p class="muted">${DASH.tenant.niche === 'salon' ? 'Payroll, Website Builder, POS and inventory all work alongside AUZslab Salon.' : 'Add Payroll, Website Builder or any other product to your account.'} Pick what you want and send the request &mdash; we'll switch it on and notify you here.</p>
+      <p class="muted">${DASH.tenant.niche === 'salon' ? 'Payroll, POS and inventory all work alongside AUZslab Salon.' : 'Add Payroll or any other product to your account.'} Pick what you want and send the request &mdash; we'll switch it on and notify you here.</p>
       <a href="products.html" class="btn btn-primary form-submit" style="margin-top:12px">Browse products</a>
     </div>` : ''}
   `;
