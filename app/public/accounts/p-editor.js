@@ -102,15 +102,18 @@ function effectRows(D, c, payNow) {
 }
 
 async function pickParty(kind, current) {
-  const list = (await parties()).filter((p) => p.active && (kind === 'transporter' ? p.party_type === 'transporter' : p.party_type !== 'transporter' && (p.kind === 'both' || p.kind === kind || kind === 'any')));
+  const all = (await parties()).filter((p) => p.active && (kind === 'transporter' ? p.party_type === 'transporter' : p.party_type !== 'transporter' && (p.kind === 'both' || p.kind === kind || kind === 'any')));
+  const walkin = kind !== 'supplier' && kind !== 'transporter' ? all.find((p) => p.is_walkin) : null;
+  const list = walkin ? all.filter((p) => !p.is_walkin) : all;
   return new Promise((resolve) => {
     let pickedSomething = false;
     const host = h('div', { class: 'list' });
     const draw = (q) => { clear(host); const m = list.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase()) || (p.gstin || '').toLowerCase().includes(q.toLowerCase()) || (p.phone || '').includes(q)).slice(0, 60);
-      m.forEach((p) => host.append(liRow({ icon: kind === 'supplier' ? 'building' : 'user', tone: p.is_walkin ? 'gray' : '', title: p.name, sub: [p.gstin, p.phone].filter(Boolean).join(' · ') || (p.is_walkin ? 'Cash customer' : ''), value: Number(p.balance) ? money(Math.abs(p.balance), { compact: true }) : null, valueSub: Number(p.balance) ? (p.balance > 0 ? 'owes you' : 'you owe') : null, sel: current === p.id, onclick: () => { pickedSomething = true; s.close(); resolve(p); } })));
+      m.forEach((p) => host.append(liRow({ icon: kind === 'supplier' ? 'building' : 'user', title: p.name, sub: [p.gstin, p.phone].filter(Boolean).join(' · '), value: Number(p.balance) ? money(Math.abs(p.balance), { compact: true }) : null, valueSub: Number(p.balance) ? (p.balance > 0 ? 'owes you' : 'you owe') : null, sel: current === p.id, onclick: () => { pickedSomething = true; s.close(); resolve(p); } })));
       if (!m.length) host.append(h('div', { class: 'li muted' }, q ? 'No match.' : 'Nothing yet.')); };
     const sf = searchField('Search by name, GSTIN or phone', draw);
-    const s = sheet({ title: kind === 'supplier' ? 'Choose supplier' : 'Choose customer', body: h('div', { class: 'grid' }, sf, host), headerAction: can(kind === 'supplier' ? 'acc_purchase' : 'acc_sales') ? { label: 'New', onclick: () => { s.close(); partySheet(kind === 'any' ? 'customer' : kind, null, (np) => resolve(np)); } } : null, onClose: () => { if (!pickedSomething) resolve(null); } });
+    const walkinRow = walkin ? liRow({ icon: 'user', tone: 'gray', title: 'Walk-in / cash customer', sub: 'Switch back to no named customer', sel: current === walkin.id, onclick: () => { pickedSomething = true; s.close(); resolve(walkin); } }) : null;
+    const s = sheet({ title: kind === 'supplier' ? 'Choose supplier' : 'Choose customer', body: h('div', { class: 'grid' }, sf, walkinRow ? h('div', { class: 'list' }, walkinRow) : null, host), headerAction: can(kind === 'supplier' ? 'acc_purchase' : 'acc_sales') ? { label: 'New', onclick: () => { s.close(); partySheet(kind === 'any' ? 'customer' : kind, null, (np) => resolve(np)); } } : null, onClose: () => { if (!pickedSomething) resolve(null); } });
     draw('');
   });
 }
