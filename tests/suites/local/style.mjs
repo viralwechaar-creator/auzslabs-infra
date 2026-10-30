@@ -276,6 +276,8 @@ export default async function run({ browser, stack }) {
     assert(+nx > +mx, 'next ' + nx + ' is not above highest ' + mx);
   });
   await s.check('Bills: edit details, cancel with or without putting items back, delete only a cancelled bill (manager only)', async () => {
+    const mv = (await q('select tenant_id, branch_id from sty_stock_moves where variant_id=$1 limit 1', [vL.id]))[0];
+    await q("insert into sty_stock_moves (tenant_id, branch_id, variant_id, qty, kind, ref_type, note) values ($1,$2,$3,5,'adjust','test','test stock')", [mv.tenant_id, mv.branch_id, vL.id]);
     const mk = () => ok(manager, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'cash', amount: 3000 }] } });
     const b1 = await mk(); const e = await ok(manager, 'sty_edit_sale', { p_id: b1.id, p: { customerName: 'Edit Person', customerPhone: '9123456780', note: 'edited note' } });
     assert(e.customer && e.customer.name === 'Edit Person' && e.note === 'edited note', 'edit not saved: ' + JSON.stringify(e.customer));

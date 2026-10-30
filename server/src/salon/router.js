@@ -3,7 +3,7 @@ import { pool, withAuth } from '../db.js';
 import { captureError } from '../errors.js';
 import { staffLogin, verifyToken } from '../auth.js';
 import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
-import { bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
+import { DEMO_PASSWORD, bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
 import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, deletePackageDef, publicSite, saveClientProfile, savePackageDef, sellPackage, setCheckinStatus, settleInvoice, submitCheckin } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
@@ -201,12 +201,14 @@ export async function handleSalon(req, res, ip) {
         try {
           await client.query('begin');
           const a = (await readKey(client, tid, 'admin', true)) || {};
-          if (a.lockedUntil && Date.now() < a.lockedUntil) {
+          // The public demo salon always opens with the shared demo password (its console password may be left over from the real salon it was made from) and is never locked out.
+          const demoOk = !!tenant.is_demo && password === DEMO_PASSWORD;
+          if (!demoOk && a.lockedUntil && Date.now() < a.lockedUntil) {
             await client.query('commit');
             const mins = Math.ceil((a.lockedUntil - Date.now()) / 60000);
             return { status: 429, error: `Too many attempts. Try again in ${mins} minute${mins === 1 ? '' : 's'}.` };
           }
-          const ok = a.passwordHash ? verifyScrypt(password, a.passwordHash) : await ownerPasswordOk(tid, password);
+          const ok = demoOk || (a.passwordHash ? verifyScrypt(password, a.passwordHash) : await ownerPasswordOk(tid, password));
           if (!ok) {
             a.failCount = (a.failCount || 0) + 1;
             if (a.failCount >= 8) { a.lockedUntil = Date.now() + 15 * 60_000; a.failCount = 0; }
