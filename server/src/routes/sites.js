@@ -62,7 +62,11 @@ export async function handle(ctx) {
     if (!slug || slug.includes('.')) return notFound(res);
     let a;
     try { a = await access(slug); }
-    catch (e) { if (e && e.status === 503) { console.error('[site/check] ' + e.message); res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '60' }); res.end('This address is being updated. Please try again in a minute.'); return; } throw e; }
+    catch (e) {
+      // the address rules are not installed in the database yet (db/301): keep every address working exactly as it did before
+      if (e && e.status === 503) { if (Date.now() - (access.warned || 0) > 60000) { access.warned = Date.now(); console.error('[site/check] ' + e.message); } res.writeHead(200, { 'X-Site-Kind': 'none', 'X-Site-Legacy': '1', 'Cache-Control': 'no-store' }); res.end(); return; }
+      throw e;
+    }
     if (!a.exists) return notFound(res);
     const wanted = appOf(path);
     // Old shop addresses keep working exactly as before during the transition window, and the demo businesses always do:
