@@ -269,10 +269,10 @@ export default async function run({ browser, stack }) {
     await c.close();
   });
   await s.check('Bill counter behind the saved bills: the next bill number still comes out above the highest one', async () => {
-    const r = await q("select t.id from tenants t where t.slug='teststyle'"); const tid = r.rows[0].id;
-    const mx = (await q('select coalesce(max(seq),0) m from sty_sales where tenant_id=$1', [tid])).rows[0].m;
+    const r = await q("select t.id from tenants t where t.slug='teststyle'"); const tid = r[0].id;
+    const mx = (await q('select coalesce(max(seq),0) m from sty_sales where tenant_id=$1', [tid]))[0].m;
     await q("update sty_counters set n=0 where tenant_id=$1 and k='sale'", [tid]);
-    const nx = (await q("select sty_next($1,'sale') n", [tid])).rows[0].n;
+    const nx = (await q("select sty_next($1,'sale') n", [tid]))[0].n;
     assert(+nx > +mx, 'next ' + nx + ' is not above highest ' + mx);
   });
   await s.check('Logo upload end to end: upload, save, icon drawn from it, shown in the app', async () => {
