@@ -302,6 +302,7 @@ export default async function run({ browser, stack }) {
     assert((await q('select count(*)::int n from sty_variants where id=$1', [vid]))[0].n === 0, 'variant still there');
     const g = await ok(manager, 'sty_get_sale', { p_id: bill.id }); assert(g.lines.length === 1 && g.lines[0].name === 'Delete Me Tee', 'old bill lost its line: ' + JSON.stringify(g.lines));
     await integrity();
+  });
   await s.check('Keyboard shortcuts: ? lists them, G then a letter changes page, / focuses the search, scanner-speed keys are ignored', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
