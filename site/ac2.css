@@ -220,9 +220,11 @@ body.ac3{--a-bg:#f6f4f1;--a-card:#fff;--a-sep:#e6e1dc;--a-fill:#f4f1ed;--a-mut:#
 @media(min-width:900px){.a3-seg button.on{color:var(--wine)!important}}
 @media(max-width:599px){.a3-mos>.s4:last-child:nth-child(odd),.a3-mos>.s3:last-child:nth-child(odd){grid-column:span 2}}
 .a3-seg button b,.a3-seg button small{color:inherit!important;background:none}
-/* phone bar sits lower, and a page-coloured base behind it hides anything scrolling underneath */
+/* phone bar sits lower. The floating pill is already opaque (#000), so it needs no backdrop behind it --
+   a ::before was tried for that (a page-coloured mask behind the pill), but a position:fixed pseudo-element
+   with a negative z-index paints OVER its own fixed-position parent's background in this browser instead of
+   behind it, which silently hid the whole pill under a pale mask (icons washed out to near-invisible). Removed. */
 @media(max-width:899px){
  .a3-bn{bottom:max(6px,calc(env(safe-area-inset-bottom) - 10px))}
- .a3-bn::before{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(82px + env(safe-area-inset-bottom));background:var(--a-bg);-webkit-mask-image:linear-gradient(to bottom,transparent,#000 16px);mask-image:linear-gradient(to bottom,transparent,#000 16px);z-index:-1;pointer-events:none}
  .a3-foot{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 }
