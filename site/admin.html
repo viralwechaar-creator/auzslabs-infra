@@ -1469,6 +1469,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <label class="svc-row"><input type="checkbox" data-cap="online_store"><span><b>Online store</b><small>The public store page and its orders (AUZsStyle)</small></span></label>
           <label class="svc-row"><input type="checkbox" data-cap="images"><span><b>Picture upload</b><small>Photos in the POS and the website editor</small></span></label>
           <label class="svc-row"><input type="checkbox" data-cap="multi_pictures"><span><b>More than one picture per style</b><small>Unticked = one picture per style (AUZsStyle)</small></span></label>
+          <label class="svc-row"><input type="checkbox" data-cap="gst_lookup"><span><b>GST number lookup</b><small>"Fetch details" next to a GST number (AUZsStyle). Off until you allow it; they type by hand meanwhile</small></span></label>
           <label class="svc-row"><input type="checkbox" data-cap="whatsapp"><span><b>WhatsApp automation</b><small>Automatic messages to their customers</small></span></label>
         </div>
         <small style="color:var(--ink-faint)">Ticked = the client may use it. Changes apply at once.</small>
@@ -2309,12 +2310,12 @@ function openEditModal(id) {
       <span><b>${esc(p.label)}</b><small>${esc(p.note)}</small></span>
     </label>`).join('');
   const caps0 = c.caps || {};
-  document.querySelectorAll('#editCaps [data-cap]').forEach((cb) => { cb.checked = caps0[cb.dataset.cap] !== false; });
+  document.querySelectorAll('#editCaps [data-cap]').forEach((cb) => { cb.checked = cb.dataset.cap === 'gst_lookup' ? caps0.gst_lookup === true : caps0[cb.dataset.cap] !== false; });
   syncPlanSelect();
   document.getElementById('editErr').textContent = '';
   document.getElementById('editOverlay').classList.add('open');
 }
-const PLAN_PRESETS = { full: { online_store: true, images: true, whatsapp: true, multi_pictures: true }, base: { online_store: false, images: true, whatsapp: false, multi_pictures: false }, pro: { online_store: true, images: true, whatsapp: false, multi_pictures: true } };
+const PLAN_PRESETS = { full: { online_store: true, images: true, whatsapp: true, multi_pictures: true, gst_lookup: false }, base: { online_store: false, images: true, whatsapp: false, multi_pictures: false, gst_lookup: false }, pro: { online_store: true, images: true, whatsapp: false, gst_lookup: false, multi_pictures: true } };
 function readCaps() { const o = {}; document.querySelectorAll('#editCaps [data-cap]').forEach((cb) => { o[cb.dataset.cap] = cb.checked; }); return o; }
 function syncPlanSelect() { const cur = readCaps(); const hit = Object.keys(PLAN_PRESETS).find((k) => Object.keys(cur).every((c) => PLAN_PRESETS[k][c] === cur[c])); document.getElementById('editPlan').value = hit || 'custom'; }
 document.getElementById('editPlan').onchange = (e) => { const pr = PLAN_PRESETS[e.target.value]; if (!pr) return; document.querySelectorAll('#editCaps [data-cap]').forEach((cb) => { cb.checked = pr[cb.dataset.cap]; }); };

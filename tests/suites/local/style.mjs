@@ -275,6 +275,15 @@ export default async function run({ browser, stack }) {
     const nx = (await q("select sty_next($1,'sale') n", [tid]))[0].n;
     assert(+nx > +mx, 'next ' + nx + ' is not above highest ' + mx);
   });
+  await s.check('GST lookup in AUZsStyle: refused until the admin allows it, then it passes the gate', async () => {
+    const tok = await login(USERS.styOwner); const tid = (await q("select id from tenants where slug='teststyle'"))[0].id;
+    const call = async () => { const r = await fetch(stack.apiBase + '/gst/lookup', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ gstin: '27AAPFU0939F1ZV' }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) - 'gst_lookup' where tenant_id=$1", [tid]);
+    const off = await call(); assert(off.status === 403, 'should be refused without the cap, got ' + off.status);
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) || '{\"gst_lookup\":true}'::jsonb where tenant_id=$1", [tid]);
+    const on = await call(); assert(on.status !== 403, 'should pass the permission gate once allowed, got ' + on.status + ' ' + JSON.stringify(on.body));
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) - 'gst_lookup' where tenant_id=$1", [tid]);
+  });
   await s.check('Logo upload end to end: upload, save, icon drawn from it, shown in the app', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });

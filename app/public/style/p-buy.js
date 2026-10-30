@@ -29,7 +29,7 @@ function purchaseSheet(p) {
 }
 function supplierForm(s, done) {
   const f = { name: input({ value: s ? s.name : '' }), phone: input({ value: s ? s.phone || '' : '', mode: 'tel' }), gstin: input({ value: s ? s.gstin || '' : '' }), contact: input({ value: s ? s.contact || '' : '' }) };
-  sheet({ title: s ? t('Edit supplier') : t('New supplier'), body: h('div', { class: 'grid' }, field(t('Name'), f.name), field(t('Phone'), f.phone), field(t('Contact person'), f.contact), field('GSTIN', f.gstin)),
+  sheet({ title: s ? t('Edit supplier') : t('New supplier'), body: h('div', { class: 'grid' }, field(t('Name'), f.name), field(t('Phone'), f.phone), field(t('Contact person'), f.contact), field('GSTIN', f.gstin), gstFetchRow(f.gstin, (d) => { if (!f.name.value.trim()) f.name.value = d.trade_name || d.legal_name || ''; })),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => { if (!f.name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; } const r = await api('sty_save_supplier', { p: { id: s && s.id, newId: s ? undefined : uid(), name: f.name.value, phone: f.phone.value, gstin: f.gstin.value, contact: f.contact.value } }); close(); done && done(r); } }] });
 }
 function supplierSheet(s, done) {
@@ -46,6 +46,7 @@ async function receiveForm(o, done) {
   let sups = []; try { sups = await api('sty_list_suppliers') || []; } catch { /* offline */ }
   const sup = selectEl([['', t('No supplier')], ...sups.map((s) => [s.id, s.name])], '');
   const inv = input({ placeholder: t('Supplier invoice no.') }), paid = input({ type: 'number', mode: 'decimal', placeholder: '0' });
+  sup.addEventListener('change', () => { sup.blur(); setTimeout(() => inv.focus(), 0); });
   const lines = []; const host = h('div', { class: 'list' }), totEl = h('div', { class: 'paytot' });
   const addVar = (x, qty = 0) => { if (lines.find((l) => l.variantId === x.id)) return; lines.push({ variantId: x.id, name: x.style.name, sub: [x.colour, x.size].filter(Boolean).join(' · '), qty, cost: S.ctx.canSeeCost ? (x.cost || x.style.cost || 0) : (x.style.cost || 0), stock: x.stock }); };
   if (o.style) o.style.variants.filter((x) => x.active !== false).sort((a, b) => a.colour.localeCompare(b.colour) || byRank(a, b)).forEach((x) => addVar({ ...x, style: o.style }));
