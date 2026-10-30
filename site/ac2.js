@@ -96,7 +96,7 @@
     if (id === 'overview') {
       head('overview', 'Your account / Overview', 'Everything.<br>In its place.', 'A quiet space for your AUZslab account.',
         btn('Explore services ↗', D ? 'services' : 'cart') + (apps().length ? btn('Open your apps ↗', 'apps', 1) : ''));
-      var r1 = [tile('dk s6 a3-sm', '<div class="a3-l">Account / 01</div><h2 style="font-size:clamp(26px,3.4vw,44px)">Welcome back.</h2><p>' + esc(c.name) + ' · ' + esc(c.role) + '</p>', 'profile')];
+      var r1 = [tile('dk s6 a3-sm', '<div class="a3-l">Account / 01</div><h2 style="font-size:clamp(20px,2.4vw,26px);letter-spacing:-.02em">Welcome back.</h2><p>' + esc(c.name) + ' · ' + esc(c.role) + '</p>', 'profile')];
       if (D) { r1.push(tile('s3 a3-sm', '<div class="a3-l">Services</div><div class="a3-s">' + pad(c.services) + '</div><p>Switched on</p>', 'services')); r1.push(tile('sf s3 a3-sm', '<div class="a3-l">Notifications</div><div class="a3-s">' + pad(c.unread) + '</div><p>Unread</p>', 'notifications')); }
       else { r1.push(tile('sf s6 a3-sm', '<div class="a3-l">Next</div><h3>Finish your profile,<br>then pick a service.</h3>', 'profile')); }
       var r2 = [stat('Your cart', pad(c.cart), 'Selected services', 'cart', 'wh')];

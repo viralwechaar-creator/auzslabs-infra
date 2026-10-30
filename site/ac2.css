@@ -125,27 +125,27 @@ body.ac3 .u-top,body.ac3 .u-dock,body.ac3 .shell,body.ac3 .u-fab,body.ac3 .knock
 
 /* ===== Admin-panel look (round 6): warm sand page, white 20px cards with the admin's soft lift, mono labels, wine accent,
    labelled sidebar from 900px, floating black pill bar below, one section at a time inside long tabs ===== */
-body.ac3{--a-bg:#f6f4f1;--a-card:#fff;--a-sep:#e6e1dc;--a-fill:#f4f1ed;--a-mut:#7a726c;--wine:#800020;--wine-soft:rgba(128,0,32,.08);--lift:0 1px 2px rgba(0,0,0,.05),0 10px 26px -14px rgba(0,0,0,.28);--sb:#f6f4f1;--top:48px;font-family:Inter,-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif}
-:root[data-theme=dark] body.ac3{--a-bg:#1f1d1b;--a-card:#2d2b29;--a-sep:#413e3b;--a-fill:#38352f;--a-mut:#a59d95;--wine-soft:rgba(190,60,90,.16);--sb:#1f1d1b}
+body.ac3{--a-bg:#faf9f7;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#efece8;--a-mut:#625d58;--a-faint:#8f8a84;--wine:#800020;--wine-soft:rgba(128,0,32,.08);--lift:0 1px 2px rgba(0,0,0,.05),0 10px 26px -14px rgba(0,0,0,.28);--sb:#faf9f7;--top:48px;font-family:Inter,-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif}
+:root[data-theme=dark] body.ac3{--a-bg:#1f1d1b;--a-card:#2d2b29;--a-sep:#413e3b;--a-fill:#38352f;--a-mut:#a59d95;--a-faint:#8a8178;--wine-soft:rgba(190,60,90,.16);--sb:#1f1d1b}
 .a3{font-family:inherit}
 .a3-top{padding-left:20px;padding-right:20px}
-.a3-crumb{font:700 16px/1 inherit;color:var(--a-ink);letter-spacing:-.015em}
+.a3-crumb{font:700 14px/1 inherit;color:var(--a-ink);letter-spacing:-.01em}
 .a3-crumb b{font-weight:700}
-.a3-user{background:var(--a-ink);font-size:11px;letter-spacing:.04em;height:32px;padding:0 13px}
+.a3-user{background:var(--a-ink);font-size:10.5px;letter-spacing:.04em;height:30px;padding:0 12px}
 .a3-rb2{background:var(--a-card);box-shadow:inset 0 0 0 1px var(--a-sep)}
 .a3-head{margin:2px 0 14px}
-.a3-k{font:600 9.5px/1 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.09em;color:var(--a-mut)}
-.a3-h{font-size:clamp(24px,3vw,32px);letter-spacing:-.03em;margin:6px 0 4px}
-.a3-sub{font-size:13px;max-width:52ch}
-.a3-btn{min-height:36px;font-size:13px;padding:0 15px;background:var(--a-card);box-shadow:inset 0 0 0 1px var(--a-sep)}
+.a3-k{font:600 9px/1 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.09em;color:var(--a-faint)}
+.a3-h{font-size:clamp(19px,2vw,23px);letter-spacing:-.02em;font-weight:700;margin:6px 0 4px}
+.a3-sub{font-size:12.5px;color:var(--a-mut);max-width:52ch}
+.a3-btn{min-height:34px;font-size:12.5px;padding:0 14px;background:var(--a-card);box-shadow:inset 0 0 0 1px var(--a-sep)}
 .a3-btn:hover{background:var(--wine-soft)}
 .a3-btn.k{background:var(--a-ink);color:var(--a-bg);box-shadow:none}
 /* cards */
 .a3-t,.a3-grp,.a3-pane>.card,.a3-pane>.acct-table-wrap,.a3-det>.card,#consentBanner{box-shadow:var(--lift)!important;border:1px solid rgba(0,0,0,.04)!important}
 .a3-t{padding:14px 16px 16px}
-.a3-l{font:600 9.5px/1.2 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--a-mut)}
-.a3-s{font-size:34px;font-weight:600;letter-spacing:-.04em;margin-top:6px}
-.a3-t h3{font-size:18px}.a3-t h2{font-size:clamp(22px,2.6vw,30px)}
+.a3-l{font:600 9px/1.2 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--a-faint)}
+.a3-s{font-size:21px;font-weight:700;letter-spacing:-.02em;margin-top:6px}
+.a3-t h3{font-size:15px;font-weight:700;letter-spacing:-.005em}.a3-t h2{font-size:clamp(17px,1.8vw,19px);font-weight:700;letter-spacing:-.01em}
 .a3-t.dk{background:#000;box-shadow:var(--lift),inset 0 0 70px -30px rgba(128,0,32,.55)!important}
 .a3-t.c::after{border-color:var(--wine);top:18px}
 .a3-t.c:hover{box-shadow:0 2px 4px rgba(0,0,0,.06),0 18px 38px -16px rgba(0,0,0,.34)!important}
@@ -157,14 +157,16 @@ body.ac3{--a-bg:#f6f4f1;--a-card:#fff;--a-sep:#e6e1dc;--a-fill:#f4f1ed;--a-mut:#
 @media(min-width:900px){
  body.ac3{--rail:232px}
  .a3-rail{display:flex;background:var(--a-card);border-right:0;box-shadow:1px 0 0 var(--a-sep),12px 0 30px -26px rgba(0,0,0,.4);padding:16px 12px}
- .a3-logo{height:auto;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:6px 8px 12px;letter-spacing:0}
- .a3-logo b{font:800 18px/1 inherit;letter-spacing:-.04em}.a3-logo i{font:600 9.5px/1 "Space Mono",monospace;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--a-mut)}
- .a3-gl{padding:14px 10px 5px;font:600 9.5px/1 "Space Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--a-mut)}
- .a3-nb{justify-content:flex-start;padding:0 10px;min-height:40px;border-radius:9px;font-size:14px}
+ .a3-logo{height:auto;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:6px 8px 14px;letter-spacing:0}
+ .a3-logo b{font:700 15px/1 inherit;letter-spacing:-.02em}.a3-logo i{font:600 9px/1 "Space Mono",monospace;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--a-faint)}
+ .a3-gl{padding:16px 10px 5px;font:600 10px/1 "Space Mono",ui-monospace,monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--a-faint)}
+ .a3-nb{justify-content:flex-start;padding:0 10px;min-height:38px;border-radius:9px;font:500 14px/1 inherit;color:var(--a-mut)}
+ .a3-nb svg{color:inherit;opacity:1}
  .a3-nb .lb{display:inline}.a3-nb .tip{display:none!important}
  .a3-nb .dot{position:static;margin-left:auto;min-width:18px;height:18px;font-size:10px;background:var(--wine)}
- .a3-nb:hover{background:var(--wine-soft);color:var(--a-ink)}
- .a3-nb.on{background:var(--wine-soft);color:var(--wine);font-weight:700}
+ .a3-nb:hover{background:var(--wine-soft);color:var(--a-ink);transform:translateX(1px)}
+ .a3-nb.on{background:var(--wine-soft);color:var(--a-ink);font-weight:700}
+ .a3-nb.on svg{color:var(--wine)}
  .a3-nb.on::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--wine)}
  .a3-top{left:var(--rail)}.a3-main{margin-left:var(--rail)}
  #a3-pages{max-width:1180px;padding-left:28px;padding-right:28px}
