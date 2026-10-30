@@ -2012,7 +2012,7 @@ async function loadLoadReport(sys) {
   const worst = Math.max(0, ...items.map((i) => i.n));
   const rows = (db.products || []).map((p) => {
     const f = Object.entries(fam).filter(([k]) => k.startsWith(p.product.split(' ')[0]) || k === p.product).map(([, v]) => v)[0];
-    const bl = p.rows > 5000 ? p.dead / p.rows : 0, n = bl > 0.3 || (f && (f.p95_ms > 2500 || (f.count > 20 && f.errors / f.count > 0.05))) ? 2 : bl > 0.2 || (f && (f.p95_ms > 900 || (f.count > 20 && f.errors / f.count > 0.01))) ? 1 : 0;
+    const bl = p.rows > 5000 ? p.dead / p.rows : 0, n = bl > 0.3 || (f && ((f.count >= 20 && f.p95_ms > 2500) || (f.count > 20 && f.errors / f.count > 0.05))) ? 2 : bl > 0.2 || (f && ((f.count >= 20 && f.p95_ms > 900) || (f.count > 20 && f.errors / f.count > 0.01))) ? 1 : 0;
     return `<tr><td data-label="Product"><b>${esc(p.product)}</b></td><td data-label="Rating" style="color:${rateTone(n)};font-weight:700">${LOAD_RATE[n]}</td><td data-label="Data stored">${formatBytes(p.size)}<br><span style="color:var(--ink-faint)">${p.rows.toLocaleString()} rows, ${p.tables} tables</span></td><td data-label="Requests">${f ? f.count.toLocaleString() + '<br><span style="color:var(--ink-faint)">' + f.per_min + '/min, slowest 5% ' + f.p95_ms + ' ms, ' + f.errors + ' errors</span>' : '<span style="color:var(--ink-faint)">none seen yet</span>'}</td></tr>`;
   }).join('');
   const famOnly = (api.families || []).filter((f) => !(db.products || []).some((p) => f.name.startsWith(p.product.split(' ')[0]) || f.name === p.product));
