@@ -253,6 +253,84 @@ export default async function run({ browser, stack }) {
     const r2 = await q("select public_app_icon_context('teststyle') c"); assert(!r2[0].c.settings.logo, 'empty logo must not be exposed');
   });
 
+  await s.check('Simple entry: name, optional variant, price and stock make a style with one barcode variant', async () => {
+    const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
+    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.evaluate(() => { location.hash = '#/stock'; }); await page.waitForTimeout(800);
+    await page.locator('button', { hasText: 'New style' }).first().click(); await page.waitForSelector('.seg button', { timeout: 8000 });
+    await page.locator('.seg button', { hasText: 'Simple entry' }).click();
+    const inputs = page.locator('.sheet input:visible'); assert((await inputs.count()) === 4, 'simple form should have exactly 4 fields, has ' + (await inputs.count()));
+    await inputs.nth(0).fill('Simple QA tee'); await inputs.nth(1).fill('M'); await inputs.nth(2).fill('499'); await inputs.nth(3).fill('7');
+    await page.locator('.sheet button', { hasText: /^Save$/ }).click(); await page.waitForTimeout(1500);
+    const st = await page.evaluate(async () => { await loadCatalog(true); const x = S.cat.find((q) => q.name === 'Simple QA tee'); return x && { price: x.price, v: x.variants.map((v) => [v.size, v.colour, v.qty != null ? v.qty : v.stock, !!v.barcode]) }; });
+    assert(st && st.price === 499 && st.v.length === 1 && st.v[0][0] === 'M' && st.v[0][3], 'style not made right: ' + JSON.stringify(st));
+    await c.close();
+  });
+  await s.check('Bill counter behind the saved bills: the next bill number still comes out above the highest one', async () => {
+    const r = await q("select t.id from tenants t where t.slug='teststyle'"); const tid = r[0].id;
+    const mx = (await q('select coalesce(max(seq),0) m from sty_sales where tenant_id=$1', [tid]))[0].m;
+    await q("update sty_counters set n=0 where tenant_id=$1 and k='sale'", [tid]);
+    const nx = (await q("select sty_next($1,'sale') n", [tid]))[0].n;
+    assert(+nx > +mx, 'next ' + nx + ' is not above highest ' + mx);
+  });
+  await s.check('Bills: edit details, cancel with or without putting items back, delete only a cancelled bill (manager only)', async () => {
+    const mv = (await q('select tenant_id, branch_id from sty_stock_moves where variant_id=$1 limit 1', [vL.id]))[0];
+    await q("insert into sty_stock_moves (tenant_id, branch_id, variant_id, qty, kind, ref_type, note) values ($1,$2,$3,5,'adjust','test','test stock')", [mv.tenant_id, mv.branch_id, vL.id]);
+    const mk = () => ok(manager, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'cash', amount: 3000 }] } });
+    const b1 = await mk(); const e = await ok(manager, 'sty_edit_sale', { p_id: b1.id, p: { customerName: 'Edit Person', customerPhone: '9123456780', note: 'edited note' } });
+    assert(e.customer && e.customer.name === 'Edit Person' && e.note === 'edited note', 'edit not saved: ' + JSON.stringify(e.customer));
+    await fails(staff, 'sty_edit_sale', { p_id: b1.id, p: { note: 'x' } }, /does not allow/i);
+    await fails(manager, 'sty_delete_sale', { p_id: b1.id }, /Cancel the bill first/i);
+    const s0 = await stock(vL.id);
+    await ok(manager, 'sty_void_sale', { p_id: b1.id, p_reason: 'keep out', p_restock: false });
+    assert(await stock(vL.id) === s0, 'stock changed although items were not put back');
+    await fails(manager, 'sty_edit_sale', { p_id: b1.id, p: { note: 'y' } }, /cancelled/i);
+    await fails(staff, 'sty_delete_sale', { p_id: b1.id }, /does not allow/i);
+    const d = await ok(manager, 'sty_delete_sale', { p_id: b1.id }); assert(d.deleted === true, 'not deleted');
+    assert((await q('select count(*)::int n from sty_sales where id=$1', [b1.id]))[0].n === 0, 'bill still there');
+    const b2 = await mk(); const s1 = await stock(vL.id); await ok(manager, 'sty_void_sale', { p_id: b2.id, p_reason: 'back' }); assert(await stock(vL.id) === s1 + 1, 'items not put back by default');
+    await integrity();
+  });
+  await s.check('Deleting a style removes it completely, even with sales; the old bill keeps its lines', async () => {
+    const st = await ok(manager, 'sty_save_style', { p: { newId: uid(), name: 'Delete Me Tee', category: 'Clothing', price: 500, mrp: 500, sizes: ['M'], opening: { qty: 5, unitCost: 100 } } });
+    const vid = st.variants[0].id; const bill = await ok(manager, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vid, qty: 1 }], payments: [{ mode: 'cash', amount: 500 }] } });
+    await fails(staff, 'sty_delete_styles', { p: { ids: [st.id] } }, /does not allow/i);
+    const d = await ok(manager, 'sty_delete_styles', { p: { ids: [st.id] } }); assert(d.deleted === 1 && !d.hidden, 'not deleted: ' + JSON.stringify(d));
+    assert((await q('select count(*)::int n from sty_styles where id=$1', [st.id]))[0].n === 0, 'style row still there');
+    assert((await q('select count(*)::int n from sty_variants where id=$1', [vid]))[0].n === 0, 'variant still there');
+    const g = await ok(manager, 'sty_get_sale', { p_id: bill.id }); assert(g.lines.length === 1 && g.lines[0].name === 'Delete Me Tee', 'old bill lost its line: ' + JSON.stringify(g.lines));
+    await integrity();
+  });
+  await s.check('Keyboard shortcuts: ? lists them, G then a letter changes page, / focuses the search, scanner-speed keys are ignored', async () => {
+    const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
+    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.waitForTimeout(1200); await page.keyboard.press('Escape');
+    await page.keyboard.press('Shift+/'); await page.waitForSelector('.kb-help', { timeout: 4000 }); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    if (await page.locator('.kb-help').count()) await page.locator('.sheet .btn.plain').first().click();
+    await page.keyboard.press('g'); await page.waitForTimeout(120); await page.keyboard.press('t'); await page.waitForTimeout(700);
+    assert(/#\/stock/.test(await page.evaluate(() => location.hash)), 'G then T did not open Stock: ' + await page.evaluate(() => location.hash));
+    await page.keyboard.press('g'); await page.waitForTimeout(120); await page.keyboard.press('s'); await page.waitForTimeout(700);
+    assert(/#\/sell/.test(await page.evaluate(() => location.hash)), 'G then S did not open Sell');
+    await page.keyboard.press('/'); await page.waitForTimeout(200);
+    assert(await page.evaluate(() => document.activeElement && document.activeElement.type === 'search'), '/ did not focus the search box');
+    await page.keyboard.press('Escape');
+    await page.keyboard.type('gt', { delay: 0 }); await page.waitForTimeout(500);
+    assert(/#\/sell/.test(await page.evaluate(() => location.hash)), 'scanner-speed keys must not change the page');
+    await c.close();
+  });
+  await s.check('GST lookup in AUZsStyle: refused until the admin allows it, then it passes the gate', async () => {
+    const tok = await login(USERS.styOwner); const tid = (await q("select id from tenants where slug='teststyle'"))[0].id;
+    const call = async () => { const r = await fetch(stack.apiBase + '/gst/lookup', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ gstin: '27AAPFU0939F1ZV' }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) - 'gst_lookup' where tenant_id=$1", [tid]);
+    const off = await call(); assert(off.status === 403, 'should be refused without the cap, got ' + off.status);
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) || '{\"gst_lookup\":true}'::jsonb where tenant_id=$1", [tid]);
+    const on = await call(); assert(on.status !== 403, 'should pass the permission gate once allowed, got ' + on.status + ' ' + JSON.stringify(on.body));
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) - 'gst_lookup' where tenant_id=$1", [tid]);
+  });
   await s.check('Logo upload end to end: upload, save, icon drawn from it, shown in the app', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });

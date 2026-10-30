@@ -182,13 +182,24 @@ function styleForm(s, done) {
     spanOf(cols), spanOf(colWrap), spanOf(useWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
     spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
-  sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body, actions: [
+  // simple entry (new styles only): name, optional variant, selling price, stock. Everything else keeps its default.
+  let simple = false; try { simple = isNew && localStorage.getItem('sty.simpleNew') === '1'; } catch (e) {}
+  const sf = { name: input({ placeholder: 'Blue slim shirt' }), variant: input({ placeholder: t('e.g. M, 32 or Blue (leave empty if none)') }), price: input({ type: 'number', mode: 'decimal' }), qty: input({ type: 'number', mode: 'numeric' }) };
+  const simpleBody = h('div', { class: 'grid' }, field(t('Item name'), sf.name), field(t('Variant (optional)'), sf.variant), h('div', { class: 'two' }, field(t('Selling price'), sf.price), field(t('Stock quantity'), sf.qty)),
+    h('div', { class: 'hint' }, t('Each variant gets its own barcode. You can add pictures, sizes and more later by editing the style.')));
+  const modeBtns = h('div', { class: 'seg', role: 'tablist' });
+  const paintMode = () => { simpleBody.style.display = simple ? '' : 'none'; body.style.display = simple ? 'none' : ''; clear(modeBtns).append(...[[false, t('Full entry')], [true, t('Simple entry')]].map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(simple === k), class: simple === k ? 'on' : '', onclick: () => { simple = k; try { localStorage.setItem('sty.simpleNew', k ? '1' : '0'); } catch (e) {} paintMode(); } }, l))); };
+  paintMode();
+  const wrapBody = isNew ? h('div', { class: 'grid' }, modeBtns, simpleBody, body) : body;
+  sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body: wrapBody, actions: [
+    s ? { label: t('Delete style'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Delete this style?'), t('It is removed completely, with its sizes, colours and stock records. Old bills keep their details. This cannot be undone.'), t('Delete'), true)) return false; try { await api('sty_delete_styles', { p: { ids: [s.id] } }); } catch (e) { fail(e); return false; } close(); S.catAt = 0; toast(t('Style deleted')); try { await loadCatalog(true); } catch (e) { /* offline */ } done && done(); } } : null,
     s && s.active !== false ? { label: t('Hide style'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Hide style'), t('It will not show on the till. Stock and old bills stay.'), t('Hide'), true)) return false; await api('sty_save_style', { p: { id: s.id, name: s.name, active: false } }); close(); S.catAt = 0; done && done(); } } : (s ? { label: t('Show style'), onclick: async (close) => { await api('sty_save_style', { p: { id: s.id, name: s.name, active: true } }); close(); S.catAt = 0; done && done(); } } : null),
     { label: t('Save'), primary: true, onclick: async (close) => {
+      if (isNew && simple) { f.name.value = sf.name.value; f.price.value = sf.price.value; f.qty.value = sf.qty.value; f.mrp.value = ''; }
       if (!f.name.value.trim()) { toast(t('Give the style a name'), { err: true }); return false; }
       if (!N(f.price.value)) { toast(t('Enter the selling price'), { err: true }); return false; }
-      const colours = cols.get(), sizes = szs.get();
-      if (isNew && (!colours.length && !sizes.length)) { toast(t('Add at least one size or colour'), { err: true }); return false; }
+      const colours = simple && isNew ? [] : cols.get(), sizes = simple && isNew ? [sf.variant.value.trim()] : szs.get();
+      if (isNew && !simple && (!colours.length && !sizes.length)) { toast(t('Add at least one size or colour'), { err: true }); return false; }
       const p = { id: s && s.id, name: f.name.value, category: cat.value || 'Clothing', brand: f.brand.value, gender: f.gender.value, code: f.code.value, photoUrl: pics.get().main || null, photos: pics.get().extra, subcategory: f.type.value, fabric: f.fabric.value, collection: f.collection.value, weightG: f.weight.value === '' ? null : N(f.weight.value), washcare: f.wash.value, description: f.desc.value, details: f.det.value, season: f.season.value, hsn: f.hsn.value, 
         price: N(f.price.value), mrp: N(f.mrp.value) || N(f.price.value), taxPct: f.tax.value === '' ? null : N(f.tax.value), colours, sizes };
       if (seeCost && f.cost.value !== '') p.cost = N(f.cost.value);
@@ -268,7 +279,7 @@ function bulkEditSheet(ids, done) {
   } }] });
 }
 async function bulkDelete(ids, done) {
-  if (!(await confirmBox(t('Delete') + ' ' + ids.length + ' ' + t('styles?'), t('Styles that were never sold or stocked are erased. A style with sales or stock history cannot be erased without breaking the books, so it is hidden instead.'), t('Delete'), true))) return;
+  if (!(await confirmBox(t('Delete') + ' ' + ids.length + ' ' + t('styles?'), t('They are removed completely, with their sizes, colours and stock records. Old bills keep their details. This cannot be undone.'), t('Delete'), true))) return;
   try { const r = await api('sty_delete_styles', { p: { ids } }); toast(r.deleted + ' ' + t('deleted') + (r.hidden ? ' · ' + r.hidden + ' ' + t('hidden (they have history)') : '')); await loadCatalog(true).catch(() => {}); done(); } catch (e) { toast(e.message || t('Failed'), { err: true }); }
 }
 

@@ -97,7 +97,7 @@ function once(key, fn) {
   return p;
 }
 
-const DEMO_PASSWORD = 'Auzslab@Demo'; // same public demo password as demo-cafe / demo-retail (db/025)
+export const DEMO_PASSWORD = 'Auzslab@Demo'; // same public demo password as demo-cafe / demo-retail (db/025)
 const DEMO_TTL = 12 * 3600 * 1000;
 // The public demo salon puts itself back to a clean, populated state every
 // 12 hours (and recreates its sample staff login + payroll employee).

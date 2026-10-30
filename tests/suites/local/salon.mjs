@@ -302,6 +302,10 @@ export default async function run({ browser, stack }) {
     assert(bl.n >= 4, 'sample bills were not created (' + bl.n + ')');
     const [row] = await q(`select data->>'demoSeededAt' as at from records where tenant_id = $1 and kind = 'settings' and id = 'settings'`, [t.id]);
     assert(row.at, 'demo refresh time not recorded');
+    // a console password left over from the real salon must not lock the public demo out
+    await q(`insert into salon_store (tenant_id, key, data) values ($1, 'admin', '{"passwordHash":"aa:bb","lockedUntil":${Date.now() + 3600000}}'::jsonb) on conflict (tenant_id, key) do update set data = excluded.data`, [t.id]);
+    const bad = await c.call('POST', '/admin/login', { password: 'nope' }); assert(bad.status >= 400, 'a wrong password must still be refused, got ' + bad.status);
+    const good = await c.call('POST', '/admin/login', { password: 'Auzslab@Demo' }); assert(good.status === 200, 'demo password refused: ' + good.status + ' ' + JSON.stringify(good.data).slice(0, 120));
   }, 'major');
 
   await ctx.close(); s.done();

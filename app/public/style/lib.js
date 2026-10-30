@@ -163,6 +163,25 @@ function customerPicker(onPick) {
     h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); customerForm(null, onPick); } }, icon('plus', 18), t('New customer')), box) });
   load();
 }
+// GST number lookup: only for a business the admin switched it on for (caps.gst_lookup === true); otherwise people type the details by hand.
+const gstinOk = (g) => /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(String(g || '').trim().toUpperCase());
+const canGstLookup = () => !!(S.ctx && S.ctx.caps && S.ctx.caps.gst_lookup === true);
+function gstFetchRow(gstInput, onFill) {
+  if (!canGstLookup()) return null;
+  const msg = h('div', { class: 'muted small' }); const b = h('button', { class: 'btn sm', type: 'button' }, icon('search', 16), t('Fetch details'));
+  b.addEventListener('click', async () => {
+    const g = gstInput.value.trim().toUpperCase();
+    if (!gstinOk(g)) { msg.textContent = t('Enter a valid 15-character GST number first.'); return; }
+    if (!navigator.onLine) { msg.textContent = t('You are offline. Type the details by hand.'); return; }
+    b.disabled = true; msg.textContent = t('Fetching details...');
+    try {
+      const r = await sb.gst.lookup(g); if (r.error) throw new Error(r.error.message || t('Could not fetch the details.'));
+      const d = r.data; gstInput.value = d.gstin || g; onFill(d);
+      msg.textContent = (d.active ? t('Found') + ': ' : t('Found, but status is') + ' ' + (d.status || '?') + ': ') + (d.trade_name || d.legal_name || d.gstin);
+    } catch (e) { msg.textContent = e.message; toast(e.message, { err: true }); } finally { b.disabled = false; }
+  });
+  return h('div', { class: 'row', style: { gap: '8px', alignItems: 'center', flexWrap: 'wrap' } }, b, msg);
+}
 function customerForm(c, onSaved) {
   const name = input({ value: c ? c.name : '', placeholder: t('Name') }), ph = input({ value: c ? c.phone || '' : '', mode: 'tel', placeholder: t('Phone') });
   const size = input({ value: c ? c.usualSize || '' : '', placeholder: 'M / 32 / 8' }), bday = input({ type: 'date', value: c && c.birthday ? String(c.birthday).slice(0, 10) : '' });
@@ -170,11 +189,13 @@ function customerForm(c, onSaved) {
   const gender = selectEl([['', '—'], ['female', t('Female')], ['male', t('Male')], ['other', t('Other')]], c ? c.gender || '' : '');
   const wa = h('input', { type: 'checkbox', checked: c ? c.waOptin !== false : true });
   const notes = h('textarea', { class: 'textarea', rows: 2 }, c ? c.notes || '' : '');
-  sheet({ title: c ? t('Edit customer') : t('New customer'), body: h('div', { class: 'grid' }, field(t('Name'), name), field(t('Phone'), ph), h('div', { class: 'two' }, field(t('Usual size'), size), field(t('Gender'), gender)), h('div', { class: 'two' }, field(t('Birthday'), bday), field(t('Anniversary'), anni)), field(t('City'), city), field(t('Notes'), notes),
+  const gstin = input({ value: c ? c.gstin || '' : '', placeholder: t('Optional') }), addr = input({ value: c ? c.address || '' : '', placeholder: t('Optional') });
+  const gstRow = gstFetchRow(gstin, (d) => { if (!name.value.trim()) name.value = d.trade_name || d.legal_name || ''; if (d.address) addr.value = d.address; if (d.city && !city.value.trim()) city.value = d.city; });
+  sheet({ title: c ? t('Edit customer') : t('New customer'), body: h('div', { class: 'grid' }, field(t('Name'), name), field(t('Phone'), ph), field('GSTIN', gstin), gstRow, field(t('Address'), addr), h('div', { class: 'two' }, field(t('Usual size'), size), field(t('Gender'), gender)), h('div', { class: 'two' }, field(t('Birthday'), bday), field(t('Anniversary'), anni)), field(t('City'), city), field(t('Notes'), notes),
     h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, t('Send WhatsApp messages')), h('div', { class: 'muted small' }, t('Bill link, birthday wishes and offers'))), wa)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
       if (!name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
-      const r = await api('sty_save_customer', { p: { id: c && c.id, newId: c ? undefined : uid(), name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, anniversary: anni.value || null, gender: gender.value, city: city.value, waOptin: wa.checked, notes: notes.value } });
+      const r = await api('sty_save_customer', { p: { id: c && c.id, newId: c ? undefined : uid(), name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, anniversary: anni.value || null, gender: gender.value, city: city.value, gstin: gstin.value.trim().toUpperCase(), address: addr.value, waOptin: wa.checked, notes: notes.value } });
       close(); onSaved && onSaved(r);
     } }] });
 }
