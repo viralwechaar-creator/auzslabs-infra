@@ -44,7 +44,7 @@ export default async function run({ browser, stack }) {
     await p.goto(stack.url('', '/account.html')); await p.waitForTimeout(2500);
     assert(await p.locator('#pfName').isVisible(), 'profile form not shown; url ' + p.url());
     assert((await p.locator('#pfName').inputValue()) === 'QA Person', 'saved name not loaded');
-    assert(await p.locator('#cartNavLink').isVisible(), 'cart link missing'); await c9.close();
+    assert(await p.locator('.a3-rail [data-go=cart]').isVisible(), 'cart link missing'); await c9.close();
   }, 'critical');
   await s.check('Admin panel is light: signing in makes few requests, each section loads when opened', async () => {
     const ca = await newCtx(browser, stack); const p = await ca.newPage(); const calls = [];
