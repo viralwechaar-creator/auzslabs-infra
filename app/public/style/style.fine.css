@@ -470,3 +470,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tags .tag-c{transform:translateY(var(--top,0mm))}
 .tag-c .tg-cs{font-size:8cqh;font-weight:700;letter-spacing:.22em;line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tag-c .tg-cn{font-size:11.5cqh}
+
+/* the printable part of a label can be shorter than 25 mm: tag height is adjustable (Compact scales its text with it) */
+.tags-2up .tag-l,.tags-2up .tag-g,.tags-2up .tag-m,.tags-2up .tag-d,.tags-2up .tag-c,.tags-2up .tagpage>*{height:var(--tagh,25mm)}
