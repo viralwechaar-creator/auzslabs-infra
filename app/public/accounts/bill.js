@@ -16,9 +16,25 @@
   if (!data) { app.append(el('h1', null, 'This link is not valid'), el('p', { class: 'muted' }, 'The invoice may have been withdrawn, or the link is incomplete. Ask the sender for a new one.')); return; }
   const o = data.org, d = data.doc, adr = [o.address, [o.city, o.pincode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   document.title = (LABEL[d.type] || 'Document') + ' ' + d.number + ' · ' + (o.name || '');
-  const PRINT_BTN = () => el('div', { class: 'bar' }, el('button', { class: 'btn fill', style: 'background:#111;color:#fff;border:0;border-radius:10px;padding:10px 18px;font:600 14px Arial,sans-serif;cursor:pointer', onclick: () => window.print() }, 'Print or save as PDF'));
-  if ((o.brand || {}).invoiceStyle === 'classic' && window.auzTaxInvoice) { app.classList.add('classic'); app.append(auzTaxInvoice.build(data), PRINT_BTN()); return; }
-  if (window.auzInvoiceTemplates && auzInvoiceTemplates[(o.brand || {}).invoiceStyle]) { app.classList.add('classic'); app.append(auzInvoiceTemplates[(o.brand || {}).invoiceStyle](data), PRINT_BTN()); return; }
+  // Same fit-to-one-page trick as p-docs.js's printDoc (duplicated, not shared -- see that file's own comment for
+  // why these fixed-A4-box templates can overflow a normal invoice onto a second page): shrink via the same `zoom`
+  // mechanism the templates already use for phone screens, measured off-screen since this page is visible already
+  // (unlike the in-app print sheet, which is hidden until print).
+  const fitPrint = (wrap) => {
+    const page = wrap && wrap.firstElementChild; if (!page) return;
+    const prevZoom = page.style.zoom; page.style.zoom = '1';
+    const ht = page.getBoundingClientRect().height;
+    page.style.zoom = prevZoom || '';
+    const scale = ht > 1100 ? Math.max(0.65, 1100 / ht) : 1;   // 1100, not the theoretical 1123 (297mm) -- see p-docs.js's fitPrintPage
+    // Re-append (not just update) every time -- see p-docs.js's fitPrintPage for why.
+    let st = document.getElementById('printFitCss'); if (!st) { st = document.createElement('style'); st.id = 'printFitCss'; }
+    document.head.appendChild(st);
+    const pageCls = '.' + (page.className || '').trim().split(/\s+/)[0], wrapCls = '.' + (wrap.className || '').trim().split(/\s+/)[0];
+    st.textContent = scale < 1 ? '@media print{' + pageCls + '{zoom:' + scale.toFixed(3) + '!important}' + wrapCls + '{display:flex!important;justify-content:center!important}}' : '';
+  };
+  const PRINT_BTN = (wrap) => el('div', { class: 'bar' }, el('button', { class: 'btn fill', style: 'background:#111;color:#fff;border:0;border-radius:10px;padding:10px 18px;font:600 14px Arial,sans-serif;cursor:pointer', onclick: () => { fitPrint(wrap); window.print(); } }, 'Print or save as PDF'));
+  if ((o.brand || {}).invoiceStyle === 'classic' && window.auzTaxInvoice) { app.classList.add('classic'); const wrap = auzTaxInvoice.build(data); app.append(wrap, PRINT_BTN(wrap)); return; }
+  if (window.auzInvoiceTemplates && auzInvoiceTemplates[(o.brand || {}).invoiceStyle]) { app.classList.add('classic'); const wrap = auzInvoiceTemplates[(o.brand || {}).invoiceStyle](data); app.append(wrap, PRINT_BTN(wrap)); return; }
   const b = o.brand || {}, k = b.bank || {}, bl = [k.holder && ['Account name', k.holder], k.name && ['Bank', k.name], k.account && ['Account no.', k.account], k.ifsc && ['IFSC', k.ifsc], k.branch && ['Branch', k.branch]].filter(Boolean);
   let qrSrc = null;
   if (b.upi && d.type === 'invoice' && !d.cancelled && typeof qrcode === 'function') { try { const due = Number(d.total) - Number(d.paid || 0); const q = qrcode(0, 'M'); q.addData('upi://pay?pa=' + encodeURIComponent(b.upi) + '&pn=' + encodeURIComponent(o.name || '') + (due > 0 ? '&am=' + due.toFixed(2) : '') + '&cu=INR&tn=' + encodeURIComponent(d.number || '')); q.make(); qrSrc = q.createDataURL(4, 0); } catch { /* no QR */ } }
