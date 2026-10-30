@@ -192,6 +192,7 @@ function styleForm(s, done) {
   paintMode();
   const wrapBody = isNew ? h('div', { class: 'grid' }, modeBtns, simpleBody, body) : body;
   sheet({ title: isNew ? t('New style') : t('Edit style'), full: true, wide: true, body: wrapBody, actions: [
+    s ? { label: t('Delete style'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Delete this style?'), t('It is removed completely, with its sizes, colours and stock records. Old bills keep their details. This cannot be undone.'), t('Delete'), true)) return false; try { await api('sty_delete_styles', { p: { ids: [s.id] } }); } catch (e) { fail(e); return false; } close(); S.catAt = 0; toast(t('Style deleted')); try { await loadCatalog(true); } catch (e) { /* offline */ } done && done(); } } : null,
     s && s.active !== false ? { label: t('Hide style'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Hide style'), t('It will not show on the till. Stock and old bills stay.'), t('Hide'), true)) return false; await api('sty_save_style', { p: { id: s.id, name: s.name, active: false } }); close(); S.catAt = 0; done && done(); } } : (s ? { label: t('Show style'), onclick: async (close) => { await api('sty_save_style', { p: { id: s.id, name: s.name, active: true } }); close(); S.catAt = 0; done && done(); } } : null),
     { label: t('Save'), primary: true, onclick: async (close) => {
       if (isNew && simple) { f.name.value = sf.name.value; f.price.value = sf.price.value; f.qty.value = sf.qty.value; f.mrp.value = ''; }
@@ -278,7 +279,7 @@ function bulkEditSheet(ids, done) {
   } }] });
 }
 async function bulkDelete(ids, done) {
-  if (!(await confirmBox(t('Delete') + ' ' + ids.length + ' ' + t('styles?'), t('Styles that were never sold or stocked are erased. A style with sales or stock history cannot be erased without breaking the books, so it is hidden instead.'), t('Delete'), true))) return;
+  if (!(await confirmBox(t('Delete') + ' ' + ids.length + ' ' + t('styles?'), t('They are removed completely, with their sizes, colours and stock records. Old bills keep their details. This cannot be undone.'), t('Delete'), true))) return;
   try { const r = await api('sty_delete_styles', { p: { ids } }); toast(r.deleted + ' ' + t('deleted') + (r.hidden ? ' · ' + r.hidden + ' ' + t('hidden (they have history)') : '')); await loadCatalog(true).catch(() => {}); done(); } catch (e) { toast(e.message || t('Failed'), { err: true }); }
 }
 

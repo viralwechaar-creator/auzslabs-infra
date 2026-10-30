@@ -293,6 +293,16 @@ export default async function run({ browser, stack }) {
     const b2 = await mk(); const s1 = await stock(vL.id); await ok(manager, 'sty_void_sale', { p_id: b2.id, p_reason: 'back' }); assert(await stock(vL.id) === s1 + 1, 'items not put back by default');
     await integrity();
   });
+  await s.check('Deleting a style removes it completely, even with sales; the old bill keeps its lines', async () => {
+    const st = await ok(manager, 'sty_save_style', { p: { newId: uid(), name: 'Delete Me Tee', category: 'Clothing', price: 500, mrp: 500, sizes: ['M'], opening: { qty: 5, unitCost: 100 } } });
+    const vid = st.variants[0].id; const bill = await ok(manager, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vid, qty: 1 }], payments: [{ mode: 'cash', amount: 500 }] } });
+    await fails(staff, 'sty_delete_styles', { p: { ids: [st.id] } }, /does not allow/i);
+    const d = await ok(manager, 'sty_delete_styles', { p: { ids: [st.id] } }); assert(d.deleted === 1 && !d.hidden, 'not deleted: ' + JSON.stringify(d));
+    assert((await q('select count(*)::int n from sty_styles where id=$1', [st.id]))[0].n === 0, 'style row still there');
+    assert((await q('select count(*)::int n from sty_variants where id=$1', [vid]))[0].n === 0, 'variant still there');
+    const g = await ok(manager, 'sty_get_sale', { p_id: bill.id }); assert(g.lines.length === 1 && g.lines[0].name === 'Delete Me Tee', 'old bill lost its line: ' + JSON.stringify(g.lines));
+    await integrity();
+  });
   await s.check('GST lookup in AUZsStyle: refused until the admin allows it, then it passes the gate', async () => {
     const tok = await login(USERS.styOwner); const tid = (await q("select id from tenants where slug='teststyle'"))[0].id;
     const call = async () => { const r = await fetch(stack.apiBase + '/gst/lookup', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ gstin: '27AAPFU0939F1ZV' }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
