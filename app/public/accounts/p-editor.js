@@ -371,7 +371,11 @@ async function docEditor(v, type, existing) {
       const am = h('input', { class: 'input', inputmode: 'decimal', placeholder: mode === 'full' ? 'Total' : '0.00', value: mode === 'full' ? '' : p.amount, disabled: mode === 'full', 'aria-label': 'Amount paid', oninput: (e) => { p.amount = e.target.value; recalc(); } });
       const md = selectEl([['', 'Method'], 'Cash', 'UPI', 'Card', 'NEFT/RTGS', 'Cheque'], p.mode, { onchange: () => { p.mode = md.value; } });
       const rf = input({ value: p.reference, placeholder: 'Reference (UTR, cheque no.)', onchange: (e) => { p.reference = e.target.value; } });
-      payHost.append(h('div', { class: 'grid', style: { gap: '10px' } }, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Account', acc), field('Amount', am)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Method', md), field('Reference', rf))));
+      const cashNow = isCashAcc(p.account_id) && !offlineNow();
+      if (!cashNow) p.pad = null;
+      const padTxt = h('span', { class: 'muted small' }, p.pad ? 'Notes counted: ' + inr(dnTotal(sales ? p.pad.notes_in : p.pad.notes_out)) : 'Count the notes and coins to keep the cash drawer exact (optional).');
+      const padBtn = h('button', { class: 'btn sm', type: 'button', onclick: async () => { const a = D.pay === 'full' ? C.total : N(p.amount); if (!(a > 0)) { toast('Enter the amount first', { err: true }); return; } const r = await notePad({ amount: a, kind: sales ? 'sale' : 'purchase', initial: p.pad }); if (r) { p.pad = r; p.padFor = a; drawPay(); } } }, icon('wallet', 16), p.pad ? 'Change count' : 'Count notes');
+      payHost.append(h('div', { class: 'grid', style: { gap: '10px' } }, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Account', acc), field('Amount', am)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Method', md), field('Reference', rf)), cashNow ? h('div', { class: 'row sp' }, padTxt, padBtn) : null));
     });
   }
   if (payable) root.append(payHost);
@@ -423,6 +427,7 @@ async function docEditor(v, type, existing) {
     if (C.total <= 0 && posting) return 'The total must be more than zero';
     if (payable && D.pay === 'part') { const sum = D.payments.reduce((s, p) => s + N(p.amount), 0); if (sum <= 0) return 'Enter the amount paid'; if (sum > C.total + 0.005) return 'The payment is more than the total'; }
     if (isExpense && !party() && D.pay === 'later') return 'Choose where the money was paid from';
+    if (payable && D.pay !== 'later') { const pp = D.payments.find((x) => x.pad && isCashAcc(x.account_id)); if (pp) { const a = D.pay === 'full' ? C.total : N(pp.amount); if (Math.abs(a - (pp.padFor || 0)) > 0.005) return 'The cash amount changed after you counted the notes. Count again.'; } }
     return '';
   };
   // Offline (or the server cannot be reached): a NEW bill / expense / invoice / note is kept on this device as an offline draft and
@@ -458,6 +463,7 @@ async function docEditor(v, type, existing) {
       const r = await api('acc_save_document', { p: build(post) });
       dirty = false; bust('products', 'parties');
       await saveCourierBills(r, post);
+      if (r.posted) { const pp = payable && D.pay !== 'later' ? D.payments.find((x) => x.pad && isCashAcc(x.account_id)) : null; if (pp) await drawerSave(r.id, pp.pad, 'ed-' + r.id); }
       if (scan && scan.file) { try { await uploadAttachment('document', r.id, scan.file); } catch (e) { toast('Saved, but the invoice file could not be attached', { err: true }); } window.__scan = null; }
       if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); go('doc/' + r.id); return; }
       toast(r.posted ? 'Posted ' + r.number : 'Draft saved'); go('doc/' + r.id);

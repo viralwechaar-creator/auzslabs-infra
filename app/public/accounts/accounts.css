@@ -228,3 +228,22 @@ html,body{max-width:100%;overflow-x:clip}
 .tip{width:22px;height:22px;border-radius:50%;border:1px solid var(--sep);background:var(--fill);font:700 12px/1 var(--font);color:var(--label2);padding:0;margin-left:6px;cursor:pointer;position:relative;vertical-align:middle}.tip::after{content:"";position:absolute;inset:-11px}
 .fypill{min-height:30px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--fill2,rgba(128,128,128,.14));color:var(--label)}
 .fypill.on{background:var(--accent);color:var(--on-accent)}
+
+/* Cash drawer: note and coin counter, balance by denomination, move buttons. Fills the width, no empty cells. */
+.dn { display: grid; gap: 10px; }
+.dn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 14px; }
+.dn-row { display: grid; grid-template-columns: minmax(74px, 1fr) 36px 54px 36px minmax(54px, auto); align-items: center; gap: 6px; }
+.dn-l { font-weight: 600; font-size: 14px; }
+.dn-in { text-align: center; padding-left: 4px; padding-right: 4px; }
+.dn-b { min-width: 36px; padding: 0; }
+.dn-sub { text-align: right; }
+.dn-tot { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 16px; padding-top: 8px; border-top: .5px solid var(--sep); }
+.dr-moves { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.dr-notes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 700px) { .dr-notes { grid-template-columns: repeat(5, 1fr); } }
+.dr-n { background: var(--card); border-radius: 14px; padding: 10px 12px; box-shadow: 0 0 0 .5px var(--sep); display: grid; gap: 2px; }
+.dr-n .dr-c { font-size: 22px; font-weight: 700; }
+.dr-n.zero { opacity: .55; }
+.dr-n.neg .dr-c { color: var(--red); }
+.dr-g { color: var(--green); } .dr-r { color: var(--red); }
+@media (max-width: 480px) { .dn-grid { grid-template-columns: 1fr; } }
