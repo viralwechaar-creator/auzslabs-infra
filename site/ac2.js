@@ -31,7 +31,8 @@
     var nb = function (p) { return '<button class="a3-nb" data-go="' + p[0] + '" aria-label="' + TITLES[p[0]] + '">' + svg(p[1]) + '<span class="lb">' + TITLES[p[0]] + '</span><span class="tip">' + TITLES[p[0]] + '</span>' + (p[0] === 'notifications' ? '<span class="dot" id="a3-dotn" hidden></span>' : '') + '</button>'; };
     shell.innerHTML =
       '<aside class="a3-rail"><a class="a3-logo" href="index.html" aria-label="AUZslab home"><b>AUZslab</b><i>Your account</i></a>' + RAIL.map(function (p, i) { return ({ 0: '<div class="a3-gl">Account</div>', 3: '<div class="a3-gl">Business</div>', 6: '<div class="a3-gl">Inbox</div>' }[i] || '') + nb(p); }).join('') +
-      '<div class="a3-rb"><button class="a3-nb" data-go="help" aria-label="Help">' + svg('help') + '<span class="lb">Help &amp; support</span><span class="tip">Help &amp; support</span></button></div></aside>' +
+      '<div class="a3-rb"><button class="a3-nb" data-go="help" aria-label="Help">' + svg('help') + '<span class="lb">Help &amp; support</span><span class="tip">Help &amp; support</span></button>' +
+      '<div class="a3-railfoot"><span>AUZslab · Account</span><button class="a3-out" id="a3-out2" type="button">Sign out</button></div></div></aside>' +
       '<main class="a3-main"><header class="a3-top"><div class="a3-crumb"><span id="a3-crumb">Overview</span></div>' +
       '<div class="a3-ta"><button class="a3-rb2" data-go="notifications" aria-label="Notifications">' + svg('bell') + '<span class="a3-badge" id="a3-badge"></span></button><button class="a3-user" id="a3-user">Account</button></div></header>' +
       '<div id="a3-pages"></div>' +
@@ -43,7 +44,7 @@
       var t = e.target.closest('[data-go]'); if (t) { e.preventDefault(); go(t.getAttribute('data-go'), true); }
       var a = e.target.closest('[data-act]'); if (a) act(a.getAttribute('data-act'), a);
     });
-    $('#a3-out').onclick = function () { var b = $('#signOutBtn'); if (b) b.click(); };
+    $('#a3-out').onclick = $('#a3-out2').onclick = function () { var b = $('#signOutBtn'); if (b) b.click(); };
     $('#a3-user').onclick = function () { go('profile', true); };
     $('#a3-mx').onclick = function () { $('#a3-mb').classList.remove('on'); };
     $('#a3-mb').onclick = function (e) { if (e.target.id === 'a3-mb') e.target.classList.remove('on'); };

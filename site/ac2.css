@@ -15,6 +15,7 @@ body.ac3 .u-top,body.ac3 .u-dock,body.ac3 .shell,body.ac3 .u-fab,body.ac3 .knock
 .a3-nb .lb{white-space:nowrap}.a3-nb .tip{display:none}
 .a3-nb .dot{margin-left:auto;min-width:20px;height:20px;border-radius:10px;background:var(--a-red);color:#fff;font-size:11px;font-weight:600;display:grid;place-items:center;padding:0 6px}.a3-nb .dot[hidden]{display:none}
 .a3-rb{margin-top:auto;display:flex;flex-direction:column}
+.a3-railfoot{display:none}
 @media(min-width:600px){body.ac3{--rail:72px}.a3-rail{display:flex}.a3-nb{justify-content:center;padding:0}.a3-nb .lb{display:none}.a3-logo{justify-content:center;padding:0}
  .a3-nb .tip{display:block;position:absolute;left:calc(100% + 8px);background:var(--a-dk);color:#fff;padding:7px 10px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;z-index:70;transition:opacity .15s;border-radius:8px}.a3-nb:hover .tip{opacity:1}
  .a3-nb .dot{position:absolute;top:6px;right:10px;margin:0;min-width:16px;height:16px;font-size:10px}}
@@ -170,6 +171,10 @@ body.ac3{--a-bg:#faf9f7;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#efece8;--a-mut:#
  .a3-nb.on::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--wine)}
  .a3-top{left:var(--rail)}.a3-main{margin-left:var(--rail)}
  #a3-pages{max-width:1180px;padding-left:28px;padding-right:28px}
+ main>.a3-foot{display:none}
+ .a3-railfoot{display:flex;flex-direction:column;gap:6px;margin-top:10px;padding:10px 10px 2px;border-top:1px solid var(--a-sep)}
+ .a3-railfoot span{font:600 9px/1 "Space Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--a-faint)}
+ .a3-railfoot .a3-out{font-size:13px;min-height:30px;text-align:left}
 }
 @media(max-width:899px){.a3-gl{display:none}}
 /* phone + tablet: floating black pill bar */
