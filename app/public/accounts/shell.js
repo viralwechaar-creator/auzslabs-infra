@@ -205,7 +205,7 @@ function buildShell() {
     [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'More')), h('a', { href: 'https://auzslab.in', class: 'nav-i', title: 'AUZslab' }, icon('book', 20), h('span', { class: 'lbl-t' }, 'AUZslab'))],
     h('div', { class: 'foot' }, S.ctx.tenant.is_demo ? h('span', { class: 'badge orange' }, 'Demo data') : null, h('span', null, S.user.email), h('span', null, cap1(S.user.role)),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
-      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: moreSheet }, 'Look & theme'), h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
+      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: lookThemeSheet }, 'Look & theme'), h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     tabsNow().map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(PAGES[id].icon, 25), h('span', null, PAGES[id].tabLabel || PAGES[id].title))),
@@ -223,6 +223,15 @@ async function deleteAccountFlow() {
   const { error } = await sb.auth.deleteAccount(pw.value);
   if (error) { await alertBox({ title: 'Could not delete account', message: error.message, cancel: false }); return; }
   location.href = location.pathname;
+}
+// Just the colour theme + light/dark/look controls -- the desktop sidebar's "Look & theme" button used to call
+// moreSheet() (the ENTIRE settings/navigation overflow menu), opening the whole app's nav list for what should be
+// a two-second colour pick. Same controls moreSheet() already draws, pulled into their own small sheet.
+function lookThemeSheet() {
+  const body = h('div', { class: 'grid' },
+    window.auzCTheme && !window.AUZ_SCAN ? h('div', { class: 'sec' }, auzCTheme.fold()) : null,
+    h('div', { class: 'list' }, liRow({ icon: 'moon', tone: 'gray', title: 'Appearance', badge: seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v)) }), liRow({ icon: 'sell', tone: 'gray', title: 'Look', badge: accLookSeg(seg) })));
+  sheet({ title: 'Look & theme', closeLabel: 'Done', body });
 }
 function moreSheet() {
   const body = h('div', { class: 'grid' }, window.easyToggleRow ? h('div', { class: 'list' }, easyToggleRow()) : null, navNow().filter((g) => g.group).map((g) => h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, g.group)), h('div', { class: 'list' },
@@ -295,7 +304,11 @@ async function route_() {
   const tab = tabsNow().includes(navId) ? navId : 'more'; $(`[data-tab="${tab}"]`)?.setAttribute('aria-current', 'page');
   if (def.perm && !can(def.perm)) { header({ title: def.title }); clear(root).append(empty('lock', 'No access', 'Your role does not include ' + def.title.toLowerCase() + '. Ask the owner to change your role.')); return; }
   const view = { id: route.id, args: route.args, q: route.q, root, header: (o) => header(o, root), refresh: () => route_(), onLeave: (f) => cleanup.push(f) };
-  try { clear(root); header({ title: def.title }, root); root.dataset.p = route.id.split('/')[0]; if (route.id.startsWith('settings')) root.classList.add('cols2'); await def.render(view); } catch (e) {
+  // Narrow, single-column step-by-step pages (settings, bulk import, import/export) waste the right half of a
+  // desktop screen and force a long scroll for content that would fit two cards side by side -- same CSS
+  // multi-column flow (.cols2, accounts.fine.css) already used for Settings, now also on the other pages built the
+  // same way (a sequence of cards, none of them a wide table that multi-column would awkwardly split).
+  try { clear(root); header({ title: def.title }, root); root.dataset.p = route.id.split('/')[0]; if (/^(settings|bulk|data)/.test(route.id)) root.classList.add('cols2'); await def.render(view); } catch (e) {
     console.error(e); clear(root).append(empty('alert', 'Could not load this page', e.message, h('button', { class: 'btn fill', onclick: route_ }, 'Try again')));
   }
   main.focus({ preventScroll: true }); window.scrollTo(0, keepY);
