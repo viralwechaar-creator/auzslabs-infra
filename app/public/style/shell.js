@@ -162,6 +162,7 @@ async function boot() {
   }
   ctx = overlayRead('sty_context', {}, clone(ctx));   // settings/branches changed with no connection show at once
   S.dash = dash; S.ctx = ctx; S.perms = ctx.perms || {};
+  restoreQueue();
   S.user = { email: dash.my_email, role: dash.my_role, id: session.user.id };
   const lang = LS.get('lang.' + S.user.id, null) || ctx.settings.language || 'en';
   if (!localStorage['sty.lang']) setLang(lang);

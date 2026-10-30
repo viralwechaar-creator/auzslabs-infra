@@ -61,13 +61,30 @@ const READS = new Set([
 // ---------- the queue ----------
 const qKey = () => 'q.' + scope();
 const emptyBill = (e) => e && e.fn === 'sty_sell' && e.args && e.args.p && !(e.args.p.lines || []).length;
+// A second copy of the queue is kept in memory and in IndexedDB. If the browser's small storage is full or gets cleared, the waiting changes
+// are restored from it (the server applies each change once, so sending one again is harmless).
+const MIRROR = { key: null, q: null, warned: false };
 const getQ = () => {
-  let q = LS.get(qKey(), []);
+  let q = LS.get(qKey(), null);
+  if (q === null) { q = MIRROR.key === qKey() && Array.isArray(MIRROR.q) ? MIRROR.q.slice() : []; if (q.length) LS.set(qKey(), q); }
   if (q.some(emptyBill)) { q = q.filter((e) => !emptyBill(e)); LS.set(qKey(), q); }   // an empty bill (made by a double tap in an older version) can never be sold: drop it
   if (q.some((e) => !e.id)) { q.forEach((e, i) => { if (!e.id) e.id = 'old-' + (e.at || 0) + '-' + i; }); LS.set(qKey(), q); }   // bills queued by the older version
   return q;
 };
-const setQ = (q) => { LS.set(qKey(), q); window.dispatchEvent(new Event('sty:q')); };
+const setQ = (q) => {
+  LS.set(qKey(), q); MIRROR.key = qKey(); MIRROR.q = q.slice(); KV.set('qm.' + scope(), q);
+  let kept = true; try { kept = localStorage.getItem('sty.' + qKey()) === JSON.stringify(q); } catch { kept = false; }
+  if (!kept && q.length && !MIRROR.warned) { MIRROR.warned = true; toast(t('This device is short of storage. Keep this window open until the changes are sent.'), { err: true }); }
+  window.dispatchEvent(new Event('sty:q'));
+};
+// at start: bring back waiting changes the browser lost (cleared storage) from the IndexedDB copy
+async function restoreQueue() {
+  try {
+    const m = await KV.get('qm.' + scope()); if (!Array.isArray(m) || !m.length) return;
+    const q = getQ(), have = new Set(q.map((e) => e.id)), add = m.filter((e) => e && e.id && !have.has(e.id));
+    if (add.length) { setQ([...q, ...add]); toast(add.length + ' ' + t('waiting changes were restored on this device.')); flushQueue(); }
+  } catch { /* nothing to restore */ }
+}
 const pendingCount = () => getQ().filter((e) => !e.fail).length;
 const failedOps = () => getQ().filter((e) => e.fail);
 const idMapKey = () => 'idmap.' + scope();
@@ -169,9 +186,11 @@ async function cachedRead(fn, args) {
   } catch (e) {
     if (!e.net) throw e;
     const c = await KV.get(key);
-    if (c === undefined) { const er = new Error(t('This screen needs an internet connection the first time you open it.')); er.net = true; throw er; }
+    // lists that can be built from waiting changes alone open empty (plus what is waiting) instead of refusing
+    const base = c === undefined && (fn === 'sty_list_sales' || fn === 'sty_hold_list') ? [] : c;
+    if (base === undefined) { const er = new Error(t('This screen needs an internet connection the first time you open it.')); er.net = true; throw er; }
     S.offlineData = true; window.dispatchEvent(new Event('sty:q'));
-    return overlayRead(fn, args, clone(c));
+    return overlayRead(fn, args, clone(base));
   }
 }
 async function api(fn, args) {
@@ -258,6 +277,43 @@ const OVERLAY = {
       }
     }
     return cat;
+  },
+  // held bills made offline stay in the Held list; a held bill that was sold (resumed) leaves it
+  sty_hold_list(list) {
+    if (!Array.isArray(list)) return list;
+    for (const e of getQ().filter((z) => !z.fail)) {
+      const p = (e.args && e.args.p) || {};
+      if (e.fn === 'sty_hold_save' && p.id) {
+        const row = { id: p.id, label: p.label || null, lines: p.lines || [], at: new Date(e.at).toISOString(), branchId: p.branchId || null };
+        const i = list.findIndex((z) => z.id === p.id); if (i >= 0) list[i] = row; else list.unshift(row);
+      } else if (e.fn === 'sty_sell' && p.holdId) { const i = list.findIndex((z) => z.id === p.holdId); if (i >= 0) list.splice(i, 1); }
+    }
+    return list;
+  },
+  // bills made offline show in Bills at once ("Waiting to send"), and a cancelled one is marked cancelled
+  sty_list_sales(list, args) {
+    if (!Array.isArray(list)) return list;
+    const a = (args && args.p) || {}, ops = getQ().filter((e) => !e.fail);
+    const voided = new Set(ops.filter((e) => e.fn === 'sty_void_sale').map((e) => e.args && e.args.p_id));
+    list.forEach((r) => { if (voided.has(r.id)) r.status = 'void'; });
+    if (a.q || a.customerId || a.status) return list;
+    const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const waiting = [];
+    for (const e of ops) {
+      if (e.fn !== 'sty_sell') continue;
+      const p = (e.args && e.args.p) || {}; if (!p.id || list.some((z) => z.id === p.id) || voided.has(p.id)) continue;
+      const day = ymd(new Date(e.at)); if ((a.from && day < a.from) || (a.to && day > a.to)) continue;
+      const idx = varIndex(S.cat || []); let sum = 0, units = 0;
+      for (const l of p.lines || []) {
+        const v = idx[l.variantId]; const unit = l.price != null ? N0(l.price) : v ? N0(v.v.price != null ? v.v.price : v.s.price) : 0; const gross = unit * N0(l.qty);
+        sum += Math.max(0, gross - N0(l.discAmt) - gross * N0(l.discPct) / 100); units += N0(l.qty);
+      }
+      const total = Math.max(0, Math.round((sum - N0(p.billDiscAmt) - sum * N0(p.billDiscPct) / 100) * 100) / 100);
+      const paid = (p.payments || []).reduce((x, y) => x + N0(y.amount), 0);
+      waiting.push({ id: p.id, number: t('Waiting to send'), at: new Date(e.at).toISOString(), total, paid: Math.min(paid, total), status: paid + .005 < total ? 'due' : 'paid', discount: 0, customer: null, customerId: p.customerId || null,
+        branchId: p.branchId || null, units, staff: S.user ? S.user.email : null, payments: p.payments || [], waiting: true });
+    }
+    return waiting.reverse().concat(list);
   },
   sty_list_suppliers(list) {
     for (const e of opsFor(['sty_save_supplier', 'sty_pay_supplier', 'sty_receive'])) {
