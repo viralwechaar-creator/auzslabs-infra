@@ -115,3 +115,17 @@ body.ac3{padding-top:0!important}
 @media(max-width:600px){.a3-tp{min-height:150px;padding-bottom:46px}.a3-t.dk.r2.a3-tp{min-height:240px}}
 
 a.a3-t{color:var(--a-ink);text-decoration:none}a.a3-t.dk{color:#f5f5f3}
+
+/* round 2: compact tiles that share the full row, panes packed in columns (no empty corners), readable rail labels */
+.a3-rail{z-index:40}.a3-nb .tip{z-index:60;box-shadow:0 6px 18px #0004}
+.a3-sm{padding:16px 18px;min-height:0}
+.a3-sm .a3-s{font-size:34px;margin-top:6px}.a3-sm h3{font-size:19px;margin-top:6px}.a3-sm h2{margin-top:6px}.a3-sm p{margin-top:6px;font-size:11px}
+.a3-mos{grid-auto-rows:auto;gap:8px}
+.a3-pane{display:block!important;margin-top:8px}
+@media(min-width:900px){.a3-pane.a3-cols{grid-auto-flow:row!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}.a3-pane.a3-cols>*{margin:0!important;grid-column:auto!important}.a3-pane.a3-cols>.card:last-child:nth-child(odd),.a3-pane.a3-cols>.acct-table-wrap{grid-column:1/-1!important}}
+.a3-pane>*{break-inside:avoid;margin:0 0 10px!important;display:block}
+.a3-pane>.card{width:100%}
+.a3-pane>.card.fc{display:block}
+.a3-canvas{padding:10px}
+@media(max-width:600px){.a3-sm{min-height:0}.a3-mos{gap:8px}}
+@media(min-width:900px){.a3-pane.a3-two{display:grid!important;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;align-items:stretch}.a3-pane.a3-two>*{margin:0!important;grid-column:auto!important}}

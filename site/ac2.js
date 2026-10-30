@@ -85,60 +85,65 @@
   }
   var pad = function (n) { return String(n).padStart(2, '0'); };
 
+  /* tiles of one row always share the full width: n tiles get 12/n columns each, so no row is ever half empty */
+  function row(list) { var sp = { 1: 's12', 2: 's6', 3: 's4', 4: 's3', 6: 's2' }[list.length] || 's4'; return list.map(function (t) { return t.replace('%S', sp); }).join(''); }
+  function T(cls, html, go_) { return tile(cls + ' %S', html, go_); }
+  function stat(l, n, p, go_, cls) { return T((cls || '') + ' a3-sm', '<div class="a3-l">' + l + '</div><div class="a3-s">' + n + '</div><p>' + p + '</p>', go_); }
+  function word(l, h, p, go_, cls) { return T((cls || '') + ' a3-sm', '<div class="a3-l">' + l + '</div><h3>' + h + '</h3>' + (p ? '<p>' + p + '</p>' : ''), go_); }
+
   function render(id) {
-    var c = counts(), m = $('#a3m-' + id), D = c.D, P = g('PROFILE') || {}; tn = 0; var h = '';
+    var c = counts(), m = $('#a3m-' + id), D = c.D, P = g('PROFILE') || {}, SS = g('SESSIONS') || [], N = g('NOTIFS') || []; tn = 0; var h = '';
     if (id === 'overview') {
       head('overview', 'Your account / Overview', 'Everything.<br>In its place.', 'A quiet space for your AUZslab account.',
         btn('Explore services ↗', D ? 'services' : 'cart') + (apps().length ? btn('Open your apps ↗', 'apps', 1) : ''));
-      h += tile('dk s8 r2 a3-tp', '<div class="a3-l">Account / 01</div><h2>Welcome<br>back.</h2><p>' + esc(c.name) + ' · ' + esc(c.role) + '</p>' + foot('View your profile'), 'profile');
-      if (D) {
-        h += tile('s4 a3-tp', '<div class="a3-l">Services</div><div class="a3-s">' + pad(c.services) + '</div><p>Switched on for you</p>' + foot('Browse'), 'services');
-        h += tile('sf s4 a3-tp', '<div class="a3-l">Notifications</div><div class="a3-s">' + pad(c.unread) + '</div><p>Unread</p>' + foot('View inbox'), 'notifications');
-      }
-      h += tile('wh s4 a3-tp', '<div class="a3-l">Your cart</div><div class="a3-s">' + pad(c.cart) + '</div><p>Selected services</p>' + foot('Review cart'), 'cart');
-      if (c.owner) h += tile('s4 a3-tp', '<div class="a3-l">People / Access</div><h3>Team<br>space</h3><p>Staff and roles</p>' + foot('Manage access'), 'staff');
-      else if (D) h += tile('s4 a3-tp', '<div class="a3-l">Security</div><h3>Account<br>settings</h3><p>Login and privacy</p>' + foot('Open'), 'account');
-      if (apps().length) h += tile('dk s5 a3-tp', '<div class="a3-l">Workspace / 02</div><h2>' + esc(apps()[0].name.replace(/ system$/i, '')) + '</h2><p>Continue to your business workspace.</p>' + foot('Open your apps'), 'apps');
-      h += tile('s7 a3-tp', '<div class="a3-l">Need a hand?</div><h2>Help, when<br>you need it.</h2>' + foot('Support &amp; report a problem'), 'help');
+      var r1 = [tile('dk s6 a3-sm', '<div class="a3-l">Account / 01</div><h2 style="font-size:clamp(26px,3.4vw,44px)">Welcome back.</h2><p>' + esc(c.name) + ' · ' + esc(c.role) + '</p>', 'profile')];
+      if (D) { r1.push(tile('s3 a3-sm', '<div class="a3-l">Services</div><div class="a3-s">' + pad(c.services) + '</div><p>Switched on</p>', 'services')); r1.push(tile('sf s3 a3-sm', '<div class="a3-l">Notifications</div><div class="a3-s">' + pad(c.unread) + '</div><p>Unread</p>', 'notifications')); }
+      else { r1.push(tile('sf s6 a3-sm', '<div class="a3-l">Next</div><h3>Finish your profile,<br>then pick a service.</h3>', 'profile')); }
+      var r2 = [stat('Your cart', pad(c.cart), 'Selected services', 'cart', 'wh')];
+      if (c.owner) r2.push(word('People / Access', 'Team space', 'Staff and roles', 'staff'));
+      else if (D) r2.push(word('Security', 'Account settings', 'Login and privacy', 'account'));
+      else r2.push(word('Privacy', 'Your data', 'Consent and requests', 'privacy'));
+      if (apps().length) r2.push(word('Workspace', esc(apps()[0].name.replace(/ system$/i, '')), 'Open your apps', 'apps', 'dk'));
+      r2.push(word('Need a hand?', 'Help &amp; support', 'Report a problem', 'help', 'sf'));
+      h = r1.join('') + row(r2);
     } else if (id === 'profile') {
       head('profile', 'Account / Details', 'Your profile.', 'Personal details and business information.', btn('Privacy &amp; my data ↗', 'privacy'));
-      h += tile('dk s4 r2 a3-tp', '<div class="a3-l">Profile / 01</div><div class="a3-n">' + esc(((P.name || c.name || 'A').match(/\b\w/g) || ['A']).slice(0, 2).join('').toUpperCase()) + '</div><h3>' + esc(P.name || c.name) + '</h3><p>' + esc(c.role === 'customer' ? 'Customer' : c.role) + '</p>' + foot('Account active', '●'));
-      h += tile('s8 sf', '<div class="a3-l">Business</div><h3>' + esc(P.business_name || (D && D.tenant.name) || 'Your business') + '</h3><p>Everything below can be changed and saved.</p>');
+      var ini = esc(((P.name || c.name || 'A').match(/\b\w/g) || ['A']).slice(0, 2).join('').toUpperCase());
+      h = row([word('Profile', esc(P.name || c.name), esc(c.role === 'customer' ? 'Customer' : c.role), '', 'dk'), word('Business', esc(P.business_name || (D && D.tenant.name) || 'Not set yet'), esc(P.city || ' '), '', 'sf'), word('Login', '<span style="font-size:17px;word-break:break-all">' + esc(g('LOGIN_EMAIL') || (D && D.my_email) || '') + '</span>', ini + ' · account active', '')]);
     } else if (id === 'account') {
       head('account', 'Account / Security', 'Account.', 'Your login, business and safety settings.', btn('Privacy &amp; my data ↗', 'privacy'));
-      h += tile('dk s5 a3-tp', '<div class="a3-l">Signed in as</div><h3 style="font-size:20px;word-break:break-all">' + esc(D ? D.my_email : '') + '</h3><p>' + esc(c.role) + '</p>' + foot('Your profile'), 'profile');
-      h += tile('sf s7 a3-tp', '<div class="a3-l">Privacy</div><h3>Your data,<br>your choice.</h3>' + foot('Consent, download, requests'), 'privacy');
+      h = row([word('Signed in as', '<span style="font-size:17px;word-break:break-all">' + esc(D ? D.my_email : '') + '</span>', esc(c.role), 'profile', 'dk'), word('Privacy', 'Your data, your choice', 'Consent, download, requests', 'privacy', 'sf'), stat('Devices', pad(SS.length), 'Where you are signed in', '', 'wh')]);
     } else if (id === 'services') {
       head('services', 'Account / Catalogue', 'Services.', 'What is switched on, and what you can add.', btn('View cart (' + c.cart + ') ↗', 'cart'));
-      h += tile('dk s5 a3-tp', '<div class="a3-l">Active</div><div class="a3-n">' + pad(c.services) + '</div><p>Services on your account</p>');
-      h += tile('sf s7 a3-tp', '<div class="a3-l">Add more</div><h3>Make it<br>yours.</h3><p>Pick products and send a request.</p>' + foot('Open cart'), 'cart');
+      h = row([stat('Active', pad(c.services), 'On your account', '', 'dk'), stat('Available to add', pad(Math.max(0, PRODUCTS.length - c.services)), 'Pick and send a request', 'cart', 'sf'), stat('In your cart', pad(c.cart), 'Waiting for a quote', 'cart', 'wh')]);
     } else if (id === 'staff') {
       head('staff', 'Account / Team', 'Your people.', 'Staff and access in one place.', btn('Roles ↗', 'roles', 1));
-      h += tile('dk s4 a3-tp', '<div class="a3-l">Team members</div><div class="a3-n">' + pad(c.staff) + '</div><p>Including you</p>');
-      h += tile('sf s8 a3-tp', '<div class="a3-l">Roles</div><h3>Access by design.</h3><p>Set what each person can open.</p>' + foot('Manage roles'), 'roles');
+      var R = g('ROLES') || [];
+      h = row([stat('Team members', pad(c.staff), 'Including you', '', 'dk'), stat('Custom roles', pad(R.length), 'Manage what people open', 'roles', 'sf'), word('Your access', 'Owner', 'Full access, always', '', 'wh')]);
     } else if (id === 'roles') {
       head('roles', 'Account / Permissions', 'Roles &amp; access.', 'Choose what each team member can open.', btn('← Staff', 'staff'));
-      h += tile('dk s5 a3-tp', '<div class="a3-l">Account owner</div><h2>Full<br>access.</h2><p>All permissions, always.</p>');
+      h = row([word('Account owner', 'Full access', 'All permissions, always', '', 'dk'), stat('Custom roles', pad((g('ROLES') || []).length), 'Created by you', '', 'sf')]);
     } else if (id === 'notifications') {
       head('notifications', 'Account / Activity', 'Updates.', 'A simple inbox for your account.', '<button type="button" class="a3-btn k" data-act="readall">Mark all read</button>');
-      h += tile('dk s4 a3-tp', '<div class="a3-l">Unread</div><div class="a3-n">' + pad(c.unread) + '</div><p>Notifications</p>');
+      h = row([stat('Unread', pad(c.unread), 'Notifications', '', 'dk'), stat('Total', pad(N.length), 'In your inbox', '', 'sf'), word('Latest', esc(N[0] ? String(N[0].title).slice(0, 40) : 'Nothing yet'), N[0] ? new Date(N[0].created_at).toLocaleDateString() : ' ', '', 'wh')]);
     } else if (id === 'privacy') {
       head('privacy', 'Account / Privacy', 'Privacy.', 'Consent, your data, and requests to us.', btn('← Account', D ? 'account' : 'profile'));
-      h += tile('dk s5 a3-tp', '<div class="a3-l">Your rights</div><h2>Your data,<br>your call.</h2><p>Download it, correct it, or ask us to remove it.</p>');
+      h = row([word('Your rights', 'Your data, your call', 'Download it, correct it, or ask us to remove it.', '', 'dk'), word('Contact', 'Questions?', 'Write to us from Help &amp; support.', 'help', 'sf')]);
     } else if (id === 'cart') {
       head('cart', 'Account / Request', 'Your cart.', 'Services you picked. We reply with a quote.', btn('Add service +', D ? 'services' : 'cart') + '<a class="a3-btn k" href="cart.html">Continue ↗</a>');
       var items = (window.AUZcart && AUZcart.get()) || [], labs = {}; (g('PRODUCT_CHOICES') || []).forEach(function (p) { labs[p[0]] = p[1].replace(/\s*\(.*$/, ''); });
-      h += tile('s8 a3-tp', '<div class="a3-l">Selected</div><div class="a3-list">' + (items.length ? items.map(function (k) { return '<div class="a3-li"><b>' + esc(labs[k] || k) + '</b><button type="button" data-act="rmcart" data-k="' + esc(k) + '" aria-label="Remove">×</button></div>'; }).join('') : '<div class="a3-li"><b>Your cart is empty.</b><i>·</i></div>') + '</div>');
-      h += tile('dk s4 a3-tp', '<div class="a3-l">Next step</div><h2>Make it<br>yours.</h2><p>No payment now: we send a quote first.</p>' + foot('Continue'), 'cart');
+      h = tile('s8 a3-sm', '<div class="a3-l">Selected</div><div class="a3-list">' + (items.length ? items.map(function (k) { return '<div class="a3-li"><b>' + esc(labs[k] || k) + '</b><button type="button" data-act="rmcart" data-k="' + esc(k) + '" aria-label="Remove">×</button></div>'; }).join('') : '<div class="a3-li"><b>Your cart is empty.</b><i>·</i></div>') + '</div>')
+        + tile('dk s4 a3-sm', '<div class="a3-l">Next step</div><h3>Make it yours.</h3><p>No payment now: we send a quote first.</p><div class="a3-acts"><a class="a3-btn" style="background:#fff;color:#111" href="cart.html">Continue ↗</a></div>');
     } else if (id === 'apps') {
       var A = apps();
       head('apps', 'Workspace / Launch', 'Your apps.', 'Open the software your business uses.', '');
-      h += A.length ? A.map(function (a, i) { return '<a class="a3-t ' + (i === 0 ? 'dk s6' : i % 2 ? 's6 wh' : 's6 sf') + ' c a3-tp" style="--i:' + (tn++) + '" href="' + esc(a.href) + '" target="_blank" rel="noopener"><div class="a3-l">Open</div><h2>' + esc(a.name) + '</h2>' + foot('Launch workspace') + '</a>'; }).join('')
-        : tile('dk s12', '<div class="a3-l">Apps</div><h2>Nothing<br>switched on yet.</h2><p>Add a service and we will set it up.</p>');
+      var sp = A.length === 1 ? 's12' : A.length === 2 ? 's6' : 's4';
+      h = A.length ? A.map(function (a, i) { return '<a class="a3-t ' + (i === 0 ? 'dk ' : i % 2 ? 'wh ' : 'sf ') + sp + ' c a3-sm" style="--i:' + (tn++) + '" href="' + esc(a.href) + '" target="_blank" rel="noopener"><div class="a3-l">Open</div><h3>' + esc(a.name) + '</h3><p>Launch workspace ↗</p></a>'; }).join('')
+        : tile('dk s12 a3-sm', '<div class="a3-l">Apps</div><h3>Nothing switched on yet.</h3><p>Add a service and we will set it up.</p>');
     } else if (id === 'help') {
       head('help', 'Account / Support', 'We’re here.', 'Ask a question, get help, or report a problem.', '');
-      h += tile('dk s5 a3-tp', '<div class="a3-l">Support</div><h2>Tell us<br>what’s up.</h2><p>Opens a short form with the details we need.</p><div class="a3-acts"><button type="button" class="a3-btn" style="background:#fff;color:#111" data-act="help">Report a problem ↗</button></div>');
-      h += tile('s7 sf a3-tp', '<div class="a3-l">Talk to us</div><h3>One short message<br>is enough.</h3><p>We reply on WhatsApp or email.</p><div class="a3-acts"><a class="a3-btn" href="contact.html">Contact page ↗</a><a class="a3-btn" href="learn.html">Beginner guide ↗</a></div>');
+      h = tile('dk s6 a3-sm', '<div class="a3-l">Support</div><h3>Tell us what’s up.</h3><p>A short form with the details we need.</p><div class="a3-acts"><button type="button" class="a3-btn" style="background:#fff;color:#111" data-act="help">Report a problem ↗</button></div>')
+        + tile('s6 sf a3-sm', '<div class="a3-l">Talk to us</div><h3>One short message is enough.</h3><p>We reply on WhatsApp or email.</p><div class="a3-acts"><a class="a3-btn" href="contact.html">Contact ↗</a><a class="a3-btn" href="learn.html">Beginner guide ↗</a></div>');
     }
     m.innerHTML = h;
   }
@@ -158,6 +163,7 @@
       wrap.onclick = toggle; wrap.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
     });
     document.querySelectorAll('.a3-pane').forEach(function (pane) {
+      var nc = pane.querySelectorAll(':scope > .card').length; pane.classList.toggle('a3-cols', nc >= 3); pane.classList.toggle('a3-two', nc === 2);
       var cards = pane.querySelectorAll(':scope > .card.fc'); if (!cards.length || cards.length > 4) return;
       cards.forEach(function (c) { if (c.dataset.touched || c.dataset.auto) return; c.dataset.auto = '1'; c.classList.add('open'); var h = c.querySelector('.fc-h'); if (h) h.setAttribute('aria-expanded', 'true'); });
     });
