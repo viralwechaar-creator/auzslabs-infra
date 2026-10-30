@@ -324,8 +324,11 @@ export const RPC = {
   acc_save_subscription: { params: ['p'], jsonb: ['p'], auth: true },
   acc_list_subscriptions: { params: ['p'], jsonb: ['p'], defaults: {'p': {}}, auth: true },
   acc_cancel_subscription: { params: ['p_id', 'p_reason'], auth: true },
-  acc_renew_subscription: { params: ['p_id', 'p_post'], defaults: {'p_post': false}, auth: true },
+  acc_renew_subscription: { params: ['p_id', 'p_post', 'p_extra_lines'], defaults: {'p_post': false, 'p_extra_lines': []}, auth: true },
   acc_run_due_subscriptions: { params: ['p_upto'], auth: true },
+  acc_save_charge_type: { params: ['p'], auth: true },
+  acc_list_charge_types: { params: ['p_all'], defaults: {'p_all': false}, auth: true },
+  acc_delete_charge_type: { params: ['p_id'], auth: true },
 
   // --- AUZslab Payroll v2 (db/073-077). Every one of these starts with pay_guard()/pay_tenant() in SQL, which re-checks the
   // 'payroll' entitlement, the caller's permission and field-level security; employees reach their own data through pay_me_*.
