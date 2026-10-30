@@ -302,6 +302,24 @@ export default async function run({ browser, stack }) {
     assert((await q('select count(*)::int n from sty_variants where id=$1', [vid]))[0].n === 0, 'variant still there');
     const g = await ok(manager, 'sty_get_sale', { p_id: bill.id }); assert(g.lines.length === 1 && g.lines[0].name === 'Delete Me Tee', 'old bill lost its line: ' + JSON.stringify(g.lines));
     await integrity();
+  await s.check('Keyboard shortcuts: ? lists them, G then a letter changes page, / focuses the search, scanner-speed keys are ignored', async () => {
+    const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
+    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.waitForTimeout(800); await page.locator('body').click({ position: { x: 5, y: 300 } });
+    await page.keyboard.press('Shift+/'); await page.waitForSelector('.kb-help', { timeout: 4000 }); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    if (await page.locator('.kb-help').count()) await page.locator('.sheet .btn.plain').first().click();
+    await page.keyboard.press('g'); await page.waitForTimeout(120); await page.keyboard.press('t'); await page.waitForTimeout(700);
+    assert(/#\/stock/.test(await page.evaluate(() => location.hash)), 'G then T did not open Stock: ' + await page.evaluate(() => location.hash));
+    await page.keyboard.press('g'); await page.waitForTimeout(120); await page.keyboard.press('s'); await page.waitForTimeout(700);
+    assert(/#\/sell/.test(await page.evaluate(() => location.hash)), 'G then S did not open Sell');
+    await page.keyboard.press('/'); await page.waitForTimeout(200);
+    assert(await page.evaluate(() => document.activeElement && document.activeElement.type === 'search'), '/ did not focus the search box');
+    await page.locator('body').click({ position: { x: 5, y: 300 } });
+    await page.keyboard.type('gt', { delay: 0 }); await page.waitForTimeout(500);
+    assert(/#\/sell/.test(await page.evaluate(() => location.hash)), 'scanner-speed keys must not change the page');
+    await c.close();
   });
   await s.check('GST lookup in AUZsStyle: refused until the admin allows it, then it passes the gate', async () => {
     const tok = await login(USERS.styOwner); const tid = (await q("select id from tenants where slug='teststyle'"))[0].id;
