@@ -235,3 +235,4 @@ body.ac3{--a-bg:#faf9f7;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#efece8;--a-mut:#
  .a3-bn{bottom:max(6px,calc(env(safe-area-inset-bottom) - 10px))}
  .a3-foot{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 }
+.a3-nb[hidden]{display:none!important}.a3-rb a.a3-nb{text-decoration:none}

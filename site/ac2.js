@@ -31,7 +31,7 @@
     var nb = function (p) { return '<button class="a3-nb" data-go="' + p[0] + '" aria-label="' + TITLES[p[0]] + '">' + svg(p[1]) + '<span class="lb">' + TITLES[p[0]] + '</span><span class="tip">' + TITLES[p[0]] + '</span>' + (p[0] === 'notifications' ? '<span class="dot" id="a3-dotn" hidden></span>' : '') + '</button>'; };
     shell.innerHTML =
       '<aside class="a3-rail"><a class="a3-logo" href="index.html" aria-label="AUZslab home"><b>AUZslab</b><i>Your account</i></a>' + RAIL.map(function (p, i) { return ({ 0: '<div class="a3-gl">Account</div>', 3: '<div class="a3-gl">Business</div>', 6: '<div class="a3-gl">Inbox</div>' }[i] || '') + nb(p); }).join('') +
-      '<div class="a3-rb"><button class="a3-nb" data-go="help" aria-label="Help">' + svg('help') + '<span class="lb">Help &amp; support</span><span class="tip">Help &amp; support</span></button>' +
+      '<div class="a3-rb"><a class="a3-nb" id="a3-adm" href="admin.html" hidden aria-label="Admin panel">' + svg('lock') + '<span class="lb">Admin panel</span><span class="tip">Admin panel</span></a><button class="a3-nb" data-go="help" aria-label="Help">' + svg('help') + '<span class="lb">Help &amp; support</span><span class="tip">Help &amp; support</span></button>' +
       '<div class="a3-railfoot"><span>AUZslab · Account</span><button class="a3-out" id="a3-out2" type="button">Sign out</button></div></div></aside>' +
       '<main class="a3-main"><header class="a3-top"><div class="a3-crumb"><span id="a3-crumb">Overview</span></div>' +
       '<div class="a3-ta"><button class="a3-rb2" data-go="notifications" aria-label="Notifications">' + svg('bell') + '<span class="a3-badge" id="a3-badge"></span></button><button class="a3-user" id="a3-user">Account</button></div></header>' +
@@ -269,6 +269,8 @@
       var nav = $('#acctNav');
       if (nav && nav.style.display !== 'none' && nav.style.display !== '') {
         clearInterval(t); ready = true;
+        // an AUZslab admin login gets a direct link to the admin panel
+        try { g('sb').rpc('is_platform_admin').then(function (r) { if (r && r.data === true) { var a = $('#a3-adm'); if (a) a.hidden = false; var u = $('#a3-user'); if (u) u.title = 'Admin panel: use the link in the menu'; } }); } catch (e) { /* not an admin */ }
         var h = (location.hash || '').slice(1), tgt = TITLES[h] && h !== 'overview' ? h : (g('DASH') ? 'overview' : 'profile');
         go(tgt);
         new MutationObserver(function () { top_(); if (cur === 'overview') render('overview'); }).observe($('#acctNav'), { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
