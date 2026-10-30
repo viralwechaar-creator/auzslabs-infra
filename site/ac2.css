@@ -122,3 +122,101 @@ body.ac3 .u-top,body.ac3 .u-dock,body.ac3 .shell,body.ac3 .u-fab,body.ac3 .knock
  .a3-foot{padding:8px 16px calc(84px + env(safe-area-inset-bottom))}
 }
 @media(prefers-reduced-motion:reduce){.a3 *,.a3 *::before,.a3 *::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}.a3-t{opacity:1;transform:none}}
+
+/* ===== Admin-panel look (round 6): warm sand page, white 20px cards with the admin's soft lift, mono labels, wine accent,
+   labelled sidebar from 900px, floating black pill bar below, one section at a time inside long tabs ===== */
+body.ac3{--a-bg:#f6f4f1;--a-card:#fff;--a-sep:#e6e1dc;--a-fill:#f4f1ed;--a-mut:#7a726c;--wine:#800020;--wine-soft:rgba(128,0,32,.08);--lift:0 1px 2px rgba(0,0,0,.05),0 10px 26px -14px rgba(0,0,0,.28);--sb:#f6f4f1;--top:48px;font-family:Inter,-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif}
+:root[data-theme=dark] body.ac3{--a-bg:#1f1d1b;--a-card:#2d2b29;--a-sep:#413e3b;--a-fill:#38352f;--a-mut:#a59d95;--wine-soft:rgba(190,60,90,.16);--sb:#1f1d1b}
+.a3{font-family:inherit}
+.a3-top{padding-left:20px;padding-right:20px}
+.a3-crumb{font:700 16px/1 inherit;color:var(--a-ink);letter-spacing:-.015em}
+.a3-crumb b{font-weight:700}
+.a3-user{background:var(--a-ink);font-size:11px;letter-spacing:.04em;height:32px;padding:0 13px}
+.a3-rb2{background:var(--a-card);box-shadow:inset 0 0 0 1px var(--a-sep)}
+.a3-head{margin:2px 0 14px}
+.a3-k{font:600 9.5px/1 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.09em;color:var(--a-mut)}
+.a3-h{font-size:clamp(24px,3vw,32px);letter-spacing:-.03em;margin:6px 0 4px}
+.a3-sub{font-size:13px;max-width:52ch}
+.a3-btn{min-height:36px;font-size:13px;padding:0 15px;background:var(--a-card);box-shadow:inset 0 0 0 1px var(--a-sep)}
+.a3-btn:hover{background:var(--wine-soft)}
+.a3-btn.k{background:var(--a-ink);color:var(--a-bg);box-shadow:none}
+/* cards */
+.a3-t,.a3-grp,.a3-pane>.card,.a3-pane>.acct-table-wrap,.a3-det>.card,#consentBanner{box-shadow:var(--lift)!important;border:1px solid rgba(0,0,0,.04)!important}
+.a3-t{padding:14px 16px 16px}
+.a3-l{font:600 9.5px/1.2 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--a-mut)}
+.a3-s{font-size:34px;font-weight:600;letter-spacing:-.04em;margin-top:6px}
+.a3-t h3{font-size:18px}.a3-t h2{font-size:clamp(22px,2.6vw,30px)}
+.a3-t.dk{background:#000;box-shadow:var(--lift),inset 0 0 70px -30px rgba(128,0,32,.55)!important}
+.a3-t.c::after{border-color:var(--wine);top:18px}
+.a3-t.c:hover{box-shadow:0 2px 4px rgba(0,0,0,.06),0 18px 38px -16px rgba(0,0,0,.34)!important}
+.a3-mos{gap:10px;margin-bottom:14px}
+/* sidebar from 900px, like the admin panel's */
+@media(min-width:600px) and (max-width:899px){body.ac3{--rail:0px}.a3-rail{display:none}
+ .a3-bn{display:flex}.a3-foot{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+ .a3-top{left:0}.a3-main{margin-left:0}}
+@media(min-width:900px){
+ body.ac3{--rail:232px}
+ .a3-rail{display:flex;background:var(--a-card);border-right:0;box-shadow:1px 0 0 var(--a-sep),12px 0 30px -26px rgba(0,0,0,.4);padding:16px 12px}
+ .a3-logo{height:auto;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:6px 8px 12px;letter-spacing:0}
+ .a3-logo b{font:800 18px/1 inherit;letter-spacing:-.04em}.a3-logo i{font:600 9.5px/1 "Space Mono",monospace;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:var(--a-mut)}
+ .a3-gl{padding:14px 10px 5px;font:600 9.5px/1 "Space Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--a-mut)}
+ .a3-nb{justify-content:flex-start;padding:0 10px;min-height:40px;border-radius:9px;font-size:14px}
+ .a3-nb .lb{display:inline}.a3-nb .tip{display:none!important}
+ .a3-nb .dot{position:static;margin-left:auto;min-width:18px;height:18px;font-size:10px;background:var(--wine)}
+ .a3-nb:hover{background:var(--wine-soft);color:var(--a-ink)}
+ .a3-nb.on{background:var(--wine-soft);color:var(--wine);font-weight:700}
+ .a3-nb.on::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--wine)}
+ .a3-top{left:var(--rail)}.a3-main{margin-left:var(--rail)}
+ #a3-pages{max-width:1180px;padding-left:28px;padding-right:28px}
+}
+@media(max-width:899px){.a3-gl{display:none}}
+/* phone + tablet: floating black pill bar */
+@media(max-width:899px){
+ .a3-bn{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));padding:6px;gap:2px;border-radius:22px;border:0;background:#000;box-shadow:0 16px 32px -12px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04);justify-content:space-between}
+ .a3-bn .a3-nb{border-radius:16px;color:#f5efe6;opacity:.82;min-height:48px;padding:5px 2px 4px}
+ .a3-bn .a3-nb.on{opacity:1;background:rgba(245,239,230,.14);color:#ecd6a8}
+ .a3-bn .a3-nb:not(.on){color:#f5efe6}
+ .a3-bn .a3-nb:active{transform:scale(.92)}
+ .a3-bn .a3-nb .dot{background:#ecd6a8;color:#000}
+ .a3-foot{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+}
+/* long tabs: one section at a time */
+.a3-pane.a3-splitpane{display:block!important}
+.a3-split{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
+.a3-seg{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 1px 6px;margin:0 -2px;-webkit-overflow-scrolling:touch}
+.a3-seg::-webkit-scrollbar{display:none}
+.a3-seg button{flex:none;border:0;background:var(--a-card);color:var(--a-ink);border-radius:999px;min-height:38px;padding:0 15px;font:600 13px/1 inherit;font-family:inherit;box-shadow:inset 0 0 0 1px var(--a-sep);cursor:pointer;transition:background .2s,color .2s,transform .12s}
+.a3-seg button small{display:none}
+.a3-seg button.on{background:var(--a-ink);color:var(--a-bg);box-shadow:none}
+.a3-seg button:active{transform:scale(.96)}
+.a3-det>.card{display:none;background:var(--a-card)!important;border-radius:20px;padding:0;overflow:hidden;margin:0!important}
+.a3-det>.card.seg-on{display:block;animation:a3in .3s cubic-bezier(.2,.8,.2,1)}
+.a3-det>.card>.fc-h{cursor:default;pointer-events:none;padding:16px 20px 4px}
+.a3-det>.card>.fc-h::after,.a3-det>.card>.fc-h .fc-s{display:none}
+.a3-det>.card>.fc-h>*{font-size:18px!important;font-weight:700!important}
+.a3-det>.card>.fc-b>.fc-in{padding:6px 20px 22px;opacity:1}
+.a3-det>:not(.card){margin-top:12px}
+@media(min-width:900px){
+ .a3-split{grid-template-columns:230px minmax(0,1fr);gap:18px}
+ .a3-seg{flex-direction:column;gap:2px;overflow:visible;position:sticky;top:calc(var(--top) + 16px);background:var(--a-card);border-radius:20px;padding:8px;margin:0;box-shadow:var(--lift)}
+ .a3-seg button{border-radius:12px;background:none;box-shadow:none;text-align:left;padding:10px 12px;min-height:44px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+ .a3-seg button small{display:block;font:400 11.5px/1.3 inherit;color:var(--a-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .a3-seg button:hover{background:var(--wine-soft)}
+ .a3-seg button.on{background:var(--wine-soft);color:var(--wine)}.a3-seg button.on small{color:var(--wine);opacity:.75}
+ .a3-det>.card>.fc-h{padding:20px 26px 4px}.a3-det>.card>.fc-b>.fc-in{padding:8px 26px 28px}
+}
+@media(min-width:600px){.a3-det .field{max-width:560px}}
+.a3-pane input:focus,.a3-pane select:focus,.a3-pane textarea:focus{box-shadow:0 0 0 3px rgba(128,0,32,.12);outline:0}
+.a3-pane input:checked+.slider{background:var(--wine)}
+.a3-det .fc-in{display:block}
+@media(min-width:600px){.a3-det>.card>.fc-b>.fc-in{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;align-content:start}
+ .a3-det>.card>.fc-b>.fc-in>*{grid-column:span 2}.a3-det>.card>.fc-b>.fc-in>.field:not(.wide){grid-column:span 1}
+ .a3-det .field{max-width:none}}
+.a3-savebar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+.a3-savebar .btn{width:auto!important;margin:0!important}
+.a3-savebar .muted{flex:1 1 100%}
+@media(min-width:900px){.a3-pane.a3-splitpane>.a3-savebar{margin-left:248px}}
+.a3-seg button.on{color:var(--a-card)!important}
+@media(min-width:900px){.a3-seg button.on{color:var(--wine)!important}}
+@media(max-width:599px){.a3-mos>.s4:last-child:nth-child(odd),.a3-mos>.s3:last-child:nth-child(odd){grid-column:span 2}}
+.a3-seg button b,.a3-seg button small{color:inherit!important;background:none}

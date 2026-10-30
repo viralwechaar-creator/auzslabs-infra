@@ -30,9 +30,9 @@
     shell = document.createElement('div'); shell.className = 'a3'; shell.id = 'a3';
     var nb = function (p) { return '<button class="a3-nb" data-go="' + p[0] + '" aria-label="' + TITLES[p[0]] + '">' + svg(p[1]) + '<span class="lb">' + TITLES[p[0]] + '</span><span class="tip">' + TITLES[p[0]] + '</span>' + (p[0] === 'notifications' ? '<span class="dot" id="a3-dotn" hidden></span>' : '') + '</button>'; };
     shell.innerHTML =
-      '<aside class="a3-rail"><a class="a3-logo" href="index.html" aria-label="AUZslab home">A.</a>' + RAIL.map(nb).join('') +
+      '<aside class="a3-rail"><a class="a3-logo" href="index.html" aria-label="AUZslab home"><b>AUZslab</b><i>Your account</i></a>' + RAIL.map(function (p, i) { return ({ 0: '<div class="a3-gl">Account</div>', 3: '<div class="a3-gl">Business</div>', 6: '<div class="a3-gl">Inbox</div>' }[i] || '') + nb(p); }).join('') +
       '<div class="a3-rb"><button class="a3-nb" data-go="help" aria-label="Help">' + svg('help') + '<span class="lb">Help &amp; support</span><span class="tip">Help &amp; support</span></button></div></aside>' +
-      '<main class="a3-main"><header class="a3-top"><div class="a3-crumb">AUZslab <span style="padding:0 8px">/</span><span id="a3-crumb">Overview</span></div>' +
+      '<main class="a3-main"><header class="a3-top"><div class="a3-crumb"><span id="a3-crumb">Overview</span></div>' +
       '<div class="a3-ta"><button class="a3-rb2" data-go="notifications" aria-label="Notifications">' + svg('bell') + '<span class="a3-badge" id="a3-badge"></span></button><button class="a3-user" id="a3-user">Account</button></div></header>' +
       '<div id="a3-pages"></div>' +
       '<div class="a3-foot"><span>AUZslab · Account</span><button class="a3-out" id="a3-out" type="button">Sign out</button></div></main>' +
@@ -170,10 +170,38 @@
     });
   }
 
+  /* a page with three or more sections shows one at a time: a list of sections on the left (a strip on a phone), the chosen one on the right */
+  function split(pane, direct) {
+    var sp = pane.querySelector(':scope>.a3-split');
+    if (!sp) {
+      if (direct.length < 3) return false;
+      sp = document.createElement('div'); sp.className = 'a3-split';
+      sp.innerHTML = '<div class="a3-seg" role="tablist"></div><div class="a3-det"></div>';
+      pane.insertBefore(sp, direct[0]); sp.dataset.on = '0';
+    }
+    var det = sp.querySelector('.a3-det'), seg = sp.querySelector('.a3-seg');
+    direct.forEach(function (c) { det.appendChild(c); });
+    var cards = Array.prototype.filter.call(det.children, function (c) { return c.classList.contains('card') && c.classList.contains('fc'); });
+    if (!cards.length) { sp.remove(); return false; }
+    var on = Math.min(+sp.dataset.on || 0, cards.length - 1);
+    var titles = cards.map(function (c) { var h = c.querySelector('.fc-h'); var t = h && h.firstElementChild ? h.firstElementChild.textContent.trim() : 'Section'; var su = c.querySelector('.fc-s'); return [t, su ? su.textContent : '']; });
+    var sig = titles.map(function (t) { return t[0]; }).join('|');
+    if (seg.dataset.sig !== sig) {
+      seg.dataset.sig = sig;
+      seg.innerHTML = titles.map(function (t, i) { return '<button type="button" role="tab" data-i="' + i + '"><b>' + esc(t[0]) + '</b><small>' + esc(t[1]) + '</small></button>'; }).join('');
+      seg.onclick = function (e) { var b = e.target.closest('button[data-i]'); if (!b) return; sp.dataset.on = b.getAttribute('data-i'); split(pane, []); var sc = b.scrollIntoView && b; };
+    }
+    cards.forEach(function (c, i) { c.classList.add('open'); c.dataset.auto = '1'; c.classList.toggle('seg-on', i === on); });
+    Array.prototype.forEach.call(seg.children, function (b, i) { b.classList.toggle('on', i === on); b.setAttribute('aria-selected', i === on ? 'true' : 'false'); });
+    pane.classList.remove('a3-multi'); pane.classList.add('a3-splitpane');
+    return true;
+  }
+
   /* the rows of a page are shown as grouped cards: one card when there are few rows, two side by side when there are many */
   function group() {
     document.querySelectorAll('.a3-pane').forEach(function (pane) {
       var direct = Array.prototype.filter.call(pane.children, function (c) { return c.classList.contains('card') && c.classList.contains('fc'); });
+      if (split(pane, direct)) return;
       if (!direct.length) return;
       var half = direct.length >= 4 ? Math.ceil(direct.length / 2) : direct.length;
       var parts = direct.length >= 4 ? [direct.slice(0, half), direct.slice(half)] : [direct];

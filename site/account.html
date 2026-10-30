@@ -75,10 +75,9 @@ input:disabled+.slider{opacity:.4;cursor:default}
 .acct-nav-btn{background:none;border:none;width:100%;cursor:pointer;font-family:inherit}
 </style>
 <style>
-@media (min-width:900px){#pane-profile .card{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;align-content:start}#pane-profile .card>h3,#pane-profile .card>p,#pane-profile .card>.field.wide,#pane-profile .card>button,#pane-profile .card>a,#pane-profile .card>#pfMsg{grid-column:1/-1}}
 #pfProducts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));column-gap:20px}
 </style>
-<link rel="stylesheet" href="menu-old.css?v=2"><link rel="stylesheet" href="ac2.css?v=12"></head>
+<link rel="stylesheet" href="menu-old.css?v=2"><link rel="stylesheet" href="ac2.css?v=17"></head>
 <body class="mk-page">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 <div class="shell">
@@ -196,7 +195,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 <script src="vendor/qrcode.js"></script>
 <script src="tool/lock.js?v=101"></script><script src="tool/mydata.js?v=201"></script><script src="tool/help.js?v=103"></script><script src="tool/twofa.js?v=101"></script>
 <script src="site.js?v=113"></script>
-<script src="ac2.js?v=11"></script>
+<script src="ac2.js?v=12"></script>
 <script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -249,18 +248,26 @@ function renderProfile() {
   const opt = (arr, v) => arr.map((x) => { const val = Array.isArray(x) ? x[0] : x, lab = Array.isArray(x) ? x[1] : x; return `<option value="${esc(val)}" ${String(v || '') === String(val) ? 'selected' : ''}>${esc(lab)}</option>`; }).join('');
   $('#pane-profile').innerHTML = `
     <div class="card">
-      <h3 class="h-2">Your profile</h3>
-      <p class="muted">Tell us about you and your business. This helps us suggest the right products and get back to you with the right plan.</p>
+      <h3 class="h-2">About you</h3>
+      <p class="muted">Your name and how we can reach you.</p>
       <div class="field"><label>Full name *</label><input id="pfName" value="${esc(P.name)}" autocomplete="name"></div>
       <div class="field"><label>Phone number *</label><input id="pfPhone" type="tel" value="${esc(P.phone)}" autocomplete="tel" placeholder="9876543210"></div>
       <div class="field"><label>Login email</label><input value="${esc(LOGIN_EMAIL)}" disabled></div>
       <div class="field"><label>Contact email (if different)</label><input id="pfEmail" type="email" value="${esc(P.contact_email)}" placeholder="optional"></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Your business</h3>
+      <p class="muted">What it is called, what it does and where it is.</p>
       <div class="field"><label>Business name</label><input id="pfBiz" value="${esc(P.business_name || (DASH && DASH.tenant && DASH.tenant.name) || '')}"></div>
       <div class="field"><label>Desired subdomain</label><input id="pfSlug" value="${esc(P.biz_slug)}" placeholder="ogbookcafe" pattern="[a-z0-9-]+"></div>
       <div class="field"><label>Business type</label><select id="pfType"><option value="">Choose</option>${opt(BIZ_TYPES, P.business_type)}</select></div>
       <div class="field"><label>Niche (what exactly do you do or sell?)</label><input id="pfNiche" value="${esc(P.niche)}" placeholder="e.g. unisex salon, bakery, mobile repair"></div>
       <div class="field"><label>City</label><input id="pfCity" value="${esc(P.city)}"></div>
       <div class="field wide"><label>Address (optional)</label><textarea id="pfAddr" rows="2">${esc(P.address)}</textarea></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">What you need</h3>
+      <p class="muted">Size, products and timing: this helps us suggest the right plan.</p>
       <div class="field"><label>Number of outlets</label><input id="pfOutlets" type="number" min="0" value="${P.outlets == null ? '' : esc(P.outlets)}"></div>
       <div class="field"><label>Number of staff</label><input id="pfStaff" type="number" min="0" value="${P.staff_count == null ? '' : esc(P.staff_count)}"></div>
       <div class="field wide"><label>Products you need</label>
@@ -268,9 +275,11 @@ function renderProfile() {
       <div class="field"><label>Software you use today (if any)</label><input id="pfCurrent" value="${esc(P.current_software)}" placeholder="e.g. PetPooja, Tally, a notebook"></div>
       <div class="field"><label>When do you want to start?</label><select id="pfWhen">${opt(START_WHEN, P.start_when)}</select></div>
       <div class="field wide"><label>Anything else we should know</label><textarea id="pfNotes" rows="3">${esc(P.notes)}</textarea></div>
-      <button class="btn btn-primary form-submit" id="pfSave" style="margin-top:12px">Save profile</button>
+    </div>
+    <div class="a3-savebar">
+      <button class="btn btn-primary form-submit" id="pfSave">Save profile</button>
       <a href="products.html" class="btn btn-ghost form-submit" id="pfContinue" style="margin-top:8px;${P.name && P.phone ? '' : 'display:none'}">Continue to products &rarr;</a>
-      <div id="pfMsg" class="muted" style="margin-top:10px"></div>
+      <div id="pfMsg" class="muted"></div>
     </div>`;
   $('#pfBiz').addEventListener('input', (e) => {
     const slugEl = $('#pfSlug');

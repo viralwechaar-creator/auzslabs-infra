@@ -84,8 +84,8 @@ export default async function run({ browser, stack }) {
     await page.waitForSelector('#pane-privacy .card h3'); assert(/Your consent/.test(await page.locator('#pane-privacy').innerText()), 'privacy pane');
     await page.click('#cbAgree'); await page.waitForFunction(() => !document.querySelector('#consentBanner')); await page.reload(); await page.waitForSelector('#pane-privacy .card h3'); await page.waitForTimeout(800);
     assert(!(await page.locator('#consentBanner').count()), 'banner came back after agreeing'); assert(/agreed to our Privacy policy/.test(await page.locator('#pane-privacy').innerText()), 'consent not shown');
-    await page.selectOption('#prKind', 'correction'); await page.fill('#prText', 'Please fix the spelling of my name'); await page.click('#prSend'); await page.waitForFunction(() => /Please fix the spelling/.test((document.querySelector('#prList') || { innerText: '' }).innerText), null, { timeout: 8000 });
-    let dl = null; page.on('download', (d) => { dl = d; }); await page.click('#prDownload');
+    const seg = (t) => page.click('.a3-seg button:has-text("' + t + '")'); await seg('Ask us about your data'); await page.selectOption('#prKind', 'correction'); await page.fill('#prText', 'Please fix the spelling of my name'); await page.click('#prSend'); await seg('Your requests'); await page.waitForFunction(() => /Please fix the spelling/.test((document.querySelector('#prList') || { innerText: '' }).innerText), null, { timeout: 8000 });
+    let dl = null; page.on('download', (d) => { dl = d; }); await seg('Download my data'); await page.click('#prDownload');
     for (let i = 0; i < 40 && !dl; i++) await page.waitForTimeout(200);
     const diag = await page.evaluate(() => ({ title: document.title, body: document.body.innerText.slice(0, 150), anchors: document.querySelectorAll('a[download]').length, msg: (document.querySelector('#prMsg') || {}).textContent, url: location.href }));
     assert(dl, 'no download event: ' + JSON.stringify(diag)); assert(dl.suggestedFilename() === 'my-auzslab-data.json', dl.suggestedFilename());
