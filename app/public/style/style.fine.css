@@ -452,3 +452,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .sgrid.sv-list .scard .nm{min-height:0;padding:0;-webkit-line-clamp:1}
 .sgrid.sv-list .scard .pr{display:flex;gap:10px;align-items:baseline}
 @media (min-width:900px){.sgrid.sv-list{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}}
+
+/* label printers drift: shift the whole tag down (or up) so the shop name stays on its label */
+.tags .tag-l,.tags .tag-g{transform:translateY(var(--top,0mm))}
