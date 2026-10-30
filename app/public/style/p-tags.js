@@ -27,7 +27,7 @@ function tagDesignId() {
   return /genx/i.test((S.ctx.settings || {}).shopName || '') ? 'genx' : 'classic';
 }
 function tagSizePref() { try { const k = localStorage.getItem('sty.tagSize'); if (['50x25', '2up', '38x25', 'a4'].includes(k)) return k; } catch (e) {} return '50x25'; }
-function tagGeo() { let g = { gap: 3, left: 0, top: 0 }; try { g = { ...g, ...JSON.parse(localStorage.getItem('sty.tagGeo') || '{}') }; } catch (e) {} g.gap = Math.max(0, Math.min(20, +g.gap || 0)); g.left = Math.max(-10, Math.min(20, +g.left || 0)); g.top = Math.max(-10, Math.min(10, +g.top || 0)); return g; }
+function tagGeo() { let g = { gap: 3, left: 0, top: 0, pitch: 25 }; try { g = { ...g, ...JSON.parse(localStorage.getItem('sty.tagGeo') || '{}') }; } catch (e) {} g.gap = Math.max(0, Math.min(20, +g.gap || 0)); g.left = Math.max(-10, Math.min(20, +g.left || 0)); g.top = Math.max(-10, Math.min(10, +g.top || 0)); g.pitch = Math.max(20, Math.min(32, +g.pitch || 25)); return g; }
 function tagsSheet(styles, onlyVariant, preset) {
   const vs = styles.flatMap((s) => s.variants.filter((x) => x.active !== false && (!onlyVariant || [].concat(onlyVariant).includes(x.id))).map((x) => ({ ...x, style: s })));
   const shop = (S.ctx.settings.shopName || '').slice(0, 24);
@@ -57,9 +57,9 @@ function tagsSheet(styles, onlyVariant, preset) {
     h('button', { class: 'btn sm', type: 'button', onclick: () => setAll((x) => (copies[x.id] || 0) + 1) }, '+1 ' + t('all')),
     h('button', { class: 'btn sm', type: 'button', onclick: () => setAll(() => 0) }, t('Clear')), seeAll);
   dsel.onchange = () => { try { localStorage.setItem('sty.tagDesign', dsel.value); } catch (e) {} paintPrev(); };
-  const geo = tagGeo(); const gapI = input({ type: 'number', mode: 'decimal', value: geo.gap }); const leftI = input({ type: 'number', mode: 'decimal', value: geo.left }); const topI = input({ type: 'number', mode: 'decimal', value: geo.top });
-  const geoBox = h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, field(t('Gap between the two labels (mm)'), gapI)), h('div', { class: 'grow' }, field(t('Shift right (mm, negative = left)'), leftI)), h('div', { class: 'grow' }, field(t('Shift down (mm, negative = up)'), topI)));
-  const saveGeo = () => { try { localStorage.setItem('sty.tagGeo', JSON.stringify({ gap: N(gapI.value), left: N(leftI.value), top: N(topI.value) })); } catch (e) {} }; gapI.oninput = saveGeo; leftI.oninput = saveGeo; topI.oninput = saveGeo;
+  const geo = tagGeo(); const gapI = input({ type: 'number', mode: 'decimal', value: geo.gap }); const leftI = input({ type: 'number', mode: 'decimal', value: geo.left }); const topI = input({ type: 'number', mode: 'decimal', value: geo.top }); const pitchI = input({ type: 'number', mode: 'decimal', value: geo.pitch });
+  const geoBox = h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, field(t('Gap between the two labels (mm)'), gapI)), h('div', { class: 'grow' }, field(t('Shift right (mm, negative = left)'), leftI)), h('div', { class: 'grow' }, field(t('Shift down (mm, negative = up)'), topI)), h('div', { class: 'grow' }, field(t('Row step (mm, label height + gap)'), pitchI)));
+  const saveGeo = () => { try { localStorage.setItem('sty.tagGeo', JSON.stringify({ gap: N(gapI.value), left: N(leftI.value), top: N(topI.value), pitch: N(pitchI.value) })); } catch (e) {} }; gapI.oninput = saveGeo; leftI.oninput = saveGeo; topI.oninput = saveGeo; pitchI.oninput = saveGeo;
   const showGeo = () => { geoBox.style.display = size.value === '2up' ? '' : 'none'; };
   size.onchange = () => { try { localStorage.setItem('sty.tagSize', size.value); } catch (e) {} showGeo(); paintPrev(); sum(); }; showGeo(); paintPrev(); sum();
   sheet({ title: t('Print tags'), full: true, body: h('div', { class: 'grid' },
@@ -74,7 +74,7 @@ function printTags(vs, copies, size, designId) {
   const made = []; vs.forEach((x) => { for (let i = 0; i < (copies[x.id] || 0); i++) made.push(d.build(x, shop)); });
   if (size === '2up') { for (let i = 0; i < made.length; i += 2) { const pg = h('div', { class: 'tagpage' }); pg.append(made[i]); if (made[i + 1]) pg.append(made[i + 1]); wrap.append(pg); } } else made.forEach((n) => wrap.append(n));
   if (!wrap.childNodes.length) return toast(t('Nothing to print'), { err: true });
-  const g = tagGeo(); wrap.style.setProperty('--top', g.top + 'mm'); if (size === '2up') { wrap.style.setProperty('--gap', g.gap + 'mm'); wrap.style.setProperty('--left', g.left + 'mm'); }
-  const st = document.createElement('style'); st.textContent = '@media print{@page{size:' + (size === 'a4' ? 'A4;margin:8mm' : size === '2up' ? (100 + g.gap) + 'mm 25mm;margin:0' : size.replace('x', 'mm ') + 'mm;margin:0') + '}}'; document.head.append(st);
+  const g = tagGeo(); wrap.style.setProperty('--top', g.top + 'mm'); wrap.style.setProperty('--pitch', g.pitch + 'mm'); if (size === '2up') { wrap.style.setProperty('--gap', g.gap + 'mm'); wrap.style.setProperty('--left', g.left + 'mm'); }
+  const st = document.createElement('style'); st.textContent = '@media print{@page{size:' + (size === 'a4' ? 'A4;margin:8mm' : size === '2up' ? (100 + g.gap) + 'mm ' + g.pitch + 'mm;margin:0' : size.replace('x', 'mm ') + 'mm;margin:0') + '}}'; document.head.append(st);
   document.body.append(wrap); window.print(); setTimeout(() => { wrap.remove(); st.remove(); }, 1000);
 }
