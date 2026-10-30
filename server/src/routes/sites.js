@@ -25,7 +25,13 @@ const base = () => (DOMAIN && DOMAIN !== 'localhost' ? DOMAIN : 'auzslab.in');
 const cache = new Map(); let legacy = { at: 0, until: '' };
 async function access(slug) {
   const hit = cache.get(slug); if (hit && Date.now() - hit.at < 30000) return hit.v;
-  const { rows } = await pool.query('select site_access($1) as r', [slug]);
+  let rows;
+  try { ({ rows } = await pool.query('select site_access($1::text) as r', [slug])); }
+  catch (e) {
+    // the database has not had db/301 applied yet: say so plainly instead of a 500 on every page of every shop
+    if (e && e.code === '42883') { const err = new Error('The address rules are not installed yet: run  bash tools/migrate.sh apply  on the server (db/301).'); err.status = 503; err.notReported = true; throw err; }
+    throw e;
+  }
   const v = rows[0].r || { exists: false };
   if (cache.size > 2000) cache.clear();
   cache.set(slug, { at: Date.now(), v });
@@ -52,7 +58,9 @@ export async function handle(ctx) {
     const path = uri.split('?')[0];
     const slug = host.endsWith('.' + base()) ? host.slice(0, -(base().length + 1)) : '';
     if (!slug || slug.includes('.')) return notFound(res);
-    const a = await access(slug);
+    let a;
+    try { a = await access(slug); }
+    catch (e) { if (e && e.status === 503) { console.error('[site/check] ' + e.message); res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '60' }); res.end('This address is being updated. Please try again in a minute.'); return; } throw e; }
     if (!a.exists) return notFound(res);
     const wanted = appOf(path);
     // an app page on a shop address: forward to the app's shared address for the transition period, then refuse
@@ -69,7 +77,7 @@ export async function handle(ctx) {
 
   const bill = url.pathname.match(/^\/bill\/([A-Za-z0-9]{6,80})$/);
   if (bill && req.method === 'GET') {
-    const { rows } = await pool.query('select bill_resolve($1) as r', [bill[1]]);
+    const { rows } = await pool.query('select bill_resolve($1::text) as r', [bill[1]]);
     const r = rows[0].r; if (!r) return notFound(res);
     const page = { style: '/stybill.html?t=', ledger: '/bill.html?t=', mob: '/mobbill.html?t=', pos: '/i.html?o=' }[r.k];
     return redirect(res, 'https://app.' + base() + page + encodeURIComponent(r.t));
