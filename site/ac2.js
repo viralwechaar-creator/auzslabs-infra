@@ -158,6 +158,7 @@
       card.insertBefore(wrap, head); wrap.appendChild(head);
       var b = document.createElement('div'); b.className = 'fc-b'; var inn = document.createElement('div'); inn.className = 'fc-in'; b.appendChild(inn);
       while (wrap.nextSibling) inn.appendChild(wrap.nextSibling);
+      var fp = inn.querySelector('p'); if (fp && fp.textContent.trim().length > 3) { var fs = document.createElement('span'); fs.className = 'fc-s'; fs.textContent = fp.textContent.trim().replace(/\s+/g, ' ').slice(0, 110); wrap.appendChild(fs); }
       card.appendChild(b); card.classList.add('fc');
       var toggle = function () { card.dataset.touched = '1'; var o = card.classList.toggle('open'); wrap.setAttribute('aria-expanded', o ? 'true' : 'false'); };
       wrap.onclick = toggle; wrap.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
@@ -234,7 +235,7 @@
     // the privacy notice the page draws next to its old layout belongs at the top of the new one
     new MutationObserver(function () {
       var b = $('#consentBanner'); var host = $('#a3-pages');
-      if (b && host && b.parentNode !== host.parentNode) { host.parentNode.insertBefore(b, host); var o = $('#cbOpen'); if (o) o.addEventListener('click', function () { go('privacy', true); }); }
+      if (b && host && b.parentNode !== host) { host.insertBefore(b, host.firstChild); var o = $('#cbOpen'); if (o) o.addEventListener('click', function () { go('privacy', true); }); }
     }).observe(document.body, { childList: true, subtree: true });
     new MutationObserver(function () { clearTimeout(window.__a3f); window.__a3f = setTimeout(fold, 30); }).observe(shell, { childList: true, subtree: true });
   }
