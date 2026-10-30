@@ -177,9 +177,11 @@
       if (!direct.length) return;
       var half = direct.length >= 4 ? Math.ceil(direct.length / 2) : direct.length;
       var parts = direct.length >= 4 ? [direct.slice(0, half), direct.slice(half)] : [direct];
-      var first = direct[0], g_ = [];
-      parts.forEach(function (list) { var d = document.createElement('div'); d.className = 'a3-grp'; pane.insertBefore(d, first); g_.push(d); list.forEach(function (c) { d.appendChild(c); }); });
-      pane.classList.toggle('a3-multi', parts.length > 1);
+      var anchor = document.createComment(''), g_ = [];
+        pane.insertBefore(anchor, direct[0]);
+      parts.forEach(function (list) { var d = document.createElement('div'); d.className = 'a3-grp'; pane.insertBefore(d, anchor); g_.push(d); list.forEach(function (c) { d.appendChild(c); }); });
+      pane.removeChild(anchor);
+        pane.classList.toggle('a3-multi', parts.length > 1);
     });
   }
 
