@@ -233,7 +233,7 @@ function scPayload(post, C) {
   return { id: null, doc_type: 'invoice', doc_date: today(), due_date: null, party_id: SC.party ? SC.party.id : null, branch_id: S.branches.length === 1 ? S.branches[0].id : null, warehouse_id: null, place_of_supply: null, reverse_charge: false, itc_eligible: true,
     price_includes_tax: !!SC.incl, supplier_ref: null, supplier_ref_date: null, ref_doc_id: null, source_doc_id: null, notes: '', terms: '', roundoff: null, lines, payments, post };
 }
-function scReset() { SC.cart = []; SC.recv = []; SC.ref = ''; SC.got = ''; SC.incl = null; SC.phone = ''; SC.name = ''; SC.pay = 'cash'; scPersist(); }
+function scReset() { SC.pad = null; SC.padFor = 0; SC.cart = []; SC.recv = []; SC.ref = ''; SC.got = ''; SC.incl = null; SC.phone = ''; SC.name = ''; SC.pay = 'cash'; scPersist(); }
 // A walk-in whose name was typed becomes a real customer (found by phone number if we already know it), so the bill carries the name,
 // a credit sale has someone to owe it, and the same person is found next time.
 async function scEnsureParty() {
@@ -281,6 +281,7 @@ async function scSell(v, payload, C) {
   if (!ok) return;
   const receipt = { items: SC.cart.map((l) => ({ name: l.p.name, qty: l.qty, amt: Math.max(N(l.rate) * l.qty - (l.dtype === 'pct' ? N(l.rate) * l.qty * N(l.disc) / 100 : N(l.disc)), 0) })), total: C.total, mode, name: pname, phone: pphone };
   const sale = { ...payload, party_name: party ? '' : pname, party_phone: party ? '' : pphone }, op = sqNewOp();
+  const pad = mode === 'cash' && SC.pad && SC.padFor === C.total ? SC.pad : null;
   const queueIt = async () => {
     const ref = sqNextRef();
     await sqEnqueue('sale', { ...sale, offline: true, offline_ref: ref }, { ref, name: pname, total: C.total, phone: pphone }, op);
@@ -293,6 +294,7 @@ async function scSell(v, payload, C) {
     try { r = await sqWithin(api('acc_offline_apply', { p: { op, kind: 'sale', payload: sale } }), 10000); }
     catch (e) { if (sqTransient(e) || e.timeout) return await queueIt(); throw e; }
     bust('products', 'parties'); products(true).catch(() => {});
+    if (pad && r.id && !r.pending_approval) await drawerSave(r.id, pad, 'sc-' + op);
     if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); scReset(); v.refresh(); return; }
     let full = null;
     try { full = await api('acc_get_document', { p_id: r.id }); } catch (e) { /* the sale is posted; only the receipt could not be loaded */ }
@@ -480,7 +482,9 @@ page('scan', {
       const chg = h('div', { class: 'small', style: { fontWeight: 600, minHeight: '18px' } }, N(SC.got) > 0 ? (N(SC.got) >= C.total ? 'Change to give: ' + inr(r2(N(SC.got) - C.total)) : 'Short by ' + inr(r2(C.total - N(SC.got)))) : '');
       const pay = h('div', { class: 'card grid', style: { gap: '10px' } }, h('h3', null, 'Payment'),
         seg([['cash', 'Cash'], ['upi', 'UPI'], ['bank', 'Bank'], ['credit', 'Credit']], SC.pay, (m) => { SC.pay = m; v.refresh(); }, { full: true, label: 'Payment method' }),
-        SC.pay === 'cash' ? h('div', { class: 'grid', style: { gap: '6px' } }, field('Cash received (optional)', got), chg) : null,
+        SC.pay === 'cash' ? h('div', { class: 'grid', style: { gap: '6px' } }, field('Cash received (optional)', got), chg,
+          !offlineNow() ? h('div', { class: 'row sp' }, h('span', { class: 'muted small' }, SC.pad && SC.padFor === C.total ? 'Notes counted: ' + inr(dnTotal(SC.pad.notes_in)) + ' received, ' + inr(dnTotal(SC.pad.notes_out)) + ' change' : 'Count notes and change for the cash drawer (optional)'),
+            h('button', { class: 'btn sm', type: 'button', onclick: async () => { if (!(C.total > 0)) return; const r = await notePad({ amount: C.total, kind: 'sale', initial: SC.padFor === C.total ? SC.pad : null }); if (r) { SC.pad = r; SC.padFor = C.total; v.refresh(); } } }, icon('wallet', 16), SC.pad && SC.padFor === C.total ? 'Change count' : 'Count notes')) : null) : null,
         SC.pay === 'upi' || SC.pay === 'bank' ? input({ value: SC.ref, placeholder: 'Reference or UTR (optional)', label: 'Reference', oninput: (e) => { SC.ref = e.target.value; } }) : null,
         accts.length > 1 ? field('Received in', selectEl(accts.map((a) => [a.id, a.name]), SC.acct[SC.pay], { onchange: (e) => { SC.acct[SC.pay] = e.target.value; } })) : null,
         SC.pay === 'credit' ? h('p', { class: 'small muted' }, SC.party && !SC.party.is_walkin ? inr(C.total) + ' will be added to what ' + SC.party.name + ' owes you.' : 'Enter the customer’s name below, or choose a customer above. A sale on credit needs a name.') : null,

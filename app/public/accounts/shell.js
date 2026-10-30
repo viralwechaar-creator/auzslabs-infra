@@ -12,7 +12,7 @@ const NAV_LEDGER = [
   { group: 'Buying', items: ['suppliers', 'payments', 'expenses', 'expreq'] },
   { group: 'Stock', items: ['products', 'stock', 'labels'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
-  { group: 'Accounts', items: ['books', 'banking', 'assets'] },
+  { group: 'Accounts', items: ['books', 'banking', 'drawer', 'assets'] },
   { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'settings'] },
 ];
 const NAV = SCANAPP ? [
