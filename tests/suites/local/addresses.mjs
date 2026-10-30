@@ -41,17 +41,16 @@ export default async function run({ stack }) {
     const a = await chk('addrqr', '/'); assert(a.s === 200 && a.h['x-site-kind'] === 'qr', 'qr ' + a.s + ' ' + a.h['x-site-kind']);
     const b = await chk('addrstore', '/store.html'); assert(b.s === 200 && b.h['x-site-kind'] === 'store', 'store ' + b.s + ' ' + b.h['x-site-kind']);
     const c = await chk('addrsalon', '/salon/'); assert(c.s === 200 && c.h['x-site-kind'] === 'salon', 'salon ' + c.s + ' ' + c.h['x-site-kind']);
-    for (const slug of ['addrpos', 'addrstoreoff']) { const d = await chk(slug, '/'); assert(d.s === 302, slug + ' (no website) should forward during the transition, got ' + d.s); }
+    for (const slug of ['addrpos', 'addrstoreoff']) { const d = await chk(slug, '/'); assert(d.s === 200 && d.h['x-site-legacy'] === '1', slug + ' (no website) keeps working during the transition, got ' + d.s); }
     for (const slug of ['addrsus', 'nosuchshop']) { const d = await chk(slug, '/'); assert(d.s === 404, slug + ' -> ' + d.s); }
     assert((await get(API, '127.0.0.1', '/site/check', { 'x-forwarded-host': 'evil.example.com', 'x-forwarded-uri': '/' })).s === 404, 'a foreign host must be refused');
     assert((await get(API, '127.0.0.1', '/site/check', { 'x-forwarded-host': 'a.b.auzslab.in', 'x-forwarded-uri': '/' })).s === 404, 'a nested name must be refused');
   }, 'critical');
 
-  await s.check('Server: an app page on a shop address is forwarded to that app\'s own address during the transition, and refused after it', async () => {
-    for (const [p, app] of [['/index.html', 'auzspos'], ['/dashboard.html', 'auzspos'], ['/mob.html', 'auzsmob'], ['/style.html', 'auzsstyle'], ['/payroll.html', 'auzspay'], ['/accounts.html', 'auzsledger'], ['/scan.html', 'auzsscan'], ['/finance.html', 'auzsfinance']]) {
-      const r = await chk('addrqr', p + '?x=1'); assert(r.s === 302 && r.h.location === 'https://' + app + '.auzslab.in' + p + '?x=1', p + ' -> ' + r.s + ' ' + r.h.location);
+  await s.check('Server: during the transition every old shop address keeps working exactly as before (all app pages), and the answer says so', async () => {
+    for (const p of ['/', '/index.html', '/dashboard.html', '/mob.html', '/style.html', '/payroll.html', '/accounts.html', '/scan.html']) {
+      for (const slug of ['addrqr', 'addrpos']) { const r = await chk(slug, p + '?x=1'); assert(r.s === 200 && r.h['x-site-legacy'] === '1', slug + p + ' -> ' + r.s); }
     }
-    const r0 = await chk('addrpos', '/'); assert(r0.h.location === 'https://auzspos.auzslab.in/', 'a shop with no website goes to its main app: ' + r0.h.location);
   }, 'critical');
 
   await s.check('Server: a customer\'s short bill link finds the bill and forwards to the page that shows it', async () => {
@@ -81,6 +80,13 @@ export default async function run({ stack }) {
   });
 
 
+  await s.check('Server: demo businesses always keep their address; an AUZsStyle shop can always open its app from its own address (remote access)', async () => {
+    const tDemo = await mk('addrdemo', 'cafe', { pos: true }); await q('update tenants set is_demo = true where id = $1', [tDemo]);
+    await mk('addrstyle', 'retail', { style: true });
+    const d = await chk('addrdemo', '/index.html'); assert(d.s === 200 && d.h['x-site-legacy'] === '1', 'demo ' + d.s);
+    const r = await q("select site_access('addrstyle') a"); assert(r[0].a.style === true && r[0].a.demo === false, JSON.stringify(r[0].a));
+  });
+
   // last, because the server remembers the transition date for a minute
   async function afterTransition() {
     await s.check('Server: after the transition an app page on a shop address and a shop with no website show "not found"', async () => {
@@ -91,6 +97,11 @@ export default async function run({ stack }) {
         assert((await chk('addrqr', '/index.html')).s === 404, 'after the transition an app page on a shop address must be 404');
         assert((await chk('addrpos', '/')).s === 404, 'after the transition a shop with no website must be 404');
         assert((await chk('addrqr', '/')).s === 200, 'its website still works');
+        const dm = await chk('addrdemo', '/dashboard.html'); assert(dm.s === 200 && dm.h['x-site-legacy'] === '1', 'a demo business keeps its address after the transition: ' + dm.s);
+        const sr = await chk('addrstyle', '/style.html'); assert(sr.s === 200 && sr.h['x-site-remote'] === 'style', 'AUZsStyle remote access after the transition: ' + sr.s);
+        const s2 = await chk('addrstyle', '/'); assert(s2.s === 200 && s2.h['x-site-remote'] === 'style', 'AUZsStyle bare address after the transition: ' + s2.s);
+        assert((await chk('addrstyle', '/index.html')).s === 404, 'a style shop must not open the POS from its address');
+        assert((await chk('addrqr', '/accounts/bill.js')).s === 200, 'bill page support files stay available');
       } finally { await q("update platform_flags set value = $1 where key = 'legacy_shop_addr_until'", [was.value]); }
     }, 'critical');
   }
@@ -119,12 +130,12 @@ export default async function run({ stack }) {
       }
       await t('auzspos', '/ds/auz.css', 200); await t('auzsstyle', '/sb-client.js', 200);
     }, 'critical');
-    await s.check('Routing: a shop address serves only its website; an app page on it forwards to the app address; no website means no address', async () => {
-      await t('addrqr', '/', 200); await t('addrqr', '/site.html', 200); await t('addrqr', '/index.html', 302, 'https://auzspos.auzslab.in/index.html'); await t('addrqr', '/pos/core.js', 404); await t('addrqr', '/style/core.js', 404);
-      await t('addrqr', '/salon/', 404); await t('addrqr', '/api/site', 404); await t('addrqr', '/ds/auz.css', 200);
-      await t('addrstore', '/', 200); await t('addrstore', '/store.html', 200); await t('addrstore', '/store/store.js', 200); await t('addrstore', '/style.html', 302, 'https://auzsstyle.auzslab.in/style.html');
+    await s.check('Routing: during the transition an old shop address serves everything as before; a suspended or unknown name is not found', async () => {
+      await t('addrqr', '/', 200); await t('addrqr', '/site.html', 200); await t('addrqr', '/index.html', 200); await t('addrqr', '/pos/core.js', 200); await t('addrqr', '/style/core.js', 200);
+      await t('addrqr', '/ds/auz.css', 200); await t('nosuchshop', '/ds/auz.css', 404);
+      await t('addrstore', '/', 200); await t('addrstore', '/store.html', 200); await t('addrstore', '/store/store.js', 200); await t('addrstore', '/style.html', 200);
       await t('addrsalon', '/', 200); await t('addrsalon', '/salon/', 200); await t('addrsalon', '/salon/admin/', 200);
-      await t('addrpos', '/', 302, 'https://auzspos.auzslab.in/'); await t('addrsus', '/', 404); await t('nosuchshop', '/', 404); await t('nosuchshop', '/site.html', 404);
+      await t('addrpos', '/', 200); await t('addrsus', '/', 404); await t('nosuchshop', '/', 404); await t('nosuchshop', '/site.html', 404);
     }, 'critical');
     await s.check('Routing: the main site\'s short bill link reaches the server, and an app address can be framed only by the hub', async () => {
       const r = await get(cp, 'auzslab.in', '/b/ab12cd34ef56'); assert(r.s === 302 && r.h.location === 'https://app.auzslab.in/i.html?o=ab12cd34ef56', r.s + ' ' + r.h.location);
