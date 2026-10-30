@@ -66,7 +66,9 @@ page('subscriptions', {
     v.root.append(seg([['active', 'Active'], ['all', 'All'], ['cancelled', 'Cancelled']], filter, (t) => go('subscriptions?f=' + t)));
     const rows = (await api('acc_list_subscriptions', { p: { status: filter } })).rows;
     const overdue = rows.filter((x) => x.overdue).length;
-    v.root.append(h('div', { class: 'kpis k3' }, kpi('Subscriptions', String(rows.length), ''), kpi('Overdue renewals', String(overdue), overdue ? 'Renew these first' : 'None overdue'), kpi('Recurring value', inr(rows.filter((x) => x.status === 'active').reduce((s, x) => s + Number(x.amount || 0), 0), 0), 'per cycle, active plans')),
-      subscriptionRows(rows, () => v.refresh()));
+    v.root.append(h('div', { class: 'kpis k3' }, kpi('Subscriptions', String(rows.length), ''), kpi('Overdue renewals', String(overdue), overdue ? 'Catching up automatically' : 'None overdue'), kpi('Recurring value', inr(rows.filter((x) => x.status === 'active').reduce((s, x) => s + Number(x.amount || 0), 0), 0), 'per cycle, active plans')));
+    if (can('acc_sales')) v.root.append(h('div', { class: 'row sp' }, h('span', { class: 'muted' }, 'Renewal invoices raise and post themselves the moment their date arrives, the next time anyone opens Accounting -- "Renew now" below is only for billing a customer early.'),
+      h('button', { class: 'btn', onclick: async () => { const r = await api('acc_run_due_subscriptions'); toast((r.created || 0) + ' created' + (r.failed ? ', ' + r.failed + ' failed' : '')); v.refresh(); } }, 'Run due now')));
+    v.root.append(subscriptionRows(rows, () => v.refresh()));
   },
 });

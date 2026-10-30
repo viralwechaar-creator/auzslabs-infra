@@ -181,6 +181,7 @@ function bootOffline(c) {
 }
 async function runDueRecurring() { // no background worker: due recurring documents are created when someone opens the app
   try { if (!(can('acc_sales') || can('acc_purchase'))) return; const r = await api('acc_run_recurring'); if (r && r.created) toast(r.created + ' recurring document' + (r.created > 1 ? 's' : '') + ' created'); if (r && r.failed) toast(r.failed + ' recurring schedule(s) need attention', { err: true }); } catch { /* shown on the Recurring page */ }
+  try { if (!can('acc_sales')) return; const r = await api('acc_run_due_subscriptions'); if (r && r.created) toast(r.created + ' subscription invoice' + (r.created > 1 ? 's' : '') + ' raised'); if (r && r.failed) toast(r.failed + ' subscription renewal(s) need attention', { err: true }); } catch { /* shown on the Subscriptions page */ }
 }
 
 // ---------- shell ----------
