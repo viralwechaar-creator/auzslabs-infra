@@ -40,7 +40,7 @@
     if (e.ctrlKey || e.metaKey || e.altKey || typing(e) || sheetOpen()) return;
     if (gap < 45 && e.key.length === 1) return;       // a barcode scanner types much faster than a person
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (e.key === '?') { e.preventDefault(); help(); return; }
+    if (e.key === '?' || (e.key === '/' && e.shiftKey)) { e.preventDefault(); help(); return; }
     if (now - gAt < 1500 && GO[k]) { e.preventDefault(); gAt = 0; go(GO[k][0]); return; }
     gAt = 0;
     if (k === 'g') { gAt = now; return; }
