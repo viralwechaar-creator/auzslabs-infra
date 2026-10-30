@@ -71,7 +71,7 @@ declare tid uuid; q text := nullif(trim(coalesce(p->>'q', '')), ''); seg text :=
 begin
   tid := sty_guard('sty_view');
   return coalesce((select jsonb_agg(x) from (
-    select jsonb_build_object('id', r.id, 'name', r.name, 'phone', r.phone, 'usualSize', r.usual_size, 'gstin', r.gstin, 'address', r.address, 'birthday', r.birthday, 'anniversary', r.anniversary, 'notes', r.notes,
+    select jsonb_build_object('id', r.id, 'name', r.name, 'phone', r.phone, 'usualSize', r.usual_size, 'gstin', (select c.gstin from sty_customers c where c.id = r.id), 'address', (select c.address from sty_customers c where c.id = r.id), 'birthday', r.birthday, 'anniversary', r.anniversary, 'notes', r.notes,
       'gender', r.gender, 'city', r.city, 'waOptin', r.wa_optin, 'points', r.points, 'credit', r.credit, 'visits', r.visits, 'spent', r.spent, 'lastAt', r.last_at,
       'tier', r.tier, 'status', r.status) x
     from sty_crm_rows(tid) r
@@ -87,7 +87,7 @@ begin
   select * into row_ from sty_crm_rows(tid) r where r.id = p_id;
   if not found then raise exception 'customer not found' using errcode = 'ST002'; end if;
   return jsonb_build_object(
-    'id', row_.id, 'name', row_.name, 'phone', row_.phone, 'usualSize', row_.usual_size, 'gstin', row_.gstin, 'address', row_.address, 'birthday', row_.birthday, 'anniversary', row_.anniversary, 'notes', row_.notes,
+    'id', row_.id, 'name', row_.name, 'phone', row_.phone, 'usualSize', row_.usual_size, 'gstin', (select c.gstin from sty_customers c where c.id = row_.id), 'address', (select c.address from sty_customers c where c.id = row_.id), 'birthday', row_.birthday, 'anniversary', row_.anniversary, 'notes', row_.notes,
     'gender', row_.gender, 'city', row_.city, 'waOptin', row_.wa_optin, 'points', row_.points, 'credit', row_.credit, 'visits', row_.visits, 'spent', row_.spent,
     'lastAt', row_.last_at, 'tier', row_.tier, 'status', row_.status,
     'avgBill', case when row_.visits > 0 then round(row_.spent / row_.visits, 2) else 0 end,
