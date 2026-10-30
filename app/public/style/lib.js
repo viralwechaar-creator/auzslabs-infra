@@ -125,7 +125,7 @@ function waText(sale, link) {
     ].filter((x) => x !== null && x !== undefined).join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 // a short link needs a connection; offline the message goes without it
-async function billLink(sale) { try { const r = await api('sty_share_sale', { p_id: sale.id }); return r && r.token ? billOrigin() + '/b/' + r.token : ''; } catch { return ''; } }
+async function billLink(sale) { try { const r = await api('sty_share_sale', { p_id: sale.id }); return r && r.token ? window.auzBillLink('style', r.token) : ''; } catch { return ''; } }
 async function shareWa(sale, phone) {
   const p = String(phone || (sale.customer && sale.customer.phone) || '').replace(/\D/g, '');
   const w = window.open('', '_blank');   // opened inside the tap so a phone does not block it while the link is made

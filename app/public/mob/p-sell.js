@@ -265,7 +265,7 @@ function waBillText(s) {
 // without the link, exactly as before -- never blocks sending the bill over a styled-receipt failure.
 async function receiptLink(s) {
   if (!s.bill_no || s.voided) return null;
-  try { const r = await api('mob_share_sale', { p_sale_id: s.id }); return r && r.token ? location.origin + '/mobbill.html?t=' + r.token : null; }
+  try { const r = await api('mob_share_sale', { p_sale_id: s.id }); return r && r.token ? window.auzBillLink('mob', r.token) : null; }
   catch (e) { return null; }
 }
 async function waShareSale(s) {

@@ -23,9 +23,54 @@
       const m = /[#&]auz_gt=([^&]+)/.exec(location.hash || ''); if (!m) return;
       const p = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
       if (p && p.t && p.u) saveSession({ access_token: p.t, user: p.u });
-      history.replaceState(null, '', location.pathname + location.search);
+      const rest = (location.hash || '').replace(/^#auz_gt=[^&]*&?/, '#').replace(/&auz_gt=[^&]*/, '');
+      history.replaceState(null, '', location.pathname + location.search + (rest === '#' ? '' : rest));
     } catch {}
   })();
+
+
+  // One address per app (auzspos, auzsstyle, auzsmob, auzspay, auzsledger, auzsscan, auzsfinance; app = the hub). A link to a page of ANOTHER
+  // app goes to that app's own address and takes the sign-in along: the session lives in this address's own browser storage, so it is handed
+  // over in the URL fragment (#auz_gt=...), which no server ever sees. Off auzslab.in (tests, localhost) addresses are left alone.
+  const APP_ADDR = [
+    ['auzspos', /^\/(index|dashboard|backoffice)\.html$|^\/(pos|console)\//],
+    ['auzsstyle', /^\/style\.html$|^\/style\//], ['auzsmob', /^\/mob\.html$|^\/mob\//], ['auzspay', /^\/payroll\.html$|^\/payroll\//],
+    ['auzsledger', /^\/accounts\.html$/], ['auzsscan', /^\/scan\.html$/], ['auzsfinance', /^\/finance\.html$|^\/finance\//],
+    ['app', /^\/(start|my|salesman|builder)\.html$/],
+  ];
+  function appUrlFor(hostname, protocol, page, sess) {
+    const parts = String(hostname).split('.'); const root = parts.slice(-2).join('.');
+    // the main site (auzslab.in itself) has its own /index.html etc.: its links are never rewritten
+    if (root !== 'auzslab.in' || parts.length < 3 || !/^\/[^/]/.test(page)) return page;
+    const path = page.split(/[?#]/)[0]; let app = null;
+    for (const [a, re] of APP_ADDR) if (re.test(path)) { app = a; break; }
+    if (!app || (parts.length > 2 && parts[0] === app)) return page;
+    const hi = page.indexOf('#'); const frag = hi >= 0 ? page.slice(hi + 1) : ''; const main = hi >= 0 ? page.slice(0, hi) : page;
+    let url = protocol + '//' + app + '.' + root + main;
+    if (sess && sess.access_token) {
+      const tok = btoa(unescape(encodeURIComponent(JSON.stringify({ t: sess.access_token, u: sess.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      url += '#auz_gt=' + tok + (frag ? '&' + frag : '');
+    } else if (frag) url += '#' + frag;
+    return url;
+  }
+  // A customer's bill link. On auzslab.in it is the short main-site link auzslab.in/b/<code> (the server finds the bill and forwards to the
+  // page that shows it); anywhere else (tests, local) it is the page on this same address. noShort: a code that is not a share token
+  // (an old order number) goes straight to the page on the hub address.
+  window.auzBillLink = (kind, token, noShort) => {
+    const t = encodeURIComponent(token); const root = location.hostname.split('.').slice(-2).join('.');
+    const pg = { style: '/b/' + t, ledger: '/bill.html?t=' + t, mob: '/mobbill.html?t=' + t, pos: '/i.html?o=' + t }[kind];
+    if (root !== 'auzslab.in') return location.origin + pg;
+    return noShort ? 'https://app.auzslab.in' + (kind === 'style' ? '/stybill.html?t=' + t : pg) : 'https://auzslab.in/b/' + t;
+  };
+  window.auzAppUrlFor = appUrlFor;
+  window.auzAppUrl = (page) => appUrlFor(location.hostname, location.protocol, page, loadSession());
+  window.auzGo = (page) => { location.href = window.auzAppUrl(page); };
+  // an ordinary link to another app's page is rewritten at the moment it is used (the token never sits in the page)
+  document.addEventListener('click', (e) => {
+    const a = e.target && e.target.closest ? e.target.closest('a[href^="/"]') : null; if (!a) return;
+    const old = a.getAttribute('href'); const url = window.auzAppUrl(old); if (url === old) return;
+    a.setAttribute('href', url); setTimeout(() => a.setAttribute('href', old), 0);
+  }, true);
 
 
   // Auto-compress an image blob before it leaves the device -- payment

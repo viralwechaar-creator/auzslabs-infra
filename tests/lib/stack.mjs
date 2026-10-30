@@ -59,7 +59,7 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
   });
   await new Promise((ok) => rzpSrv.listen(0, '127.0.0.1', ok));
   const env = { RAZORPAY_API_URL: 'http://127.0.0.1:' + rzpSrv.address().port + '/v1', RAZORPAY_KEY_ID: 'rzp_test_TESTKEY', RAZORPAY_KEY_SECRET: 'rzp-test-secret', RAZORPAY_WEBHOOK_SECRET: rzp.webhookSecret, WA_GRAPH_URL: 'http://127.0.0.1:' + waSrv.address().port, WA_PHONE_NUMBER_ID: 'PLATFORM1', WA_ACCESS_TOKEN: 'platform-token-platform-token', WA_APP_SECRET: 'wa-app-secret', WA_VERIFY_TOKEN: 'wa-verify', WA_WORKER_MS: '250', WA_RETRY_BASE_S: '0', ...process.env, PORT: String(apiPort), PGHOST: PG.host, PGPORT: String(PG.port), POSTGRES_APP_PASSWORD: PG.appPassword, POSTGRES_DB: PG.db,
-    JWT_SECRET: 'test-secret-test-secret-test-secret-123', DOMAIN: 'localhost', DISABLE_RATE_LIMIT: '1', UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: uploads + '-private' };
+    JWT_SECRET: 'test-secret-test-secret-test-secret-123', DOMAIN: 'localhost', APP_ROOT: path.join(root, 'app/public'), DISABLE_RATE_LIMIT: '1', UPLOAD_ROOT: uploads, DOC_UPLOAD_ROOT: uploads + '-private' };
   const api = spawn('node', ['src/index.js'], { cwd: path.join(root, 'server'), env, stdio: ['ignore', 'pipe', 'pipe'] });
   process.on('exit', () => { try { api.kill('SIGKILL'); } catch {} });
   let apiLog = '';

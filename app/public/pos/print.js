@@ -198,7 +198,7 @@ async function wa(o) {
   if (!p) { const v = await promptBox('Send the bill on WhatsApp', { placeholder: 'Customer phone', type: 'tel', mode: 'tel' }); p = digits(v); }
   if (!p) return;
   if (p.length === 10) p = '91' + p;
-  const url = location.origin + '/i.html?o=' + encodeURIComponent(o.tok || o.no), items = o.lines.map((l) => `${l.name}${l.size ? ' (' + l.size + ')' : ''} × ${l.qty}: ${inr(l.price * l.qty)}`).join('\n');
+  const url = window.auzBillLink('pos', o.tok || o.no, !o.tok), items = o.lines.map((l) => `${l.name}${l.size ? ' (' + l.size + ')' : ''} × ${l.qty}: ${inr(l.price * l.qty)}`).join('\n');
   const msg = `Hi ${(o.cust || {}).name || ''}, thank you for visiting ${cfg().name}.\n\nInvoice ${o.no} (${fmtDate(o.paidAt || o.created)})\n${items}\nTotal: ${inr(o.t.total)}\n\nView or download your invoice:\n${url}`;
   open('https://wa.me/' + p + '?text=' + encodeURIComponent(msg), '_blank');
 }

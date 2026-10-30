@@ -38,6 +38,11 @@
     # time instead of trusting the local cache blindly (same reasoning as
     # the /sw.js rule below already uses).
     header /*.html Cache-Control "no-cache"
+    # A customer's short bill link: auzslab.in/b/<code>. The server finds which bill it is and forwards to the page that shows it.
+    handle /b/* {
+        uri replace /b /bill 1
+        reverse_proxy api:3000
+    }
     file_server
     # a mistyped or old link shows a branded page (still answers 404 so search engines drop it) instead of a bare "404 Not Found"
     handle_errors {
@@ -46,14 +51,36 @@
     }
 }
 
-# Every client's subdomain serves the POS app. Which client it is gets
-# figured out client-side (tenant.js reads the subdomain) or via RLS
-# once a staff member logs in — same files for every tenant.
-# A wildcard cert can't use the normal HTTP challenge (there's no single
-# server to answer it for every possible subdomain) -- it needs a DNS-01
-# challenge instead, proving control of the domain by creating a TXT
-# record via the registrar's API. GODADDY_API_TOKEN is KEY:SECRET from
-# developer.godaddy.com/keys (see .env.example).
+# ---- Addresses under the main domain ------------------------------------------------------------------------------------------
+# Only these exist (the main site, api., status., agents. have their own blocks):
+#   * ONE shared address per app: auzspos (POS + its Admin console), auzsstyle, auzsmob, auzspay, auzsledger, auzsscan, auzsfinance,
+#     and app = the hub (start page, team workspace, "build your own software", website builder, customers' bill pages).
+#     Each address serves ONLY its own app's files. Which business you see is decided by signing in, never by the address.
+#   * every other name (shopname.auzslab.in) is a SHOP address. It exists only for a shop that has website access (an online store,
+#     QR ordering, a salon website or a custom-built website) and serves only that website. The server decides (routes/sites.js asks
+#     the database); an app page typed on a shop address is forwarded to the app's own address for 30 days, then shows "page not found".
+# A wildcard cert can't use the normal HTTP challenge, so it uses a DNS-01 challenge via the registrar's API.
+# GODADDY_API_TOKEN is KEY:SECRET from developer.godaddy.com/keys (see .env.example).
+
+# files every app page needs (shared look, sign-in code, icons): none of them opens an app by itself
+(shared_files) {
+    @shared path /sw.js /offline.html /config.js /tenant.js /sb-client.js /ds/* /vendor/* /fonts/* /assets/* /icon-* /logo* /manifest.json /manifest-*.json /boot-splash.* /hig.*
+}
+# one app address: {args[0]} is the page the bare address opens, the rest are this app's own files
+(one_app) {
+    import shared_files
+    route {
+        # the hub's combined workspace shows these apps inside its own page; nobody else may frame them
+        header Content-Security-Policy "frame-ancestors 'self' https://app.{$DOMAIN}; object-src 'none'; base-uri 'self'"
+        @home path /
+        rewrite @home {args[0]}
+        @mine path {args[0]} {args[1:]}
+        file_server @mine
+        file_server @shared
+        error 404
+    }
+}
+
 *.{$DOMAIN} {
     tls {
         dns godaddy {env.GODADDY_API_TOKEN}
@@ -87,96 +114,163 @@
     # the console. Forced explicitly rather than trusting Caddy's own extension guess.
     @mjs path_regexp \.mjs$
     header @mjs Content-Type "text/javascript; charset=utf-8"
-    # Salon Suite (app/public/salon/ -- Showoff Salon's original site,
-    # admin console and invoice page, run for 'salon'-niche tenants):
-    #  - /api/* is that app's own same-origin API (server/src/salon.js),
-    #    tenant resolved from this subdomain (Host is passed through);
-    #  - /i/<token> is its public, shareable invoice link;
-    #  - /uploads/* serves images/audio the salon admin uploaded.
-    # None of these paths are used by the POS app, so other niches are unaffected.
-    header /salon/* Cache-Control "no-cache, must-revalidate"
-    handle /api/* {
-        uri replace /api /salon-api 1
-        reverse_proxy api:3000
+    handle_errors {
+        header Content-Type "text/html; charset=utf-8"
+        respond `<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Page not found</title><body style="font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;color:#222"><div style="text-align:center"><h1 style="font-size:20px">Page not found</h1><p>Visit <a href="https://{$DOMAIN}">AUZslab</a>.</p></div></body>` {err.status_code}
     }
-    # Per-tenant home-screen icon/manifest for the main app shell (POS,
-    # console, Payroll, Accounting, AUZsMob) -- server/src/appicon.js
-    # resolves the tenant from this same Host header and composites their
-    # own logo + colour (set from salesman.html or Settings), same idea as
-    # the Salon niche's own /api/manifest.json above, generalised. Cached
-    # for 5 minutes; a fresh logo/colour save shows up within that window.
-    handle /app-manifest.json {
-        reverse_proxy api:3000
+    # www is the main site
+    @www host www.{$DOMAIN}
+    redir @www https://{$DOMAIN}{uri} permanent
+    # ---- the shared app addresses ----
+    @a_pos host auzspos.{$DOMAIN}
+    handle @a_pos {
+        handle /app-manifest.json {
+            reverse_proxy api:3000
+        }
+        handle /app-icon/* {
+            reverse_proxy api:3000
+        }
+        import one_app /index.html /index.html /dashboard.html /backoffice.html /pos/* /console/*
     }
-    handle /app-icon/* {
-        reverse_proxy api:3000
+    @a_style host auzsstyle.{$DOMAIN}
+    handle @a_style {
+        import one_app /style.html /style.html /style/*
     }
-    handle_path /uploads/* {
-        root * /srv/uploads
-        # uploaded files get a new name every time, so browsers may keep them for a year
-        header Cache-Control "public, max-age=31536000, immutable"
-        file_server
+    @a_mob host auzsmob.{$DOMAIN}
+    handle @a_mob {
+        import one_app /mob.html /mob.html /mob/*
     }
-    # Link-preview bots (WhatsApp, Facebook, Telegram ...) do not run JavaScript, so they get a small
-    # page with this salon's own title, text and picture (server/src/salon.js /share) instead of the
-    # static template. Everyone else is unaffected.
-    @previewBot {
-        header User-Agent *WhatsApp*
-        path / /salon/ /salon/index.html
+    @a_pay host auzspay.{$DOMAIN}
+    handle @a_pay {
+        import one_app /payroll.html /payroll.html /payroll/*
     }
-    @previewBot2 {
-        header_regexp ua User-Agent (?i)(facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot)
-        path / /salon/ /salon/index.html
+    @a_ledger host auzsledger.{$DOMAIN}
+    handle @a_ledger {
+        import one_app /accounts.html /accounts.html /accounts/*
     }
-    handle @previewBot {
-        rewrite * /salon-api/share
-        reverse_proxy api:3000
+    @a_scan host auzsscan.{$DOMAIN}
+    handle @a_scan {
+        import one_app /scan.html /scan.html /accounts/*
     }
-    handle @previewBot2 {
-        rewrite * /salon-api/share
-        reverse_proxy api:3000
+    @a_fin host auzsfinance.{$DOMAIN}
+    handle @a_fin {
+        import one_app /finance.html /finance.html /finance/*
     }
-    # Store links (/store.html?p=<product>): preview bots get the product's own picture, name, price and the shop name + address
-    # (server/src/routes/system.js /store-share). People get the normal page.
-    @storeBot {
-        header_regexp ua User-Agent (?i)(whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot)
-        path /store.html
+    # the hub: also shows a customer's bill (their link is auzslab.in/b/<code>, which forwards here)
+    @a_hub host app.{$DOMAIN}
+    handle @a_hub {
+        import one_app /start.html /start.html /start.js /verify.html /my.html /my.js /my.css /salesman.html /builder.html /admin/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /chapterone/logo-full.png
     }
-    handle @storeBot {
-        rewrite * /store-share?{query}
-        reverse_proxy api:3000
-    }
-    # The website (site.html, site-kiln.html) and POS (index.html) pages go through the API so each business's own
-    # icon is written INTO the page: an iPhone ignores a home-screen icon that is linked by address or set by script.
-    @iconPages path /site-kiln.html /site.html /index.html /store.html
-    handle @iconPages {
-        reverse_proxy api:3000
-    }
-    # Everything else. Wrapped in handle so the /api and /uploads blocks
-    # above win: Caddy runs try_files BEFORE handle in its fixed directive
-    # order, so a bare top-level try_files would rewrite /api/site to
-    # /land.html before those blocks ever saw it.
+
+    # ---- every other name: a shop address, only for a shop with a website ----
     handle {
-        # try_files below doesn't count a bare directory (/salon/,
-        # /salon/menu/, /salon/admin/) as an existing file and would hand
-        # it to land.html, which redirects straight back here (a loop) --
-        # so map them to their index.html explicitly first.
-        @salonDir path_regexp sd ^(/salon(?:/[a-z]+)?)/?$
-        rewrite @salonDir {re.sd.1}/index.html
-        @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
-        rewrite @salonInvoice /salon/invoice.html
-        # AUZsStyle short bill link: https://<shop>.auzslab.in/b/<token>
-        @styBill path_regexp ^/b/[a-f0-9]{8,32}$
-        rewrite @styBill /stybill.html
-        file_server
-        # A request for a real file (index.html, booking.html, site.html,
-        # backoffice.html, ...) is served directly, above -- this fallback
-        # only fires for a path that isn't one, in practice almost always
-        # the bare subdomain root. land.html is the one place that decides
-        # which page is a given tenant's real front door, by niche (a
-        # salon's is the /salon/ app, not the staff POS) -- see its own
-        # comment for why this used to just be index.html unconditionally.
-        try_files {path} /land.html
+        route {
+            import shared_files
+            # the server (routes/sites.js) answers 200 (this shop has a website), 302 (old address: forwarded to the app address) or 404
+            @page {
+                not path_regexp \.(js|css|png|jpe?g|webp|svg|woff2?|ico|json|mjs|txt|mp3|map|gif)$
+                not path /uploads/*
+            }
+            forward_auth @page api:3000 {
+                uri /site/check
+                copy_headers X-Site-Kind
+            }
+            # per-shop website files only: no app page can be served here whatever the server says
+            # the salon website and its own API belong to salon shops only
+            @salonOnly {
+                path /salon/* /i/* /api/*
+                not path_regexp \.(js|css|png|jpe?g|webp|svg|woff2?|ico|json|mjs|txt|mp3|map|gif)$
+                not header X-Site-Kind salon
+            }
+            error @salonOnly 404
+            header /salon/* Cache-Control "no-cache, must-revalidate"
+            handle /api/* {
+                uri replace /api /salon-api 1
+                reverse_proxy api:3000
+            }
+            handle_path /uploads/* {
+                root * /srv/uploads
+                # uploaded files get a new name every time, so browsers may keep them for a year
+                header Cache-Control "public, max-age=31536000, immutable"
+                file_server
+            }
+            handle /app-manifest.json {
+                reverse_proxy api:3000
+            }
+            handle /app-icon/* {
+                reverse_proxy api:3000
+            }
+            # Link-preview bots (WhatsApp, Facebook, Telegram ...) get a small page with this salon's own title, text and picture
+            @previewBot {
+                header User-Agent *WhatsApp*
+                path / /salon/ /salon/index.html
+            }
+            @previewBot2 {
+                header_regexp ua User-Agent (?i)(facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot)
+                path / /salon/ /salon/index.html
+            }
+            handle @previewBot {
+                rewrite * /salon-api/share
+                reverse_proxy api:3000
+            }
+            handle @previewBot2 {
+                rewrite * /salon-api/share
+                reverse_proxy api:3000
+            }
+            # Store links (/store.html?p=<product>): preview bots get the product's own picture, name and price
+            @storeBot {
+                header_regexp ua User-Agent (?i)(whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot)
+                path /store.html
+            }
+            handle @storeBot {
+                rewrite * /store-share?{query}
+                reverse_proxy api:3000
+            }
+            # short bill links on a shop address (the main link is auzslab.in/b/<code>)
+            @styBill path_regexp ^/b/[a-f0-9]{8,32}$
+            rewrite @styBill /stybill.html
+            @salonInvoice path_regexp ^/i/[a-f0-9]{8,32}$
+            rewrite @salonInvoice /salon/invoice.html
+            @salonDir path_regexp sd ^(/salon(?:/[a-z]+)?)/?$
+            rewrite @salonDir {re.sd.1}/index.html
+            # the bare address opens this shop's website, by kind
+            @kStore {
+                path /
+                header X-Site-Kind store
+            }
+            rewrite @kStore /store.html
+            @kQr {
+                path /
+                header X-Site-Kind qr
+            }
+            rewrite @kQr /site.html
+            @kSalon {
+                path /
+                header X-Site-Kind salon
+            }
+            rewrite @kSalon /salon/index.html
+            @kCustom {
+                path /
+                header X-Site-Kind custom
+            }
+            rewrite @kCustom /custom.html
+            # the website pages go through the API so each shop's own home-screen icon is written INTO the page (an iPhone ignores
+            # a home-screen icon that is linked by address or set by script)
+            @iconPages path /site-kiln.html /site.html /store.html
+            handle @iconPages {
+                reverse_proxy api:3000
+            }
+            @web path /site.html /site-kiln.html /store.html /store/* /site-edit.html /site-schemas.js /salon/* /custom.html /chapterone/* /bailamos/* /radz/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /order.html /w.html /terms.html /privacy.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /app-manifest.json /app-icon/*
+            handle @web {
+                file_server
+            }
+            handle @shared {
+                file_server
+            }
+            handle {
+                error 404
+            }
+        }
     }
 }
 
