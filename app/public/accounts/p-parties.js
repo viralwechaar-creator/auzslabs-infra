@@ -57,6 +57,12 @@ function partySheet(kind, p, onSaved) {
   const isNew = !p; p = p || {};
   const asCourier = kind === 'transporter'; if (asCourier && !p.party_type) p = Object.assign({}, p, { party_type: 'transporter' });
   let k = p.kind || (asCourier ? 'supplier' : kind) || 'customer';
+  // B2B/B2C is a customer-billing convenience only (suppliers are always businesses): B2B shows the full
+  // GSTIN-driven form, B2C hides it down to name + phone. Nothing new is stored for this -- it is read back
+  // from whether the party already has a GSTIN, and a fresh B2C save keeps reg_type 'unregistered' exactly
+  // like today's default (acc_save_party has never required a GSTIN or a reg_type), so this is UI-only.
+  const isB2BCustomer = k === 'customer' && !asCourier;
+  let btype = p.gstin ? 'b2b' : 'b2c';
   const name = input({ value: p.name || '', placeholder: 'Name', label: 'Name' }), gst = input({ value: p.gstin || '', placeholder: '15-character GSTIN', max: 15, label: 'GSTIN' }), pan = input({ value: p.pan || '', placeholder: 'PAN', max: 10 });
   const gstMsg = h('div', { class: 'hint' }, 'Optional. Registered businesses should have one so they can claim input credit.');
   const stSel = selectEl([['', 'Choose state'], ...Object.keys(STATES).map((c) => [c, stateName(c)])], p.state_code || '', {});
@@ -78,8 +84,16 @@ function partySheet(kind, p, onSaved) {
   const gm = selectEl([['item', 'Itemwise (each item has its own GST rate)'], ['bill', 'One GST rate on the whole bill']], p.gst_mode || 'item', {}), gr = selectEl(taxRates().map((r) => [String(r), r + '%']), String(p.bill_gst_rate == null ? defaultTaxRate() : p.bill_gst_rate), {});
   const cat = input({ value: p.category || '', placeholder: 'e.g. Retail, Wholesale, VIP', label: 'Category' });
   const bnk = input({ value: p.bank_name || '', placeholder: 'Bank name' }), bac = input({ value: p.bank_account || '', placeholder: 'Account number' }), bif = input({ value: p.bank_ifsc || '', placeholder: 'IFSC', max: 11 }), upi = input({ value: p.upi_id || '', placeholder: 'name@bank' });
+  const b2bBlock = h('div', { class: 'grid' }, field(window.lbl ? lbl('GSTIN', 'gstin') : 'GSTIN', gst, null), fetchBtn, gstMsg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', stSel), field('Registration', reg)), field('PAN', pan));
+  const btypeSeg = isB2BCustomer ? seg([['b2b', 'Business (B2B)'], ['b2c', 'Individual (B2C)']], btype, (v) => {
+    btype = v;
+    if (v === 'b2c') { gst.value = ''; pan.value = ''; reg.value = 'unregistered'; gstMsg.textContent = 'Optional. Registered businesses should have one so they can claim input credit.'; gst.classList.remove('err'); }
+    else if (reg.value === 'unregistered') reg.value = 'regular';
+    b2bBlock.hidden = v === 'b2c';
+  }, { label: 'Customer type' }) : null;
+  b2bBlock.hidden = isB2BCustomer && btype === 'b2c';
   const s = sheet({ title: (isNew ? 'New ' : 'Edit ') + (k === 'supplier' ? 'supplier' : 'customer'), body: h('div', { class: 'grid' },
-    isNew || p.party_type ? field('Type', typeSel) : null, field('Name', name), field(window.lbl ? lbl('GSTIN', 'gstin') : 'GSTIN', gst, null), fetchBtn, gstMsg, h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('State', stSel), field('Registration', reg)), field('PAN', pan),
+    isNew || p.party_type ? field('Type', typeSel) : null, field('Name', name), btypeSeg ? field('Customer type', btypeSeg) : null, b2bBlock,
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Phone', ph), field('Email', em)), field('Contact person', cn), field('Billing address', ba), field('Shipping address', sa),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Credit days', cd), field('Credit limit (₹)', cl)), field('Tags', tg), k === 'supplier' ? null : field('Category', cat),
     k === 'supplier' ? h('div', { class: 'grid' }, h('div', { class: 'small muted' }, 'Bank details (to pay this supplier)'), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Bank', bnk), field('Account number', bac)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('IFSC', bif), field('UPI ID', upi))) : null,
@@ -88,6 +102,7 @@ function partySheet(kind, p, onSaved) {
     !isNew ? toggleRow('Active', p.active !== false, (x) => { p.active = x; }) : null),
     actions: [{ label: isNew ? 'Add' : 'Save', primary: true, onclick: async (c) => {
       if (!name.value.trim()) { name.classList.add('err'); name.focus(); return false; }
+      if (isB2BCustomer && btype === 'b2c' && !ph.value.trim()) { ph.classList.add('err'); ph.focus(); toast('Phone is required for an individual customer', { err: true }); return false; }
       const body = { id: p.id || null, kind: p.kind || k, name: name.value, gstin: gst.value, pan: pan.value, state_code: stSel.value, reg_type: reg.value, phone: ph.value, email: em.value, contact_name: cn.value, billing_address: ba.value, shipping_address: sa.value, credit_days: cd.value || 0, credit_limit: cl.value || 0, tags: tg.value, notes: nt.value, active: p.active !== false, category: cat.value, bank_name: bnk.value, bank_account: bac.value, bank_ifsc: bif.value, upi_id: upi.value };
       if (k === 'supplier') { body.gst_mode = gm.value; body.bill_gst_rate = gm.value === 'bill' ? gr.value : ''; }
       if (typeSel.value) body.party_type = typeSel.value; else if (p.party_type && !['customer', 'supplier'].includes(p.party_type)) body.party_type = k === 'supplier' ? 'supplier' : 'customer';
