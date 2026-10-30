@@ -419,22 +419,22 @@ async function boot() {
     $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/salon/admin/';
   } else if (posOn) {
     $('#openPosLink').style.display = '';
-    $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in';
+    $('#openPosLink').href = 'https://auzspos.auzslab.in';
   }
   // A salon that added the POS product keeps AUZslab Salon as its main app; the POS is a second link.
   if (DASH.tenant.niche === 'salon' && posOn) {
-    $('#openPosAddonLink').style.display = ''; $('#openPosAddonLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/index.html';
+    $('#openPosAddonLink').style.display = ''; $('#openPosAddonLink').href = 'https://auzspos.auzslab.in/index.html';
   }
   const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
-  if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/payroll.html'; }
+  if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://auzspay.auzslab.in/payroll.html'; }
   const builderOn = (DASH.features || {}).website_builder === true && (DASH.enabled_features || {}).website_builder !== false;
-  if (builderOn) { $('#openBuilderLink').style.display = ''; $('#openBuilderLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/builder.html'; }
+  if (builderOn) { $('#openBuilderLink').style.display = ''; $('#openBuilderLink').href = 'https://app.auzslab.in/builder.html'; }
   const accountingOn = (DASH.features || {}).accounting === true && (DASH.enabled_features || {}).accounting !== false;
-  if (accountingOn) { $('#openAccountsLink').style.display = ''; $('#openAccountsLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/accounts.html'; }
+  if (accountingOn) { $('#openAccountsLink').style.display = ''; $('#openAccountsLink').href = 'https://auzsledger.auzslab.in/accounts.html'; }
   const mobileOn = (DASH.features || {}).mobile === true && (DASH.enabled_features || {}).mobile !== false;
-  if (mobileOn) { $('#openMobLink').style.display = ''; $('#openMobLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/mob.html'; }
+  if (mobileOn) { $('#openMobLink').style.display = ''; $('#openMobLink').href = 'https://auzsmob.auzslab.in/mob.html'; }
   const scanOn = (DASH.features || {}).scan === true && (DASH.enabled_features || {}).scan !== false;
-  if (scanOn) { $('#openScanLink').style.display = ''; $('#openScanLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/scan.html'; }
+  if (scanOn) { $('#openScanLink').style.display = ''; $('#openScanLink').href = 'https://auzsscan.auzslab.in/scan.html'; }
 
   await loadRoles();
   if (DASH.my_role === 'owner') await loadStaff();
@@ -485,13 +485,14 @@ function renderAccount() {
   // the first of AUZsMob / AUZsPay / AUZsLedger it was given. No app at all = no link card.
   const own = (k) => (DASH.features || {})[k] === true && (DASH.enabled_features || {})[k] !== false;
   const mainApp = isSalon ? { name: 'AUZslab Salon', path: '/salon/admin/' }
-    : own('pos') ? { name: 'POS system', path: '' }
-    : own('mobile') ? { name: 'AUZsMob', path: '/mob.html' }
-    : own('style') ? { name: 'AUZsStyle', path: '/style.html' }
-    : own('accounting') ? { name: 'AUZsLedger', path: '/accounts.html' }
-    : own('scan') ? { name: 'AUZsScan', path: '/scan.html' }
-    : own('payroll') ? { name: 'AUZsPay', path: '/payroll.html' } : null;
-  const staffUrl = 'https://' + t.slug + '.auzslab.in' + (mainApp ? mainApp.path : '');
+    : own('pos') ? { name: 'POS system', host: 'auzspos', path: '' }
+    : own('mobile') ? { name: 'AUZsMob', host: 'auzsmob', path: '/mob.html' }
+    : own('style') ? { name: 'AUZsStyle', host: 'auzsstyle', path: '/style.html' }
+    : own('accounting') ? { name: 'AUZsLedger', host: 'auzsledger', path: '/accounts.html' }
+    : own('scan') ? { name: 'AUZsScan', host: 'auzsscan', path: '/scan.html' }
+    : own('payroll') ? { name: 'AUZsPay', host: 'auzspay', path: '/payroll.html' } : null;
+  // each app has ONE address for everyone; only a salon's console lives on the shop's own address
+  const staffUrl = isSalon ? 'https://' + t.slug + '.auzslab.in/salon/admin/' : (mainApp && mainApp.host ? 'https://' + mainApp.host + '.auzslab.in' + mainApp.path : 'https://auzspos.auzslab.in');
   $('#pane-account').innerHTML = `
     ${IS_ADMIN ? `<div class="card">
       <h3 class="h-2">AUZslab admin</h3>
@@ -502,7 +503,7 @@ function renderAccount() {
     <div class="card">
       <h3 class="h-2">Your business</h3>
       <div class="acct-row"><span class="muted">Business</span><b>${esc(t.name)}</b></div>
-      <div class="acct-row"><span class="muted">Subdomain</span><b>${esc(t.slug)}.auzslab.in</b></div>
+      <div class="acct-row"><span class="muted">Business ID</span><b>${esc(t.slug)}</b></div>
       <div class="acct-row"><span class="muted">Plan</span><b>${esc(t.plan)}</b></div>
       <div class="acct-row"><span class="muted">Status</span><span class="status-pill status-${esc(t.status)}">${esc(t.status)}</span></div>
       <div class="acct-row"><span class="muted">Renewal date</span><b>${t.renewal_date ? esc(t.renewal_date) : 'Not set — ask AUZslab'}</b></div>
@@ -517,8 +518,8 @@ function renderAccount() {
       <a href="${staffUrl}" target="_blank" rel="noopener" class="btn btn-primary form-submit" style="margin-top:12px">${isSalon ? 'Open AUZslab Salon' : 'Open ' + mainApp.name} &#8599;</a>
     </div>` : ''}
     <div class="card">
-      <h3 class="h-2">One address for every app</h3>
-      <p class="muted">Your whole team can use <b>app.auzslab.in</b> for every app. Owners sign in with Google or email, staff with their username and PIN, and the right app opens. Add it to the phone home screen once.</p>
+      <h3 class="h-2">One start address for every app</h3>
+      <p class="muted">Your whole team can start at <b>app.auzslab.in</b>. Owners sign in with Google or email, staff with their username and PIN, and the apps you have open from there. Each app also has its own address (for example auzspos.auzslab.in for the POS). Add the one you use to the phone home screen.</p>
       <div class="pos-link-box">
         <code>https://app.auzslab.in</code>
         <button class="btn btn-ghost" id="copyHubLink" type="button">Copy link</button>
@@ -918,7 +919,7 @@ function renderStaff() {
     if (!name) { msg.className = 'err'; msg.textContent = 'Name and email are required.'; return; }
     const { data, error } = await sb.rpc('invite_staff', { p_email: email, p_name: name, p_phone: phone, p_role_id: /^[0-9a-f-]{36}$/.test(roleId) ? roleId : null, p_builtin: roleId === 'builtin:manager' ? 'manager' : null });
     if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
-    const verifyLink = 'https://' + DASH.tenant.slug + '.auzslab.in/verify.html?token=' + data.verify_token;
+    const verifyLink = 'https://app.auzslab.in/verify.html?token=' + data.verify_token;
     let emailSent = false;
     try {
       const { data: { session } } = await sb.auth.getSession();

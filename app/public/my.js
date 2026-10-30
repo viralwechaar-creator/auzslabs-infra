@@ -246,7 +246,7 @@
     var a = list.filter(function (x) { return x[0] === id; })[0]; if (!a) return;
     current = id; cfg.last = id; save();
     Object.keys(frames).forEach(function (k) { frames[k].hidden = k !== id; });
-    if (!frames[id]) { var f = el('iframe', { src: a[2], title: a[1], allow: 'camera; geolocation; clipboard-write' }); frames[id] = f; $('stage').append(f); }
+    if (!frames[id]) { var f = el('iframe', { src: window.auzAppUrl ? window.auzAppUrl(a[2]) : a[2], title: a[1], allow: 'camera; geolocation; clipboard-write' }); frames[id] = f; $('stage').append(f); }
     chips();
   }
   function panel() {

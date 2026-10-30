@@ -643,8 +643,15 @@ async function openBusiness(tenantId, slug, page, win) {
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || 'could not open it');
-  const url = 'https://' + slug + '.auzslab.in' + page + '#auz_gt=' + b64u({ t: body.access_token, u: body.user });
+  const url = appPageUrl(slug, page) + '#auz_gt=' + b64u({ t: body.access_token, u: body.user });
   if (win && !win.closed) win.location.href = url; else window.open(url, '_blank');
+}
+
+// Each app has ONE shared address; only a shop's own website pages (and a salon's console) live on the shop's address.
+function appPageUrl(slug, page) {
+  const path = String(page).split(/[?#]/)[0];
+  const m = [[/^\/(index|dashboard|backoffice)\.html$/, 'auzspos'], [/^\/mob\.html$/, 'auzsmob'], [/^\/accounts\.html$/, 'auzsledger'], [/^\/scan\.html$/, 'auzsscan'], [/^\/style\.html$/, 'auzsstyle'], [/^\/payroll\.html$/, 'auzspay'], [/^\/finance\.html$/, 'auzsfinance']].find((x) => x[0].test(path));
+  return 'https://' + (m ? m[1] : slug) + '.auzslab.in' + page;
 }
 
 // ---------- TASKS ----------
@@ -1015,7 +1022,7 @@ $('ownerLoginBtn').onclick = async () => {
     const a = nicheApp(current), base = 'https://' + current.slug + '.auzslab.in';
     // one shared address per product (the sign-in finds the business), so no separate POS link per trial
     const SHARED = { '/index.html': 'https://auzspos.auzslab.in', '/mob.html': 'https://auzsmob.auzslab.in', '/accounts.html': 'https://auzsledger.auzslab.in' };
-    const lines = [['Email', body.email], ['Password', body.temp_password], [a.main.replace(/^Open their |\s*\u2197$/g, ''), SHARED[a.page] || (base + a.page)]];
+    const lines = [['Email', body.email], ['Password', body.temp_password], [a.main.replace(/^Open their |\s*\u2197$/g, ''), SHARED[a.page] || appPageUrl(current.slug, a.page)]];
     if (current.niche === 'cafe') lines.push(['Website editor', base + '/site-edit.html']);
     const text = lines.map(([k, v]) => k + ': ' + v).join('\n');
     $('trialLoginBox').innerHTML = lines.map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v)}</div>`).join('') + '<button class=ghost id=copyTrialBtn style="margin-top:8px">Copy to send</button>';
