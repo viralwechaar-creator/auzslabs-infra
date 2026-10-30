@@ -101,6 +101,49 @@ function effectRows(D, c, payNow) {
   return { rows, stock };
 }
 
+// Inline type-ahead party picker: same interaction as productInput's item field (type, see matches right under the
+// field, Enter/click to pick) instead of opening a full sheet -- one less tap per bill, matching how fast desktop
+// accounting software (Busy, Tally) lets you type a party name straight into the field. `current` is a party id.
+function partyInput(kind, current, onPick, labelText, emptyText) {
+  const all = (S.parties || []).filter((p) => p.active && (kind === 'any' || p.kind === 'both' || p.kind === kind));
+  const walkin = kind === 'customer' ? all.find((p) => p.is_walkin) : null;
+  const list0 = walkin ? all.filter((p) => !p.is_walkin) : all;
+  let picked = (S.parties || []).find((p) => p.id === current) || null;
+  const inp = h('input', { class: 'input', placeholder: emptyText || 'Type a name, GSTIN or phone', value: picked ? picked.name : '', 'aria-label': labelText || 'Party', autocomplete: 'off' });
+  const pop = h('div', { class: 'pop hidden', role: 'listbox' });
+  const sub = h('div', { class: 's' }, picked ? [picked.gstin || 'No GSTIN', picked.state_code ? stateName(picked.state_code) : ''].filter(Boolean).join(' · ') : '');
+  let idx = 0, list = [];
+  const newBtn = () => (can(kind === 'supplier' ? 'acc_purchase' : 'acc_sales') ? h('button', { type: 'button', role: 'option', class: 'new', onmousedown: (e) => { e.preventDefault(); newParty(); } }, h('div', null, h('div', null, '+ New ' + (kind === 'supplier' ? 'supplier' : 'customer') + (inp.value.trim() ? ': ' + inp.value.trim() : '')), h('div', { class: 's' }, 'Add them, then pick here'))) : null);
+  const row = (p) => h('button', { type: 'button', role: 'option', class: list[idx] === p ? 'on' : '', onmousedown: (e) => { e.preventDefault(); pick(p); } }, h('div', null, h('div', null, p.name), h('div', { class: 's' }, [p.gstin, p.phone].filter(Boolean).join(' · '))), Number(p.balance) ? h('div', { style: { textAlign: 'right' } }, h('div', { class: 'num' }, money(Math.abs(p.balance), { compact: true })), h('div', { class: 's' }, p.balance > 0 ? 'owes you' : 'you owe')) : null);
+  const draw = () => {
+    clear(pop);
+    if (walkin) pop.append(h('button', { type: 'button', role: 'option', onmousedown: (e) => { e.preventDefault(); pick(walkin); } }, h('div', null, h('div', null, 'Walk-in / cash customer'), h('div', { class: 's' }, 'Switch back to no named customer'))));
+    list.forEach((p) => pop.append(row(p)));
+    const nb = newBtn(); if (nb) pop.append(nb);
+    pop.classList.toggle('hidden', !list.length && !nb && !walkin);
+  };
+  const local = () => { const q = inp.value.trim().toLowerCase(); return list0.filter((p) => !q || p.name.toLowerCase().includes(q) || (p.gstin || '').toLowerCase().includes(q) || (p.phone || '').includes(q)).slice(0, 60); };
+  const show = () => { list = local(); idx = 0; draw(); };
+  const pick = (p) => { picked = p; inp.value = p.name; pop.classList.add('hidden'); clear(sub); sub.append((p.gstin || 'No GSTIN') + (p.state_code ? ' · ' + stateName(p.state_code) : '')); onPick(p); };
+  const newParty = () => {
+    pop.classList.add('hidden');
+    partySheet(kind === 'any' ? 'customer' : kind, null, (np) => { if (np) pick(np); });
+  };
+  inp.addEventListener('focus', () => show());
+  inp.addEventListener('input', () => show());
+  inp.addEventListener('blur', () => setTimeout(() => { pop.classList.add('hidden'); if (!picked || inp.value !== picked.name) inp.value = picked ? picked.name : ''; }, 120));
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' && !pop.classList.contains('hidden')) { e.preventDefault(); idx = Math.min(idx + 1, list.length - 1); draw(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(idx - 1, 0); draw(); }
+    else if (e.key === 'Enter' && !pop.classList.contains('hidden') && list[idx]) { e.preventDefault(); pick(list[idx]); }
+    else if (e.key === 'Escape') pop.classList.add('hidden');
+  });
+  return h('div', { class: 'li picker', style: { borderRadius: '16px', background: 'var(--card)', boxShadow: '0 0 0 .5px var(--sep)' } },
+    h('span', { class: 'tile gray' }, icon(kind === 'supplier' ? 'building' : 'user', 18)),
+    h('div', { class: 'grow' }, h('div', { class: 'cap' }, labelText || (kind === 'supplier' ? 'Supplier' : 'Customer')), inp, sub),
+    pop);
+}
+
 async function pickParty(kind, current) {
   const all = (await parties()).filter((p) => p.active && (kind === 'transporter' ? p.party_type === 'transporter' : p.party_type !== 'transporter' && (p.kind === 'both' || p.kind === kind || kind === 'any')));
   const walkin = kind !== 'supplier' && kind !== 'transporter' ? all.find((p) => p.is_walkin) : null;
@@ -226,7 +269,6 @@ async function docEditor(v, type, existing) {
   if (scan) root.append(scanBanner(scan, v));
 
   // ----- details form -----
-  const partyBtn = h('button', { class: 'li', type: 'button', style: { borderRadius: '16px', background: 'var(--card)', boxShadow: '0 0 0 .5px var(--sep)' }, onclick: async () => { const p = await pickParty(sales ? 'customer' : 'supplier', D.party_id); if (p) { D.party_id = p.id; D.place_of_supply = ''; applySupplierGst(p); if (!D.due_date && p.credit_days) D.due_date = addDays(D.doc_date, p.credit_days); drawParty(); recalc(); } } });
   // a supplier that charges one GST rate on the whole bill: every item line gets that rate (change it in the box under the items)
   function applySupplierGst(p) {
     if (sales || !p) return; D.gst_mode = p.gst_mode === 'bill' ? 'bill' : 'item'; D.bill_gst = p.bill_gst_rate == null ? '' : String(p.bill_gst_rate);
@@ -240,11 +282,7 @@ async function docEditor(v, type, existing) {
     const sel = selectEl(rs.map((r) => [r, r + '%']), String(D.bill_gst === '' || D.bill_gst == null ? defaultTaxRate() : D.bill_gst), { onchange: () => { D.bill_gst = sel.value; D.lines.forEach((l) => { l.tax_rate = sel.value; }); drawLines(); } });
     gstModeHost.append(h('div', { class: 'card grid' }, h('div', { class: 'small muted' }, 'This supplier charges one GST rate on the whole bill.'), field('GST rate for all items', sel)));
   }
-  const drawParty = () => {
-    const p = party(); clear(partyBtn);
-    partyBtn.append(h('span', { class: 'tile gray' }, icon(sales ? 'user' : 'building', 18)), h('div', { class: 'grow' }, h('div', { class: 'cap' }, sales ? 'Customer' : 'Supplier'), h('div', { class: 't' }, p ? p.name : (isExpense ? 'No vendor (paid at once)' : sales ? 'Walk-in / choose customer' : 'Choose supplier')), p ? h('div', { class: 's' }, [p.gstin || 'No GSTIN', p.state_code ? stateName(p.state_code) : ''].filter(Boolean).join(' · ')) : null), h('span', { class: 'chev' }, icon('chevR', 18)));
-  };
-  drawParty();
+  const partyBtn = partyInput(sales ? 'customer' : 'supplier', D.party_id, (p) => { D.party_id = p.id; D.place_of_supply = ''; applySupplierGst(p); if (!D.due_date && p.credit_days) D.due_date = addDays(D.doc_date, p.credit_days); recalc(); }, sales ? 'Customer' : 'Supplier', isExpense ? 'No vendor (paid at once) -- type to add one' : sales ? 'Walk-in / type to choose a customer' : 'Type to choose a supplier');
   const dateEl = dateInput(D.doc_date, { onchange: () => { D.doc_date = dateEl.value; const p = party(); if (!D.due_date || posting) { if (p && p.credit_days && !existing) D.due_date = addDays(D.doc_date, p.credit_days); } dueEl.value = D.due_date; } });
   const dueEl = dateInput(D.due_date, { onchange: () => { D.due_date = dueEl.value; } });
   const posEl = selectEl([['', 'Same as customer'], ...Object.keys(STATES).map((c) => [c, stateName(c)])], D.place_of_supply, { onchange: () => { D.place_of_supply = posEl.value; recalc(); } });
