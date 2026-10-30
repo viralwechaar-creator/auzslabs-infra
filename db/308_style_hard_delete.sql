@@ -34,4 +34,21 @@ begin
   end loop;
   return jsonb_build_object('deleted', gone, 'hidden', 0);
 end $$;
--- Rollback: recreate sty_delete_styles from db/239 (hides a style that has history). The foreign keys can stay as they are.
+-- The books health check skips bill lines of a deleted item (they no longer have a stock entry to match).
+create or replace function sty_integrity_check() returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare tid uuid; bad jsonb := '[]'::jsonb; n int;
+begin
+  tid := sty_guard('sty_manage');
+  select count(*) into n from sty_sales s where s.tenant_id = tid and abs(s.total - (select coalesce(sum(net), 0) from sty_sale_lines where sale_id = s.id) - s.rounding) > 0.05;
+  if n > 0 then bad := bad || jsonb_build_object('check', 'bill totals equal their lines', 'count', n); end if;
+  select count(*) into n from sty_sale_lines l join sty_sales s on s.id = l.sale_id where s.tenant_id = tid and s.status <> 'void' and l.variant_id is not null
+    and (select coalesce(-sum(qty), 0) from sty_stock_moves m where m.ref_id = s.id and m.variant_id = l.variant_id and m.kind in ('sale', 'void')) <> l.qty;
+  if n > 0 then bad := bad || jsonb_build_object('check', 'every bill line has its stock move', 'count', n); end if;
+  select count(*) into n from sty_variants v where v.tenant_id = tid and not (select allow_negative_stock from sty_settings where tenant_id = tid)
+    and exists (select 1 from sty_stock_moves m where m.variant_id = v.id group by m.branch_id having sum(m.qty) < 0);
+  if n > 0 then bad := bad || jsonb_build_object('check', 'no negative stock', 'count', n); end if;
+  select count(*) into n from sty_sale_lines l join sty_sales s on s.id = l.sale_id where s.tenant_id = tid and l.returned > l.qty;
+  if n > 0 then bad := bad || jsonb_build_object('check', 'returns not above quantity sold', 'count', n); end if;
+  return jsonb_build_object('ok', jsonb_array_length(bad) = 0, 'problems', bad);
+end $$;
+-- Rollback: recreate sty_integrity_check from db/217 and sty_delete_styles from db/239 (hides a style that has history). The foreign keys can stay as they are.
