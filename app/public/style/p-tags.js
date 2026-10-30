@@ -21,6 +21,10 @@ const TAG_DESIGNS = [
       h('div', { class: 'tg-bc' }, barcodeSvg(x.barcode, { height: 26, width: 152 })),
       h('div', { class: 'tg-c' }, x.barcode),
       h('div', { class: 'tg-dp' }, x.style.mrp > x.price ? h('s', null, inr(x.style.mrp)) : null, h('b', null, inr(x.price)))) },
+  { id: 'compact', name: 'Compact (small, fits any label)', build: (x, shop) => h('div', { class: 'tag-c' },
+      h('div', { class: 'tg-cn' }, [x.style.name.slice(0, 26), x.size].filter(Boolean).join(' · ')),
+      h('div', { class: 'tg-cb' }, barcodeSvg(x.barcode, { height: 30, width: 160 })),
+      h('div', { class: 'tg-cf' }, h('span', null, x.barcode), h('b', null, inr(x.price)))) },
 ];
 function tagDesignId() {
   try { const k = localStorage.getItem('sty.tagDesign'); if (TAG_DESIGNS.some((d) => d.id === k)) return k; } catch (e) {}
