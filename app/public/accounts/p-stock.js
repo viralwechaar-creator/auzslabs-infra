@@ -23,7 +23,7 @@ page('products', {
         { key: 'stock', label: 'In stock', r: true, value: true, sortVal: (p) => Number(p.stock), render: (p) => (p.is_service || !p.track_stock ? h('span', { class: 'muted' }, 'Service') : h('span', null, qty(p.stock) + ' ' + p.unit, Number(p.reorder_level) > 0 && Number(p.stock) <= Number(p.reorder_level) ? h('div', null, badge('Low stock', 'orange')) : null)) },
         { key: 'stock_value', label: 'Value', r: true, hideMobile: true, render: (p) => (p.is_service ? '' : money(p.stock_value)), sortVal: (p) => Number(p.stock_value) },
         { key: 'price', label: '', sub: true, hideDesk: true, render: (p) => inr(p.sale_price) + ' · GST ' + p.tax_rate + '%' },
-      ], list, { cards: true, onRow: (p) => go('product/' + p.id), selectable: writable, onSelect: (s) => barUpdate(s) });
+      ], list, { cards: true, cap: 6, onRow: (p) => go('product/' + p.id), selectable: writable, onSelect: (s) => barUpdate(s) });
       cur.list = list; cur.dv = dv; host.append(dv); if (writable) barUpdate(dv._sel);
     };
     const barUpdate = (s) => {
