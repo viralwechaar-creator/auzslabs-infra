@@ -261,7 +261,6 @@ async function scCharge(v, post) {
   try {
     const r = await api('acc_save_document', { p: payload });
     bust('products', 'parties'); products(true).catch(() => {});
-    if (pad && r.id && !r.pending_approval) await drawerSave(r.id, pad, 'sc-' + op);
     if (r.pending_approval) { toast('Saved. It needs a manager’s approval before it can be posted.'); scReset(); v.refresh(); return; }
     scReset(); toast('Draft saved'); v.refresh();
   } catch (e) {
