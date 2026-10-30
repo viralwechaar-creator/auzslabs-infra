@@ -64,6 +64,7 @@ export async function handleUpdate(client, table, cfg, body, query) {
   const cols = Object.keys(body).filter((c) => writable.includes(c));
   if (!cols.length) throw new HttpError(400, 'nothing to update');
   const filters = parseFilters(query, cfg.columns);
+  if (!filters.length) throw new HttpError(400, 'a filter is required to update rows');
   const values = cols.map((c) => body[c]);
   const setClauses = cols.map((c, i) => `${c}=$${i + 1}`);
   let sql = `update ${table} set ${setClauses.join(',')}`;

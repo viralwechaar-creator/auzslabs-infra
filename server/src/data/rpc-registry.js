@@ -36,7 +36,6 @@ export const RPC = {
   admin_wa_set_tenant: { params: ['p_tenant', 'p_allow_platform'], auth: true },
   admin_open_counts: { params: [], auth: true },
   submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche', 'p_hp'], auth: false },
-  demo_context: { params: ['p_kind', 'p_id'], auth: false },
   list_clients: { params: [], auth: true },
   update_client: { params: ['p_tenant_id', 'p_monthly_fee', 'p_renewal_date', 'p_notes', 'p_status'], auth: true },
   admin_set_tenant_slug: { params: ['p_tenant_id', 'p_slug'], auth: true },

@@ -13,7 +13,8 @@ const PLATFORM_ID = process.env.WA_PHONE_NUMBER_ID || '';
 const PLATFORM_TOKEN = process.env.WA_ACCESS_TOKEN || '';
 const APP_SECRET = process.env.WA_APP_SECRET || '';
 const VERIFY_TOKEN = process.env.WA_VERIFY_TOKEN || '';
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET is required');
 const MAX_ATTEMPTS = 5;
 const RETRY_BASE_S = process.env.WA_RETRY_BASE_S !== undefined ? Number(process.env.WA_RETRY_BASE_S) : 30;
 
