@@ -1,5 +1,5 @@
 /* AUZsStyle: keyboard shortcuts for a PC with a keyboard (and a hardware scanner). Press ? to see them all.
-   Plain letters only work when you are not typing in a box and no sheet is open; F-keys and Ctrl+Enter always work.
+   Plain letters only work when you are not typing in a box (press Esc to leave the box) and no sheet is open; F-keys and Ctrl+Enter always work.
    Keys that arrive faster than a person can type (a barcode scanner) are ignored, so scanning never triggers a shortcut. */
 'use strict';
 (function () {
@@ -21,12 +21,13 @@
       h('div', { class: 'cap' }, t('Sell')), row('F8  or  P', t('Pay')), row('F4  or  H', t('Hold the bill')), row('D', t('Discount')), row('C', t('Customer name')),
       h('div', { class: 'cap' }, t('Payment window')), row('Ctrl + Enter  or  F8', t('Complete the sale')), row('Esc', t('Close the window')),
       h('div', { class: 'cap' }, t('Stock')), row('N', t('New style')),
-      h('div', { class: 'hint' }, t('Letter keys only work when you are not typing in a box.'))) });
+      h('div', { class: 'hint' }, t('Letter keys only work when you are not typing in a box. Press Esc to leave the box.'))) });
   }
   window.styShortcuts = help;
 
   document.addEventListener('keydown', (e) => {
     const now = Date.now(), gap = now - last; if (e.key.length === 1) last = now;   // modifier keys (Shift) do not count as typing speed
+    if (e.key === 'Escape' && typing(e) && !sheetOpen()) { e.target.blur(); return; }   // Esc leaves the box so the letter shortcuts work
     if (e.ctrlKey && e.key === 'Enter') { const ok = document.querySelector('.sheet .sheet-f .btn.fill'); if (ok && /complete sale/i.test(ok.textContent)) { e.preventDefault(); click(ok); } return; }
     if (e.key === 'F2') { if (!sheetOpen() && focusSearch()) e.preventDefault(); return; }
     if (e.key === 'F8') {

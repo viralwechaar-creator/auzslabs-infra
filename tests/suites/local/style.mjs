@@ -308,7 +308,7 @@ export default async function run({ browser, stack }) {
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
     await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
-    await page.waitForTimeout(800); await page.locator('body').click({ position: { x: 5, y: 300 } });
+    await page.waitForTimeout(1200); await page.keyboard.press('Escape');
     await page.keyboard.press('Shift+/'); await page.waitForSelector('.kb-help', { timeout: 4000 }); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
     if (await page.locator('.kb-help').count()) await page.locator('.sheet .btn.plain').first().click();
     await page.keyboard.press('g'); await page.waitForTimeout(120); await page.keyboard.press('t'); await page.waitForTimeout(700);
@@ -317,7 +317,7 @@ export default async function run({ browser, stack }) {
     assert(/#\/sell/.test(await page.evaluate(() => location.hash)), 'G then S did not open Sell');
     await page.keyboard.press('/'); await page.waitForTimeout(200);
     assert(await page.evaluate(() => document.activeElement && document.activeElement.type === 'search'), '/ did not focus the search box');
-    await page.locator('body').click({ position: { x: 5, y: 300 } });
+    await page.keyboard.press('Escape');
     await page.keyboard.type('gt', { delay: 0 }); await page.waitForTimeout(500);
     assert(/#\/sell/.test(await page.evaluate(() => location.hash)), 'scanner-speed keys must not change the page');
     await c.close();
