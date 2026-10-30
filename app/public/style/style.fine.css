@@ -455,3 +455,6 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 
 /* label printers drift: shift the whole tag down (or up) so the shop name stays on its label */
 .tags .tag-l,.tags .tag-g{transform:translateY(var(--top,0mm))}
+
+/* row step of the roll: the page is as tall as one label plus the gap, so rows do not drift */
+.tags-2up .tagpage{height:var(--pitch,25mm)}
