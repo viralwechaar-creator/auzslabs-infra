@@ -23,7 +23,7 @@ page('products', {
         { key: 'stock', label: 'In stock', r: true, value: true, sortVal: (p) => Number(p.stock), render: (p) => (p.is_service || !p.track_stock ? h('span', { class: 'muted' }, 'Service') : h('span', null, qty(p.stock) + ' ' + p.unit, Number(p.reorder_level) > 0 && Number(p.stock) <= Number(p.reorder_level) ? h('div', null, badge('Low stock', 'orange')) : null)) },
         { key: 'stock_value', label: 'Value', r: true, hideMobile: true, render: (p) => (p.is_service ? '' : money(p.stock_value)), sortVal: (p) => Number(p.stock_value) },
         { key: 'price', label: '', sub: true, hideDesk: true, render: (p) => inr(p.sale_price) + ' · GST ' + p.tax_rate + '%' },
-      ], list, { cards: true, onRow: (p) => go('product/' + p.id), selectable: writable, onSelect: (s) => barUpdate(s) });
+      ], list, { cards: true, cap: 6, onRow: (p) => go('product/' + p.id), selectable: writable, onSelect: (s) => barUpdate(s) });
       cur.list = list; cur.dv = dv; host.append(dv); if (writable) barUpdate(dv._sel);
     };
     const barUpdate = (s) => {
@@ -65,7 +65,7 @@ function bulkProducts(ids, done) {
 
 function productSheet(p, onSaved, prefillName) {
   const isNew = !p; p = p || {}; if (isNew && prefillName) p.name = prefillName;
-  const st = { is_service: !!p.is_service, track_stock: p.track_stock !== false, tax_inclusive: !!p.tax_inclusive, track_batch: !!p.track_batch, track_serial: !!p.track_serial, active: p.active !== false };
+  const st = { is_service: !!p.is_service, is_subscription: !!p.is_subscription, track_stock: p.track_stock !== false, tax_inclusive: !!p.tax_inclusive, track_batch: !!p.track_batch, track_serial: !!p.track_serial, active: p.active !== false };
   const name = input({ value: p.name || '', placeholder: 'Name', label: 'Name' }), sku = input({ value: p.sku || '', placeholder: 'Unique code', label: 'SKU' }), bc = input({ value: p.barcode || '', placeholder: 'Barcode (optional)' });
   const catList = h('datalist', { id: 'catlist' }, master('category').map((c) => h('option', { value: c }))), brList = h('datalist', { id: 'brlist' }, master('brand').map((c) => h('option', { value: c })));
   const cat = h('input', { class: 'input', list: 'catlist', value: p.category || '', placeholder: 'Category' }), brand = h('input', { class: 'input', list: 'brlist', value: p.brand || '', placeholder: 'Brand' });
@@ -75,9 +75,11 @@ function productSheet(p, onSaved, prefillName) {
   const pls = master('price_list'), plIn = {}; const plVals = p.price_lists || {};
   const stockBox = h('div', { class: 'grid' }, toggleRow('Track stock', st.track_stock, (x) => { st.track_stock = x; }, 'Quantities, cost and low-stock alerts'), toggleRow('Batches and expiry', st.track_batch, (x) => { st.track_batch = x; }), toggleRow('Serial numbers', st.track_serial, (x) => { st.track_serial = x; }),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Reorder level', rl), field('Reorder quantity', rq)));
-  const svcRow = toggleRow('This is a service', st.is_service, (x) => { st.is_service = x; stockBox.classList.toggle('hidden', x); }, 'No stock is held. Use a SAC code.');
+  const subRow = toggleRow('This is a subscription (SaaS)', st.is_subscription, (x) => { st.is_subscription = x; }, 'Sold on a renewing plan -- set up each customer\'s plan and renewal date from the product page.');
+  subRow.classList.toggle('hidden', !st.is_service);
+  const svcRow = toggleRow('This is a service', st.is_service, (x) => { st.is_service = x; stockBox.classList.toggle('hidden', x); subRow.classList.toggle('hidden', !x); if (!x) { st.is_subscription = false; subRow.querySelector('input').checked = false; } }, 'No stock is held. Use a SAC code.');
   if (st.is_service) stockBox.classList.add('hidden');
-  const s = sheet({ title: isNew ? 'New product' : 'Edit product', body: h('div', { class: 'grid' }, catList, brList, field('Name', name), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('SKU', sku), field('Barcode', bc)), svcRow,
+  const s = sheet({ title: isNew ? 'New product' : 'Edit product', body: h('div', { class: 'grid' }, catList, brList, field('Name', name), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('SKU', sku), field('Barcode', bc)), svcRow, subRow,
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Category', cat), field('Brand', brand)), h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Unit', unit), field('HSN/SAC', hsn)),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('GST rate', gst), field('Sale price', sale)), toggleRow('Sale price includes tax', st.tax_inclusive, (x) => { st.tax_inclusive = x; }),
     h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' } }, field('Purchase price', buy), field('MRP', mrp)),
@@ -87,7 +89,7 @@ function productSheet(p, onSaved, prefillName) {
       if (!name.value.trim() || !sku.value.trim()) { toast('Name and SKU are required', { err: true }); return false; }
       const price_lists = {}; pls.forEach((n) => { if (plIn[n].value) price_lists[n] = N(plIn[n].value); });
       const r = await api('acc_save_product', { p: { id: p.id || null, name: name.value, sku: sku.value, barcode: bc.value, category: cat.value, brand: brand.value, unit: unit.value, hsn: hsn.value, tax_rate: gst.value, tax_inclusive: st.tax_inclusive, sale_price: sale.value || 0, purchase_price: buy.value || 0, mrp: mrp.value || 0,
-        is_service: st.is_service, track_stock: st.track_stock, track_batch: st.track_batch, track_serial: st.track_serial, reorder_level: rl.value || 0, reorder_qty: rq.value || 0, notes: nt.value, active: st.active, price_lists } });
+        is_service: st.is_service, is_subscription: st.is_subscription, track_stock: st.track_stock, track_batch: st.track_batch, track_serial: st.track_serial, reorder_level: rl.value || 0, reorder_qty: rq.value || 0, notes: nt.value, active: st.active, price_lists } });
       bust('products'); await loadCtx(); c(); toast(isNew ? 'Product added' : 'Saved'); onSaved && onSaved(r, sku.value);
     } }] });
   name.focus();
@@ -99,7 +101,7 @@ page('product', {
     const id = v.args[0];
     const p = (await products(true)).find((x) => x.id === id); if (!p) throw new Error('Product not found');
     const st = await api('acc_product_stock', { p_product: id });
-    v.header({ title: p.name, back: 'products', actions: [{ label: 'Print barcodes', icon: 'scan', run: () => go('labels?ids=' + p.id) }, can('acc_inventory') ? { label: 'Edit', icon: 'edit', primary: true, run: () => productSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service ? { label: 'Adjust stock', icon: 'layers', run: () => stockAdjustSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service && S.warehouses.length > 1 ? { label: 'Transfer', icon: 'swap', run: () => stockTransferSheet(p, () => v.refresh()) } : null].filter(Boolean) });
+    v.header({ title: p.name, back: 'products', actions: [p.is_subscription ? { label: 'Subscriptions', icon: 'repeat', run: () => go('subscriptions?product=' + p.id) } : null, { label: 'Print barcodes', icon: 'scan', run: () => go('labels?ids=' + p.id) }, can('acc_inventory') ? { label: 'Edit', icon: 'edit', primary: true, run: () => productSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service ? { label: 'Adjust stock', icon: 'layers', run: () => stockAdjustSheet(p, () => v.refresh()) } : null, can('acc_inventory') && !p.is_service && S.warehouses.length > 1 ? { label: 'Transfer', icon: 'swap', run: () => stockTransferSheet(p, () => v.refresh()) } : null].filter(Boolean) });
     const margin = Number(p.sale_price) && Number(p.avg_cost) ? Math.round((Number(p.sale_price) - Number(p.avg_cost)) / Number(p.sale_price) * 100) : null;
     v.root.append(h('div', { class: 'card grid', style: { gap: '6px' } }, h('div', { class: 'row sp wrap' }, h('div', null, h('div', { class: 'mono' }, p.sku), h('div', { class: 'small muted' }, [p.category, p.brand, p.hsn ? 'HSN/SAC ' + p.hsn : '', 'GST ' + p.tax_rate + '%'].filter(Boolean).join(' · '))), p.active ? null : badge('Inactive'))),
       h('div', { class: 'kpis' }, kpi('In stock', p.is_service || !p.track_stock ? 'Service' : qty(p.stock) + ' ' + p.unit, Number(p.reorder_level) > 0 ? 'Reorder at ' + qty(p.reorder_level) : ''), kpi('Average cost', p.is_service ? '–' : inr(p.avg_cost), p.is_service ? '' : 'Stock value ' + inr(p.stock_value, 0)), kpi('Sale price', inr(p.sale_price), margin != null ? margin + '% margin' : ''), kpi('Purchase price', inr(p.purchase_price), p.mrp && Number(p.mrp) ? 'MRP ' + inr(p.mrp) : '')));

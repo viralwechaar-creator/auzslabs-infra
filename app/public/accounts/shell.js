@@ -8,7 +8,7 @@ const SCANAPP = !!window.AUZ_SCAN, HOME = SCANAPP ? 'scan' : 'home';
 const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-scan.svg', icon: '/icon-scan.svg' } : { name: 'Accounting', title: 'AUZslab Accounting', logo: '/logo-accounts.svg', icon: '/icon-accounts.svg' };
 const NAV_LEDGER = [
   { group: '', items: ['home', 'scan', 'purchases'] },
-  { group: 'Sales', items: ['sales', 'customers', 'parties', 'receipts', 'followups'] },
+  { group: 'Sales', items: ['sales', 'customers', 'parties', 'receipts', 'followups', 'subscriptions'] },
   { group: 'Buying', items: ['suppliers', 'payments', 'expenses', 'expreq'] },
   { group: 'Stock', items: ['products', 'stock', 'labels'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
@@ -204,7 +204,7 @@ function buildShell() {
     [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'More')), h('a', { href: 'https://auzslab.in', class: 'nav-i', title: 'AUZslab' }, icon('book', 20), h('span', { class: 'lbl-t' }, 'AUZslab'))],
     h('div', { class: 'foot' }, S.ctx.tenant.is_demo ? h('span', { class: 'badge orange' }, 'Demo data') : null, h('span', null, S.user.email), h('span', null, cap1(S.user.role)),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
-      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
+      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', type: 'button', onclick: moreSheet }, 'Look & theme'), h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     tabsNow().map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(PAGES[id].icon, 25), h('span', null, PAGES[id].tabLabel || PAGES[id].title))),
