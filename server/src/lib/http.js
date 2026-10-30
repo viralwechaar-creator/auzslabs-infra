@@ -76,10 +76,10 @@ export function httpFromError(err) {
   return { status, message };
 }
 
-export function readJsonBody(req) {
+export function readJsonBody(req, maxBytes = 5_000_000) {
   return new Promise((resolve, reject) => {
     let data = '';
-    req.on('data', (chunk) => { data += chunk; if (data.length > 5_000_000) req.destroy(); });
+    req.on('data', (chunk) => { data += chunk; if (data.length > maxBytes) { reject(new HttpError(413, 'request too large')); req.destroy(); } });
     req.on('end', () => { try { resolve(data ? JSON.parse(data) : {}); } catch (e) { reject(new HttpError(400, 'bad json')); } });
     req.on('error', reject);
   });
