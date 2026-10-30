@@ -1,7 +1,7 @@
 /* Resolves which AUZlabs client a page belongs to, from the subdomain.
    Used both by pages an anonymous visitor can load without logging in
    (site.html, terms.html, privacy.html, w.html) AND by the authenticated
-   apps (index.html, payroll.html, builder.html) -- login itself is global,
+   apps (index.html, payroll.html) -- login itself is global,
    never scoped to a subdomain (one email = one login across the whole
    platform, see db/000_own_auth.sql), so a valid staff login for tenant A
    is still accepted on tenant B's own URL. RLS keeps the DATA correctly

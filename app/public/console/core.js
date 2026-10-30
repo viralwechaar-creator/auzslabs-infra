@@ -185,7 +185,7 @@ const NAV=[
  ['g:int','Zomato, Swiggy & more','plug',[['agg/swiggy','Swiggy'],['agg/zomato','Zomato'],['agg/ondc','ONDC'],['agg/dunzo','Dunzo'],['agg/ubereats','Uber Eats'],['agg/settings','Platform Settings']]],
  ['lbl','Settings'],
  ['g:mgmt','Business settings','gear',[['mgmt/config','Configuration'],['mgmt/website','Website & Booking'],['mgmt/outlets','Outlets'],['mgmt/devices','Devices'],['mgmt/hardware','Hardware'],['mgmt/reasons','Cancellations'],['mgmt/whatsapp','WhatsApp'],['mgmt/data','Data']]],
- ['g:ql','Shortcuts','star',[['int/apps','Explore Apps'],['ql/favorites','Favourites'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
+ ['g:ql','Shortcuts','star',[['ql/favorites','Favourites'],['ql/shortcuts','Shortcuts'],['ql/custom','Custom Links']]]
 ];
 const flatNav=()=>NAV.flatMap(n=>n[0]=='lbl'||n[0]=='href'?[]:n[0].startsWith('g:')?n[3].map(c=>[c[0],c[1],n[1]]):[[n[0],n[1],'']]);
 const titleOf=p=>{const f=flatNav().find(x=>x[0]==p);return f?f[1]:'Dashboard'};
@@ -222,8 +222,8 @@ function newNav(){
  flush();
  return nav}
 function otherLinks(nav){
- const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin'],['mobile','/mob.html','AUZsMob','box']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
- if(apps.length)nav.append(msec('apps','Other apps',apps.map(a=>mrow(a[3],a[2],null,a[1])),false));
+ const apps=[['auzslab','https://auzslab.in','AUZslab','link']];
+ if(apps.length)nav.append(msec('apps','More',apps.map(a=>mrow(a[3],a[2],null,a[1])),false));
  const acc=[mrow('gear','Plan & account',()=>auzPlan.open(sb)),mrow('link','Help & report a problem',()=>auzHelp.open(sb))];
  if(S.role=='owner')acc.push(mrow('rep','Backup, export or clear data',()=>auzMyData(sb)));
  nav.append(msec('acct','Account',acc,false));
@@ -248,8 +248,8 @@ function sideNav(){
    nav.append(h('button',{class:'nb'+(act?' on-g':'')+(act&&open?' open-g':''),onclick:()=>{S.open[id]=!open;render()}},ic(n[2]),h('span',{},n[1]),n[4]?h('span',{class:'badge'},n[4]):null,h('span',{class:'chev'+(open?' open':'')},ic('chr',14))),
     h('div',{class:'sub'+(open?' open':'')},...n[3].map(([pid,t])=>h('a',{class:S.page==pid?'on':'',href:'#'+pid,onclick:e=>{e.preventDefault();go(pid)}},t))));return}
   nav.append(h('button',{class:'nb'+(S.page==n[0]?' on':''),onclick:()=>go(n[0])},ic(n[2]),h('span',{},n[1])))});
- const apps=[['payroll','/payroll.html','Payroll','team'],['accounting','/accounts.html','Accounting','fin'],['mobile','/mob.html','AUZsMob','box']].filter(a=>S.features&&S.features[a[0]]===true&&S.enabledFeatures[a[0]]!==false);
- if(apps.length){nav.append(h('div',{class:'nav-lbl'},'Other apps'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
+ const apps=[['auzslab','https://auzslab.in','AUZslab','link']];
+ if(apps.length){nav.append(h('div',{class:'nav-lbl'},'More'));apps.forEach(a=>nav.append(h('a',{class:'nb',href:a[1]},ic(a[3]),h('span',{},a[2]))))}
  nav.append(h('div',{class:'nav-lbl'},'Account'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzPlan.open(sb)}},h('span',{},'Plan & account')));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzHelp.open(sb)}},h('span',{},'Help & report a problem')));
  if(S.role=='owner'){nav.append(h('div',{class:'nav-lbl'},'Data'));nav.append(h('a',{class:'nb',href:'#',onclick:e=>{e.preventDefault();auzMyData(sb)}},h('span',{},'Backup, export or clear data')))}
  nav.append(h('div',{class:'nav-lbl'},'This device'),...appearanceBits());

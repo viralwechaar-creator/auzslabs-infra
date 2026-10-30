@@ -54,7 +54,7 @@
 # ---- Addresses under the main domain ------------------------------------------------------------------------------------------
 # Only these exist (the main site, api., status., agents. have their own blocks):
 #   * ONE shared address per app: auzspos (POS + its Admin console), auzsstyle, auzsmob, auzspay, auzsledger, auzsscan, auzsfinance,
-#     and app = the hub (start page, team workspace, "build your own software", website builder, customers' bill pages).
+#     and app = the hub (start page, "build your own software", customers' bill pages).
 #     Each address serves ONLY its own app's files. Which business you see is decided by signing in, never by the address.
 #   * every other name (shopname.auzslab.in) is a SHOP address. It exists only for a shop that has website access (an online store,
 #     QR ordering, a salon website or a custom-built website) and serves only that website. The server decides (routes/sites.js asks
@@ -101,7 +101,7 @@
     # tenant.js decides which business (or shared address) a page belongs to: a stale cached copy once kept auzsmob.auzslab.in on the POS
     header /tenant.js Cache-Control "no-cache"
     # same reasoning, for the actual app-shell HTML itself (index.html,
-    # payroll.html, builder.html, site.html, ...) -- see the root domain
+    # payroll.html, site.html, ...) -- see the root domain
     # block above for the full story on why this exists.
     # the bare address "/" (land.html decides where it goes) must never be cached either, or a phone keeps the old redirect
     header / Cache-Control "no-cache"
@@ -159,7 +159,7 @@
     # the hub: also shows a customer's bill (their link is auzslab.in/b/<code>, which forwards here)
     @a_hub host app.{$DOMAIN}
     handle @a_hub {
-        import one_app /start.html /start.html /start.js /verify.html /my.html /my.js /my.css /salesman.html /builder.html /admin/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /chapterone/logo-full.png
+        import one_app /start.html /start.html /start.js /verify.html /my.html /my.js /my.css /admin/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /chapterone/logo-full.png
     }
 
     # ---- every other name: a shop address, only for a shop with a website ----

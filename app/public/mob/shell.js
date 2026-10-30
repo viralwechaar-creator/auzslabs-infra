@@ -188,11 +188,7 @@ function navItem(id, label, ic) {
   return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: label }, icon(ic, 20), h('span', { class: 'lbl-t' }, label));
 }
 function otherApps() {
-  if (!['owner', 'manager'].includes(S.user.role)) return null;
-  const apps = [['/index.html', 'POS', 'cash', 'pos'], ['/payroll.html', 'Payroll', 'wallet', 'payroll'], ['/accounts.html', 'Accounting', 'chart', 'accounting']]
-    .filter((a) => (S.dash.features || {})[a[3]] === true && (S.dash.enabled_features || {})[a[3]] !== false);
-  if (!apps.length) return null;
-  return [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'Other apps')), apps.map(([href, lbl, ic]) => h('a', { href, class: 'nav-i', title: lbl }, icon(ic, 20), h('span', { class: 'lbl-t' }, lbl)))];
+  return [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'More')), h('a', { href: 'https://auzslab.in', class: 'nav-i', title: 'AUZslab' }, icon('cash', 20), h('span', { class: 'lbl-t' }, 'AUZslab'))];
 }
 function buildShell() {
   const nav = navList();

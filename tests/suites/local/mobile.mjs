@@ -481,7 +481,7 @@ export default async function run({ browser, stack }) {
     await c.close();
   }, 'critical');
   await s.check('Help & report a problem (every app): the helper loads on all staff apps and the sheet opens from AUZsMob with email, screenshot and details', async () => {
-    for (const path of ['/index.html', '/dashboard.html', '/payroll.html', '/accounts.html', '/builder.html', '/mob.html']) {
+    for (const path of ['/index.html', '/dashboard.html', '/payroll.html', '/accounts.html', '/mob.html']) {
       const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const pg = await c.newPage();
       await pg.goto(stack.url('testmob', path)); await pg.waitForTimeout(800);
       assert(await pg.evaluate(() => !!(window.auzHelp && typeof window.auzHelp.open === 'function')), path + ' does not load the help helper');

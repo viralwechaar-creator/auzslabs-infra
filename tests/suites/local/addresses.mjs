@@ -114,7 +114,7 @@ export default async function run({ stack }) {
       for (const [h, ok, no] of [['auzspos', ['/', '/index.html', '/dashboard.html', '/pos/core.js'], ['/style.html', '/mob.html', '/payroll.html', '/accounts.html', '/start.html', '/site.html', '/store.html', '/style/core.js']],
         ['auzsstyle', ['/', '/style.html', '/style/core.js'], ['/index.html', '/mob.html', '/pos/core.js', '/dashboard.html']], ['auzsmob', ['/mob.html', '/mob/core.js'], ['/style.html', '/index.html']],
         ['auzspay', ['/payroll.html', '/payroll/core.js'], ['/index.html']], ['auzsledger', ['/accounts.html', '/accounts/core.js'], ['/scan.html', '/index.html']], ['auzsscan', ['/scan.html', '/accounts/core.js'], ['/accounts.html']],
-        ['auzsfinance', ['/finance.html', '/finance/core.js'], ['/index.html']], ['app', ['/', '/start.html', '/salesman.html', '/i.html', '/stybill.html'], ['/index.html', '/mob.html', '/style.html', '/store.html']]]) {
+        ['auzsfinance', ['/finance.html', '/finance/core.js'], ['/index.html']], ['app', ['/', '/start.html', '/i.html', '/stybill.html'], ['/index.html', '/mob.html', '/style.html', '/store.html']]]) {
         for (const p of ok) await t(h, p, 200); for (const p of no) await t(h, p, 404);
       }
       await t('auzspos', '/ds/auz.css', 200); await t('auzsstyle', '/sb-client.js', 200);

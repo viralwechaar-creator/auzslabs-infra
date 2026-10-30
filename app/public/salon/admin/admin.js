@@ -108,14 +108,14 @@
   $('#logout').addEventListener('click', async () => { await api('POST', '/api/admin/logout', {}).catch(() => {}); D = null; showLogin(); });
 
   async function boot() {
-    // Opened from the salesman page: #auz_gt=<base64url {t,u}> carries the trial owner's session.
+    // Opened from the hub: #auz_gt=<base64url {t,u}> carries the trial owner's session.
     const gt = (location.hash.match(/auz_gt=([A-Za-z0-9_-]+)/) || [])[1];
     if (gt) {
       history.replaceState(null, '', location.pathname + location.search);
       try {
         const o = JSON.parse(decodeURIComponent(escape(atob(gt.replace(/-/g, '+').replace(/_/g, '/')))));
         await api('POST', '/api/admin/handoff', { token: o.t });
-      } catch (ex) { $('#loginError').textContent = ex.message || 'Could not sign in from the salesman page.'; }
+      } catch (ex) { $('#loginError').textContent = ex.message || 'Could not sign in from the hub.'; }
     }
     const me = await fetch('/api/admin/me').then(r => r.json()).catch(() => ({}));
     if (!me.admin) return showLogin();

@@ -44,7 +44,6 @@ async function txnSheet(id, known) {
       row('Account', r.kind === 'transfer' ? r.account + ' → ' + r.to_account : r.account), row('Category', r.category), row('Person', r.person), row('Owner / partner', r.partner), row('Loan', r.loan),
       Number(r.interest) ? row('Interest', inr(r.interest)) : null, row('Note', r.purpose), row('Due date', r.due_date ? fmtD(r.due_date) : ''), Number(r.tax_rate) ? row('GST', Number(r.tax_rate) + '% included') : null, Number(r.tds_amt) ? row('TDS cut', inr(r.tds_amt)) : null, row('Proof', EVIDENCE[r.evidence]), row('Review', r.review === 'needs_review' ? 'Needs a check' : 'Confirmed'), row('Journal', r.journal_no)),
     r.files && r.files.length ? section('Proof files', h('div', { class: 'list' }, r.files.map((f) => liRow({ icon: 'eye', tone: 'gray', title: f.name, chevron: true, onclick: () => openEvidence(f).catch(fail) })))) : null,
-    r.journal_id && (S.dash.features || {}).accounting ? h('a', { class: 'btn', href: '/accounts.html#/journal/' + r.journal_id }, icon('book', 18), 'See in AUZsLedger books') : null,
     can('write') && r.status === 'posted' ? h('div', { class: 'col' },
       h('button', { class: 'btn', onclick: () => file.click() }, icon('camera', 18), 'Add photo or file'), file,
       r.review === 'needs_review' ? h('button', { class: 'btn', onclick: async () => { try { await api('fin_mark_txn', { p_id: r.id, p: { review: 'confirmed' } }); toast('Confirmed'); s.close(); route_(); } catch (e) { fail(e); } } }, icon('check', 18), 'Mark as checked') : h('button', { class: 'btn', onclick: async () => { try { await api('fin_mark_txn', { p_id: r.id, p: { review: 'needs_review' } }); toast('Marked to check'); s.close(); route_(); } catch (e) { fail(e); } } }, icon('alert', 18), 'Ask for a check'),
@@ -69,6 +68,6 @@ function ledgerSheet(f) {
     h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, LEDGER_NAME[f.kind] || f.kind), h('div', { class: 'n num' }, inr(f.amount)), f.status === 'cancelled' ? h('div', { class: 'small muted' }, 'Cancelled') : null),
     h('div', { class: 'list' }, row('Number', f.number), row('Date', fmtD(f.txn_date)), row('Party', f.party), row('Account', f.account), row('Paid by', modeName(f.mode)), row('Reference / UTR', f.reference), row('Settled', Number(f.paid) ? inr(f.paid) : '')),
     h('div', { class: 'banner info' }, icon('info', 18), 'This entry was made in AUZsLedger. Open it there to edit, cancel or share it.'),
-    hasLedger ? h('a', { class: 'btn fill', href: '/accounts.html#/' + (f.ref_type === 'payment' ? 'payment/' : 'doc/') + f.id }, icon('book', 18), 'Open in AUZsLedger') : null);
+    null);
   sheet({ title: 'From AUZsLedger', closeLabel: 'Done', body });
 }

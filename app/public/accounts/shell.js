@@ -201,7 +201,7 @@ function buildShell() {
     h('div', { class: 'brand' }, h('img', { src: BRAND.icon, alt: '', width: 30, height: 30 }), h('div', { class: 'lbl-t grow' }, h('b', null, BRAND.name), h('span', null, S.org.trade_name || S.org.legal_name || S.ctx.tenant.name)),
       h('button', { class: 'side-tg', type: 'button', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),
     navNow().map((g) => [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, g.items.map((i) => navItem(i))]),
-    apps.length ? [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'Other apps')), apps.map(([href, t, ic]) => h('a', { href, class: 'nav-i', title: t }, icon(ic, 20), h('span', { class: 'lbl-t' }, t)))] : null,
+    [h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, 'More')), h('a', { href: 'https://auzslab.in', class: 'nav-i', title: 'AUZslab' }, icon('book', 20), h('span', { class: 'lbl-t' }, 'AUZslab'))],
     h('div', { class: 'foot' }, S.ctx.tenant.is_demo ? h('span', { class: 'badge orange' }, 'Demo data') : null, h('span', null, S.user.email), h('span', null, cap1(S.user.role)),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: shortcutsSheet }, 'Shortcuts'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));

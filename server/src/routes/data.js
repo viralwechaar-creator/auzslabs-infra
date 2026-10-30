@@ -2,7 +2,6 @@ import { withAuth } from '../db.js';
 import { revokeAllSessionsForUser } from '../auth.js';
 import { captureError } from '../errors.js';
 import { requireVerifiedEmail } from '../lib/guards.js';
-import { sendTeamApplicationReceived, sendTeamApplicationToAdmin, sendTeamDecisionEmail } from '../mail.js';
 import { HttpError, httpFromError, rateLimited, readJsonBody } from '../lib/http.js';
 import { TABLES } from '../data/tables.js';
 import { RPC } from '../data/rpc-registry.js';
@@ -100,7 +99,6 @@ export async function handle(ctx) {
     // The contact form shares the generous public-RPC bucket above (sized for QR self-ordering, not a "get in
     // touch" form), so it also gets its own tighter cap -- a real visitor never submits this more than a
     // couple of times; this bounds the spam a bot can push into leads even if it clears the honeypot (db/131).
-    if (fnName === 'submit_team_application' && rateLimited(`teamapp:${ip}`, 5, 60 * 60_000)) throw new HttpError(429, 'too many requests, try again later');
     if (fnName === 'submit_lead' && rateLimited(`lead:${ip}`, 5, 60 * 60_000)) throw new HttpError(429, 'too many requests, try again later');
     if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
     const args = await readJsonBody(req);
@@ -118,15 +116,7 @@ export async function handle(ctx) {
     // session still valid after telling the owner "your old password stops working" -- that sentence was only true of
     // the password, never the still-open session, until this line.
     if (fnName === 'admin_reset_client_password' && result && /^[0-9a-f-]{36}$/i.test(String(result.user_id || ''))) await revokeAllSessionsForUser(result.user_id).catch(() => {});
-    // Join-the-team emails (best effort: a missing mail key or a bounce never fails the request).
-    if (fnName === 'submit_team_application' && args && !args.p_hp && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(args.p_email || ''))) {
-      sendTeamApplicationReceived({ to: String(args.p_email), name: String(args.p_name || '') }).catch(() => {});
-      sendTeamApplicationToAdmin({ to: process.env.ADMIN_NOTIFY_EMAIL || 'helloauzslab@gmail.com', name: String(args.p_name || ''), email: String(args.p_email), phone: String(args.p_phone || ''), role: String(args.p_role || '') }).catch(() => {});
-    }
-    if (fnName === 'admin_decide_team_application' && result && result.email) {
-      sendTeamDecisionEmail({ to: result.email, name: result.name, approved: result.status === 'approved', role: result.role }).catch(() => {});
-    }
-    if (user && (fnName.startsWith('sty_') || fnName.startsWith('admin_') || fnName === 'push_record' || fnName.startsWith('save_') || fnName.startsWith('salesman_'))) invalidatePublic();
+    if (user && (fnName.startsWith('sty_') || fnName.startsWith('admin_') || fnName === 'push_record' || fnName.startsWith('save_'))) invalidatePublic();
     return reply(200, { data: result });
   }
   return false;

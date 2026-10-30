@@ -17,7 +17,7 @@ const APP_PAGES = [
   ['auzsledger', /^\/(accounts\.html|accounts\/)/],
   ['auzsscan', /^\/scan\.html/],
   ['auzsfinance', /^\/(finance\.html|finance\/)/],
-  ['app', /^\/(start\.html|my\.html|salesman\.html|builder\.html)/],
+  ['app', /^\/(start\.html|my\.html)/],
 ];
 const appOf = (p) => { for (const [a, re] of APP_PAGES) if (re.test(p)) return a; return null; };
 const base = () => (DOMAIN && DOMAIN !== 'localhost' ? DOMAIN : 'auzslab.in');

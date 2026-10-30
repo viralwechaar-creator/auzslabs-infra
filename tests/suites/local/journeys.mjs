@@ -132,7 +132,7 @@ export default async function run({ browser, stack }) {
     await s.shot(p, 'admin-onboard-custom');
     assert(!errs.length, errs.join(' | ')); await c.close();
   }, 'critical');
-  await s.check('Admin: client payments need a unique UTR and show up; salesman work dashboard counts prospects and conversions', async () => {
+  await s.check('Admin: client payments need a unique UTR and show up', async () => {
     const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json());
     const call = async (fn, args, tok) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(args) }); let d = null; try { d = await r.json(); } catch {} return { status: r.status, data: d && d.data !== undefined ? d.data : d }; };
     const tk = async (email) => { const d = await login(email); return (d.data || d).access_token; };
@@ -149,16 +149,11 @@ export default async function run({ browser, stack }) {
     const list = (await call('admin_list_client_payments', { p_tenant_id: t }, adm)).data;
     assert(list.length === 1 && list[0].utr === '412345678901' && Number(list[0].amount) === 5000, 'payment not listed');
     assert((await call('admin_list_client_payments', {}, plain)).status >= 400, 'non-admin read payments');
-    const work = (await call('admin_salesman_work', { p_days: 0 }, adm)).data.find((x) => x.id === sm);
-    assert(work && work.created === 1 && work.converted === 1 && Number(work.paid_total) === 5000 && work.prospects[0].status === 'converted', 'salesman work wrong: ' + JSON.stringify(work));
-    assert((await call('admin_salesman_work', { p_days: 0 }, plain)).status >= 400, 'non-admin read salesman work');
     // the screens
     const c = await newCtx(browser, stack, { w: 1300, h: 900 }); const p = await c.newPage(); const errs = watch(p);
     await p.goto(stack.url('', '/admin.html')); await p.waitForTimeout(800); await p.fill('#email', USERS.admin); await p.fill('#password', PASSWORD); await p.click('#signin');
     await p.waitForSelector('.a-side-btn[data-section=clientPay]', { timeout: 15000 });
     await p.click('.a-side-btn[data-section=clientPay]'); await p.waitForSelector('#clientPayList code', { timeout: 10000 });
-    await p.click('.a-side-btn[data-section=salesWork]'); await p.waitForSelector('#salesWorkBody [data-sw]', { timeout: 10000 });
-    assert(/QA Salesman/.test(await p.locator('#salesWorkBody').innerText()), 'salesman missing on dashboard');
     await c.close();
   }, 'critical');
   await s.check('Admin permanent delete: leads, requests, accounts and a whole client (every app\'s data); guarded against owners, self and non-admins', async () => {

@@ -9,8 +9,7 @@
     payroll:  { path: '/payroll.html',  name: 'Payroll',    note: 'Attendance, salary and leave' },
     accounts: { path: '/accounts.html', name: 'Accounting', note: 'Invoices, GST and reports' },
     console:  { path: '/dashboard.html', name: 'Admin console', note: 'Reports and settings' },
-    salon:    { path: '/salon/admin/',  name: 'Salon',      note: 'Bookings, billing and clients' },
-    builder:  { path: '/builder.html',  name: 'Website builder', note: 'Edit your shop website' }
+    salon:    { path: '/salon/admin/',  name: 'Salon',      note: 'Bookings, billing and clients' }
   };
   var qs = new URLSearchParams(location.search);
   var app = qs.get('app') || 'hub';

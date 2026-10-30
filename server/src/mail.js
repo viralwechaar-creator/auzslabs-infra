@@ -189,38 +189,3 @@ export function sendRenewalEmail({ to, business, days, renewalDate }) {
 }
 
 // Join-the-team emails (db/177-178). All quiet no-ops without RESEND_API_KEY; the admin still sees the application in Admin -> Team.
-export function sendTeamApplicationReceived({ to, name }) {
-  return send({
-    to, label: 'team application', subject: 'We got your AUZslab application',
-    html: emailLayout({
-      preheader: 'Thanks for applying to join the AUZslab team.', kicker: 'Join our team',
-      title: 'Thank you, we have your application',
-      body: `<p style="margin:0">Hi ${escapeHtml(name || '')},</p><p style="margin:12px 0 0">We will read your application and get back to you by phone or email.</p>`,
-    }),
-  });
-}
-export function sendTeamApplicationToAdmin({ to, name, email, phone, role }) {
-  return send({
-    to, label: 'team application (admin)', subject: `New team application: ${String(name || '').slice(0, 60)}`,
-    html: emailLayout({
-      preheader: 'Someone applied to join the team.', kicker: 'Admin',
-      title: 'New team application',
-      body: `<p style="margin:0"><b>${escapeHtml(name || '')}</b> wants to join as <b>${escapeHtml(role || 'other')}</b>.</p><p style="margin:12px 0 0">${escapeHtml(email || '')}${phone ? ' &middot; ' + escapeHtml(phone) : ''}</p>`,
-      button: { label: 'Review in Admin', href: `${SITE}/admin.html` },
-    }),
-  });
-}
-export function sendTeamDecisionEmail({ to, name, approved, role }) {
-  const roleName = { salesman: 'Salesman', setup: 'Client setup', support: 'Support', manager: 'Manager' }[role] || 'team member';
-  return send({
-    to, label: 'team decision', subject: approved ? 'Welcome to the AUZslab team' : 'About your AUZslab application',
-    html: emailLayout({
-      preheader: approved ? 'Your application was approved.' : 'An update on your application.', kicker: 'Join our team',
-      title: approved ? 'You are in' : 'Thank you for applying',
-      body: approved
-        ? `<p style="margin:0">Hi ${escapeHtml(name || '')}, your application was approved. Your role: <b>${escapeHtml(roleName)}</b>.</p><p style="margin:12px 0 0">Sign in with Google at app.auzslab.in using this same email address and your team dashboard will open.</p>`
-        : `<p style="margin:0">Hi ${escapeHtml(name || '')}, thank you for your interest in AUZslab. We are not able to take your application forward right now. We will keep your details in mind for the future.</p>`,
-      button: approved ? { label: 'Open my dashboard', href: 'https://app.auzslab.in' } : null,
-    }),
-  });
-}

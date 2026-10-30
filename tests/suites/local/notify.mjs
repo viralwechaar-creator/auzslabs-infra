@@ -13,7 +13,6 @@ export default async function run({ browser, stack }) {
   const uid = async (email) => (await q('select id from auth_users where email=$1', [email]))[0].id;
   const cliId = await uid(USERS.plain), salesId = await uid(USERS.payStaff);
   await q('delete from notifications');
-  await ok('admin_add_team_member', { p_email: USERS.payStaff, p_name: 'Sam Sales', p_role: 'salesman', p_phone: null }, adm);
 
   await s.check('A client is told about each step of their request, and nobody else sees it', async () => {
     const o = (await q("insert into client_orders (user_id, contact_name, phone, business_name) values ($1,'Cee','9999999999','Cee Shop') returning id", [cliId]))[0].id;
@@ -30,23 +29,9 @@ export default async function run({ browser, stack }) {
     await fails(call, 'inbox_list', null);
   }, 'critical');
 
-  await s.check('A team member is told about an assignment, a notice and a task; the admin and managers are told about team work', async () => {
-    await q("insert into team_activity (uid, kind, label) values ($1,'lead_assigned','Ravi Cafe')", [salesId]);
-    await ok('admin_post_team_notice', { p_title: 'Meeting at 5', p_body: 'Office', p_audience: 'all' }, adm);
-    const t = await ok('inbox_list', {}, sales);
-    const types = t.items.map((x) => x.type);
-    assert(types.includes('team_assign') && types.includes('team_notice'), JSON.stringify(types));
-    await q("insert into team_activity (uid, kind, label) values ($1,'lead_added','Lead Z')", [salesId]);
-    await ok('admin_add_team_member', { p_email: USERS.mobManager, p_name: 'Max', p_role: 'manager', p_phone: null }, adm);
-    await q("insert into team_activity (uid, kind, label) values ($1,'lead_added','Lead Y')", [salesId]);
-    assert((await ok('inbox_list', {}, mgr)).items.some((x) => x.type === 'team_work' && /Lead Y/.test(x.body)), 'manager not told');
-    assert((await ok('inbox_list', {}, sales)).items.every((x) => x.type !== 'team_work'), 'salesman sees supervisor notices');
-  });
-
-  await s.check('Platform notices reach only the admin and managers; a failed WhatsApp message raises one system alert an hour', async () => {
+  await s.check('Platform notices reach only the admin; a failed WhatsApp message raises one system alert an hour', async () => {
     await q("insert into notifications (tenant_id, type, title, body) values (null,'lead','New lead: Test','x')");
     assert((await ok('inbox_list', {}, adm)).items.some((x) => x.title === 'New lead: Test'), 'admin did not get the lead');
-    assert((await ok('inbox_list', {}, mgr)).items.some((x) => x.title === 'New lead: Test'), 'manager did not get the lead');
     assert((await ok('inbox_list', {}, cli)).items.every((x) => x.title !== 'New lead: Test'), 'client sees admin notices');
     await q("delete from wa_outbox"); const tpl = (await q('select key from wa_templates limit 1'))[0].key;
     for (let i = 0; i < 3; i++) { const id = (await q("insert into wa_outbox (tenant_id,to_phone,template,status) values (null,'91',$1,'queued') returning id", [tpl]))[0].id; await q("update wa_outbox set status='failed', error='bad token' where id=$1", [id]); }
@@ -68,15 +53,11 @@ export default async function run({ browser, stack }) {
     await ctx.close();
   });
 
-  await s.check('The bell sits in the admin panel top bar and the team workspace header', async () => {
+  await s.check('The bell sits in the admin panel top bar', async () => {
     const ctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await ctx.newPage();
     await page.addInitScript((t) => localStorage.setItem('auz_session', JSON.stringify({ access_token: t, user: { id: 'x' } })), adm);
     await page.goto(stack.url('', '/admin.html')); await page.waitForSelector('.a-topbar-actions .auzb', { timeout: 15000 });
     await ctx.close();
-    const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage();
-    await p2.addInitScript((t) => localStorage.setItem('auz_session', JSON.stringify({ access_token: t, user: { id: 'x' } })), sales);
-    await p2.goto(stack.url('app', '/salesman.html')); await p2.waitForSelector('.top-in .auzb', { timeout: 15000 });
-    await c2.close();
   });
 }
 async function fails(call, fn, tok) { const r = await call(fn, {}, tok); assert(r.status >= 400, fn + ' should need a login'); }

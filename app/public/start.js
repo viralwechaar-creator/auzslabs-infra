@@ -36,7 +36,6 @@
     ['accounts', 'AUZsLedger', 'Invoices, GST and books', '/accounts.html', function (d) { return own(d, 'accounting'); }],
     ['scan', 'AUZsScan', 'Scan, sell and add stock', '/scan.html', function (d) { return own(d, 'accounting') || own(d, 'scan'); }],
     ['console', 'Admin console', 'Reports, menu, stock and settings', '/dashboard.html', function (d) { return own(d, 'pos') && (d.my_role === 'owner' || d.my_role === 'manager'); }],
-    ['builder', 'Website Builder', 'Edit your shop website', '/builder.html', function (d) { return own(d, 'website_builder') && d.my_role === 'owner'; }]
   ];
 
   // First screen for a signed-out visitor: a brief greeting and a choice, matching the "welcome, then
@@ -236,8 +235,7 @@
     if (hm && hm.error && (hm.error.status || 0) === 401) { await sb.auth.signOut(); return signInForm('Your session ended. Please sign in again.'); }
     if (me && me.admin) return adminHome(me);
     // someone who pressed "Sign in to build my app" goes back to the builder after signing in (not to a tile screen)
-    if (me && !me.admin && !me.team && !me.business) { var gb = false; try { gb = localStorage.getItem('auz_go_build') === '1'; localStorage.removeItem('auz_go_build'); } catch (e) {} if (gb) { location.replace('/my.html'); return; } }
-    if (me && me.team && !me.business) { location.replace('/salesman.html'); return; }
+    if (me && !me.admin && !me.business) { var gb = false; try { gb = localStorage.getItem('auz_go_build') === '1'; localStorage.removeItem('auz_go_build'); } catch (e) {} if (gb) { location.replace('/my.html'); return; } }
     if (me && !me.business) return customerHome();
     var r = await sb.rpc('my_dashboard');
     if (r.error || !r.data) {
@@ -249,7 +247,6 @@
     var ts = await sb.rpc('trial_status'), tr = ts && ts.data;
     if (tr && tr.state === 'locked') return trialLocked(tr, d);
     var onTrial = tr && tr.state === 'active';
-    if (me && me.team) list.unshift({ id: 'team', name: 'Team workspace', note: 'Leads, client setups and your team work', path: '/salesman.html' });
     foot.textContent = ''; foot.append(el('span', { text: (d.my_email || '') }), el('button', { type: 'button', onclick: signOut, text: 'Sign out' }));
     if (!list.length) return set([el('h1', { text: d.tenant ? d.tenant.name : 'AUZslab' }), el('p', { class: 'sub', text: 'No apps are switched on for this login yet. Ask AUZslab or your owner.' })]);
     var combo = list.filter(function (a) { return a.id !== 'salon' && a.id !== 'team'; });

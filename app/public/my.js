@@ -224,8 +224,7 @@
     ['payroll', 'Staff and pay', '/payroll.html', function (d) { return own(d, 'payroll'); }],
     ['accounts', 'Accounts', '/accounts.html', function (d) { return own(d, 'accounting'); }],
     ['scan', 'Scan to bill', '/scan.html', function (d) { return own(d, 'accounting') || own(d, 'scan'); }],
-    ['console', 'Reports and settings', '/dashboard.html', function (d) { return own(d, 'pos') && (d.my_role === 'owner' || d.my_role === 'manager'); }],
-    ['builder', 'Website', '/builder.html', function (d) { return own(d, 'website_builder') && d.my_role === 'owner'; }]
+    ['console', 'Reports and settings', '/dashboard.html', function (d) { return own(d, 'pos') && (d.my_role === 'owner' || d.my_role === 'manager'); }]
   ];
   var COLOURS = ['#800020', '#0f5a56', '#2a3f9a', '#a24a14', '#7a2e5a', '#3a3a3a'];
   var D, list = [], cfg, cfgKey, current = null, frames = {};

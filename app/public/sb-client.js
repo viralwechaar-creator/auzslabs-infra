@@ -36,7 +36,7 @@
     ['auzspos', /^\/(index|dashboard|backoffice)\.html$|^\/(pos|console)\//],
     ['auzsstyle', /^\/style\.html$|^\/style\//], ['auzsmob', /^\/mob\.html$|^\/mob\//], ['auzspay', /^\/payroll\.html$|^\/payroll\//],
     ['auzsledger', /^\/accounts\.html$/], ['auzsscan', /^\/scan\.html$/], ['auzsfinance', /^\/finance\.html$|^\/finance\//],
-    ['app', /^\/(start|my|salesman|builder)\.html$/],
+    ['app', /^\/(start|my)\.html$/],
   ];
   function appUrlFor(hostname, protocol, page, sess) {
     const parts = String(hostname).split('.'); const root = parts.slice(-2).join('.');
@@ -81,7 +81,7 @@
   // a smaller JPEG. Never blocks an upload: any failure just falls
   // back to the original file. Also exposed as window.auzCompressImage
   // for the handful of upload paths that post raw bytes directly
-  // (pay.html's payment screenshot, salesman.html's branding uploads)
+  // (pay.html's payment screenshot)
   // instead of going through storage.from().upload().
   async function compressUploadBlob(blob, opts) {
     try {
@@ -161,7 +161,7 @@
         // there's nothing to distinguish here; this alias exists only
         // because payroll.html calls .maybeSingle() and the shim's
         // comment above claimed to cover every call site but was never
-        // actually checked against payroll.html/builder.html when they
+        // actually checked against payroll.html when they
         // were added, so this one was missing outright -- not a
         // behavior difference from .single(), just the missing name.
         maybeSingle() { state.single = true; return then(); },
