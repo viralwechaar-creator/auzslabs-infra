@@ -37,7 +37,7 @@
   --veg:#2e7d32;--nonveg:#c62828;--egg:#c98a00;
   /* type (Apple text styles) */
   --font:'AUZRupee',-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --mono:'AUZRupee',ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   --fs-cap:12px;--fs-foot:13px;--fs-sub:15px;--fs-body:16px;--fs-head:17px;--fs-t3:20px;--fs-t2:22px;--fs-t1:28px;--fs-large:34px;
   /* space, shape, depth, motion */
   --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s8:32px;

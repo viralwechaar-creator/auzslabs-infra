@@ -275,6 +275,31 @@ export default async function run({ browser, stack }) {
     const nx = (await q("select sty_next($1,'sale') n", [tid]))[0].n;
     assert(+nx > +mx, 'next ' + nx + ' is not above highest ' + mx);
   });
+  await s.check('Bills: edit details, cancel with or without putting items back, delete only a cancelled bill (manager only)', async () => {
+    const mk = () => ok(manager, 'sty_sell', { p: { id: uid(), lines: [{ variantId: vL.id, qty: 1 }], payments: [{ mode: 'cash', amount: 3000 }] } });
+    const b1 = await mk(); const e = await ok(manager, 'sty_edit_sale', { p_id: b1.id, p: { customerName: 'Edit Person', customerPhone: '9123456780', note: 'edited note' } });
+    assert(e.customer && e.customer.name === 'Edit Person' && e.note === 'edited note', 'edit not saved: ' + JSON.stringify(e.customer));
+    await fails(staff, 'sty_edit_sale', { p_id: b1.id, p: { note: 'x' } }, /does not allow/i);
+    await fails(manager, 'sty_delete_sale', { p_id: b1.id }, /Cancel the bill first/i);
+    const s0 = await stock(vL.id);
+    await ok(manager, 'sty_void_sale', { p_id: b1.id, p_reason: 'keep out', p_restock: false });
+    assert(await stock(vL.id) === s0, 'stock changed although items were not put back');
+    await fails(manager, 'sty_edit_sale', { p_id: b1.id, p: { note: 'y' } }, /cancelled/i);
+    await fails(staff, 'sty_delete_sale', { p_id: b1.id }, /does not allow/i);
+    const d = await ok(manager, 'sty_delete_sale', { p_id: b1.id }); assert(d.deleted === true, 'not deleted');
+    assert((await q('select count(*)::int n from sty_sales where id=$1', [b1.id]))[0].n === 0, 'bill still there');
+    const b2 = await mk(); const s1 = await stock(vL.id); await ok(manager, 'sty_void_sale', { p_id: b2.id, p_reason: 'back' }); assert(await stock(vL.id) === s1 + 1, 'items not put back by default');
+    await integrity();
+  });
+  await s.check('GST lookup in AUZsStyle: refused until the admin allows it, then it passes the gate', async () => {
+    const tok = await login(USERS.styOwner); const tid = (await q("select id from tenants where slug='teststyle'"))[0].id;
+    const call = async () => { const r = await fetch(stack.apiBase + '/gst/lookup', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ gstin: '27AAPFU0939F1ZV' }) }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) - 'gst_lookup' where tenant_id=$1", [tid]);
+    const off = await call(); assert(off.status === 403, 'should be refused without the cap, got ' + off.status);
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) || '{\"gst_lookup\":true}'::jsonb where tenant_id=$1", [tid]);
+    const on = await call(); assert(on.status !== 403, 'should pass the permission gate once allowed, got ' + on.status + ' ' + JSON.stringify(on.body));
+    await q("update tenant_settings set caps = coalesce(caps,'{}'::jsonb) - 'gst_lookup' where tenant_id=$1", [tid]);
+  });
   await s.check('Logo upload end to end: upload, save, icon drawn from it, shown in the app', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });

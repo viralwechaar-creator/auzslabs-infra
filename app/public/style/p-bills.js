@@ -43,7 +43,28 @@ async function billSheet(id, changed) {
       h('button', { class: 'btn', type: 'button', onclick: () => shareWa(sale) }, icon('share', 18), t('WhatsApp')),
       open && sale.lines.some((l) => l.qty > l.returned) ? h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); returnSheet(sale, changed); } }, icon('swap', 18), t('Return or exchange')) : null,
       open && sale.status === 'due' && sale.customer ? h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); collectDue(sale, changed); } }, icon('cash', 18), t('Collect due')) : null,
-      open && can('sty_manage') && !(sale.returns || []).length ? h('button', { class: 'btn danger', type: 'button', onclick: async () => { const r = await promptReason(t('Cancel this bill?')); if (r === null) return; await api('sty_void_sale', { p_id: sale.id, p_reason: r }); s.close(); S.catAt = 0; toast(t('Bill cancelled')); changed && changed(); } }, icon('trash', 18), t('Cancel bill')) : null)) });
+      open && can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); editBill(sale, changed); } }, icon('edit', 18), t('Edit details')) : null,
+      open && can('sty_manage') && !(sale.returns || []).length ? h('button', { class: 'btn danger', type: 'button', onclick: async () => { const r = await cancelSheet(); if (!r) return; await api('sty_void_sale', { p_id: sale.id, p_reason: r.reason, p_restock: r.restock }); s.close(); S.catAt = 0; toast(r.restock ? t('Bill cancelled, items put back in stock') : t('Bill cancelled')); changed && changed(); } }, icon('trash', 18), t('Cancel bill')) : null,
+      !open && can('sty_manage') ? h('button', { class: 'btn danger', type: 'button', onclick: async () => { if (!await confirmBox(t('Delete this bill?'), t('It is removed for good, with its stock entries. This cannot be undone.'), t('Delete'), true)) return; try { await api('sty_delete_sale', { p_id: sale.id }); } catch (e) { return fail(e); } s.close(); S.catAt = 0; toast(t('Bill deleted')); changed && changed(); } }, icon('trash', 18), t('Delete bill')) : null)) });
+}
+// cancel: a reason, and whether the items go back into stock (leave it unticked for goods that are damaged or lost)
+function cancelSheet() {
+  return new Promise((res) => {
+    const i = input({ placeholder: t('Reason') }); const back = h('input', { type: 'checkbox', checked: true });
+    sheet({ title: t('Cancel this bill?'), onClose: (v) => { if (v === undefined) res(null); }, body: h('div', { class: 'grid' }, field(t('Reason'), i),
+      h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, t('Put the items back in stock')), h('div', { class: 'muted small' }, t('Untick if the goods are damaged or lost'))), back)),
+      actions: [{ label: t('Confirm'), danger: true, onclick: (close) => { res({ reason: i.value.trim(), restock: back.checked }); close('ok'); } }] });
+  });
+}
+// change who the bill was for and its note (amounts and items stay as billed)
+function editBill(sale, changed) {
+  const nm = input({ value: sale.customer ? sale.customer.name || '' : '', placeholder: t('Customer name') }), ph = input({ value: sale.customer ? sale.customer.phone || '' : '', mode: 'tel', placeholder: t('Phone') });
+  const note = h('textarea', { class: 'textarea', rows: 2 }, sale.note || '');
+  sheet({ title: t('Edit') + ' ' + sale.number, body: h('div', { class: 'grid' }, field(t('Customer name'), nm), field(t('Phone'), ph), field(t('Note'), note), h('div', { class: 'hint' }, t('Items and amounts stay as billed. To change those, cancel the bill and make a new one.'))),
+    actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
+      try { await api('sty_edit_sale', { p_id: sale.id, p: { customerName: nm.value, customerPhone: ph.value, note: note.value } }); } catch (e) { fail(e); return false; }
+      close(); S.catAt = 0; toast(t('Saved')); changed && changed();
+    } }] });
 }
 function promptReason(title) {
   return new Promise((res) => { const i = input({ placeholder: t('Reason') }); sheet({ title, onClose: (v) => { if (v === undefined) res(null); }, body: h('div', { class: 'grid' }, field(t('Reason'), i)), actions: [{ label: t('Confirm'), danger: true, onclick: (close) => { res(i.value.trim()); close('ok'); } }] }); });
