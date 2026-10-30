@@ -460,7 +460,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tags-2up .tagpage{height:var(--pitch,25mm)}
 
 /* Compact tag: sizes follow the label itself (container units), so it fits 50x25, 38x25, the A4 sheet and the 2-across roll without settings */
-.tag-c{container-type:size;box-sizing:border-box;width:50mm;height:25mm;padding:7cqh 6cqw 6cqh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:4cqh;font-family:'AUZRupee','Segoe UI',Helvetica,Arial,sans-serif;color:#000;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
+.tag-c{container-type:size;box-sizing:border-box;width:50mm;height:25mm;padding:6cqh 6cqw 5cqh;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:3cqh;font-family:'AUZRupee','Segoe UI',Helvetica,Arial,sans-serif;color:#000;background:#fff;overflow:hidden;page-break-after:always;break-after:page}
 .tag-c .tg-cn{font-size:13cqh;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .tag-c .tg-cb{min-height:0;display:flex;justify-content:center}.tag-c .tg-cb svg{width:100%;height:100%;display:block}
 .tag-c .tg-cf{display:flex;justify-content:space-between;align-items:baseline;gap:3cqw;font-size:9cqh;line-height:1;letter-spacing:.04em}.tag-c .tg-cf b{font-size:15cqh;font-weight:700;letter-spacing:0}
@@ -468,3 +468,5 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .tags-2up .tag-c{width:50mm;height:25mm;page-break-after:auto;break-after:auto}
 .tagprev .tag-c,.tagone .tag-c{page-break-after:auto;break-after:auto}
 .tags .tag-c{transform:translateY(var(--top,0mm))}
+.tag-c .tg-cs{font-size:8cqh;font-weight:700;letter-spacing:.22em;line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag-c .tg-cn{font-size:11.5cqh}
