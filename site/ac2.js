@@ -28,10 +28,10 @@
   /* ---------- shell ---------- */
   function build() {
     shell = document.createElement('div'); shell.className = 'a3'; shell.id = 'a3';
-    var nb = function (p) { return '<button class="a3-nb" data-go="' + p[0] + '" aria-label="' + TITLES[p[0]] + '">' + svg(p[1]) + '<span class="tip">' + TITLES[p[0]] + '</span>' + (p[0] === 'notifications' ? '<span class="dot" id="a3-dotn" hidden></span>' : '') + '</button>'; };
+    var nb = function (p) { return '<button class="a3-nb" data-go="' + p[0] + '" aria-label="' + TITLES[p[0]] + '">' + svg(p[1]) + '<span class="lb">' + TITLES[p[0]] + '</span><span class="tip">' + TITLES[p[0]] + '</span>' + (p[0] === 'notifications' ? '<span class="dot" id="a3-dotn" hidden></span>' : '') + '</button>'; };
     shell.innerHTML =
       '<aside class="a3-rail"><a class="a3-logo" href="index.html" aria-label="AUZslab home">A.</a>' + RAIL.map(nb).join('') +
-      '<div class="a3-rb"><button class="a3-nb" data-go="help" aria-label="Help">' + svg('help') + '<span class="tip">Help &amp; support</span></button></div></aside>' +
+      '<div class="a3-rb"><button class="a3-nb" data-go="help" aria-label="Help">' + svg('help') + '<span class="lb">Help &amp; support</span><span class="tip">Help &amp; support</span></button></div></aside>' +
       '<main class="a3-main"><header class="a3-top"><div class="a3-crumb">AUZslab <span style="padding:0 8px">/</span><span id="a3-crumb">Overview</span></div>' +
       '<div class="a3-ta"><button class="a3-rb2" data-go="notifications" aria-label="Notifications">' + svg('bell') + '<span class="a3-badge" id="a3-badge"></span></button><button class="a3-user" id="a3-user">Account</button></div></header>' +
       '<div id="a3-pages"></div>' +
@@ -163,10 +163,25 @@
       var toggle = function () { card.dataset.touched = '1'; var o = card.classList.toggle('open'); wrap.setAttribute('aria-expanded', o ? 'true' : 'false'); };
       wrap.onclick = toggle; wrap.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
     });
+    group();
     document.querySelectorAll('.a3-pane').forEach(function (pane) {
-      var nc = pane.querySelectorAll(':scope > .card').length; pane.classList.toggle('a3-cols', nc >= 3); pane.classList.toggle('a3-two', nc === 2);
-      var cards = pane.querySelectorAll(':scope > .card.fc'); if (!cards.length || cards.length > 4) return;
+      var cards = pane.querySelectorAll('.card.fc'); if (!cards.length || cards.length > 4) return;
       cards.forEach(function (c) { if (c.dataset.touched || c.dataset.auto) return; c.dataset.auto = '1'; c.classList.add('open'); var h = c.querySelector('.fc-h'); if (h) h.setAttribute('aria-expanded', 'true'); });
+    });
+  }
+
+  /* the rows of a page are shown as grouped cards: one card when there are few rows, two side by side when there are many */
+  function group() {
+    document.querySelectorAll('.a3-pane').forEach(function (pane) {
+      var direct = Array.prototype.filter.call(pane.children, function (c) { return c.classList.contains('card') && c.classList.contains('fc'); });
+      if (!direct.length) return;
+      var half = direct.length >= 4 ? Math.ceil(direct.length / 2) : direct.length;
+      var parts = direct.length >= 4 ? [direct.slice(0, half), direct.slice(half)] : [direct];
+      var anchor = document.createComment(''), g_ = [];
+        pane.insertBefore(anchor, direct[0]);
+      parts.forEach(function (list) { var d = document.createElement('div'); d.className = 'a3-grp'; pane.insertBefore(d, anchor); g_.push(d); list.forEach(function (c) { d.appendChild(c); }); });
+      pane.removeChild(anchor);
+        pane.classList.toggle('a3-multi', parts.length > 1);
     });
   }
 
