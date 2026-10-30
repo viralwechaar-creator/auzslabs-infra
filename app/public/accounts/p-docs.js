@@ -368,6 +368,32 @@ function invoiceSheetNode(data) { // data: {org, doc, lines} shapes of public_ac
     d.notes ? h('p', null, h('b', null, 'Notes: '), d.notes) : null, identityFoot(o, d), d.terms ? h('p', { style: { fontSize: '11px' } }, d.terms) : null,
     data.einvoice && data.einvoice.irn ? h('p', { style: { fontSize: '11px', wordBreak: 'break-all' } }, 'IRN: ' + data.einvoice.irn + (data.einvoice.ack_no ? ' · Ack ' + data.einvoice.ack_no : '')) : null, o.footer ? h('p', { style: { textAlign: 'center' } }, o.footer) : null);
 }
+// The fixed-A4-box invoice templates (taxinv.js's classic layout, invoice-templates.js's gallery) are built once at a
+// known pixel size (794 x 1123, the same physical size as 210 x 297mm at 96dpi) and only grow taller when content
+// (more lines, a longer address, multiple GST rate rows) pushes past that -- which a normal invoice can do easily,
+// since these templates budget fairly little slack beyond their own fixed chrome. Rather than hand-tune nine fixed
+// section heights across seven different template stylesheets (fragile, and still wrong the next time someone adds
+// a line of text), measure the ACTUAL rendered height and shrink the whole page down to fit one sheet with the same
+// `zoom` mechanism these templates already use to fit a phone screen (`fit()` in each file) -- just applied for
+// print instead of screen width. A genuinely long invoice (many lines) still spills onto a second printed page
+// rather than shrinking past readability (floored at 65%), same as it would in any other invoicing software.
+function fitPrintPage(wrap) {
+  const page = wrap && wrap.firstElementChild;
+  if (!page) return;
+  const host = wrap.parentNode;
+  const prevStyle = host && host.getAttribute('style');
+  if (host) host.setAttribute('style', (prevStyle || '') + ';display:block!important;position:fixed;left:-9999px;top:0;visibility:hidden');
+  const ht = page.getBoundingClientRect().height;
+  if (host) { if (prevStyle) host.setAttribute('style', prevStyle); else host.removeAttribute('style'); }
+  const scale = ht > 1100 ? Math.max(0.65, 1100 / ht) : 1;   // 1100, not the theoretical 1123 (297mm): real printers/PDF export reserve a sliver more than @page{margin:0} alone accounts for
+  // Re-append (not just update) every time: this tag and each template's own `zoom:1!important` print rule both
+  // have !important, so whichever comes LAST in the document wins -- and a template's own css() only injects its
+  // stylesheet the first time that template is built, which can happen after this tag already exists.
+  let st = document.getElementById('printFitCss'); if (!st) { st = document.createElement('style'); st.id = 'printFitCss'; }
+  document.head.appendChild(st);
+  const pageCls = '.' + (page.className || '').trim().split(/\s+/)[0], wrapCls = '.' + (wrap.className || '').trim().split(/\s+/)[0];
+  st.textContent = scale < 1 ? '@media print{' + pageCls + '{zoom:' + scale.toFixed(3) + '!important}' + wrapCls + '{display:flex!important;justify-content:center!important}}' : '';
+}
 async function printDoc(r) {
   const d = r.doc, o = S.org;
   const pm = {}; try { (await products()).forEach((x) => { pm[x.id] = x; }); } catch (e) { /* MRP is optional */ }
@@ -376,7 +402,9 @@ async function printDoc(r) {
       taxable: d.taxable, cgst: d.cgst, sgst: d.sgst, igst: d.igst, cess: d.cess, roundoff: d.roundoff, total: d.total, paid: d.paid, notes: d.notes, terms: d.terms, cancelled: d.status === 'cancelled' },
     lines: r.lines.map((l) => ({ n: l.line_no, description: l.description, hsn: l.hsn, qty: l.qty, unit: l.unit, rate: l.rate, disc_amt: l.disc_amt, tax_rate: l.tax_rate, taxable: l.taxable, tax: Number(l.cgst) + Number(l.sgst) + Number(l.igst) + Number(l.cess), total: l.total, mrp: (pm[l.product_id] || {}).mrp })), einvoice: r.einvoice && r.einvoice.status === 'generated' ? r.einvoice : null };
   let ps = $('#printSheet'); if (!ps) { ps = h('div', { id: 'printSheet', class: 'print-only' }); document.body.append(ps); }
-  clear(ps).append(invoiceSheetNode(data));
+  const node = invoiceSheetNode(data);
+  clear(ps).append(node);
+  if ((node.className || '').endsWith('-wrap')) fitPrintPage(node);
   setTimeout(() => window.print(), 50);
 }
 async function shareLink(doc) { const o = await api('acc_share_document', { p_doc: doc.id, p_enable: true }); return window.auzBillLink('ledger', o.token); }
