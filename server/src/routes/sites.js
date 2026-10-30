@@ -19,7 +19,9 @@ const APP_PAGES = [
   ['auzsfinance', /^\/(finance\.html|finance\/)/],
   ['app', /^\/(start\.html|my\.html)/],
 ];
-const appOf = (p) => { for (const [a, re] of APP_PAGES) if (re.test(p)) return a; return null; };
+// files a shop's own website / bill pages use: never an app page, whatever folder they live in
+const WEB_SUPPORT = /^\/(mob\/receipt|accounts\/(bill|invoice-templates|taxinv)\.js|accounts\/accounts\.css)/;
+const appOf = (p) => { if (WEB_SUPPORT.test(p)) return null; for (const [a, re] of APP_PAGES) if (re.test(p)) return a; return null; };
 const base = () => (DOMAIN && DOMAIN !== 'localhost' ? DOMAIN : 'auzslab.in');
 
 const cache = new Map(); let legacy = { at: 0, until: '' };
@@ -63,15 +65,17 @@ export async function handle(ctx) {
     catch (e) { if (e && e.status === 503) { console.error('[site/check] ' + e.message); res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '60' }); res.end('This address is being updated. Please try again in a minute.'); return; } throw e; }
     if (!a.exists) return notFound(res);
     const wanted = appOf(path);
-    // an app page on a shop address: forward to the app's shared address for the transition period, then refuse
-    if (wanted || a.kind === 'none') {
-      if (await inLegacyWindow()) {
-        const target = wanted || a.app || 'app';
-        const q = uri.includes('?') ? uri.slice(uri.indexOf('?')) : '';
-        return redirect(res, 'https://' + target + '.' + base() + (path === '/' || (!wanted && a.kind === 'none') ? '/' : path) + q);
-      }
-      return notFound(res);
+    // Old shop addresses keep working exactly as before during the transition window, and the demo businesses always do:
+    // Caddy then serves every file of the app (see X-Site-Legacy in the Caddyfile).
+    if (a.demo || await inLegacyWindow()) {
+      res.writeHead(200, { 'X-Site-Kind': a.kind, 'X-Site-Legacy': '1', 'Cache-Control': 'no-store' }); res.end(); return;
     }
+    // Remote access for AUZsStyle: its own address always opens the AUZsStyle app (staff sign in from anywhere).
+    if (a.style && (wanted === 'auzsstyle' || (a.kind === 'none' && path === '/'))) {
+      res.writeHead(200, { 'X-Site-Kind': a.kind, 'X-Site-Remote': 'style', 'Cache-Control': 'no-store' }); res.end(); return;
+    }
+    // after the window an app page (or a shop without a website) on a shop address is refused
+    if (wanted || a.kind === 'none') return notFound(res);
     res.writeHead(200, { 'X-Site-Kind': a.kind, 'Cache-Control': 'no-store' }); res.end(); return;
   }
 

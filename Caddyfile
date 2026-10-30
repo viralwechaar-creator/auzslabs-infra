@@ -168,19 +168,19 @@
             import shared_files
             # the server (routes/sites.js) answers 200 (this shop has a website), 302 (old address: forwarded to the app address) or 404
             @page {
-                not path_regexp \.(js|css|png|jpe?g|webp|svg|woff2?|ico|json|mjs|txt|mp3|map|gif)$
                 not path /uploads/*
+                not path /app-icon/*
             }
             forward_auth @page api:3000 {
                 uri /site/check
-                copy_headers X-Site-Kind
+                copy_headers X-Site-Kind X-Site-Legacy X-Site-Remote
             }
             # per-shop website files only: no app page can be served here whatever the server says
             # the salon website and its own API belong to salon shops only
             @salonOnly {
                 path /salon/* /i/* /api/*
-                not path_regexp \.(js|css|png|jpe?g|webp|svg|woff2?|ico|json|mjs|txt|mp3|map|gif)$
                 not header X-Site-Kind salon
+                not header X-Site-Legacy 1
             }
             error @salonOnly 404
             header /salon/* Cache-Control "no-cache, must-revalidate"
@@ -233,6 +233,23 @@
             rewrite @salonInvoice /salon/invoice.html
             @salonDir path_regexp sd ^(/salon(?:/[a-z]+)?)/?$
             rewrite @salonDir {re.sd.1}/index.html
+            # OLD shop addresses (30-day transition) and the demo businesses: exactly how every address worked before, every file of the apps
+            @legacy header X-Site-Legacy 1
+            handle @legacy {
+                @legacyIcon path /site-kiln.html /site.html /index.html /store.html
+                handle @legacyIcon {
+                    reverse_proxy api:3000
+                }
+                file_server
+                try_files {path} /land.html
+            }
+            # remote access for AUZsStyle: the shop's own address opens the AUZsStyle app
+            @remoteStyle header X-Site-Remote style
+            handle @remoteStyle {
+                @remoteRoot path /
+                rewrite @remoteRoot /style.html
+                file_server
+            }
             # the bare address opens this shop's website, by kind
             @kStore {
                 path /
@@ -260,7 +277,7 @@
             handle @iconPages {
                 reverse_proxy api:3000
             }
-            @web path /site.html /site-kiln.html /store.html /store/* /site-edit.html /site-schemas.js /salon/* /custom.html /chapterone/* /bailamos/* /radz/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /order.html /w.html /terms.html /privacy.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /app-manifest.json /app-icon/*
+            @web path /site.html /site-kiln.html /store.html /store/* /style/* /site-edit.html /site-schemas.js /salon/* /custom.html /chapterone/* /bailamos/* /radz/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /order.html /w.html /terms.html /privacy.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /app-manifest.json /app-icon/*
             handle @web {
                 file_server
             }
