@@ -223,6 +223,6 @@ body.ac3{--a-bg:#f6f4f1;--a-card:#fff;--a-sep:#e6e1dc;--a-fill:#f4f1ed;--a-mut:#
 /* phone bar sits lower, and a page-coloured base behind it hides anything scrolling underneath */
 @media(max-width:899px){
  .a3-bn{bottom:max(6px,calc(env(safe-area-inset-bottom) - 10px))}
- .a3-bn::before{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(82px + env(safe-area-inset-bottom));background:linear-gradient(to bottom,rgba(246,244,241,0),var(--a-bg) 16px);z-index:-1;pointer-events:none}
+ .a3-bn::before{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(82px + env(safe-area-inset-bottom));background:var(--a-bg);-webkit-mask-image:linear-gradient(to bottom,transparent,#000 16px);mask-image:linear-gradient(to bottom,transparent,#000 16px);z-index:-1;pointer-events:none}
  .a3-foot{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 }
