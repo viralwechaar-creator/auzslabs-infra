@@ -498,7 +498,8 @@ async function docEditor(v, type, existing) {
       if ((D.charges || []).some((c) => c.how === 'courier_bill')) return toast('A courier\'s own bill needs a connection.', { err: true });
       return keepOffline();
     }
-    if (post && !(await confirmBox('Post ' + DOC_LABEL[type].toLowerCase() + ' for ' + inr(C.total) + '?', 'This creates ledger' + (posting ? ', stock and GST' : '') + ' entries and gives it its final number. You can cancel it later with a reversal but not edit it.', 'Post'))) return;
+    const reeditable = ['invoice', 'bill', 'expense'].includes(type);
+    if (post && !(await confirmBox('Post ' + DOC_LABEL[type].toLowerCase() + ' for ' + inr(C.total) + '?', 'This creates ledger' + (posting ? ', stock and GST' : '') + ' entries' + (existing && existing.doc && existing.doc.number ? '' : ' and gives it its final number') + '.' + (reeditable ? ' You can come back and edit it again any time.' : ' You can cancel it later with a reversal but not edit it.'), 'Post'))) return;
     btns.forEach((b) => (b.disabled = true));
     try {
       const r = await api('acc_save_document', { p: build(post) });

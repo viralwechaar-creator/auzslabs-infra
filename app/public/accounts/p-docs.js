@@ -197,7 +197,11 @@ page('doc', {
     if (['bill', 'goods_receipt', 'purchase_order'].includes(t) && (r.lines || []).some((l) => l.product_id)) more.push({ label: 'Print barcodes for these items', icon: 'scan', run: () => go('labels?doc=' + d.id) });
     if (t === 'invoice' && d.status === 'posted' && can('acc_sales')) more.push({ label: 'Create credit note', icon: 'undo', run: () => go('new/credit_note?ref=' + d.id) });
     if (t === 'bill' && d.status === 'posted' && can('acc_purchase')) more.push({ label: 'Create debit note', icon: 'undo', run: () => go('new/debit_note?ref=' + d.id) });
-    if (d.status === 'posted' && posting && can('acc_cancel') && can(perm) && !d.is_opening) acts.splice(Math.min(1, acts.length), 0, { label: 'Edit', icon: 'edit', primary: true, run: () => amendDoc(d) });
+    // An invoice/bill/expense edits directly in place (db/311: same number, journal and stock rebuilt) -- a
+    // credit/debit note still needs the cancel-and-reissue flow, since re-settling it against its original
+    // document is not safe to redo on an in-place edit.
+    if (d.status === 'posted' && ['invoice', 'bill', 'expense'].includes(t) && can(perm) && !d.is_opening) acts.splice(Math.min(1, acts.length), 0, { label: 'Edit', icon: 'edit', primary: true, run: () => go('edit/' + d.id) });
+    else if (d.status === 'posted' && posting && can('acc_cancel') && can(perm) && !d.is_opening) acts.splice(Math.min(1, acts.length), 0, { label: 'Edit', icon: 'edit', primary: true, run: () => amendDoc(d) });
     if (can(perm) && !d.is_opening) more.push({ label: 'Duplicate', icon: 'file', run: () => go('new/' + t + '?copy=' + d.id) });
     if (d.status === 'posted' && can('acc_cancel') && !d.is_opening) more.push({ label: 'Cancel with reversal…', icon: 'x', danger: true, run: () => cancelDoc(d) });
     if ((d.status === 'open') && can('acc_cancel')) more.push({ label: 'Cancel…', icon: 'x', danger: true, run: () => cancelDoc(d) });
