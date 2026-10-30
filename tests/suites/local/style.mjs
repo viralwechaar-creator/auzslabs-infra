@@ -253,6 +253,21 @@ export default async function run({ browser, stack }) {
     const r2 = await q("select public_app_icon_context('teststyle') c"); assert(!r2[0].c.settings.logo, 'empty logo must not be exposed');
   });
 
+  await s.check('Simple entry: name, optional variant, price and stock make a style with one barcode variant', async () => {
+    const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
+    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.evaluate(() => { location.hash = '#/stock'; }); await page.waitForTimeout(800);
+    await page.locator('button', { hasText: 'New style' }).first().click(); await page.waitForSelector('.seg button', { timeout: 8000 });
+    await page.locator('.seg button', { hasText: 'Simple entry' }).click();
+    const inputs = page.locator('.sheet input:visible'); assert((await inputs.count()) === 4, 'simple form should have exactly 4 fields, has ' + (await inputs.count()));
+    await inputs.nth(0).fill('Simple QA tee'); await inputs.nth(1).fill('M'); await inputs.nth(2).fill('499'); await inputs.nth(3).fill('7');
+    await page.locator('.sheet button', { hasText: /^Save$/ }).click(); await page.waitForTimeout(1500);
+    const st = await page.evaluate(async () => { await loadCatalog(true); const x = S.cat.find((q) => q.name === 'Simple QA tee'); return x && { price: x.price, v: x.variants.map((v) => [v.size, v.colour, v.qty != null ? v.qty : v.stock, !!v.barcode]) }; });
+    assert(st && st.price === 499 && st.v.length === 1 && st.v[0][0] === 'M' && st.v[0][3], 'style not made right: ' + JSON.stringify(st));
+    await c.close();
+  });
   await s.check('Logo upload end to end: upload, save, icon drawn from it, shown in the app', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
