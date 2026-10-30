@@ -376,7 +376,7 @@
       '.inv-auz{width:794px;min-height:1118px;flex:none;position:relative;background:#fff;color:#161616;padding:36px 46px 28px;display:flex;flex-direction:column;font:11px/1.45 Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
       '.inv-auz .row{display:flex;justify-content:space-between;align-items:flex-start;gap:30px}' +
       '.inv-auz .h1{font-size:46px;line-height:1;font-weight:500;letter-spacing:-2px;margin:0}.inv-auz .no{font-size:12px;font-weight:500;color:#555;margin:2px 0 0;white-space:nowrap}' +
-      '.inv-auz .lg{height:40px;width:auto;max-width:170px;object-fit:contain;display:block}' +
+      '.inv-auz .lg{height:120px;width:auto;max-width:280px;object-fit:contain;object-position:right center;display:block}' +
       '.inv-auz .cols{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:16px}.inv-auz .cols.t2{margin-top:10px}' +
       '.inv-auz .h2{font-size:17px;font-weight:500;letter-spacing:-.3px;margin:0 0 4px}' +
       '.inv-auz .kv{display:grid;grid-template-columns:62px 1fr;gap:0 7px;font-size:8.6px;line-height:1.32}.inv-auz .kv span:nth-child(odd){color:#8a8a8a}.inv-auz .kv b{font-weight:500;word-break:break-word}' +

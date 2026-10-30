@@ -71,15 +71,17 @@ page('labels', {
     const twoEl = h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Gap between the two labels (mm)', gap), field('Shift right (mm)', left));
     const paintTwo = () => { twoEl.hidden = c.size !== '2up'; }; paintTwo();
     const fillStock = h('button', { class: 'btn', type: 'button', onclick: () => { list.forEach((p) => { if (Number(p.stock) > 0) qty[p.id] = Math.min(Math.round(Number(p.stock)), 500); }); paintList(); paintPrev(); } }, 'Use stock quantities'), clearAll = h('button', { class: 'btn', type: 'button', onclick: () => { Object.keys(qty).forEach((k) => { qty[k] = 0; }); paintList(); paintPrev(); } }, 'Clear');
-    v.root.append(h('div', { class: 'grid', style: { gap: '14px', maxWidth: '860px', margin: '0 auto', width: '100%' } },
-      fromDoc ? h('div', { class: 'banner info' }, 'Labels filled from bill ' + fromDoc + ': one label for every piece bought. Change the numbers below if you need.') : null,
-      h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '1. Design your label')), h('div', { class: 'card grid' },
-        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Label size', sizeSel), field('Design', designSel)), twoEl,
-        h('div', { class: 'list' }, opt('Shop name', 'shop'), opt('Product name', 'name'), opt('Selling price', 'price'), opt('MRP', 'mrp'), opt('Barcode number under the bars', 'code')), field('Text size (6 to 14)', fs), prevEl)),
-      h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '2. How many labels of each product?')), h('div', { class: 'card grid' },
-        searchField('Search products', debounce((x) => { filter = x; paintList(); }, 200)), h('div', { class: 'row wrap', style: { gap: '8px' } }, fillStock, clearAll), listEl, totEl)),
-      h('button', { class: 'btn fill', type: 'button', onclick: () => lblPrint(items(), c) }, icon('print', 18), 'Print labels'),
-      h('p', { class: 'muted small' }, 'Products with no barcode use their item code. Set the printer\'s paper size to the label size above. Your choices are remembered on this computer.')));
+    v.root.append(h('style', null, '.lbl-cols{display:grid;gap:16px;align-items:start}@media(min-width:900px){.lbl-cols{grid-template-columns:1fr 1fr}}'),
+      fromDoc ? h('div', { class: 'banner info', style: { marginBottom: '14px' } }, 'Labels filled from bill ' + fromDoc + ': one label for every piece bought. Change the numbers below if you need.') : null,
+      h('div', { class: 'lbl-cols' },
+        h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '1. Design your label')), h('div', { class: 'card grid' },
+          h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' } }, field('Label size', sizeSel), field('Design', designSel)), twoEl,
+          h('div', { class: 'list' }, opt('Shop name', 'shop'), opt('Product name', 'name'), opt('Selling price', 'price'), opt('MRP', 'mrp'), opt('Barcode number under the bars', 'code')), field('Text size (6 to 14)', fs), prevEl)),
+        h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, '2. How many labels of each product?')), h('div', { class: 'card grid' },
+          searchField('Search products', debounce((x) => { filter = x; paintList(); }, 200)), h('div', { class: 'row wrap', style: { gap: '8px' } }, fillStock, clearAll), listEl, totEl))),
+      h('div', { style: { marginTop: '16px', display: 'grid', gap: '10px', maxWidth: '860px' } },
+        h('button', { class: 'btn fill', type: 'button', onclick: () => lblPrint(items(), c) }, icon('print', 18), 'Print labels'),
+        h('p', { class: 'muted small' }, 'Products with no barcode use their item code. Set the printer\'s paper size to the label size above. Your choices are remembered on this computer.')));
     paintList(); paintPrev();
   },
 });
