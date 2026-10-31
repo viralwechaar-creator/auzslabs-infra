@@ -222,9 +222,13 @@ function paySheet(c, done) {
   const MODES = [['cash', t('Cash')], ['upi', t('UPI')], ['card', t('Card')]];
   if (BILL.exchange > 0) MODES.unshift(['exchange', t('Exchange credit')]);
   if (cust && cust.credit > 0) MODES.push(['credit', t('Store credit')]);
+  // Nothing is pre-filled as Cash any more -- it used to default the full amount into Cash the instant this
+  // sheet opened, so typing an amount straight into UPI (instead of tapping its "Exact" button, which zeroes
+  // the other fields) left that stale Cash amount sitting underneath, and the sale went through recorded as
+  // both -- the bill then printed/shared as Cash even though the customer paid by UPI. The cashier now has to
+  // explicitly choose a method (type an amount or tap Exact) for every sale, Cash included.
   const pay = {}; MODES.forEach(([m]) => pay[m] = 0);
   if (BILL.exchange > 0) { pay.exchange = Math.min(BILL.exchange, due0); }
-  pay.cash = r2(due0 - (pay.exchange || 0));
   const rows = h('div', { class: 'grid' }), sum = h('div', { class: 'tot2' });
   const inputs = {};
   const sumNow = () => MODES.reduce((a, [m]) => a + (pay[m] || 0), 0);
@@ -232,7 +236,10 @@ function paySheet(c, done) {
     const s = sumNow(), bal = r2(due0 - s);
     clear(sum).append(h('span', null, bal > 0.005 ? t('Due') : bal < -0.005 ? t('Change') : t('Paid in full')), h('b', { class: 'num ' + (bal > 0.005 ? 'neg' : '') }, inr(Math.abs(bal))));
     paintQr();
-    ok.disabled = !!(upiId && pay.upi > 0 && !upiGot);
+    // A walk-in (no customer attached) has nowhere to carry a balance due, so nothing entered at all would
+    // previously have silently gone through as a free, fully-cash sale (Cash defaulted to the full amount).
+    // Now that nothing defaults, require at least one method to actually be chosen for a walk-in.
+    ok.disabled = !!(upiId && pay.upi > 0 && !upiGot) || (!cust && s <= 0.005);
   };
   MODES.forEach(([m, l]) => {
     const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); upd(); } }); inputs[m] = i;
