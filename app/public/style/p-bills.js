@@ -44,6 +44,7 @@ async function billSheet(id, changed) {
       open && sale.lines.some((l) => l.qty > l.returned) ? h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); returnSheet(sale, changed); } }, icon('swap', 18), t('Return or exchange')) : null,
       open && sale.status === 'due' && sale.customer ? h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); collectDue(sale, changed); } }, icon('cash', 18), t('Collect due')) : null,
       open && can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); editBill(sale, changed); } }, icon('edit', 18), t('Edit details')) : null,
+      open && can('sty_manage') && (sale.payments || []).length ? h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); correctPaymentSheet(sale, changed); } }, icon('cash', 18), t('Correct payment mode')) : null,
       open && can('sty_manage') && !(sale.returns || []).length ? h('button', { class: 'btn danger', type: 'button', onclick: async () => { const r = await cancelSheet(); if (!r) return; await api('sty_void_sale', { p_id: sale.id, p_reason: r.reason, p_restock: r.restock }); s.close(); S.catAt = 0; toast(r.restock ? t('Bill cancelled, items put back in stock') : t('Bill cancelled')); changed && changed(); } }, icon('trash', 18), t('Cancel bill')) : null,
       !open && can('sty_manage') ? h('button', { class: 'btn danger', type: 'button', onclick: async () => { if (!await confirmBox(t('Delete this bill?'), t('It is removed for good, with its stock entries. This cannot be undone.'), t('Delete'), true)) return; try { await api('sty_delete_sale', { p_id: sale.id }); } catch (e) { return fail(e); } s.close(); S.catAt = 0; toast(t('Bill deleted')); changed && changed(); } }, icon('trash', 18), t('Delete bill')) : null)) });
 }
@@ -65,6 +66,40 @@ function editBill(sale, changed) {
       try { await api('sty_edit_sale', { p_id: sale.id, p: { customerName: nm.value, customerPhone: ph.value, note: note.value } }); } catch (e) { fail(e); return false; }
       close(); S.catAt = 0; toast(t('Saved')); changed && changed();
     } }] });
+}
+// Fix which payment method(s) a bill is attributed to -- e.g. a cashier picked UPI but it got saved as Cash.
+// Deliberately narrow: the corrected amounts must add up to exactly the same total as before, so this can
+// never change what the bill was actually billed for, only which method(s) it's recorded under.
+function correctPaymentSheet(sale, done) {
+  const ALL = [['cash', t('Cash')], ['upi', t('UPI')], ['card', t('Card')], ['exchange', t('Exchange credit')], ['credit', t('Store credit')]];
+  const present = new Set((sale.payments || []).map((p) => p.mode));
+  const MODES = ALL.filter(([m]) => m === 'cash' || m === 'upi' || m === 'card' || present.has(m));
+  const start = {}; MODES.forEach(([m]) => start[m] = 0);
+  (sale.payments || []).forEach((p) => { start[p.mode] = r2((start[p.mode] || 0) + N(p.amount)); });
+  const origTotal = r2((sale.payments || []).reduce((a, p) => a + N(p.amount), 0));
+  const pay = { ...start };
+  const rows = h('div', { class: 'grid' }), sum = h('div', { class: 'tot2' }); const inputs = {};
+  const sumNow = () => MODES.reduce((a, [m]) => a + (pay[m] || 0), 0);
+  const upd = () => {
+    const s2 = r2(sumNow()), diff = r2(s2 - origTotal);
+    clear(sum).append(h('span', null, diff === 0 ? t('Matches the original total') : t('Must match the original total')), h('b', { class: 'num' + (diff === 0 ? '' : ' neg') }, inr(s2) + (diff === 0 ? '' : ' / ' + inr(origTotal))));
+    ok.disabled = diff !== 0;
+  };
+  MODES.forEach(([m, l]) => {
+    const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); upd(); } }); inputs[m] = i;
+    rows.append(field(l, i));
+  });
+  const ok = h('button', { class: 'btn fill', type: 'button', onclick: async () => {
+    const payments = MODES.map(([m]) => ({ mode: m, amount: pay[m] })).filter((p) => p.amount > 0);
+    try { await api('sty_correct_payment_mode', { p_id: sale.id, p_payments: payments }); } catch (e) { return fail(e); }
+    sh.close(); toast(t('Payment method corrected')); done && done();
+  } }, t('Save correction'));
+  const sh = sheet({ title: t('Correct payment mode') + ' · ' + sale.number, body: h('div', { class: 'grid' },
+    h('div', { class: 'muted small' }, t('Fix which method(s) this bill is attributed to -- the corrected amounts must add up to the original total; the bill itself, its items and stock are unchanged.')),
+    rows, sum), actions: [] });
+  sh.el.querySelector('.sheet-f') || sh.el.append(h('div', { class: 'sheet-f' }));
+  sh.el.querySelector('.sheet-f').append(ok);
+  upd();
 }
 function promptReason(title) {
   return new Promise((res) => { const i = input({ placeholder: t('Reason') }); sheet({ title, onClose: (v) => { if (v === undefined) res(null); }, body: h('div', { class: 'grid' }, field(t('Reason'), i)), actions: [{ label: t('Confirm'), danger: true, onclick: (close) => { res(i.value.trim()); close('ok'); } }] }); });

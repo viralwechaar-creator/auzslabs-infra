@@ -522,6 +522,7 @@ export const RPC = {
   sty_delete_sale: { params: ['p_id'], auth: true },
   sty_return: { params: ['p'], jsonb: ['p'], auth: true },
   sty_collect_due: { params: ['p_id', 'p_amount', 'p_mode'], defaults: { p_mode: 'cash' }, auth: true },
+  sty_correct_payment_mode: { params: ['p_id', 'p_payments'], jsonb: ['p_payments'], auth: true },
   sty_transfer: { params: ['p'], jsonb: ['p'], auth: true },
   sty_receive_transfer: { params: ['p_id'], auth: true },
   sty_cancel_transfer: { params: ['p_id'], auth: true },
