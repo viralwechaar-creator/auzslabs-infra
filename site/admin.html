@@ -1218,7 +1218,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
       </section>
 
       <section class="a-page" id="systemStatsSection" data-title="System resources" data-parent="more">
-        <div class="label">Droplet: 2 vCPU / 4GB RAM / 75GB disk</div>
+        <div class="label" id="hostSpecsLabel">Server: loading&hellip;</div>
         <h2 class="h-2">System resources</h2>
         <div id="systemStatsList">Loading&hellip;</div>
         <div class="label" style="margin-top:26px">Product load and health</div>
@@ -1965,7 +1965,7 @@ async function loadSystemStats() {
     ${topRows
       ? `<div class="admin-table-wrap" style="margin-top:8px"><table class="admin-table"><tr><th>Client</th><th>Rows</th></tr>${topRows}</table></div>`
       : emptyDoodle('No tenant data yet.')}
-    <p class="p" style="margin-top:12px">Droplet is 2 vCPU / 4GB RAM / 75GB disk.</p>
+    <p class="p" style="margin-top:12px" id="hostSpecsVal">Server specs: loading&hellip;</p>
   `;
 
   loadLoadReport(data);
@@ -1995,6 +1995,14 @@ async function loadLoadReport(sys) {
     api = await res.json(); if (!res.ok) throw new Error(api.error || 'load failed');
   } catch (e) { el.innerHTML = `<div class="err">${esc(e.message)} (the server needs the latest update: see deploy notes)</div>`; return; }
   const GB = 1024 ** 3, fam = {}; (api.families || []).forEach((f) => { fam[f.name] = f; });
+  // Live host specs -- replaces the old hardcoded "Droplet is 2 vCPU / 4GB RAM / 75GB disk" text, which stayed
+  // stuck at DigitalOcean's numbers through the AWS migration. api.host/api.disk come straight from the OS the
+  // API is actually running on right now (server/src/metrics.js), so this stays correct after any future move too.
+  if (api.host) {
+    const specsTxt = api.host.cpus + ' vCPU / ' + (api.host.mem_total / GB).toFixed(1) + 'GB RAM' + (api.disk ? ' / ' + formatBytes(api.disk.total) + ' disk' : '');
+    const labelEl = document.getElementById('hostSpecsLabel'); if (labelEl) labelEl.textContent = 'Server: ' + specsTxt;
+    const valEl = document.getElementById('hostSpecsVal'); if (valEl) valEl.textContent = 'Server is ' + specsTxt + '.';
+  }
   const items = []; // [rating 0-2, title, why, fix]
   const add = (n, title, why, fix) => items.push({ n, title, why, fix });
   const conns = Number(db.connections || 0);

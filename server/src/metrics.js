@@ -2,6 +2,7 @@
 // Nothing is stored; a restart clears it. Per-business request counts are kept by tenant id for the cost report. Cost: one timer and a few counters per request.
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 import fs from 'node:fs';
+import os from 'node:os';
 
 const since = Date.now();
 const lag = monitorEventLoopDelay({ resolution: 20 }); lag.enable();
@@ -68,5 +69,10 @@ export async function metricsReport() {
     since: new Date(since).toISOString(), minutes: Math.round(mins), families,
     process: { rss: mem.rss, heap_used: mem.heapUsed, loop_lag_p99_ms: Math.round(lag.percentile(99) / 1e6), loop_lag_max_ms: Math.round(lag.max / 1e6), websockets: wsReader() },
     disk,
+    // Live specs of whatever machine the API is actually running on right now -- this used to be a hardcoded
+    // "Droplet is 2 vCPU / 4GB RAM / 75GB disk" string in admin.html, left over from when the only host was
+    // DigitalOcean. Reading it straight from the OS means it's automatically correct after any migration
+    // (DigitalOcean, AWS, or anywhere else) with nothing to remember to update by hand.
+    host: { cpus: os.cpus().length, mem_total: os.totalmem(), mem_free: os.freemem() },
   };
 }
