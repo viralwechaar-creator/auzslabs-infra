@@ -1218,7 +1218,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
       </section>
 
       <section class="a-page" id="systemStatsSection" data-title="System resources" data-parent="more">
-        <div class="label" id="hostSpecsLabel">Server: loading&hellip;</div>
         <h2 class="h-2">System resources</h2>
         <div id="systemStatsList">Loading&hellip;</div>
         <div class="label" style="margin-top:26px">Product load and health</div>
@@ -2000,7 +1999,6 @@ async function loadLoadReport(sys) {
   // API is actually running on right now (server/src/metrics.js), so this stays correct after any future move too.
   if (api.host) {
     const specsTxt = api.host.cpus + ' vCPU / ' + (api.host.mem_total / GB).toFixed(1) + 'GB RAM' + (api.disk ? ' / ' + formatBytes(api.disk.total) + ' disk' : '');
-    const labelEl = document.getElementById('hostSpecsLabel'); if (labelEl) labelEl.textContent = 'Server: ' + specsTxt;
     const valEl = document.getElementById('hostSpecsVal'); if (valEl) valEl.textContent = 'Server is ' + specsTxt + '.';
   }
   const items = []; // [rating 0-2, title, why, fix]
