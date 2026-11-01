@@ -15,7 +15,7 @@ page('stock', {
     const root = v.root; root.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '30px auto' } }));
     try { await loadCatalog(true); } catch (e) { return clear(root).append(empty('cloudOff', t('Could not load'), e.message, h('button', { class: 'btn fill', onclick: () => v.refresh() }, t('Try again')))); }
     await loadCollections();
-    const vs = allVariants().filter((x) => x.active !== false);
+    const vs = allVariants().filter((x) => x.active !== false && x.style.active !== false);
     const units = vs.reduce((a, x) => a + Math.max(x.stock, 0), 0), cost = vs.reduce((a, x) => a + Math.max(x.stock, 0) * (x.cost || 0), 0), retail = vs.reduce((a, x) => a + Math.max(x.stock, 0) * x.price, 0);
     const lowN = vs.filter((x) => x.stock <= (x.reorderAt || 0)).length, outN = vs.filter((x) => x.stock <= 0).length;
     const cats = ['All', ...[...new Set(S.cat.map((s) => s.category))].sort()];
