@@ -8,7 +8,7 @@ const SCANAPP = !!window.AUZ_SCAN, HOME = SCANAPP ? 'scan' : 'home';
 const BRAND = SCANAPP ? { name: 'Scan & bill', title: 'AUZsScan', logo: '/logo-scan.svg', icon: '/icon-scan.svg' } : { name: 'Accounting', title: 'AUZslab Accounting', logo: '/logo-accounts.svg', icon: '/icon-accounts.svg' };
 const NAV_LEDGER = [
   { group: '', items: ['home', 'scan', 'purchases'] },
-  { group: 'Sales', items: ['sales', 'customers', 'parties', 'receipts', 'followups', 'subscriptions'] },
+  { group: 'Sales', items: ['sales', 'customers', 'parties', 'receipts', 'returns', 'followups', 'subscriptions'] },
   { group: 'Buying', items: ['suppliers', 'payments', 'expenses', 'expreq'] },
   { group: 'Stock', items: ['products', 'stock', 'labels'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
@@ -17,7 +17,7 @@ const NAV_LEDGER = [
 ];
 const NAV = SCANAPP ? [
   { group: '', items: ['scan'] },
-  { group: 'Records', items: ['sales', 'products', 'stock', 'labels', 'bulk', 'data'] },
+  { group: 'Records', items: ['sales', 'returns', 'products', 'stock', 'labels', 'bulk', 'data'] },
   { group: 'Settings', items: ['invoicelayout', 'alerts'] },
 ] : NAV_LEDGER;
 const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'scan', 'purchases', 'sales'];
