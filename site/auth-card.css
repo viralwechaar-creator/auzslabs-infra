@@ -5,6 +5,11 @@
 .auth-main{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 0px)}
 .auth-wrap{width:100%;display:flex;align-items:center;justify-content:center;padding:28px 16px}
 
+/* desktop: no header bar at all, so the card is the entire screen with nothing to scroll past */
+@media (min-width:760px){
+  .auth-page .u-top{display:none}
+}
+
 .auth-frame{position:relative;width:100%;max-width:980px;max-height:calc(100vh - 56px);display:grid;
   grid-template-columns:1.6fr 1fr;grid-template-rows:1fr;gap:8px;
   background:linear-gradient(165deg,#17171a 0%,#0c0c0e 60%);padding:8px;border-radius:30px;overflow:hidden;
