@@ -47,11 +47,31 @@ function showLogin(msg) {
   const googleHost = h('div');
   const social = h('div', { style: { display: CFG.googleClientId ? 'grid' : 'none', gap: '10px' } }, googleHost, h('div', { class: 'small muted', style: { textAlign: 'center' } }, 'or'));
   const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
-    h('div', { style: { fontWeight: 800, fontSize: '22px', letterSpacing: '-.02em' } }, 'AUZs', h('span', { style: { color: 'var(--accent)' } }, 'Style')),
     h('h1', null, t('Sign in')),
     seg([['en', 'English'], ['hi', 'हिंदी']], S_LANG, (v) => { setLang(v); showLogin(msg); }, { full: true }),
     social, h('div', { class: 'seg full' }, bE, bS), emailWrap, staffWrap, m);
-  clear($('#app')).append(h('div', { class: 'login' }, form));
+
+  // Desktop: a split photo/form card, like the marketing site's sign-in. Mobile: a
+  // full-bleed photo entry screen with one "Sign in" button that opens this same form
+  // (unchanged above) as a bottom sheet, instead of a second page. There is no public
+  // self-signup inside the app -- tenants are provisioned by AUZslab -- so there is only
+  // one entry button here, unlike the marketing site's Sign in/Register pair.
+  const closeBtn = h('button', { type: 'button', class: 'login2-close', 'aria-label': t('Close') }, '×');
+  const grab = h('div', { class: 'login2-grab', 'aria-hidden': 'true' });
+  const formPane = h('div', { class: 'login2-form' }, closeBtn, grab, form);
+  const photo = h('aside', { class: 'login2-photo' },
+    h('div', { class: 'login2-mark' }, 'AUZs', h('span', null, 'Style')),
+    h('div', { class: 'login2-foot' }, h('p', { class: 'login2-eyebrow' }, t('All in one place')), h('h2', { class: 'login2-headline' }, t('Everything you need to move forward.'))));
+  const scrim = h('div', { class: 'login2-scrim' });
+  const entryBtn = h('button', { type: 'button', class: 'login2-pill' }, t('Sign in'));
+  const entry = h('div', { class: 'login2-entry' }, entryBtn);
+  const openSheet = () => { formPane.classList.add('open'); scrim.classList.add('show'); };
+  const closeSheet = () => { formPane.classList.remove('open'); scrim.classList.remove('show'); };
+  entryBtn.onclick = openSheet; closeBtn.onclick = closeSheet; scrim.onclick = closeSheet;
+  clear($('#app')).append(h('div', { class: 'login2' }, h('div', { class: 'login2-frame' }, photo, formPane, entry, scrim)));
+  // A forced redirect here (wrong-business login, blocked(), licence/setup screens) still
+  // uses the plain '.login' class elsewhere in this file -- only the normal sign-in screen
+  // gets the new treatment, so those unrelated screens are untouched.
   e.focus();
   if (CFG.googleClientId) auzGoogleLink(googleHost, 'style');
 }

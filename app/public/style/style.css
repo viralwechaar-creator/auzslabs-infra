@@ -302,3 +302,63 @@ table.agrid{border-collapse:separate;border-spacing:0;font-size:13px}
   .print-only .slip-p .pb{page-break-after:always}
 }
 .seg:not(.full){justify-self:start}
+
+/* ---- owner sign-in: photo card (desktop) / full-bleed entry + sheet (mobile) ----
+   Same layout concept as the marketing site's signup.html; the staff PIN form
+   (auzStaffPinForm, inside staffWrap) is untouched -- it just renders inside this
+   same restyled card when the Staff tab is picked. */
+.login2{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}
+.login2-frame{position:relative;width:100%;max-width:900px;display:grid;grid-template-columns:1.5fr 1fr;gap:8px;
+  background:linear-gradient(165deg,#17171a 0%,#0c0c0e 60%);padding:8px;border-radius:30px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.07);box-shadow:0 1px 2px rgba(0,0,0,.2),0 24px 50px -20px rgba(0,0,0,.55),0 60px 100px -40px rgba(0,0,0,.6)}
+.login2-photo{position:relative;padding:22px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+  min-height:520px;border-radius:24px;overflow:hidden;color:#fff;background-image:url('auth-photo.jpg');background-size:cover;background-position:50% 22%}
+.login2-photo::before{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 55%);pointer-events:none}
+.login2-photo::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 70px rgba(0,0,0,.4);pointer-events:none}
+.login2-mark{position:relative;z-index:1;font-weight:800;font-size:16px}
+.login2-mark span{color:#e23a5c}
+.login2-foot{position:relative;z-index:1}
+.login2-eyebrow{font-size:11px;color:rgba(255,255,255,.55);margin:0 0 6px}
+.login2-headline{font-size:16.5px;line-height:1.4;font-weight:500;margin:0;max-width:30ch;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+.login2-form{position:relative;padding:36px 38px;color:#f3f1ee}
+.login2-form .card{background:none;border:none;box-shadow:none;padding:0}
+.login2-form input.input{background:#19191b;border:1px solid rgba(255,255,255,.08);color:#f3f1ee;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+.login2-form input.input::placeholder{color:#6b6660}
+.login2-form .btn.fill{background:linear-gradient(180deg,#f1efea 0%,#dfdcd5 100%);color:#111113;
+  box-shadow:0 10px 20px -8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6)}
+.login2-form .seg button{background:#19191b;color:#8a8582}
+.login2-form .seg button[aria-selected=true]{background:#2d2d30;color:#f3f1ee}
+/* ds/plan.js appends a "New to AUZslab?" footer with inline-styled link colors tuned for
+   a light card -- needs !important to win over those inline styles on the dark card */
+.login2-form #auz-newacct{color:#8a8582 !important;margin-top:16px !important}
+.login2-form #auz-newacct a{color:#f3f1ee !important;text-decoration:underline !important}
+.login2-entry{display:none}
+.login2-close,.login2-grab{display:none}
+
+@media (max-width:759px){
+  .login2{padding:0;min-height:100dvh}
+  .login2-frame{display:block;max-width:none;padding:0;border-radius:0;border:none;box-shadow:none;min-height:100dvh}
+  .login2-photo{position:fixed;inset:0;border-radius:0;min-height:0;z-index:1;
+    padding:max(18px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+  .login2-photo::before{background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.18) 22%,rgba(0,0,0,.22) 55%,rgba(0,0,0,.65) 100%)}
+  .login2-mark{font-size:22px;align-self:center;margin:auto 0 0}
+  .login2-foot{display:flex;flex-direction:column;align-items:center;margin:0 auto auto;text-align:center}
+  .login2-eyebrow{display:none}
+  .login2-headline{font-size:13px;color:rgba(255,255,255,.75);font-weight:400}
+  .login2-form{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#111113;border-radius:24px 24px 0 0;
+    padding:16px 24px max(24px,env(safe-area-inset-bottom,0px));max-height:92dvh;overflow-y:auto;
+    transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
+  .login2-form.open{transform:translateY(0)}
+  .login2-grab{width:34px;height:4px;border-radius:999px;background:rgba(255,255,255,.14);margin:0 auto 16px}
+  .login2-close{position:absolute;top:16px;right:18px;width:28px;height:28px;border-radius:50%;background:#19191b;
+    border:none;color:#8a8582;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .login2-entry{display:flex;flex-direction:column;gap:10px;position:fixed;left:0;right:0;bottom:0;z-index:2;
+    padding:0 max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+  .login2-pill{width:100%;padding:15px 20px;border-radius:999px;font-weight:600;font-size:14px;text-align:center;
+    border:none;background:#fff;color:#171717}
+  .login2-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .25s ease;z-index:5}
+  .login2-scrim.show{opacity:1;pointer-events:auto}
+}
+.login2-scrim{display:none}

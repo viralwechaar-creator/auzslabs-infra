@@ -290,7 +290,19 @@ function render(){
  const nv=document.querySelector('.side .nav');if(nv)nv.scrollTop=navTop}
 function login(msg){
  const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{class:'sm',style:'color:var(--red)'},msg||'');
- $('#app').replaceChildren(h('form',{class:'login',onsubmit:async ev=>{ev.preventDefault();let r=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});r=await auz2fa.resolve(sb,r);r.error?m.textContent=r.error.message:boot()}},h('b',{style:'font-size:20px'},'AUZs LAB Admin'),h('span',{class:'sm'},'Sign in with your owner or manager account.'),e,p,m,h('button',{type:'submit'},'Sign in')))}
+ const form=h('form',{class:'login',onsubmit:async ev=>{ev.preventDefault();let r=await sb.auth.signInWithPassword({email:e.value.trim(),password:p.value});r=await auz2fa.resolve(sb,r);r.error?m.textContent=r.error.message:boot()}},h('b',{style:'font-size:20px'},'AUZs LAB Admin'),h('span',{class:'sm'},'Sign in with your owner or manager account.'),e,p,m,h('button',{type:'submit'},'Sign in'));
+ // Photo card (desktop) / full-bleed entry + sheet (mobile) -- same shape as every other
+ // owner sign-in screen in the redesign. The Owner-access-only / setup / config-missing
+ // screens elsewhere in this file still use the plain .login class on its own, untouched.
+ const closeBtn=h('button',{type:'button',class:'login2-close','aria-label':'Close'},'×'),grab=h('div',{class:'login2-grab'});
+ const formPane=h('div',{class:'login2-form'},closeBtn,grab,form);
+ const photo=h('aside',{class:'login2-photo'},h('div',{class:'login2-mark'},'AUZslab'),h('div',{class:'login2-foot'},h('h2',{class:'login2-headline'},'Everything you need to move forward.')));
+ const scrim=h('div',{class:'login2-scrim'});
+ const entryBtn=h('button',{type:'button',class:'login2-pill'},'Sign in');
+ const entry=h('div',{class:'login2-entry'},entryBtn);
+ const open=()=>{formPane.classList.add('open');scrim.classList.add('show')},close=()=>{formPane.classList.remove('open');scrim.classList.remove('show')};
+ entryBtn.onclick=open;closeBtn.onclick=close;scrim.onclick=close;
+ $('#app').replaceChildren(h('div',{class:'login2'},h('div',{class:'login2-frame'},photo,formPane,entry,scrim)))}
 async function boot(){
  if(!C.url||C.url.includes('YOUR-PROJECT'))return $('#app').replaceChildren(h('div',{class:'login'},'Setup needed: open config.js and add your Supabase URL and key.'));
  let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch{}
