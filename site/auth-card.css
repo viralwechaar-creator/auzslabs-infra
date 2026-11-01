@@ -266,3 +266,49 @@ html body.auth-page .auth-form-pane .auth-sub{font-size:14px!important;margin-bo
     border:1px solid rgba(0,0,0,.14)!important;background:rgba(255,255,255,.7)!important;color:#171717!important}
   html[data-theme="light"] .auth-page .u-menu i,html[data-theme="light"] .auth-page .u-menu i::before,html[data-theme="light"] .auth-page .u-menu i::after{background:#171717}
 }
+
+/* ================= round 8: desktop is a full-screen split, not a floating card ================= */
+@media (min-width:760px){
+  html body.auth-page{background:#0b0b0d}
+  .auth-main{min-height:100vh;display:block}
+  .auth-wrap{padding:0;min-height:100vh;display:block}
+  .auth-frame{max-width:none!important;max-height:none!important;width:100%;height:100vh;min-height:620px;border-radius:0;border:0;padding:0;gap:0;
+    background:transparent;box-shadow:none!important;grid-template-columns:1.25fr 1fr}
+  .auth-main::before,.auth-main::after{display:none}
+  .auth-photo{border-radius:0;min-height:0;height:100%;box-shadow:none;padding:30px 36px}
+  .auth-logo{height:38px}
+  .auth-headline{font-size:20px}
+  .auth-form-pane{border-radius:0;height:100%;padding:72px clamp(48px,6vw,110px) 56px;background:#0e0e10}
+  .auth-form-pane .tl-card.au{width:100%;max-width:440px;margin:0 auto}
+  .auth-form-pane .auth-seg{align-self:flex-start}
+  .auth-back{border:1px solid rgba(255,255,255,.28)!important;background:rgba(0,0,0,.28)!important;color:#fff!important;
+    -webkit-backdrop-filter:none;backdrop-filter:none}
+
+  /* light theme: the form side turns light too, the photo stays */
+  html[data-theme="light"] body.auth-page{background:#f5f4f2}
+  html[data-theme="light"] .auth-form-pane{background:#f5f4f2;color:#171717}
+  html[data-theme="light"] .auth-form-pane .auth-h2{color:#171717}
+  html[data-theme="light"] .auth-form-pane .auth-sub,html[data-theme="light"] .auth-form-pane .field label,
+  html[data-theme="light"] .auth-form-pane .auth-forgot button,html[data-theme="light"] .tl-foot,html[data-theme="light"] .tl-foot a,
+  html[data-theme="light"] .auth-form-pane .auth-or,html[data-theme="light"] .auth-form-pane .pw-eye{color:#6b6660}
+  html[data-theme="light"] .auth-form-pane .auth-or .ln{background:rgba(0,0,0,.12)}
+  html[data-theme="light"] .auth-form-pane .auth-seg{background:#e9e7e3;box-shadow:none}
+  html[data-theme="light"] .auth-form-pane .auth-seg button{color:#6b6660}
+  html[data-theme="light"] .auth-form-pane .auth-seg button.active{background:#fff;color:#171717;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  html[data-theme="light"] .content .auth-form-pane .field input,html[data-theme="light"] .content .auth-form-pane input{
+    background:#fff;border:1px solid rgba(0,0,0,.12);color:#171717;box-shadow:none}
+  html[data-theme="light"] .auth-form-pane input::placeholder{color:#a09a94}
+  html[data-theme="light"] .auth-form-pane .btn.btn-primary.auth-cta{background:#171717;color:#fff;box-shadow:none}
+  html[data-theme="light"] .auth-form-pane .btn.btn-primary.auth-cta:hover{background:#171717;color:#fff}
+  html[data-theme="light"] .auth-form-pane .btn.btn-ghost.auth-cta{background:#fff;color:#171717;border:1px solid rgba(0,0,0,.12)}
+  html[data-theme="light"] .auth-form-pane .auth-social-btn,html[data-theme="light"] .auth-form-pane #googleBtnHost > *{
+    background:#fff;border:1px solid rgba(0,0,0,.12);color:#171717;box-shadow:none}
+  html[data-theme="light"] .auth-form-pane #consentBox{background:#fff!important;border:1px solid rgba(0,0,0,.1)}
+  html[data-theme="light"] .auth-form-pane #consentBox label,html[data-theme="light"] .auth-form-pane #consentBox label span{color:#6b6660!important}
+  html[data-theme="light"] .auth-form-pane #consentBox a,html[data-theme="light"] .tl-foot a{color:#171717!important}
+  html[data-theme="light"] .auth-form-pane .ok-box{background:#fff!important;color:#171717;border-color:rgba(0,0,0,.1)!important}
+}
+@media (min-width:760px){
+  html body.auth-page,html body.auth-page .shell,html body.auth-page main.content,html body.auth-page .auth-main{padding-top:0!important;margin-top:0!important}
+}
+@media (min-width:760px){ .auth-photo{padding-top:84px} .auth-form-pane{padding-top:84px} }
