@@ -229,3 +229,10 @@ html:has(body.auth-page){zoom:1!important}
   .auth-form-pane #socialOr{margin-top:22px!important}
   .auth-form-pane #consentBox{margin-top:0!important}
 }
+
+/* ================= round 5: simple, minimal, premium page background ================= */
+@media (min-width:760px){
+  .auth-page{background:radial-gradient(70% 60% at 50% 42%,#141416 0%,#0b0b0d 70%,#08080a 100%)}
+  .auth-main::before,.auth-main::after{display:none}
+  .auth-frame{box-shadow:0 0 0 1px rgba(255,255,255,.06),0 40px 90px -30px rgba(0,0,0,.9)}
+}
