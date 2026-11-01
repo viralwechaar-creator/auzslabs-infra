@@ -113,7 +113,26 @@ function showLogin(msg) {
   const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
     h('img', { src: BRAND.logo, alt: BRAND.title }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use the email and password you use for your AUZslab account.'),
     socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, staffWrap, m);
-  clear($('#app')).append(h('div', { class: 'login' }, form));
+
+  // Desktop: a photo panel next to the form, always visible. Mobile: a full-bleed photo
+  // entry screen with one "Sign in" button that raises this same form as a bottom sheet.
+  const sheetClose = h('button', { type: 'button', class: 'auth-sheet-close', 'aria-label': 'Close' }, '×');
+  const grab = h('div', { class: 'auth-grab', 'aria-hidden': 'true' });
+  const formPane = h('div', { class: 'auth-form-pane' }, sheetClose, grab, form);
+  const photo = h('aside', { class: 'auth-photo' },
+    h('img', { class: 'auth-icon', src: BRAND.icon, alt: '' }),
+    h('div', { class: 'auth-photo-foot' }, h('p', { class: 'auth-eyebrow' }, 'All in one place'), h('h2', { class: 'auth-headline' }, 'Everything you need to move forward.')));
+  const scrim = h('div', { class: 'auth-sheet-scrim' });
+  const entryBtn = h('button', { type: 'button', class: 'auth-pill primary' }, 'Sign in');
+  const entryLegal = h('p', { class: 'auth-legal' }, 'By continuing you accept our Terms and Privacy policy');
+  const entryCtas = h('div', { class: 'auth-entry-ctas' }, entryBtn, entryLegal);
+  const openSheet = () => { formPane.classList.add('open'); scrim.classList.add('show'); };
+  const closeSheet = () => { formPane.classList.remove('open'); scrim.classList.remove('show'); };
+  sheetClose.onclick = closeSheet;
+  scrim.onclick = closeSheet;
+  entryBtn.onclick = openSheet;
+  const frame = h('div', { class: 'auth-frame' }, photo, formPane);
+  clear($('#app')).append(h('div', { class: 'login' }, h('div', { class: 'auth-wrap' }, frame, entryCtas, scrim)));
   e.focus();
 
   if (CFG.googleClientId) { socialWrap.style.display = 'grid'; socialDivider.style.display = 'block'; auzGoogleLink(googleHost, 'accounts'); }

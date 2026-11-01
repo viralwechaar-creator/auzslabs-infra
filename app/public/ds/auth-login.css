@@ -1,0 +1,72 @@
+/* Shared owner/manager sign-in card redesign: dark inset photo panel next to the existing
+   sign-in form on desktop, full-bleed photo entry + bottom sheet on mobile. Used by every
+   app's owner login screen (POS, Payroll, ...). Never applies to a dedicated staff-only
+   screen -- where staff PIN sign-in lives inside the same card (POS/Payroll today), it is
+   untouched: this file only restyles the surrounding chrome, never the staff form itself.
+   Classes are generic (login-*) on purpose so every app can reuse this one file. */
+
+.login-frame{position:relative;width:100%;max-width:980px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr;gap:8px;
+  background:linear-gradient(165deg,#17171a 0%,#0c0c0e 60%);padding:8px;border-radius:30px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:0 1px 2px rgba(0,0,0,.2),0 24px 50px -20px rgba(0,0,0,.55),0 60px 100px -40px rgba(0,0,0,.6)}
+
+.login-photo{position:relative;padding:22px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+  min-height:480px;border-radius:24px;overflow:hidden;color:#fff;
+  background-image:url('/ds/auth-photo.jpg');background-size:cover;background-position:50% 22%;background-repeat:no-repeat;
+  box-shadow:0 12px 28px -12px rgba(0,0,0,.6)}
+.login-photo::before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 55%);pointer-events:none}
+.login-photo::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 70px rgba(0,0,0,.4);pointer-events:none}
+.login-photo-logo{position:relative;z-index:1;height:30px;width:auto;display:block;align-self:flex-start;flex:none;
+  filter:invert(1) brightness(1.6);image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
+.login-photo-logo.noinvert{filter:none} /* a -light logo variant is already made for a dark background */
+.login-photo-foot{position:relative;z-index:1}
+.login-eyebrow{font-size:11px;color:rgba(255,255,255,.55);margin:0 0 6px}
+.login-headline{font-size:16.5px;line-height:1.4;font-weight:500;margin:0;max-width:26ch;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+
+.login-form-pane{position:relative;padding:34px 36px;background:radial-gradient(130% 100% at 0% 0%,rgba(255,255,255,.035),transparent 55%)}
+.login-form-pane .card,.login-form-pane form.card{background:none !important;box-shadow:none !important;border:none !important;width:100% !important;padding:0 !important;color:#f3f1ee}
+.login-form-pane .card h1,.login-form-pane .card h2{color:#f3f1ee;font-size:19px;font-weight:600;margin:0 0 6px}
+.login-form-pane .card p,.login-form-pane .card .muted{color:#8a8582;font-size:12.5px;line-height:1.5}
+.login-form-pane .card img{display:none} /* the app's own wordmark; the photo panel already carries the AUZslab mark */
+.login-form-pane .card .seg{background:#19191b}
+.login-form-pane .card .seg button[aria-selected=true],.login-form-pane .card .seg button.on{background:#2d2d30;color:#f3f1ee}
+.login-form-pane .card .seg button{color:#8a8582}
+.login-form-pane .card .input,.login-form-pane .card input{background:#19191b !important;border-color:rgba(255,255,255,.08) !important;color:#f3f1ee !important;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.4) !important}
+.login-form-pane .card .input::placeholder,.login-form-pane .card input::placeholder{color:#6b6660}
+.login-form-pane .card .btn:not(.fill):not(.plain){background:#19191b;color:#f3f1ee;border:1px solid rgba(255,255,255,.08)}
+.login-grab{display:none}
+.login-sheet-close{display:none}
+
+.login-entry-ctas{display:none}
+.login-sheet-scrim{display:none}
+
+@media (max-width:759px){
+  .login{padding:0 !important;min-height:100dvh !important;display:block !important}
+  .login-frame{display:block;grid-template-columns:none;max-width:none;padding:0;border-radius:0;border:none;box-shadow:none;min-height:100dvh}
+  .login-photo{position:fixed;inset:0;padding:max(18px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+    border-radius:0;min-height:0;z-index:1;justify-content:center;align-items:center;gap:18px}
+  .login-photo::before{background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.18) 22%,rgba(0,0,0,.22) 55%,rgba(0,0,0,.65) 100%)}
+  .login-photo-logo{height:40px;align-self:center}
+  .login-photo-foot{display:flex;flex-direction:column;align-items:center;text-align:center}
+  .login-eyebrow{display:none}
+  .login-headline{font-size:13px;color:rgba(255,255,255,.75);font-weight:400;max-width:26ch}
+
+  .login-form-pane{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#111113;border-radius:24px 24px 0 0;
+    padding:16px 24px max(24px,env(safe-area-inset-bottom,0px));max-height:92dvh;overflow-y:auto;
+    transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
+  .login-form-pane.open{transform:translateY(0)}
+  .login-sheet-close{display:flex;align-items:center;justify-content:center;position:absolute;top:16px;right:18px;
+    width:28px;height:28px;border-radius:50%;background:#19191b;border:none;color:#8a8582;font-size:18px;z-index:1}
+  .login-grab{display:block;width:34px;height:4px;border-radius:999px;background:rgba(255,255,255,.14);margin:0 auto 16px}
+
+  .login-entry-ctas{display:flex;flex-direction:column;gap:10px;position:fixed;left:0;right:0;bottom:0;z-index:45;
+    padding:0 max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+  .login-pill{width:100%;padding:15px 20px;border-radius:999px;font-weight:600;font-size:14px;letter-spacing:.01em;text-align:center;
+    border:none;cursor:pointer;background:#fff;color:#171717}
+  .login-pill:hover{opacity:.9}
+
+  .login-sheet-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .25s ease;z-index:49}
+  .login-sheet-scrim.show{opacity:1;pointer-events:auto}
+}

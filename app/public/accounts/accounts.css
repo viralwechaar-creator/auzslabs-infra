@@ -172,9 +172,57 @@ table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:15px}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--label2)}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .hbar{display:grid;gap:8px}.hbar .r{display:grid;grid-template-columns:minmax(80px,1fr) 2fr auto;gap:10px;align-items:center;font-size:15px}.hbar .tr{height:10px;border-radius:5px;background:var(--fill);overflow:hidden}.hbar .tr i{display:block;height:100%;background:var(--tint);border-radius:5px}
 
-/* ---------- login ---------- */
-.login{min-height:100dvh;display:grid;place-items:center;padding:24px}.login .card{width:min(400px,100%);padding:28px 24px;display:grid;gap:16px}.login img{height:56px;width:auto;justify-self:start}
-.login h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+/* ---------- login: split photo panel (desktop) / full-bleed entry + bottom sheet (mobile) ----------
+   The form itself (its fields, the Email/Staff method tabs, the staff PIN form) is untouched --
+   this only adds the surrounding photo panel and, on phones, turns the card into a sheet that
+   opens from a full-bleed entry screen instead of showing inline. */
+.login{min-height:100dvh;padding:0}
+.auth-wrap{width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px 16px}
+.auth-frame{position:relative;width:100%;max-width:960px;display:grid;grid-template-columns:1.5fr 1fr;gap:8px;
+  background:var(--card);padding:8px;border-radius:30px;overflow:hidden;box-shadow:var(--sh3)}
+.auth-photo{position:relative;padding:22px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+  min-height:540px;border-radius:24px;overflow:hidden;color:#fff;
+  background-image:linear-gradient(120deg,color-mix(in srgb,var(--accent) 70%,#1a0a10) 0%,color-mix(in srgb,var(--accent) 40%,#1a0a10) 100%),url('/auth-photo.jpg');
+  background-size:cover;background-position:50% 22%;background-repeat:no-repeat;background-blend-mode:multiply;
+  box-shadow:0 12px 28px -12px rgba(0,0,0,.5)}
+.auth-photo::before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 55%);pointer-events:none}
+.auth-photo::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 70px rgba(0,0,0,.35);pointer-events:none}
+.auth-icon{position:relative;z-index:1;height:40px;width:40px;border-radius:12px;display:block}
+.auth-photo-foot{position:relative;z-index:1}
+.auth-eyebrow{font-size:12px;color:rgba(255,255,255,.65);margin:0 0 6px}
+.auth-headline{font-size:16.5px;line-height:1.4;font-weight:500;margin:0;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+.auth-form-pane{position:relative;padding:36px 38px;display:flex;flex-direction:column;justify-content:center}
+.auth-sheet-close,.auth-grab{display:none}
+.login .card{width:100%;max-width:none;padding:0;display:grid;gap:16px;border:none;box-shadow:none;background:none;border-radius:0}
+.login img{height:48px;width:auto;justify-self:start}
+.login h1{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.auth-entry-ctas,.auth-sheet-scrim{display:none}
+@media (max-width:759px){
+  .auth-wrap{padding:0}
+  .auth-frame{display:block;grid-template-columns:none;max-width:none;padding:0;border-radius:0;box-shadow:none;min-height:100dvh;background:none}
+  .auth-photo{position:fixed;inset:0;padding:max(18px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+    border-radius:0;min-height:0;z-index:1}
+  .auth-photo::before{background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.18) 22%,rgba(0,0,0,.22) 55%,rgba(0,0,0,.65) 100%)}
+  .auth-icon{height:48px;width:48px;align-self:center;margin:auto 0 0}
+  .auth-photo-foot{display:flex;flex-direction:column;align-items:center;margin:0 auto auto;text-align:center}
+  .auth-eyebrow{display:none}
+  .auth-headline{font-size:13px;color:rgba(255,255,255,.75);font-weight:400;max-width:28ch}
+  .auth-form-pane{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-radius:24px 24px 0 0;
+    padding:16px 24px max(24px,env(safe-area-inset-bottom,0px));max-height:92dvh;overflow-y:auto;
+    transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
+  .auth-form-pane.open{transform:translateY(0)}
+  .auth-sheet-close{display:flex;align-items:center;justify-content:center;position:absolute;top:16px;right:18px;
+    width:28px;height:28px;border-radius:50%;background:var(--fill);border:none;color:var(--label2);font-size:18px}
+  .auth-grab{display:block;width:34px;height:4px;border-radius:999px;background:var(--sep2);margin:0 auto 16px}
+  .auth-entry-ctas{display:flex;flex-direction:column;gap:10px;position:fixed;left:0;right:0;bottom:0;z-index:45;
+    padding:0 max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+  .auth-pill{width:100%;padding:15px 20px;border-radius:999px;font-weight:600;font-size:14px;text-align:center;border:none}
+  .auth-pill.primary{background:#fff;color:#171717}
+  .auth-legal{margin:12px 0 0;text-align:center;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.4)}
+  .auth-sheet-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .25s ease;z-index:49}
+  .auth-sheet-scrim.show{opacity:1;pointer-events:auto}
+}
 
 /* ---------- print (invoices and reports) ---------- */
 .print-only{display:none}

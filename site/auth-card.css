@@ -1,0 +1,141 @@
+/* Sign-in/sign-up page: desktop split photo-card, mobile full-bleed entry + bottom sheet.
+   Scoped entirely under .auth-wrap -- never touches the shared .btn/.field/.auth-seg
+   classes used elsewhere on the site, only overrides them inside this one page. */
+
+.auth-main{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 0px)}
+.auth-wrap{width:100%;display:flex;align-items:center;justify-content:center;padding:28px 16px}
+
+.auth-frame{position:relative;width:100%;max-width:980px;display:grid;grid-template-columns:1.6fr 1fr;gap:8px;
+  background:linear-gradient(165deg,#17171a 0%,#0c0c0e 60%);padding:8px;border-radius:30px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:0 1px 2px rgba(0,0,0,.2),0 24px 50px -20px rgba(0,0,0,.55),0 60px 100px -40px rgba(0,0,0,.6)}
+
+.auth-photo{position:relative;padding:22px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+  min-height:560px;border-radius:24px;overflow:hidden;color:#fff;
+  background-image:var(--auth-photo-url,url('auth-photo.jpg'));background-size:cover;background-position:50% 22%;background-repeat:no-repeat;
+  box-shadow:0 12px 28px -12px rgba(0,0,0,.6)}
+.auth-photo::before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 55%);pointer-events:none}
+.auth-photo::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 70px rgba(0,0,0,.4);pointer-events:none}
+.auth-logo{position:relative;z-index:1;height:34px;width:auto;display:block;align-self:flex-start;flex:none;
+  filter:invert(1) brightness(1.6);image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
+.auth-photo-foot{position:relative;z-index:1}
+.auth-eyebrow{font-size:11px;color:rgba(255,255,255,.55);margin:0 0 6px}
+.auth-headline{font-family:var(--font-display,inherit);font-size:16.5px;line-height:1.4;font-weight:500;margin:0;text-wrap:balance;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+
+.auth-form-pane{position:relative;padding:38px 40px;color:#f3f1ee;background:radial-gradient(130% 100% at 0% 0%,rgba(255,255,255,.035),transparent 55%)}
+.auth-sheet-close{display:none}
+.auth-grab{display:none}
+
+.auth-form-pane .tl-card.au{background:none;border:none;box-shadow:none;padding:0;margin:0;max-width:none}
+.auth-form-pane .auth-seg{display:inline-flex;align-self:flex-start;background:#19191b;border-radius:999px;padding:3px;
+  margin:0 0 24px;width:max-content;box-shadow:inset 0 1px 3px rgba(0,0,0,.45)}
+.auth-form-pane .auth-seg button{border:none;background:none;padding:6px 14px;border-radius:999px;font-size:11.5px;
+  font-weight:600;color:#8a8582;transition:background .2s,color .2s}
+.auth-form-pane .auth-seg button.active{background:#2d2d30;color:#f3f1ee;box-shadow:0 2px 6px -2px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)}
+
+.auth-form-pane .auth-h2{font-family:var(--font-display,inherit);font-size:19px;font-weight:600;letter-spacing:-.01em;margin:0 0 6px}
+.auth-form-pane .auth-sub{color:#8a8582;font-size:12px;line-height:1.5;margin:0 0 20px;max-width:34ch}
+
+.auth-form-pane .field{margin:0 0 14px}
+.auth-form-pane .field label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8a8582;margin:0 0 7px}
+.content .auth-form-pane .field input,.content .auth-form-pane input{width:100%;font-size:13.5px;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
+  background:#19191b;color:#f3f1ee;outline:none;transition:border-color .2s,box-shadow .2s;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.02)}
+.auth-form-pane input::placeholder{color:#6b6660}
+.content .auth-form-pane .field input:focus,.content .auth-form-pane input:focus{outline:0;border-color:rgba(255,255,255,.32);box-shadow:inset 0 1px 3px rgba(0,0,0,.4),0 0 0 3px rgba(255,255,255,.06)}
+.auth-form-pane .pw-eye{color:#8a8582}
+.auth-form-pane .auth-forgot{margin:0 0 14px;text-align:right}
+.auth-form-pane .auth-forgot button{background:none;border:none;color:#8a8582;font-size:12px;cursor:pointer}
+
+.auth-form-pane .btn.auth-cta{width:100%;font-weight:600;font-size:13.5px;letter-spacing:.01em;padding:13px 18px;
+  border-radius:10px;border:none;transition:opacity .2s,transform .2s}
+.auth-form-pane .btn.btn-primary.auth-cta{background:linear-gradient(180deg,#f1efea 0%,#dfdcd5 100%);color:#111113;
+  box-shadow:0 10px 20px -8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6)}
+.auth-form-pane .btn.btn-primary.auth-cta:hover{transform:translateY(-1px);background:linear-gradient(180deg,#f1efea 0%,#dfdcd5 100%);color:#111113}
+.auth-form-pane .btn.btn-primary.auth-cta:active{transform:scale(.99)}
+.auth-form-pane .btn.btn-ghost.auth-cta{background:#19191b;color:#f3f1ee;border:1px solid rgba(255,255,255,.1)}
+
+.auth-form-pane .auth-social{display:flex;gap:9px;margin:0 0 4px}
+.auth-form-pane .auth-social-btn,.auth-form-pane #googleBtnHost > *{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:#19191b;color:#f3f1ee;
+  font-size:12.5px;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 2px 6px -2px rgba(0,0,0,.4)}
+.auth-form-pane .auth-or{display:flex;align-items:center;gap:10px;margin:22px 0;color:#6b6660;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase}
+.auth-form-pane .auth-or .ln{flex:1;height:1px;background:rgba(255,255,255,.1)}
+.auth-form-pane .err{color:#e23a5c}
+.auth-form-pane .ok-box{background:#19191b !important;border-color:rgba(255,255,255,.1) !important;color:#f3f1ee}
+
+/* consent checkboxes + social row: small, quiet, matching the rest of this dark card --
+   not the site's default light consent-box styling, which read as an out-of-place white
+   box once this moved down next to the other dark elements */
+.auth-form-pane #consentBox{background:rgba(255,255,255,.03) !important;border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:11px 13px}
+.auth-form-pane #consentBox label{color:#8a8582 !important;font-size:11px !important;gap:8px !important}
+.auth-form-pane #consentBox label span{font-size:11px}
+.auth-form-pane #consentBox input[type="checkbox"]{width:14px !important;height:14px !important;accent-color:#e3e0da}
+.auth-form-pane #consentBox a{color:#d8d4ce !important}
+.auth-form-pane .auth-social-btn,.auth-form-pane #googleBtnHost{font-size:12px}
+
+.tl-foot{text-align:center;margin-top:22px;font-size:12px;color:#8a8582}
+.tl-foot a{color:#8a8582}
+
+/* ================= mobile: full-bleed entry + bottom sheet ================= */
+.auth-entry-ctas{display:none}
+.auth-sheet-scrim{display:none}
+.auth-back{display:none}
+
+@media (max-width:759px){
+  .auth-main{min-height:auto}
+  .auth-wrap{padding:0;min-height:100dvh}
+  .auth-frame{display:block;grid-template-columns:none;max-width:none;padding:0;border-radius:0;border:none;box-shadow:none;min-height:100dvh}
+  .auth-photo{position:fixed;inset:0;padding:max(18px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+    border-radius:0;min-height:0;z-index:1;
+    background-image:var(--auth-photo-url,url('auth-photo.jpg'));background-size:cover;background-position:center;background-repeat:no-repeat}
+  /* the desktop ::before is bottom-only (fine next to a dark form panel); on mobile the
+     Back/Menu controls sit at the very TOP of the full-bleed photo with nothing behind
+     them, so this needs its own top+bottom scrim or light sky photos make that text
+     unreadable -- this was a real bug, caught before shipping */
+  .auth-photo::before{background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,.18) 22%,rgba(0,0,0,.22) 55%,rgba(0,0,0,.65) 100%)}
+  .auth-logo{height:44px;align-self:center;margin:auto 0 0}
+  .auth-photo-foot{display:flex;flex-direction:column;align-items:center;gap:0;margin:0 auto auto}
+  .auth-eyebrow{display:none}
+  .auth-headline{font-size:13px;color:rgba(255,255,255,.75);font-weight:400;text-align:center;max-width:28ch}
+
+  .auth-form-pane{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#111113;border-radius:24px 24px 0 0;
+    padding:16px 24px max(24px,env(safe-area-inset-bottom,0px));max-height:92dvh;overflow-y:auto;
+    transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
+  .auth-form-pane.open{transform:translateY(0)}
+  .auth-sheet-close{display:flex;align-items:center;justify-content:center;position:absolute;top:16px;right:18px;
+    width:28px;height:28px;border-radius:50%;background:#19191b;border:none;color:#8a8582;font-size:18px}
+  .auth-grab{display:block;width:34px;height:4px;border-radius:999px;background:rgba(255,255,255,.14);margin:0 auto 16px}
+
+  .auth-entry-ctas{display:flex;flex-direction:column;gap:10px;position:fixed;left:0;right:0;bottom:0;z-index:2;
+    padding:0 max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+  .auth-pill{width:100%;padding:15px 20px;border-radius:999px;font-weight:600;font-size:14px;letter-spacing:.01em;text-align:center;
+    border:none;cursor:pointer;transition:opacity .2s}
+  .auth-pill.primary{background:#fff;color:#171717}
+  .auth-pill.ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.28)}
+  .auth-pill:hover{opacity:.9}
+  .auth-legal{margin:12px 0 0;text-align:center;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,.4)}
+  .auth-legal a{color:rgba(255,255,255,.65)}
+
+  .auth-sheet-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .25s ease;z-index:49}
+  .auth-sheet-scrim.show{opacity:1;pointer-events:auto}
+  .auth-entry-ctas{z-index:45}
+  .auth-form-pane{z-index:50}
+  .auth-sheet-close{z-index:1}
+  /* this page has its own Sign in/Register + legal links at the bottom; the site-wide
+     icon dock would collide with them (and with the sheet's own bottom edge) */
+  .u-dock{display:none !important}
+
+  /* the full header (logo, nav, theme toggle, "Get started") is replaced by just a small
+     transparent Back control (left) and the existing Menu button (right), floating over
+     the photo instead of a solid bar -- this page is its own self-contained flow */
+  .auth-page .u-top{position:fixed;background:transparent !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;box-shadow:none;z-index:48}
+  .auth-page .u-logo,.auth-page .u-nav,.auth-page .u-ic,.auth-page .u-pill{display:none !important}
+  .auth-page .u-r{margin-left:auto}
+  .auth-back{display:flex;align-items:center;gap:4px;background:transparent;border:none;color:#fff;
+    font-size:12px;font-weight:600;padding:8px 2px;cursor:pointer;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .auth-page .u-menu{background:transparent !important;border:none !important;box-shadow:none !important;color:#fff;font-size:12px;
+    text-shadow:0 1px 4px rgba(0,0,0,.5)}
+}

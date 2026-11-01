@@ -294,7 +294,22 @@ function login(msg) {
 
   const card = h('div', { class: 'card' }, posLogo(), h('h2', null, 'Sign in'), h('p', { class: 'sub' }, 'Use the email and password your business gave you.'),
     socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, staffWrap, m);
-  $('#app').replaceChildren(h('div', { class: 'login' }, card));
+
+  // Desktop: a photo panel sits beside this same card. Mobile: the card becomes a bottom
+  // sheet raised by a full-bleed entry screen, so a phone cashier sees one clean screen
+  // first instead of the whole form crammed above the fold. Nothing above this line changed.
+  const sheetClose = h('button', { type: 'button', class: 'login-sheet-close', 'aria-label': 'Close' }, '×');
+  const formPane = h('div', { class: 'login-form-pane', id: 'loginFormPane' }, sheetClose, h('div', { class: 'login-grab' }), card);
+  const scrim = h('div', { class: 'login-sheet-scrim', id: 'loginSheetScrim' });
+  const openSheet = () => { formPane.classList.add('open'); scrim.classList.add('show'); };
+  const closeSheet = () => { formPane.classList.remove('open'); scrim.classList.remove('show'); };
+  sheetClose.onclick = closeSheet; scrim.onclick = closeSheet;
+  const entryBtn = h('button', { type: 'button', class: 'login-pill primary', id: 'loginEntryBtn', onclick: openSheet }, 'Sign in');
+  const frame = h('div', { class: 'login-frame' },
+    h('aside', { class: 'login-photo' }, h('img', { class: 'login-photo-logo noinvert', src: '/logo-pos-light.svg', alt: '' }),
+      h('div', { class: 'login-photo-foot' }, h('p', { class: 'login-eyebrow' }, 'All in one place'), h('h2', { class: 'login-headline' }, 'Everything you need to move forward.'))),
+    formPane);
+  $('#app').replaceChildren(h('div', { class: 'login' }, frame, h('div', { class: 'login-entry-ctas', id: 'loginEntryCtas' }, entryBtn), scrim));
 
   if (C.googleClientId) { socialWrap.style.display = 'grid'; socialDivider.style.display = 'block'; auzGoogleLink(googleHost, 'pos'); }
   if (C.appleClientId && !document.getElementById('appleSdkScript')) {

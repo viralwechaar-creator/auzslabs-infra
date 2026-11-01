@@ -111,7 +111,22 @@ function showLogin(msg) {
   const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
     h('img', { src: '/logo-payroll.svg', alt: 'AUZslab Payroll' }), h('h1', null, 'Sign in'), h('p', { class: 'muted' }, 'Use your AUZslab login. Staff use the login their employer gave them.'),
     socialWrap, socialDivider, methodRow, emailWrap, phoneWrap, staffWrap, m);
-  clear($('#app')).append(h('div', { class: 'login' }, form));
+
+  // Desktop: a photo panel sits beside this same card. Mobile: the card becomes a bottom
+  // sheet raised by a full-bleed entry screen -- same pattern as the POS and marketing
+  // site sign-in redesign. Nothing above this line changed.
+  const sheetClose = h('button', { type: 'button', class: 'login-sheet-close', 'aria-label': 'Close' }, '×');
+  const formPane = h('div', { class: 'login-form-pane', id: 'loginFormPane' }, sheetClose, h('div', { class: 'login-grab' }), form);
+  const scrim = h('div', { class: 'login-sheet-scrim', id: 'loginSheetScrim' });
+  const openSheet = () => { formPane.classList.add('open'); scrim.classList.add('show'); };
+  const closeSheet = () => { formPane.classList.remove('open'); scrim.classList.remove('show'); };
+  sheetClose.onclick = closeSheet; scrim.onclick = closeSheet;
+  const entryBtn = h('button', { type: 'button', class: 'login-pill primary', id: 'loginEntryBtn', onclick: openSheet }, 'Sign in');
+  const frame = h('div', { class: 'login-frame' },
+    h('aside', { class: 'login-photo' }, h('img', { class: 'login-photo-logo noinvert', src: '/logo-payroll-light.svg', alt: '' }),
+      h('div', { class: 'login-photo-foot' }, h('p', { class: 'login-eyebrow' }, 'All in one place'), h('h2', { class: 'login-headline' }, 'Everything you need to move forward.'))),
+    formPane);
+  clear($('#app')).append(h('div', { class: 'login' }, frame, h('div', { class: 'login-entry-ctas', id: 'loginEntryCtas' }, entryBtn), scrim));
   e.focus();
 
   if (CFG.googleClientId) { socialWrap.style.display = 'grid'; socialDivider.style.display = 'block'; auzGoogleLink(googleHost, 'payroll'); }
