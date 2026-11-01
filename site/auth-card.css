@@ -64,6 +64,17 @@
 .auth-form-pane .err{color:#e23a5c}
 .auth-form-pane .ok-box{background:#19191b !important;border-color:rgba(255,255,255,.1) !important;color:#f3f1ee}
 
+/* consent checkboxes + social row: small, quiet, matching the rest of this dark card --
+   not the site's default light consent-box styling, which read as an out-of-place white
+   box once this moved down next to the other dark elements */
+.auth-form-pane #consentBox{background:rgba(255,255,255,.03) !important;border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:11px 13px}
+.auth-form-pane #consentBox label{color:#8a8582 !important;font-size:11px !important;gap:8px !important}
+.auth-form-pane #consentBox label span{font-size:11px}
+.auth-form-pane #consentBox input[type="checkbox"]{width:14px !important;height:14px !important;accent-color:#e3e0da}
+.auth-form-pane #consentBox a{color:#d8d4ce !important}
+.auth-form-pane .auth-social-btn,.auth-form-pane #googleBtnHost{font-size:12px}
+
 .tl-foot{text-align:center;margin-top:22px;font-size:12px;color:#8a8582}
 .tl-foot a{color:#8a8582}
 
