@@ -82,6 +82,10 @@ export default async function run({ browser, stack }) {
     assert(r.total === 1008, 'cn ' + r.total); const d = (await ok(owner, 'acc_get_document', { p_id: inv })).doc; assert(Number(d.paid) === 3008, 'invoice paid ' + d.paid);
     assert(Number((await ok(owner, 'acc_list_products', { p: {} })).rows.find((p) => p.id === tee).stock) === 92, 'stock after return'); await integrity();
   }, 'critical');
+  await s.check('Returning more than was sold on that invoice is refused (10 sold, 2 already returned, 9 more asked)', async () => {
+    await fails(owner, 'acc_save_document', { p: { doc_type: 'credit_note', party_id: cust, ref_doc_id: inv, post: true, lines: [{ product_id: tee, qty: 9, rate: 500, disc_pct: 10 }] } }, /more than|already returned|exceeds/i);
+    assert(Number((await ok(owner, 'acc_list_products', { p: {} })).rows.find((p) => p.id === tee).stock) === 92, 'stock changed by a refused return'); await integrity();
+  }, 'critical');
   await s.check('Receipt with auto-allocation settles the invoice; an extra amount stays as an advance', async () => {
     const r = await ok(owner, 'acc_save_payment', { p: { kind: 'receipt', party_id: cust, account_id: bank, amount: 2500, auto_allocate: true, mode: 'UPI' } });
     assert(Number(r.allocated) === 2150 && Number(r.unallocated) === 350, JSON.stringify(r));
