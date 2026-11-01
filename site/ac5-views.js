@@ -97,9 +97,19 @@
     var N = g('NOTIFS') || [], f = S.nf || 'all', un = N.filter(function (n) { return !n.read; }).length;
     var list = N.filter(function (n) { return f === 'all' || !n.read; }), grp = {}, now = new Date().toDateString(), yd = new Date(Date.now() - 864e5).toDateString();
     list.forEach(function (n) { var d = new Date(n.created_at).toDateString(), k = d === now ? 'Today' : d === yd ? 'Yesterday' : 'Earlier'; (grp[k] = grp[k] || []).push(n); });
-    var tl = ['Today', 'Yesterday', 'Earlier'].filter(function (k) { return grp[k]; }).map(function (k) { return '<div class="tg"><span class="bl">' + k + '</span>' + grp[k].map(function (n, i) { return '<button class="tn' + (n.read ? '' : ' un') + '" data-notif="' + esc(n.id) + '" style="--i:' + i + '"><i class="td"></i><span class="tc"><b>' + esc(n.title) + '</b><small>' + esc(n.body || '') + '</small><em>' + esc(new Date(n.created_at).toLocaleString()) + '</em></span></button>'; }).join('') + '</div>'; }).join('');
+    S.tgOpen = S.tgOpen || { Today: true }; S.nOpen = S.nOpen || {}; S.nMore = S.nMore || {};
+    var tl = ['Today', 'Yesterday', 'Earlier'].filter(function (k) { return grp[k]; }).map(function (k) {
+      var open = !!S.tgOpen[k], items = grp[k], lim = S.nMore[k] ? items.length : 5;
+      var rows = items.slice(0, lim).map(function (n, i) { var o = !!S.nOpen[n.id]; return '<div class="nxr' + (n.read ? '' : ' un') + (o ? ' o' : '') + '"><i class="nxt"></i><button class="nxb" data-act="nOpen" data-id="' + esc(n.id) + '"><b>' + esc(n.title) + '</b><em>' + esc(new Date(n.created_at).toLocaleDateString()) + '</em></button>' + (o ? '<div class="nxd">' + (n.body ? '<small>' + esc(n.body) + '</small>' : '') + '<button class="btn sm" data-notif="' + esc(n.id) + '">' + (n.read ? 'Read' : 'Mark as read') + '</button></div>' : '') + '</div>'; }).join('');
+      var more = items.length > lim ? '<button class="btn sm" data-act="nMore" data-k="' + k + '">Show ' + (items.length - lim) + ' more</button>' : '';
+      var unk = items.filter(function (n) { return !n.read; }).length;
+      return '<div class="tg nxg"><button class="nxh" data-act="tgFold" data-k="' + k + '" aria-expanded="' + open + '"><span class="bl">' + k + '</span><span>' + items.length + (unk ? ' &middot; ' + unk + ' new' : '') + '</span><i>' + (open ? '&minus;' : '+') + '</i></button>' + (open ? rows + more : '') + '</div>';
+    }).join('');
     return head('Notifications', 'Messages from AUZslab about your account.') + '<div class="nfbar"><div class="seg"><button class="' + (f === 'all' ? 'on' : '') + '" data-act="nf" data-f="all">All</button><button class="' + (f === 'unread' ? 'on' : '') + '" data-act="nf" data-f="unread">Unread ' + (un ? '<i>' + un + '</i>' : '') + '</button></div><button class="btn sm" data-act="readAll">Mark all as read</button></div><div class="tline">' + (tl || '<div class="empty"><b>All caught up</b>Nothing unread.</div>') + '</div>';
   };
+  A.ACT.tgFold = function (el) { S.tgOpen[el.dataset.k] = !S.tgOpen[el.dataset.k]; A.render(); };
+  A.ACT.nOpen = function (el) { S.nOpen[el.dataset.id] = !S.nOpen[el.dataset.id]; A.render(); };
+  A.ACT.nMore = function (el) { S.nMore[el.dataset.k] = true; A.render(); };
   A.ACT.nf = function (el) { S.nf = el.dataset.f; A.render(); };
   A.ACT.readAll = async function () {
     var N = g('NOTIFS') || [], sb = g('sb'); await Promise.all(N.filter(function (n) { return !n.read; }).map(function (n) { n.read = true; return sb.from('notifications').update({ read: true }).eq('id', n.id); }));
