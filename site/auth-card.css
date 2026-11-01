@@ -153,3 +153,38 @@
   .auth-page .u-menu{background:transparent !important;border:none !important;box-shadow:none !important;color:#fff;font-size:12px;
     text-shadow:0 1px 4px rgba(0,0,0,.5)}
 }
+
+/* ================= round 2: small premium controls everywhere + Back/Menu on desktop ================= */
+/* the site-wide big-screen zoom (fluid.css) made this page's controls look big and bold; the card is designed at 1:1 */
+html:has(body.auth-page){zoom:1!important}
+.auth-page{--z:1}
+
+.auth-form-pane .auth-seg button{white-space:nowrap;font-weight:500;font-size:11px;padding:0 14px;height:28px}
+.auth-form-pane .auth-seg{padding:3px}
+.content .auth-form-pane .field input,.content .auth-form-pane input{height:40px;padding:0 13px;font-weight:400}
+.auth-form-pane .field label{font-weight:500;font-size:10px}
+.auth-form-pane .auth-h2{font-weight:500}
+.content .auth-form-pane .btn.auth-cta,.auth-form-pane .btn.auth-cta{height:40px!important;padding:0 18px!important;font-size:12.5px!important;font-weight:500!important;
+  letter-spacing:0!important;text-transform:none!important;border-radius:10px!important;display:flex;align-items:center;justify-content:center}
+.auth-form-pane .auth-social-btn,.auth-form-pane #googleBtnHost > *{flex:none;height:40px;min-height:40px;padding:0 12px;font-size:12px;font-weight:500;box-sizing:border-box}
+.auth-form-pane .auth-social-btn{width:100%}
+.auth-form-pane .pw-eye{width:32px;height:32px}
+
+@media (max-width:759px){
+  .auth-pill{padding:0 20px;height:44px;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center}
+  .content .auth-form-pane input,.content .auth-form-pane .field input{height:42px}
+}
+
+/* desktop: the full header stays hidden, but a small Back and Menu float in the corners */
+@media (min-width:760px){
+  .auth-page .u-top{display:flex;align-items:center;position:fixed;top:0;left:0;right:0;height:auto;padding:16px 24px;
+    background:transparent!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important;border:0!important;z-index:48;pointer-events:none}
+  .auth-page .u-logo,.auth-page .u-nav,.auth-page .u-ic,.auth-page .u-pill{display:none!important}
+  .auth-page .u-r{margin-left:auto}
+  .auth-page .auth-back,.auth-page .u-menu{pointer-events:auto}
+  .auth-back{display:flex;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:999px;border:1px solid rgba(0,0,0,.14);
+    background:rgba(255,255,255,.6);color:#111;font-size:12px;font-weight:500;cursor:pointer}
+  .auth-page .u-menu{height:32px!important;padding:0 14px!important;border-radius:999px!important;border:1px solid rgba(0,0,0,.14)!important;
+    background:rgba(255,255,255,.6)!important;color:#111;font-size:12px;font-weight:500}
+  .auth-page .u-menu .menu-btn-label{font-size:12px;font-weight:500;letter-spacing:0;text-transform:none}
+}
