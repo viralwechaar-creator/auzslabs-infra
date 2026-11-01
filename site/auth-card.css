@@ -251,3 +251,18 @@ html body.auth-page .auth-form-pane .auth-sub{font-size:14px!important;margin-bo
 .auth-form-pane #consentBox label,.auth-form-pane #consentBox label span{font-size:12.5px!important}
 .auth-eyebrow{font-size:12px}
 .auth-headline{font-size:18px}
+
+/* ================= round 7: switchable light / dark page (desktop), toggle beside Menu ================= */
+@media (min-width:760px){
+  .auth-page .u-r{display:flex;align-items:center;gap:8px}
+  .auth-page .u-ic{display:inline-flex!important;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border-radius:999px;
+    border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#f3f1ee;pointer-events:auto;cursor:pointer}
+  .auth-page .u-ic svg{fill:currentColor;stroke:none}
+  .auth-page .u-ic svg *{fill:currentColor}
+
+  html[data-theme="light"] .auth-page{background:radial-gradient(70% 60% at 50% 42%,#fbfaf8 0%,#efeeeb 70%,#e7e5e1 100%);color:#171717}
+  html[data-theme="light"] .auth-frame{box-shadow:0 0 0 1px rgba(0,0,0,.06),0 40px 90px -34px rgba(0,0,0,.45)}
+  html[data-theme="light"] .auth-back,html[data-theme="light"] .auth-page .u-menu,html[data-theme="light"] .auth-page .u-ic{
+    border:1px solid rgba(0,0,0,.14)!important;background:rgba(255,255,255,.7)!important;color:#171717!important}
+  html[data-theme="light"] .auth-page .u-menu i,html[data-theme="light"] .auth-page .u-menu i::before,html[data-theme="light"] .auth-page .u-menu i::after{background:#171717}
+}
