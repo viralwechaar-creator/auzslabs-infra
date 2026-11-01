@@ -270,6 +270,7 @@ export const RPC = {
   acc_send_due_reminder: { params: ['p_party_id'], auth: true },
   acc_followup_save: { params: ['p'], jsonb: ['p'], auth: true },
   acc_followup_list: { params: ['p'], jsonb: ['p'], auth: true },
+  acc_returns_list: { params: ['p'], jsonb: ['p'], auth: true },
   acc_team_list: { params: [], auth: true },
   acc_expense_request_save: { params: ['p'], jsonb: ['p'], auth: true },
   acc_expense_request_list: { params: ['p'], jsonb: ['p'], auth: true },

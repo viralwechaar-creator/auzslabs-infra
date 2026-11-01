@@ -82,6 +82,11 @@ export default async function run({ browser, stack }) {
     assert(r.total === 1008, 'cn ' + r.total); const d = (await ok(owner, 'acc_get_document', { p_id: inv })).doc; assert(Number(d.paid) === 3008, 'invoice paid ' + d.paid);
     assert(Number((await ok(owner, 'acc_list_products', { p: {} })).rows.find((p) => p.id === tee).stock) === 92, 'stock after return'); await integrity();
   }, 'critical');
+  await s.check('Returns list shows the returned items with the invoice they were against', async () => {
+    const r = await ok(owner, 'acc_returns_list', { p: { kind: 'sale' } });
+    assert(r.rows.length >= 1 && Number(r.rows[0].qty) === 2 && r.rows[0].against, JSON.stringify(r.rows[0] || null));
+    const pr = await ok(owner, 'acc_returns_list', { p: { kind: 'purchase' } }); assert(Array.isArray(pr.rows), 'purchase list');
+  }, 'major');
   await s.check('Returning more than was sold on that invoice is refused (10 sold, 2 already returned, 9 more asked)', async () => {
     await fails(owner, 'acc_save_document', { p: { doc_type: 'credit_note', party_id: cust, ref_doc_id: inv, post: true, lines: [{ product_id: tee, qty: 9, rate: 500, disc_pct: 10 }] } }, /more than|already returned|exceeds/i);
     assert(Number((await ok(owner, 'acc_list_products', { p: {} })).rows.find((p) => p.id === tee).stock) === 92, 'stock changed by a refused return'); await integrity();
