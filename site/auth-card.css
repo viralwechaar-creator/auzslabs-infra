@@ -2,16 +2,17 @@
    Scoped entirely under .auth-wrap -- never touches the shared .btn/.field/.auth-seg
    classes used elsewhere on the site, only overrides them inside this one page. */
 
-.auth-main{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 0px)}
-.auth-wrap{width:100%;display:flex;align-items:center;justify-content:center;padding:28px 16px}
+.auth-main{display:flex;align-items:center;justify-content:center;height:calc(100vh - 52px);min-height:0}
+.auth-wrap{width:100%;display:flex;align-items:center;justify-content:center;padding:16px}
 
-.auth-frame{position:relative;width:100%;max-width:980px;display:grid;grid-template-columns:1.6fr 1fr;gap:8px;
+.auth-frame{position:relative;width:100%;max-width:980px;max-height:calc(100vh - 88px);display:grid;
+  grid-template-columns:1.6fr 1fr;grid-template-rows:1fr;gap:8px;
   background:linear-gradient(165deg,#17171a 0%,#0c0c0e 60%);padding:8px;border-radius:30px;overflow:hidden;
   border:1px solid rgba(255,255,255,.07);
   box-shadow:0 1px 2px rgba(0,0,0,.2),0 24px 50px -20px rgba(0,0,0,.55),0 60px 100px -40px rgba(0,0,0,.6)}
 
 .auth-photo{position:relative;padding:22px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
-  min-height:560px;border-radius:24px;overflow:hidden;color:#fff;
+  height:100%;min-height:0;border-radius:24px;overflow:hidden;color:#fff;
   background-image:var(--auth-photo-url,url('auth-photo.jpg'));background-size:cover;background-position:50% 22%;background-repeat:no-repeat;
   box-shadow:0 12px 28px -12px rgba(0,0,0,.6)}
 .auth-photo::before{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 55%);pointer-events:none}
@@ -22,11 +23,19 @@
 .auth-eyebrow{font-size:11px;color:rgba(255,255,255,.55);margin:0 0 6px}
 .auth-headline{font-family:var(--font-display,inherit);font-size:16.5px;line-height:1.4;font-weight:500;margin:0;text-wrap:balance;text-shadow:0 2px 10px rgba(0,0,0,.4)}
 
-.auth-form-pane{position:relative;padding:38px 40px;color:#f3f1ee;background:radial-gradient(130% 100% at 0% 0%,rgba(255,255,255,.035),transparent 55%)}
+.auth-form-pane{position:relative;height:100%;min-height:0;overflow-y:auto;padding:38px 40px;color:#f3f1ee;
+  background:radial-gradient(130% 100% at 0% 0%,rgba(255,255,255,.035),transparent 55%);
+  display:flex;flex-direction:column}
 .auth-sheet-close{display:none}
 .auth-grab{display:none}
 
-.auth-form-pane .tl-card.au{background:none;border:none;box-shadow:none;padding:0;margin:0;max-width:none}
+.auth-form-pane .tl-card.au{background:none;border:none;box-shadow:none;padding:0;margin:0;max-width:none;
+  display:flex;flex-direction:column;flex:1;min-height:0}
+.auth-form-pane #authSection{display:flex;flex-direction:column;flex:1;min-height:0}
+/* pushes the "or continue with" + consent + social group down to the bottom of the
+   card instead of leaving a gap under it when the form above is short (e.g. sign-up
+   mode, which has no password field) */
+.auth-form-pane #socialOr,.auth-form-pane #consentBox{margin-top:auto !important}
 .auth-form-pane .auth-seg{display:inline-flex;align-self:flex-start;background:#19191b;border-radius:999px;padding:3px;
   margin:0 0 24px;width:max-content;box-shadow:inset 0 1px 3px rgba(0,0,0,.45)}
 .auth-form-pane .auth-seg button{border:none;background:none;padding:6px 14px;border-radius:999px;font-size:11.5px;
@@ -84,9 +93,9 @@
 .auth-back{display:none}
 
 @media (max-width:759px){
-  .auth-main{min-height:auto}
+  .auth-main{min-height:auto;height:auto}
   .auth-wrap{padding:0;min-height:100dvh}
-  .auth-frame{display:block;grid-template-columns:none;max-width:none;padding:0;border-radius:0;border:none;box-shadow:none;min-height:100dvh}
+  .auth-frame{display:block;grid-template-columns:none;max-width:none;max-height:none;padding:0;border-radius:0;border:none;box-shadow:none;min-height:100dvh}
   .auth-photo{position:fixed;inset:0;padding:max(18px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
     border-radius:0;min-height:0;z-index:1;
     background-image:var(--auth-photo-url,url('auth-photo.jpg'));background-size:cover;background-position:center;background-repeat:no-repeat}
@@ -100,7 +109,7 @@
   .auth-eyebrow{display:none}
   .auth-headline{font-size:13px;color:rgba(255,255,255,.75);font-weight:400;text-align:center;max-width:28ch}
 
-  .auth-form-pane{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#111113;border-radius:24px 24px 0 0;
+  .auth-form-pane{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:6;background:#111113;border-radius:24px 24px 0 0;
     padding:16px 24px max(24px,env(safe-area-inset-bottom,0px));max-height:92dvh;overflow-y:auto;
     transform:translateY(100%);transition:transform .32s cubic-bezier(.16,1,.3,1)}
   .auth-form-pane.open{transform:translateY(0)}
