@@ -181,7 +181,7 @@ var copybox=function(url,id){return '<div class="copybox"><code>'+esc(url)+'</co
   function setup() {
     host = document.createElement('div'); host.id = 'a5'; document.body.appendChild(host);
     root = host.attachShadow({ mode: 'open' });
-    var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'ac5.css?v=4'; root.appendChild(link);
+    var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'ac5.css?v=5'; root.appendChild(link);
     var fonts = document.createElement('style'); fonts.textContent = ''; root.appendChild(fonts);
     var box = document.createElement('div'); box.innerHTML = '<main class="sheet m-home" id="app"><aside class="rail" id="rail"></aside><div class="mainc"><slot name="banner"></slot><div class="home" id="home"></div><div class="pagewrap" id="pagewrap"></div></div></main><nav class="tabbar" id="tabbar" aria-label="Main"></nav><div id="sheetwrap"></div><div class="toast" id="toast" role="status"></div>';
     while (box.firstChild) root.appendChild(box.firstChild);
