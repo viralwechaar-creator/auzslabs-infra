@@ -1106,12 +1106,8 @@ slot{display:block}.slotwrap{background:var(--sheet);border-radius:18px;padding:
  .bars{height:44px}
  .bchips{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}
  .bchips .bc{width:100%;text-align:center;padding:10px 8px}
- .b-fan{min-height:150px}
  .b-qa .qa button{color:var(--ink)!important}
  .b-stack{min-height:0!important}.stk:has(.empty){height:auto!important;min-height:0!important}.b-stack .empty{padding:16px 0}
- .fan{width:100%!important;right:0!important;left:0;transform:none!important;display:flex;justify-content:center}
- .fan .f0,.fan .f1{display:none}
- .fan .f2{position:relative!important;right:auto!important;bottom:auto!important;width:80%!important;height:auto!important;margin-top:6px;border-radius:14px}
 }
 
 .mainc .blk,.mainc .pbody,.mainc .pcard,.mainc .svc,.mainc .b-main,.mainc .b-stack,.mainc .b-chips,.mainc .b-fan,.mainc .b-team,.mainc .b-sec,.mainc .b-qa{border-radius:16px}
