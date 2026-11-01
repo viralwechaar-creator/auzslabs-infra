@@ -248,6 +248,15 @@ body.ac3{--cat-slate:#5a6670;--cat-gold:#92722c;--cat-sage:#5f7a5c;--cat-plum:#8
 #a3p-apps .a3-k,#a3p-help .a3-k{color:var(--cat-sage)}
 #a3p-staff .a3-k{color:var(--cat-plum)}
 #a3p-notifications .a3-k{color:var(--cat-rose)}
+/* the Overview tile grid (the first screen on both phone and desktop) has its own eyebrow
+   label class (.a3-l, not .a3-k) and its own light/dark tile backgrounds -- same section tint
+   idea, applied here too, but only on the plain light tiles: a dark ("dk") or wine-filled ("sf")
+   tile already carries its own deliberate colour treatment and a tint would just fight it */
+.a3-t:not(.dk):not(.sf)[data-go=profile] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=account] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=privacy] .a3-l{color:var(--cat-slate)}
+.a3-t:not(.dk):not(.sf)[data-go=services] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=cart] .a3-l{color:var(--cat-gold)}
+.a3-t:not(.dk):not(.sf)[data-go=apps] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=help] .a3-l{color:var(--cat-sage)}
+.a3-t:not(.dk):not(.sf)[data-go=staff] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=roles] .a3-l{color:var(--cat-plum)}
+.a3-t:not(.dk):not(.sf)[data-go=notifications] .a3-l{color:var(--cat-rose)}
 @media(min-width:900px){
  .a3-nb[data-go=account] svg,.a3-nb[data-go=privacy] svg{color:var(--cat-slate)}
  .a3-nb[data-go=services] svg,.a3-nb[data-go=cart] svg{color:var(--cat-gold)}
