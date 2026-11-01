@@ -9,6 +9,7 @@
   var $ = function (s) { return root.querySelector(s); }, $$ = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
   var APPDEF = [['pos', 'AUZsPOS', 'Billing, tables, kitchen, QR orders', 'till'], ['payroll', 'AUZsPay', 'Attendance, leave and payslips', 'users'], ['accounting', 'AUZsLedger', 'Accounts, GST and banking', 'book'], ['mobile', 'AUZsMob', 'Phone shop sales and repairs', 'phone'], ['style', 'AUZsStyle', 'Clothing and footwear shop', 'tag'], ['scan', 'AUZsScan', 'Scan to bill', 'scan'], ['salon', 'AUZslab Salon', 'Booking, billing, website', 'tag'], ['finance', 'AUZsFinance', 'Money in, out and dues', 'book']];
   var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], SESSIONS = [], REQS = [], CART = [], PROFILE = { products: [] };
+  window.AC5 = { ACT: {}, AFTER: {}, ENTER: {}, OWN: {}, VIEWS: null };
   var S = { mode: 'owner', view: 'home', more: false, railOpen: false, nf: 'all' };
   var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy'];
   var SLOT = { profile: 'profile', security: 'account', services: 'services', staff: 'staff', roles: 'roles', notifications: 'notifications', privacy: 'privacy' };
@@ -152,7 +153,7 @@ var copybox=function(url,id){return '<div class="copybox"><code>'+esc(url)+'</co
 
 
   /* ---------- section pages ---------- */
-  var VIEWS = {};
+  var VIEWS = {}; AC5.VIEWS = VIEWS;
   var slot = function (id) { return '<div class="slotwrap"><slot name="p-' + id + '"></slot></div>'; };
   var TEXT = { profile: 'Your details and business information.', security: 'Your login, devices and safety settings.', services: 'What is switched on for your business.', staff: 'Staff and their sign-in details.', roles: 'Choose what each team member can open.', notifications: 'A simple inbox for your account.', privacy: 'Your consent, your data and your rights under the DPDP Act 2023.' };
   ['profile', 'security', 'services', 'staff', 'roles', 'notifications', 'privacy'].forEach(function (id) {
@@ -172,13 +173,15 @@ var copybox=function(url,id){return '<div class="copybox"><code>'+esc(url)+'</co
     var c = '<div class="hc"><a class="hcc" href="#" data-copy="+91 92512 50829"><span class="ri">' + ic('call') + '</span><b>Call us</b><small>+91 92512 50829</small><em>Tap to copy</em></a><a class="hcc" href="#" data-copy="helloauzslab@gmail.com"><span class="ri">' + ic('mail') + '</span><b>Email us</b><small>helloauzslab@gmail.com</small><em>Tap to copy</em></a><a class="hcc" href="learn.html"><span class="ri">' + ic('book') + '</span><b>Beginner guide</b><small>Your first day, step by step</small><em>Open</em></a></div>';
     return head('Help and support', 'Talk to a person, or tell us what went wrong.') + c + '<div class="savebar"><button class="btn pri" data-act="help">Report a problem</button></div>';
   };
+  var ringSVG = function (v, sz) { return '<svg class="rg" viewBox="0 0 36 36" width="' + sz + '" height="' + sz + '" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="16" pathLength="100"/><circle class="arc" cx="18" cy="18" r="16" pathLength="100" style="--v:' + v + '"/></svg>'; };
+  Object.assign(AC5, { g: g, esc: esc, ic: ic, head: head, F: F, inp: inp, sel: sel, ringSVG: ringSVG, toast: toast, go: go, S: S, $: function (q) { return $(q); }, $$: function (q) { return $$(q); }, render: function () { render(); }, data: function () { return { PROFILE: g('PROFILE') || {}, DASH: g('DASH'), ME: ME, CART: CART, ALL_APPS: ALL_APPS }; }, set: function (n, v) { window.__v = v; (0, eval)(n + '=window.__v'); }, can: can, hasBiz: hasBiz, isOwner: isOwner });
   var LABEL = { home: 'Overview' }; SECTIONS.forEach(function (s) { LABEL[s.id] = s.t; });
 
   /* ---------- draw ---------- */
   function setup() {
     host = document.createElement('div'); host.id = 'a5'; document.body.appendChild(host);
     root = host.attachShadow({ mode: 'open' });
-    var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'ac5.css?v=2'; root.appendChild(link);
+    var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'ac5.css?v=3'; root.appendChild(link);
     var fonts = document.createElement('style'); fonts.textContent = ''; root.appendChild(fonts);
     var box = document.createElement('div'); box.innerHTML = '<main class="sheet m-home" id="app"><aside class="rail" id="rail"></aside><div class="mainc"><slot name="banner"></slot><div class="home" id="home"></div><div class="pagewrap" id="pagewrap"></div></div></main><nav class="tabbar" id="tabbar" aria-label="Main"></nav><div id="sheetwrap"></div><div class="toast" id="toast" role="status"></div>';
     while (box.firstChild) root.appendChild(box.firstChild);
@@ -196,7 +199,8 @@ var copybox=function(url,id){return '<div class="copybox"><code>'+esc(url)+'</co
   }
   function toast(t) { var e = $('#toast'); e.textContent = t; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { e.classList.remove('on'); }, 2200); }
   function copy(t) { try { navigator.clipboard.writeText(t).then(function () { toast('Copied'); }, function () { toast(t); }); } catch (e) { toast(t); } }
-  function act(a) {
+  function act(a, el) {
+    if (AC5.ACT[a]) { AC5.ACT[a](el); return; }
     if (a === 'railToggle') { S.railOpen = !S.railOpen; render(); }
     else if (a === 'moreOpen') { S.more = true; render(); } else if (a === 'moreClose') { S.more = false; render(); }
     else if (a === 'signout') { var b = document.getElementById('signOutBtn'); if (b) b.click(); }
@@ -205,7 +209,8 @@ var copybox=function(url,id){return '<div class="copybox"><code>'+esc(url)+'</co
   function go(v) {
     var s = SECTIONS.filter(function (x) { return x.id === v; })[0]; if (v !== 'home' && (!s || !can(s))) v = 'home';
     S.more = false; S.view = v;
-    if (SLOT[v] && typeof window.showTab === 'function') { try { window.showTab(SLOT[v]); } catch (e) {} }
+    if (AC5.ENTER[v]) { try { AC5.ENTER[v](); } catch (e) {} }
+    if (SLOT[v] && !AC5.OWN[v] && typeof window.showTab === 'function') { try { window.showTab(SLOT[v]); } catch (e) {} }
     try { history.replaceState(null, '', '#' + (v === 'home' ? 'overview' : v)); } catch (e) {}
     render(); window.scrollTo({ top: 0 });
   }
@@ -222,6 +227,7 @@ var copybox=function(url,id){return '<div class="copybox"><code>'+esc(url)+'</co
     $('#tabbar').innerHTML = tabbarHTML();
     $$('.page .ph,.bento>*,.page>*').forEach(function (n) { n.classList.add('in'); });
     $$('[data-count]').forEach(function (c) { c.textContent = c.getAttribute('data-count'); });
+    if (AC5.AFTER[S.view]) { try { AC5.AFTER[S.view](); } catch (e) { console.error(e); } }
     var bn = document.getElementById('consentBanner'); if (bn && bn.getAttribute('slot') !== 'banner') { bn.setAttribute('slot', 'banner'); host.appendChild(bn); }
   }
   var st = document.createElement('style'); st.textContent = '@media (min-width:900px){.d-hide{display:none}.m-page .home{display:none}.m-page .pagewrap{display:block}.m-home .pagewrap{display:none}}@media (max-width:899px){.d-hide{display:none}}'; 
