@@ -44,11 +44,11 @@
     return h;
   }
   function paint() {
-    document.querySelectorAll('.a3-page').forEach(function (pg) {
-      var id = pg.id.replace('a3p-', ''), host = pg.querySelector('.a3-canvas'); if (!host) return;
-      var html = widget(id), w = host.querySelector(':scope>.a4x');
+    ['profile', 'account', 'services', 'staff', 'notifications', 'privacy'].forEach(function (id) {
+      var pane = document.getElementById('pane-' + id); if (!pane) return;
+      var html = widget(id), w = pane.querySelector(':scope>.a4x');
       if (!html) { if (w) w.remove(); return; }
-      if (!w) { w = document.createElement('div'); w.className = 'a4x'; host.insertBefore(w, host.firstChild); }
+      if (!w) { w = document.createElement('div'); w.className = 'a4x'; pane.insertBefore(w, pane.firstChild); }
       if (w.dataset.h !== html) { w.dataset.h = html; w.innerHTML = html; }
     });
   }

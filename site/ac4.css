@@ -47,3 +47,12 @@ body.ac3 .a3-nb svg,body.ac3 .a3-nb[data-go] svg{color:inherit!important;stroke:
 body.ac3 .a3-k,body.ac3 .a3-l,body.ac3 .a3-t .a3-l{color:var(--a-faint)!important}
 body.ac3 .a3-t.dk .a3-l{color:rgba(255,255,255,.6)!important}
 body.ac3 .a3-badge,body.ac3 .a3-nb .dot{background:#b3261e;color:#fff}
+/* two halves per tab, one section open at a time on phones */
+#a5>.a3-pane{display:grid!important;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
+@media(min-width:900px){#a5>.a3-pane{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#a5>.a3-pane>.a4x,#a5>.a3-pane>.acct-table-wrap,#a5>.a3-pane>#consentBanner{grid-column:1/-1}
+#a5>.a3-pane>*{min-width:0;margin:0!important}
+@media(max-width:899px){#a5>.a3-pane .fc2>:first-child{cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin:0}
+#a5>.a3-pane .fc2>:first-child::after{content:"+";font-size:18px;color:var(--a-mut)}
+#a5>.a3-pane .fc2.open>:first-child::after{content:"\2212"}
+#a5>.a3-pane .fc2:not(.open)>.fc2b{display:none}}

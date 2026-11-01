@@ -1053,5 +1053,4 @@ body.is-wl .sprog,body.is-wl .cur{display:none!important}
 :host .side button[aria-current="true"]{color:var(--btn-ink)}
 :host{display:block;min-height:100vh;position:relative;padding-block:10px 24px}
 slot{display:block}.slotwrap{background:var(--sheet);border-radius:18px;padding:6px 14px}
-::slotted(.section-pane){display:block!important}
 .pv,.cur,.sprog,.wl{display:none!important}
