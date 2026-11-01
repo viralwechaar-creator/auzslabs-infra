@@ -209,3 +209,23 @@ html:has(body.auth-page){zoom:1!important}
 @media (prefers-color-scheme:dark){
   .auth-page:not([data-theme="light"]){background-blend-mode:normal}
 }
+
+/* ================= round 4: dark page that matches the card, form grouped at the bottom ================= */
+@media (min-width:760px){
+  .auth-page{background:
+    radial-gradient(55% 50% at 10% 6%,rgba(194,24,63,.30),transparent 70%),
+    radial-gradient(50% 55% at 94% 98%,rgba(128,0,32,.34),transparent 70%),
+    radial-gradient(45% 45% at 50% 52%,rgba(255,255,255,.05),transparent 75%),
+    radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.2px) 0 0/22px 22px,
+    #0a0a0c;color:#f3f1ee}
+  .auth-main::before,.auth-main::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+  .auth-frame{box-shadow:0 1px 2px rgba(0,0,0,.4),0 30px 60px -22px rgba(0,0,0,.8),0 80px 140px -40px rgba(128,0,32,.55),0 0 0 1px rgba(255,255,255,.07),0 0 0 9px rgba(255,255,255,.025)}
+  .auth-back,.auth-page .u-menu{border:1px solid rgba(255,255,255,.18)!important;background:rgba(255,255,255,.06)!important;color:#f3f1ee!important}
+  .auth-page .u-menu i,.auth-page .u-menu i::before,.auth-page .u-menu i::after{background:#f3f1ee}
+
+  /* tabs stay on top; the heading, fields and Log in sit down with Google at the bottom */
+  .auth-form-pane .auth-h2#pageTitle{margin-top:auto!important}
+  .auth-form-pane #authSection{flex:none}
+  .auth-form-pane #socialOr{margin-top:22px!important}
+  .auth-form-pane #consentBox{margin-top:0!important}
+}
