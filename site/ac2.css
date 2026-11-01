@@ -235,3 +235,33 @@ body.ac3{--a-bg:#faf9f7;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#efece8;--a-mut:#
  .a3-bn{bottom:max(6px,calc(env(safe-area-inset-bottom) - 10px))}
  .a3-foot{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 }
+
+/* ===== round 7: per-section colour identity (an idea from the owner's "AUZslab Account" mockup --
+   each section gets its own quiet accent next to the shared wine brand colour, instead of every
+   section reading in the same single hue). Desktop sidebar icons + every page's small eyebrow label
+   pick up their section's tint; the active/selected state and every button/switch stay wine, same
+   as before -- this never replaces the brand colour, it only adds variety to the resting state. ===== */
+body.ac3{--cat-slate:#5a6670;--cat-gold:#92722c;--cat-sage:#5f7a5c;--cat-plum:#8a4a78;--cat-rose:#a84a3f}
+:root[data-theme=dark] body.ac3{--cat-slate:#9fb0bc;--cat-gold:#d9b45c;--cat-sage:#8fae8a;--cat-plum:#c48ab5;--cat-rose:#d98574}
+#a3p-account .a3-k,#a3p-privacy .a3-k{color:var(--cat-slate)}
+#a3p-services .a3-k,#a3p-cart .a3-k{color:var(--cat-gold)}
+#a3p-apps .a3-k,#a3p-help .a3-k{color:var(--cat-sage)}
+#a3p-staff .a3-k{color:var(--cat-plum)}
+#a3p-notifications .a3-k{color:var(--cat-rose)}
+/* the Overview tile grid (the first screen on both phone and desktop) has its own eyebrow
+   label class (.a3-l, not .a3-k) and its own light/dark tile backgrounds -- same section tint
+   idea, applied here too, but only on the plain light tiles: a dark ("dk") or wine-filled ("sf")
+   tile already carries its own deliberate colour treatment and a tint would just fight it */
+.a3-t:not(.dk):not(.sf)[data-go=profile] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=account] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=privacy] .a3-l{color:var(--cat-slate)}
+.a3-t:not(.dk):not(.sf)[data-go=services] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=cart] .a3-l{color:var(--cat-gold)}
+.a3-t:not(.dk):not(.sf)[data-go=apps] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=help] .a3-l{color:var(--cat-sage)}
+.a3-t:not(.dk):not(.sf)[data-go=staff] .a3-l,.a3-t:not(.dk):not(.sf)[data-go=roles] .a3-l{color:var(--cat-plum)}
+.a3-t:not(.dk):not(.sf)[data-go=notifications] .a3-l{color:var(--cat-rose)}
+@media(min-width:900px){
+ .a3-nb[data-go=account] svg,.a3-nb[data-go=privacy] svg{color:var(--cat-slate)}
+ .a3-nb[data-go=services] svg,.a3-nb[data-go=cart] svg{color:var(--cat-gold)}
+ .a3-nb[data-go=apps] svg,.a3-nb[data-go=help] svg{color:var(--cat-sage)}
+ .a3-nb[data-go=staff] svg{color:var(--cat-plum)}
+ .a3-nb[data-go=notifications] svg{color:var(--cat-rose)}
+ .a3-nb.on svg{color:var(--wine)!important}
+}
