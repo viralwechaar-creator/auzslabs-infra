@@ -56,3 +56,8 @@ body.ac3 .a3-badge,body.ac3 .a3-nb .dot{background:#b3261e;color:#fff}
 #a5>.a3-pane .fc2>:first-child::after{content:"+";font-size:18px;color:var(--a-mut)}
 #a5>.a3-pane .fc2.open>:first-child::after{content:"\2212"}
 #a5>.a3-pane .fc2:not(.open)>.fc2b{display:none}}
+/* welcome picture: eagle on phones, leopard on desktop; text kept readable */
+#a4w{background-image:url(/auth-photo.jpg);background-size:cover;background-position:50% 30%}
+@media(min-width:900px){#a4w{background-image:url(/account-cover.jpg);background-position:center}}
+#a4w::after{height:48%;background:linear-gradient(transparent,rgba(0,0,0,.82))}
+#a4w p{font-size:13px;font-weight:500;color:#fff;opacity:1;text-shadow:0 1px 8px rgba(0,0,0,.7)}
