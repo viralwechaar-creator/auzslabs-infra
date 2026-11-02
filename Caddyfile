@@ -1,6 +1,18 @@
-# Global options: email is required by Let's Encrypt for certificate expiry notices
+# Global options: email is required by Let's Encrypt for certificate expiry notices.
+# on_demand_tls: every *.{$DOMAIN} address issues its own certificate individually, the first
+# time it is actually visited (plain HTTP-01, the same way the root domain already works),
+# instead of one GoDaddy DNS-01 wildcard certificate -- that kept failing because GoDaddy's
+# API repeatedly revoked the key we issued it under. "ask" is required: without it, anyone
+# could point a random hostname at this server and make Caddy burn through Let's Encrypt's
+# rate limit trying to get it a certificate. server/src/routes/sites.js's /site/ask-tls only
+# says yes for a fixed app address (auzspos, auzsstyle, ...) or a real tenant's own slug.
 {
     email {$ACME_EMAIL}
+    on_demand_tls {
+        ask http://api:3000/site/ask-tls
+        interval 2m
+        burst 10
+    }
 }
 
 # Browser hardening headers, reused on every site below via `import security_headers`.
@@ -59,8 +71,8 @@
 #   * every other name (shopname.auzslab.in) is a SHOP address. It exists only for a shop that has website access (an online store,
 #     QR ordering, a salon website or a custom-built website) and serves only that website. The server decides (routes/sites.js asks
 #     the database); an app page typed on a shop address is forwarded to the app's own address for 30 days, then shows "page not found".
-# A wildcard cert can't use the normal HTTP challenge, so it uses a DNS-01 challenge via the registrar's API.
-# GODADDY_API_TOKEN is KEY:SECRET from developer.godaddy.com/keys (see .env.example).
+# Certificates for these addresses are issued on demand (see on_demand_tls above), one hostname at a time,
+# instead of a single GoDaddy DNS-01 wildcard certificate.
 
 # files every app page needs (shared look, sign-in code, icons): none of them opens an app by itself
 (shared_files) {
@@ -83,15 +95,7 @@
 
 *.{$DOMAIN} {
     tls {
-        dns godaddy {env.GODADDY_API_TOKEN}
-        # GoDaddy's own propagation is slow enough that Let's Encrypt's
-        # *secondary* validation (from other global vantage points, an
-        # anti-hijacking check) was seeing NXDOMAIN and failing even
-        # though the record existed and Caddy's own check had already
-        # passed -- confirmed against the real logs while setting this
-        # up. Wait before checking at all, then allow more total time.
-        propagation_delay 2m
-        propagation_timeout 5m
+        on_demand
     }
     import security_headers
     import compress
