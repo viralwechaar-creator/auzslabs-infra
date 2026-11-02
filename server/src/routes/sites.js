@@ -1,10 +1,15 @@
 import { pool } from '../db.js';
 import { DOMAIN } from '../config.js';
 
-// Addresses. Caddy asks this module two things (nothing here is reachable by a browser on purpose: both answers are only useful to Caddy):
+// Addresses. Caddy asks this module three things (nothing here is reachable by a browser on purpose: every answer is only useful to Caddy):
 //   GET /site/check        -- for every page request on a SHOP address (shopname.auzslab.in): may this shop have a website address?
 //                             200 = yes (X-Site-Kind says which website), 302 = old address, forward to the app address (30 days),
 //                             404 = no such page. Apps are never served on a shop address.
+//   GET /site/ask-tls      -- Caddy's on-demand TLS "ask" check (see the Caddyfile): is it OK to request a certificate for this
+//                             exact *.auzslab.in hostname? 200 = yes (a fixed app address or a real tenant's slug), else no. This
+//                             replaced a single GoDaddy DNS-01 wildcard certificate, which kept failing because GoDaddy's API
+//                             repeatedly revoked the key we were issuing it under -- a certificate is now requested individually,
+//                             the first time each subdomain is actually visited, the same HTTP-01 way the root domain already works.
 //   GET /bill/<code>       -- a customer's short bill link (auzslab.in/b/<code>) -> the page that shows that bill.
 // The decision is by what the shop has (db/301 site_access), never by what is typed in the address.
 
@@ -21,6 +26,8 @@ const APP_PAGES = [
 ];
 // files a shop's own website / bill pages use: never an app page, whatever folder they live in
 const WEB_SUPPORT = /^\/(mob\/receipt|accounts\/(bill|invoice-templates|taxinv)\.js|accounts\/accounts\.css)/;
+// the fixed shared-app addresses (see the Caddyfile's one_app blocks) -- these are never a tenant slug, always allowed
+const APP_SUBS = new Set(['auzspos', 'auzsstyle', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsfinance', 'app', 'www']);
 const appOf = (p) => { if (WEB_SUPPORT.test(p)) return null; for (const [a, re] of APP_PAGES) if (re.test(p)) return a; return null; };
 const base = () => (DOMAIN && DOMAIN !== 'localhost' ? DOMAIN : 'auzslab.in');
 
@@ -53,6 +60,20 @@ function redirect(res, to) { res.writeHead(302, { Location: to, 'Cache-Control':
 
 export async function handle(ctx) {
   const { req, res, url } = ctx;
+
+  if (url.pathname === '/site/ask-tls' && req.method === 'GET') {
+    const domain = String(url.searchParams.get('domain') || '').toLowerCase();
+    const b = base();
+    const deny = () => { res.writeHead(403, { 'Cache-Control': 'no-store' }); res.end(); };
+    const allow = () => { res.writeHead(200, { 'Cache-Control': 'no-store' }); res.end(); };
+    if (!domain.endsWith('.' + b)) return deny();
+    const slug = domain.slice(0, -(b.length + 1));
+    if (!slug || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) return deny();
+    if (APP_SUBS.has(slug)) return allow();
+    try { const a = await access(slug); if (a.exists) return allow(); }
+    catch (e) { /* db/301 not applied yet, or a transient error: refuse rather than issue a cert for an unknown name */ }
+    return deny();
+  }
 
   if (url.pathname === '/site/check' && req.method === 'GET') {
     const host = String(req.headers['x-forwarded-host'] || '').split(',')[0].toLowerCase().replace(/:\d+$/, '');
