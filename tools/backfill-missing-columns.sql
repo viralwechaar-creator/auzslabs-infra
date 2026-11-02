@@ -129,3 +129,15 @@ alter table tenants add column if not exists delivered_at timestamptz;
 alter table tenants add column if not exists is_demo boolean not null default false;
 alter table tenants add column if not exists is_trial boolean not null default false;
 alter table user_profiles add column if not exists biz_slug text;
+
+-- "alter column" statements (not just "add column") found the same way, same reasoning.
+alter table auth_users alter column password_hash drop not null;
+alter table bookings alter column tenant_id set default ((me()->>'tenant_id')::uuid);
+alter table guest_orders alter column tbl drop not null;
+alter table mob_settings alter column language drop default;
+alter table mob_settings alter column language drop not null;
+alter table password_resets alter column token_hash set not null;
+alter table payments alter column user_id drop not null;
+alter table sty_return_lines alter column variant_id drop not null;
+alter table sty_sale_lines alter column variant_id drop not null;
+alter table subscriptions alter column created_by drop not null;
