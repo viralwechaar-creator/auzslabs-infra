@@ -294,7 +294,11 @@
 }
 
 # Monitoring dashboard, kept on its own subdomain
+# tls (plain, no on_demand): without this, Caddy was grouping this hostname's certificate under the
+# *.{$DOMAIN} wildcard's on_demand policy below instead of issuing it normally at startup -- it never
+# got a certificate at all (confirmed: zero obtain attempts logged, ever) until this was made explicit.
 status.{$DOMAIN} {
+    tls {$ACME_EMAIL}
     import security_headers
     import compress
     reverse_proxy uptime-kuma:3001
@@ -303,6 +307,7 @@ status.{$DOMAIN} {
 # Agents Office (the owner's AI team dashboard): a separate app with its own login, AI key and notes folder,
 # started only with `docker compose --profile agents up -d --build agents-office`. Until then this address shows 502.
 agents.{$DOMAIN} {
+    tls {$ACME_EMAIL}
     import security_headers
     import compress
     reverse_proxy agents-office:3100
@@ -316,6 +321,7 @@ agents.{$DOMAIN} {
 # api service itself (every response already carries
 # Access-Control-Allow-Origin), not duplicated here.
 api.{$DOMAIN} {
+    tls {$ACME_EMAIL}
     import security_headers
     import compress
     handle_path /uploads/* {
