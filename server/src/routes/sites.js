@@ -27,7 +27,10 @@ const APP_PAGES = [
 // files a shop's own website / bill pages use: never an app page, whatever folder they live in
 const WEB_SUPPORT = /^\/(mob\/receipt|accounts\/(bill|invoice-templates|taxinv)\.js|accounts\/accounts\.css)/;
 // the fixed shared-app addresses (see the Caddyfile's one_app blocks) -- these are never a tenant slug, always allowed
-const APP_SUBS = new Set(['auzspos', 'auzsstyle', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsfinance', 'app', 'www']);
+// api/status/agents have their own Caddyfile blocks (not inside *.{$DOMAIN}'s on_demand wildcard), but Caddy's automatic
+// HTTPS still matches them against the wildcard's on_demand policy for certificate purposes -- without these here, the
+// ask check above silently refused them (no ACME call was ever attempted, no error logged, just a dead TLS handshake).
+const APP_SUBS = new Set(['auzspos', 'auzsstyle', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsfinance', 'app', 'www', 'api', 'status', 'agents']);
 const appOf = (p) => { if (WEB_SUPPORT.test(p)) return null; for (const [a, re] of APP_PAGES) if (re.test(p)) return a; return null; };
 const base = () => (DOMAIN && DOMAIN !== 'localhost' ? DOMAIN : 'auzslab.in');
 
