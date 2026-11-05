@@ -1,5 +1,6 @@
 import { pool } from '../db.js';
 import { DOMAIN } from '../config.js';
+import { rateLimited, clientIp } from '../lib/http.js';
 
 // Addresses. Caddy asks this module three things (nothing here is reachable by a browser on purpose: every answer is only useful to Caddy):
 //   GET /site/check        -- for every page request on a SHOP address (shopname.auzslab.in): may this shop have a website address?
@@ -69,6 +70,11 @@ export async function handle(ctx) {
     const b = base();
     const deny = () => { res.writeHead(403, { 'Cache-Control': 'no-store' }); res.end(); };
     const allow = () => { res.writeHead(200, { 'Cache-Control': 'no-store' }); res.end(); };
+    // This path is reachable directly over the internet (api.{domain}/site/ask-tls), not only from Caddy's internal
+    // on-demand TLS check -- without a limit, it lets anyone brute-force which tenant slugs exist by watching 200 vs
+    // 403. The cap is deliberately generous (not per-tenant) so a legitimate burst of real first-visit certificate
+    // requests -- several new subdomains going live at once -- is never the thing that gets throttled here.
+    if (rateLimited(`asktls:${clientIp(req)}`, 120, 5 * 60_000)) return deny();
     if (!domain.endsWith('.' + b)) return deny();
     const slug = domain.slice(0, -(b.length + 1));
     if (!slug || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) return deny();
