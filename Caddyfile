@@ -31,7 +31,12 @@
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), geolocation=(self)"
         # frame-ancestors: nobody else may frame us. object-src: no plugins. base-uri: a injected <base> tag cannot redirect our relative links.
-        Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+        # script-src: every page here relies on inline <script> blocks (no build step, no nonces), so 'unsafe-inline' stays --
+        # the real value of this directive is blocking an XSS payload from pulling in an ATTACKER'S external script, which is
+        # the most common way a stored-XSS bug actually gets weaponised (exfiltrating the session token via a 3rd-party host).
+        # Hosts here are every external script this project actually loads (grepped site/ and app/public/): Google tag manager,
+        # the Sentry error-tracking CDN bundle (dormant unless window.CFG.sentryDsn is set), Razorpay's checkout widget.
+        Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
         -Server
     }
 }
@@ -80,8 +85,10 @@
 (one_app) {
     import shared_files
     route {
-        # the hub's combined workspace shows these apps inside its own page; nobody else may frame them
-        header Content-Security-Policy "frame-ancestors 'self' https://app.{$DOMAIN}; object-src 'none'; base-uri 'self'"
+        # the hub's combined workspace shows these apps inside its own page; nobody else may frame them.
+        # script-src: same reasoning as the root domain's security_headers block above -- 'unsafe-inline' stays (no
+        # build step/nonces), the real value is blocking a stored-XSS payload from pulling in an attacker's own script.
+        header Content-Security-Policy "frame-ancestors 'self' https://app.{$DOMAIN}; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
         @home path /
         rewrite @home {args[0]}
         @mine path {args[0]} {args[1:]}
