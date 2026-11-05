@@ -98,6 +98,7 @@ export const RPC = {
   admin_update_client_order: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   admin_save_order_quote: { params: ['p_id', 'p_quote'], jsonb: ['p_quote'], auth: true },
   admin_confirm_order_payment: { params: ['p_id', 'p_paid_on', 'p_utr'], defaults: { p_paid_on: null, p_utr: null }, auth: true },
+  admin_approve_order: { params: ['p_id'], auth: true },
   admin_mark_order_bill_sent: { params: ['p_id'], auth: true },
   admin_list_client_bills: { params: ['p_from', 'p_to'], auth: true, defaults: { p_from: null, p_to: null } },
   admin_update_bill_details: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
