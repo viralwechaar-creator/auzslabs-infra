@@ -416,3 +416,5 @@ body{padding-top:var(--hhs)}
 .u-sheet-top{height:var(--hh)}
 .pe{scroll-margin-top:calc(var(--hhs) + 12px)}
 .u-top,:root[data-theme=dark] .u-top{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none}
+/* footer touches the bottom edge: the footer block already pads for the phone dock */
+@media(max-width:899px){body:has(.ftwrap){padding-bottom:0}}

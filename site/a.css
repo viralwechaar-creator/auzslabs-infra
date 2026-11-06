@@ -19,3 +19,4 @@ body.a-dark p{color:#b4b4b2}
   .a-slide{animation:aSlide linear both;animation-timeline:view();animation-range:entry 0% exit 100%}
   @keyframes aSlide{from{transform:translateX(var(--from,12%))}to{transform:translateX(var(--to,-12%))}}
 }
+html body main.content{padding-bottom:0!important}
