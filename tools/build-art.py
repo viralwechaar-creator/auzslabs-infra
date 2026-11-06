@@ -4,7 +4,7 @@ Usage: python3 tools/build-art.py [page ...]"""
 import re, os, sys, json
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(R, 'tools', 'art-src'); OUT = os.path.join(R, 'site')
-VER = {'a-prod': 4, 'a-demo': 5}
+VER = {'a-home': 4, 'a-prod': 4, 'a-demo': 5}
 def rd(p): return open(os.path.join(SRC, p + '.html'), encoding='utf-8').read()
 def wr(p, t): open(os.path.join(OUT, p + '.html'), 'w', encoding='utf-8').write(t)
 
@@ -20,7 +20,7 @@ def put(page, body, cls, css=None, js=True, keep_main=False):
         cp = os.path.join(R, 'tools', 'art-css', css + '.css')
         if os.path.exists(cp):
             open(os.path.join(OUT, css + '.css'), 'w').write(open(cp).read().replace('@P', 'html body.' + cls.split()[-1] + ' main.content'))
-    links = '<link rel="stylesheet" href="a.css?v=1">' + ('<link rel="stylesheet" href="%s.css?v=%d">' % (css, VER.get(css, 1)) if css else '')
+    links = '<link rel="stylesheet" href="a.css?v=2">' + ('<link rel="stylesheet" href="%s.css?v=%d">' % (css, VER.get(css, 1)) if css else '')
     h = h.replace('</head>', links + '</head>', 1)
     if js: h = h.replace('</body>', '<script src="a.js?v=1" defer></script></body>', 1)
     wr(page, h)
@@ -29,6 +29,7 @@ def home():
     tiles = lambda items: ''.join('<a class="ah-t t%d a-rise" href="%s"><i>%s</i><b>%s</b><span>%s</span><em></em></a>' % (i % 4, u, n, t, s) for i, (n, t, s, u) in enumerate(items))
     run = [('01', 'Custom website', 'Looks like your brand, sells for you', 'products.html#slab-web'), ('02', 'POS, billing & CRM', 'Counter, tables, customers', 'products.html#slab-pos'), ('03', 'Website CRM', 'Every enquiry becomes a customer', 'products.html#slab-crm'), ('04', 'Automation', 'WhatsApp bills and reminders', 'products.html#slab-auto')]
     grow = [('05', 'Payroll', 'Clock-ins to payslips', 'products.html#slab-payroll'), ('06', 'Accounting', 'Books that balance', 'products.html#slab-acct'), ('07', 'Your industry', 'Phones, clothing, salons', 'products.html#slab-ind'), ('08', 'Hardware & more', 'Printers, scanners, custom', 'products.html#slab-hw')]
+    tiles2 = lambda items: ''.join('<a class="ah-c c%d a-rise" href="%s"><i>%s.</i><b>%s</b><span>%s</span></a>' % (i % 5, u, n, t, s) for i, (n, t, s, u) in enumerate(items))
     idx = ''.join('<li><a href="%s"><i>%s</i>%s</a></li>' % (u, n, t) for n, t, u in [('1.0', 'Custom website', 'products.html#slab-web'), ('2.0', 'POS, billing, CRM', 'products.html#slab-pos'), ('3.0', 'Automation', 'products.html#slab-auto'), ('4.0', 'Payroll', 'products.html#slab-payroll'), ('5.0', 'Accounting', 'products.html#slab-acct')])
     return '''
 <div class="ah">
@@ -38,26 +39,27 @@ def home():
 <ol class="ah-idx">%s</ol>
 <p class="ah-sub" data-ed="home.sub">Rigid software ends here.</p>
 </section>
-<section class="ah-grey">
-<div class="ah-head"><span>Selected services</span><span>Pick today &middot; add later</span><span>2026</span></div>
-<h2 class="ah-big a-slide" style="--from:14%%;--to:-4%%">Run</h2>
-<div class="ah-row">%s</div>
-<h2 class="ah-big a-slide" style="--from:-14%%;--to:4%%">Grow</h2>
-<div class="ah-row">%s</div>
+<section class="ah-lite">
+<div class="ah-lh"><span class="ah-mono">SERVICES &mdash; PICK TODAY, ADD LATER</span>
+<h2 class="ah-lt"><span class="g">Run it. Grow it.</span><span>All in one place.</span></h2>
+<p class="ah-lp">Start with one part of your business. Everything else snaps on when you are ready.</p></div>
+<div class="ah-grid">%s%s</div>
+<a class="ah-more" href="products.html">See every service</a>
 </section>
-<section class="ah-white">
-<div class="ah-case"><i>2.5</i><b>YOUR BUSINESS<small>Shaped, not squeezed</small></b></div>
-<div class="ah-spec">
-<div class="ah-pic a-rise"><div class="ph r45" data-ed-img="home.a"></div></div>
-<dl>
-<div class="a-rise"><dt>Overview</dt><dd data-ed="home.l2s">Every screen, bill, rule and field bends to how you work. One login, one ledger, and every part is yours to shape.</dd></div>
-<div class="a-rise"><dt>Services</dt><dd><a href="products.html#slab-web">Website</a><a href="products.html#slab-pos">POS &amp; CRM</a><a href="products.html#slab-auto">Automation</a><a href="products.html#slab-payroll">Payroll</a><a href="products.html#slab-acct">Accounting</a></dd></div>
-<div class="a-rise"><dt>Businesses</dt><dd><a href="products.html#slab-pos">Cafes</a><a href="products.html#slab-ind">Salons</a><a href="products.html#slab-acct">Retail</a><a href="products.html#slab-ind">Clothing</a><a href="products.html#slab-ind">Mobile shops</a></dd></div>
-<div class="a-rise"><dt>See it run</dt><dd><a href="live-demo.html">Live demo</a><a href="download-apps.html">Apps</a><a href="studio.html">Studio</a></dd></div>
-</dl></div>
-<div class="ah-cta a-rise"><span>Build yours.</span><button class="btn" data-open-contact>Talk to us</button></div>
+<section class="ah-lite2">
+<div class="ah-two">
+<div class="ah-l2c"><span class="ah-mono">YOUR BUSINESS</span><h2 class="ah-lt left"><span class="g">Shaped,</span><span>not squeezed.</span></h2>
+<p class="ah-lp left" data-ed="home.l2s">Every screen, bill, rule and field bends to how you work. One login, one ledger, and every part is yours to shape.</p>
+<button class="ah-btn" data-open-contact>Talk to us</button></div>
+<div class="ah-l2r">
+<a class="ah-fc a-rise" href="products.html#slab-pos"><i>01.</i><b>Services</b><span>Website, POS &amp; CRM, automation, payroll, accounting</span></a>
+<a class="ah-fc a-rise" href="products.html#slab-ind"><i>02.</i><b>Businesses</b><span>Cafes, salons, retail, clothing, mobile shops</span></a>
+<a class="ah-fc a-rise" href="live-demo.html"><i>03.</i><b>Live demo</b><span>Real working accounts, open to everyone</span></a>
+<a class="ah-fc a-rise" href="studio.html"><i>04.</i><b>Studio</b><span>Custom software built with you</span></a>
+</div></div>
+<div class="ah-end a-rise"><span>Build yours.</span><button class="ah-btn" data-open-contact>Talk to us</button></div>
 </section>
-</div>''' % (idx, tiles(run), tiles(grow))
+</div>''' % (idx, tiles2(run), tiles2(grow))
 
 def block(page, cls):
     m = re.search(r'<(section|div) class="%s[ "].*?(?=<section|<div class="ftwrap"|</main>)' % cls, rd(page), re.S)
