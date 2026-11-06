@@ -1,51 +1,26 @@
-/* Services page: tap-to-build ring, linked cards, request tray */
+/* Services page: pick cards, request tray */
 (function () {
   function q(s, r) { return (r || document).querySelector(s); }
   function qa(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
-  var stage = q('#bpStage'); if (!stage) return;
-  var nodes = qa('.bp-n', stage), svg = q('.bp-lines', stage), hub = q('.bp-hub', stage), cnt = q('#bpCount');
-  var tray = q('#bpTray'), trayN = q('#bpTrayN'), sel = {};
-  var wide = window.matchMedia('(min-width:700px)');
-  function place() {
-    nodes.forEach(function (n, i) {
-      var a = -Math.PI / 2 + i * 2 * Math.PI / nodes.length, r = 38;
-      n._p = [50 + r * Math.cos(a), 50 + r * Math.sin(a)];
-      n.style.setProperty('--x', n._p[0] + '%'); n.style.setProperty('--y', n._p[1] + '%');
-    });
-    lines();
-  }
-  function lines() {
-    svg.innerHTML = '';
-    if (!wide.matches) return;
-    nodes.forEach(function (n) {
-      if (!sel[n.dataset.k]) return;
-      var l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      l.setAttribute('x1', 50); l.setAttribute('y1', 50); l.setAttribute('x2', n._p[0]); l.setAttribute('y2', n._p[1]);
-      svg.appendChild(l);
-    });
-  }
+  var tray = q('#bpTray'); if (!tray) return;
+  var trayN = q('#bpTrayN'), sel = {};
   function paint() {
-    var keys = Object.keys(sel).filter(function (k) { return sel[k]; });
-    nodes.forEach(function (n) { n.setAttribute('aria-pressed', sel[n.dataset.k] ? 'true' : 'false'); });
+    var n = 0;
     qa('.bc').forEach(function (c) {
-      var on = !!sel[c.dataset.k]; c.classList.toggle('on', on);
+      var on = !!sel[c.dataset.k]; if (on) n++; c.classList.toggle('on', on);
       var b = q('.bc-add', c); b.setAttribute('aria-pressed', on ? 'true' : 'false'); q('span', b).textContent = on ? 'Added' : 'Add';
     });
-    cnt.textContent = keys.length; hub.classList.add('pop'); setTimeout(function () { hub.classList.remove('pop'); }, 220);
-    tray.hidden = !keys.length; trayN.textContent = keys.length + (keys.length === 1 ? ' service' : ' services');
-    lines();
+    tray.hidden = !n; trayN.textContent = n + (n === 1 ? ' service' : ' services');
   }
-  function toggle(k) { sel[k] = !sel[k]; paint(); }
-  nodes.forEach(function (n) { n.addEventListener('click', function () { toggle(n.dataset.k); }); });
-  qa('.bc-add').forEach(function (b) { b.addEventListener('click', function () { toggle(b.dataset.k); }); });
+  qa('.bc-add').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); sel[b.dataset.k] = !sel[b.dataset.k]; paint(); }); });
+  qa('.bc').forEach(function (c) { c.addEventListener('click', function (e) { if (e.target.closest('a,button,summary,details')) return; var o = c.classList.contains('open'); qa('.bc').forEach(function (x) { x.classList.remove('open'); }); if (!o) c.classList.add('open'); }); });
   q('#bpGo').addEventListener('click', function () {
     var keys = [];
-    nodes.forEach(function (n) { if (sel[n.dataset.k] && n.dataset.c && keys.indexOf(n.dataset.c) < 0) keys.push(n.dataset.c); });
+    qa('.bc').forEach(function (c) { var k = c.dataset.c; if (sel[c.dataset.k] && k && keys.indexOf(k) < 0) keys.push(k); });
     if (!keys.length) { location.href = 'contact.html'; return; }
     try { var cur = JSON.parse(localStorage.getItem('auz_cart') || '[]'); keys.forEach(function (k) { if (cur.indexOf(k) < 0) cur.push(k); }); localStorage.setItem('auz_cart', JSON.stringify(cur)); } catch (e) {}
     location.href = 'cart.html';
   });
-  if (/^#slab-\w+$/.test(location.hash)) { var t = q(location.hash); if (t) { var d = q('details', t); if (d) d.open = true; } }
-  if (wide.addEventListener) wide.addEventListener('change', lines);
-  place(); paint();
+  if (/^#slab-\w+$/.test(location.hash)) { var t = q(location.hash); if (t) { t.classList.add('open'); var d = q('details', t); if (d) d.open = true; } }
+  paint();
 })();
