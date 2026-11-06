@@ -4,6 +4,7 @@ Usage: python3 tools/build-art.py [page ...]"""
 import re, os, sys, json
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(R, 'tools', 'art-src'); OUT = os.path.join(R, 'site')
+VER = {'a-prod': 3, 'a-demo': 4}
 def rd(p): return open(os.path.join(SRC, p + '.html'), encoding='utf-8').read()
 def wr(p, t): open(os.path.join(OUT, p + '.html'), 'w', encoding='utf-8').write(t)
 
@@ -19,7 +20,7 @@ def put(page, body, cls, css=None, js=True, keep_main=False):
         cp = os.path.join(R, 'tools', 'art-css', css + '.css')
         if os.path.exists(cp):
             open(os.path.join(OUT, css + '.css'), 'w').write(open(cp).read().replace('@P', 'html body.' + cls.split()[-1] + ' main.content'))
-    links = '<link rel="stylesheet" href="a.css?v=1">' + ('<link rel="stylesheet" href="%s.css?v=1">' % css if css else '')
+    links = '<link rel="stylesheet" href="a.css?v=1">' + ('<link rel="stylesheet" href="%s.css?v=%d">' % (css, VER.get(css, 1)) if css else '')
     h = h.replace('</head>', links + '</head>', 1)
     if js: h = h.replace('</body>', '<script src="a.js?v=1" defer></script></body>', 1)
     wr(page, h)
@@ -157,19 +158,29 @@ def _():
       ['Designed from a blank page around your workflow', 'Your own private workspace and logins', 'Scoped and quoted before work starts', 'New pieces added whenever you grow', 'Anything not listed here: just ask'],
       ('', 'Tell us what you need'), ('studio.html', 'See Studio'), sk('Your idea', [('Describe it', 70, 0), ('We scope it', 55, 1), ('We build it', 45, 0)], 'Shaped to you')),
     ]
-    idx = ''.join('<a href="#slab-%s"><i>%02d</i><span>%s</span></a>' % (k, n + 1, t) for n, (k, t, *_r) in enumerate(S))
-    arts = ''
+    short = {'web':'Website','pos':'POS','crm':'CRM','auto':'Automation','payroll':'Payroll','acct':'Accounts','ind':'Your industry','hw':'Hardware','studio':'Custom'}
+    nodes = ''.join('<button type="button" class="bp-n" data-k="%s" data-c="%s" aria-pressed="false"><i>%02d</i><b>%s</b></button>' % (k, ck, n + 1, short[k]) for n, (k, t, sm, feats, (ck, cl), *_r) in enumerate(S))
+    cards = ''
     for n, (k, t, sm, feats, (ck, cl), (lu, ll), art) in enumerate(S):
-        btn = ('<a class="mk-btn solid" href="cart.html?add=%s">%s</a>' % (ck, cl)) if ck else '<a class="mk-btn solid" href="contact.html">%s</a>' % cl
-        arts += '<article class="pc rv" id="slab-%s"><header class="pc-h"><i class="pc-n">%02d</i><h2>%s</h2></header><p class="pc-s">%s</p><ul class="pc-f">%s</ul><div class="pc-a">%s<a class="mk-link" href="%s">%s</a></div></article>' % (k, n + 1, t, sm, ''.join('<li>%s</li>' % f for f in feats), btn, lu, ll)
-    intro = '''
-<section class="ap-intro">
-<div class="ap-slide light"><span class="ap-pill">SERVICES</span><p class="ap-big">Websites, POS, CRM, automation, payroll and accounting, <em>built around your business.</em></p><a class="ap-go" href="#slab-web">See what we build <i>&searr;</i></a><span class="ap-deco d1"></span><span class="ap-deco d2"></span></div>
-<div class="ap-slide dark"><span class="ap-pill">WHAT WE DO</span><b class="ap-num">09</b><h1 class="ap-h" data-ed="products.h">What we build for you.</h1><p class="ap-p" data-ed="products.sub">Pick one service or combine them. Everything connects, and every part is shaped to how you work.</p><i class="ap-arrow">&swarr;</i></div>
-<div class="ap-strip"><span><b data-count="9">9</b> services</span><span><b>1</b> login for all of it</span><span><b>1</b> customer list</span><span><b>0</b> rigid templates</span></div>
-</section>'''
-    wrap = '<div class="pr-wrap"><aside class="pr-side"><nav class="pr-idx" aria-label="Services"><p class="pr-cap">All services <b>09</b></p>%s</nav><a class="pr-help" href="contact.html">Not sure what you need?<span>Tell us about your business &rarr;</span></a></aside><div class="pr-list">%s</div></div>' % (idx, arts)
-    put('products', intro + wrap, 'a-prod', 'a-prod')
+        li = ''.join('<li>%s</li>' % f for f in feats)
+        cards += ('<article class="bc rv" id="slab-%s" data-k="%s"><div class="bc-top"><i class="bc-n">%02d</i><button type="button" class="bc-add" data-k="%s" aria-pressed="false"><span>Add</span><em>+</em></button></div>'
+                  '<h2>%s</h2><p class="bc-s">%s</p><div class="bc-art">%s</div>'
+                  '<details class="bc-d"><summary>What you get</summary><ul>%s</ul></details>'
+                  '<a class="bc-l" href="%s">%s &rarr;</a></article>') % (k, k, n + 1, k, t, sm, art, li, lu, ll)
+    body = ('<div class="bp">'
+      '<header class="bp-hero"><div class="bp-copy"><span class="bp-mono">SERVICES &mdash; 09</span>'
+      '<h1 class="bp-h"><span class="aw" style="--i:0"><span data-ed="products.h">Pick what you need.</span></span><span class="aw" style="--i:1"><span class="bp-g">We connect the rest.</span></span></h1>'
+      '<p class="bp-p" data-ed="products.sub">Tap the parts of your business you want help with. They snap onto one login and one customer list.</p>'
+      '<a class="bp-hint" href="#bpCards">or browse every service &darr;</a></div>'
+      '<div class="bp-stage" id="bpStage" aria-label="Choose services"><svg class="bp-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>'
+      '<div class="bp-hub"><b id="bpCount">0</b><span>picked</span></div>%s</div></header>'
+      '<section class="bp-cards" id="bpCards">%s</section>'
+      '<aside class="bp-tray" id="bpTray" hidden><div class="bp-tray-t"><b id="bpTrayN">0 services</b><span>one login, one customer list</span></div><button type="button" class="bp-go" id="bpGo">Request these <i>&rarr;</i></button></aside>'
+      '</div>') % (nodes, cards)
+    put('products', body, 'a-prod', 'a-prod')
+    t = open(os.path.join(OUT, 'products.html'), encoding='utf-8').read()
+    t = t.replace('</body>', '<script src="a3.js?v=2" defer></script></body>', 1)
+    open(os.path.join(OUT, 'products.html'), 'w', encoding='utf-8').write(t)
 
 def strip(x): return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', x)).strip()
 
@@ -186,7 +197,10 @@ def _():
 %s%s
 <div class="ad-end"><b>Not sure which one?</b><button class="btn" data-open-contact>We will walk you through it</button><a class="btn btn-ghost" href="products.html">See all products</a></div>
 </div>''' % (wrap, data)
-    put('live-demo', body, 'a-demo', 'a-demo')
+    put('live-demo', body, 'a-dark a-demo', 'a-demo')
+    t = open(os.path.join(OUT, 'live-demo.html'), encoding='utf-8').read()
+    t = t.replace('</body>', '<script src="a4.js?v=1" defer></script></body>', 1)
+    open(os.path.join(OUT, 'live-demo.html'), 'w', encoding='utf-8').write(t)
 
 @reg('studio')
 def _():
