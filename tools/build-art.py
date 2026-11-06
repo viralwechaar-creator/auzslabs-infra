@@ -4,7 +4,7 @@ Usage: python3 tools/build-art.py [page ...]"""
 import re, os, sys, json
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(R, 'tools', 'art-src'); OUT = os.path.join(R, 'site')
-VER = {'a-prod': 3, 'a-demo': 4}
+VER = {'a-prod': 4, 'a-demo': 5}
 def rd(p): return open(os.path.join(SRC, p + '.html'), encoding='utf-8').read()
 def wr(p, t): open(os.path.join(OUT, p + '.html'), 'w', encoding='utf-8').write(t)
 
@@ -163,23 +163,21 @@ def _():
     cards = ''
     for n, (k, t, sm, feats, (ck, cl), (lu, ll), art) in enumerate(S):
         li = ''.join('<li>%s</li>' % f for f in feats)
-        cards += ('<article class="bc rv" id="slab-%s" data-k="%s"><div class="bc-top"><i class="bc-n">%02d</i><button type="button" class="bc-add" data-k="%s" aria-pressed="false"><span>Add</span><em>+</em></button></div>'
+        cards += ('<article class="bc rv" id="slab-%s" data-k="%s" data-c="%s"><div class="bc-top"><i class="bc-n">%02d</i><button type="button" class="bc-add" data-k="%s" aria-pressed="false"><span>Add</span><em>+</em></button></div>'
                   '<h2>%s</h2><p class="bc-s">%s</p><div class="bc-art">%s</div>'
                   '<details class="bc-d"><summary>What you get</summary><ul>%s</ul></details>'
-                  '<a class="bc-l" href="%s">%s &rarr;</a></article>') % (k, k, n + 1, k, t, sm, art, li, lu, ll)
+                  '<a class="bc-l" href="%s">%s &rarr;</a></article>') % (k, k, ck, n + 1, k, t, sm, art, li, lu, ll)
     body = ('<div class="bp">'
-      '<header class="bp-hero"><div class="bp-copy"><span class="bp-mono">SERVICES &mdash; 09</span>'
-      '<h1 class="bp-h"><span class="aw" style="--i:0"><span data-ed="products.h">Pick what you need.</span></span><span class="aw" style="--i:1"><span class="bp-g">We connect the rest.</span></span></h1>'
+      '<header class="bp-hero"><div class="bp-dots" aria-hidden="true"></div><span class="bp-mono">SERVICES &mdash; 09</span>'
+      '<h1 class="bp-h"><span class="aw" style="--i:0"><span class="bp-g" data-ed="products.h">Pick what you need.</span></span><span class="aw" style="--i:1"><span>We connect the rest.</span></span></h1>'
       '<p class="bp-p" data-ed="products.sub">Tap the parts of your business you want help with. They snap onto one login and one customer list.</p>'
-      '<a class="bp-hint" href="#bpCards">or browse every service &darr;</a></div>'
-      '<div class="bp-stage" id="bpStage" aria-label="Choose services"><svg class="bp-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>'
-      '<div class="bp-hub"><b id="bpCount">0</b><span>picked</span></div>%s</div></header>'
+      '<a class="bp-btn" href="#bpCards">Browse services</a></header>'
       '<section class="bp-cards" id="bpCards">%s</section>'
       '<aside class="bp-tray" id="bpTray" hidden><div class="bp-tray-t"><b id="bpTrayN">0 services</b><span>one login, one customer list</span></div><button type="button" class="bp-go" id="bpGo">Request these <i>&rarr;</i></button></aside>'
-      '</div>') % (nodes, cards)
+      '</div>') % cards
     put('products', body, 'a-prod', 'a-prod')
     t = open(os.path.join(OUT, 'products.html'), encoding='utf-8').read()
-    t = t.replace('</body>', '<script src="a3.js?v=2" defer></script></body>', 1)
+    t = t.replace('</body>', '<script src="a3.js?v=3" defer></script></body>', 1)
     open(os.path.join(OUT, 'products.html'), 'w', encoding='utf-8').write(t)
 
 def strip(x): return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', x)).strip()
@@ -197,7 +195,7 @@ def _():
 %s%s
 <div class="ad-end"><b>Not sure which one?</b><button class="btn" data-open-contact>We will walk you through it</button><a class="btn btn-ghost" href="products.html">See all products</a></div>
 </div>''' % (wrap, data)
-    put('live-demo', body, 'a-dark a-demo', 'a-demo')
+    put('live-demo', body, 'a-demo', 'a-demo')
     t = open(os.path.join(OUT, 'live-demo.html'), encoding='utf-8').read()
     t = t.replace('</body>', '<script src="a4.js?v=1" defer></script></body>', 1)
     open(os.path.join(OUT, 'live-demo.html'), 'w', encoding='utf-8').write(t)
