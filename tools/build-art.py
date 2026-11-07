@@ -199,7 +199,7 @@ def _():
 </div>''' % (wrap, data)
     put('live-demo', body, 'a-demo', 'a-demo')
     t = open(os.path.join(OUT, 'live-demo.html'), encoding='utf-8').read()
-    t = t.replace('</body>', '<script src="a4.js?v=1" defer></script></body>', 1)
+    t = t.replace('</body>', '<script src="a4.js?v=2" defer></script></body>', 1)
     open(os.path.join(OUT, 'live-demo.html'), 'w', encoding='utf-8').write(t)
 
 @reg('studio')
