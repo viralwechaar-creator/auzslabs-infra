@@ -52,7 +52,7 @@ export default async function run({ browser, stack }) {
   const tid = (await q("select id from tenants where slug='testacct'"))[0].id;
   const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await c.newPage(); const errs = watch(page);
   await page.goto(stack.url('testacct', '/accounts.html')); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD);
-  await page.locator('button', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 });
+  await page.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 });
   const scan = async (file) => { const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.evaluate(() => scanInvoice('bill'))]); await fc.setFiles(file); };
 
   await s.check('Accounting: a text PDF is read in the browser and opens as a draft bill with the right rows (nothing saved yet)', async () => {

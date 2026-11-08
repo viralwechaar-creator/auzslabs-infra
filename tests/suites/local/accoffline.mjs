@@ -19,7 +19,7 @@ export default async function run({ browser, stack }) {
   const baseBills = await billClientOpCount();
   const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await c.newPage(); const errs = watch(page);
   await page.goto(stack.url('testacct', '/accounts.html')); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD);
-  await page.locator('button', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 }); await page.waitForTimeout(2500);   // lets the offline copy be saved
+  await page.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 }); await page.waitForTimeout(2500);   // lets the offline copy be saved
   let down = false; await page.route('https://api.auzslab.in/**', (r) => (down ? r.abort() : r.fallback()));
 
   await s.check('A copy of the setup, people and products is kept on the device while online', async () => {

@@ -500,13 +500,13 @@ export default async function run({ browser, stack }) {
     await p1.goto(stack.url('app', '/start.html')); await p1.waitForSelector('input[type=password]', { timeout: 20000 });
     const t0 = await p1.locator('body').innerText();
     assert(/Owner or manager/.test(t0) && /Staff/.test(t0), 'sign-in tabs missing: ' + t0.slice(0, 120));
-    await p1.fill('input[type=email]', USERS.mobOwner); await p1.fill('input[type=password]', PASSWORD); await p1.locator('button', { hasText: /^Sign in$/ }).click();
+    await p1.fill('input[type=email]', USERS.mobOwner); await p1.fill('input[type=password]', PASSWORD); await p1.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click();
     await p1.waitForURL(/\/mob\.html/, { timeout: 20000 }); await p1.waitForSelector('.shell', { timeout: 20000 });
     assert(!/different business/i.test(await p1.locator('body').innerText()), 'the app refused the login on the shared address');
     await c1.close();
     const c2 = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const p2 = await c2.newPage();
     await p2.goto(stack.url('app', '/start.html')); await p2.waitForSelector('input[type=password]', { timeout: 20000 });
-    await p2.fill('input[type=email]', USERS.cafeOwner); await p2.fill('input[type=password]', PASSWORD); await p2.locator('button', { hasText: /^Sign in$/ }).click();
+    await p2.fill('input[type=email]', USERS.cafeOwner); await p2.fill('input[type=password]', PASSWORD); await p2.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click();
     await p2.waitForSelector('.tile', { timeout: 20000 });
     const tiles = await p2.locator('.tile b').allInnerTexts();
     assert(tiles.includes('AUZsPOS') && tiles.includes('Admin console'), 'tiles: ' + tiles.join(', '));
