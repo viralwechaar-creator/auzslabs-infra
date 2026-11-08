@@ -12,7 +12,7 @@ export default async function run({ browser, stack }) {
   let down = false; await page.route('https://api.auzslab.in/**', (r) => (down ? r.abort() : r.fallback()));
   await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
   await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
-  await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+  await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
   // open the screens once while online so their answers are kept on the device
   await page.evaluate(async () => { await loadCatalog(true); await api('sty_list_suppliers'); await api('sty_collections_list'); await api('sty_list_customers', {}); await topUpBarcodes(); if (!S.cat.length) { await api('sty_save_style', { p: { name: 'Base Tee', category: 'Tees', price: 300, mrp: 300, cost: 100, colours: ['Blue'], sizes: ['M'], opening: { qty: 3, unitCost: 100, branchId: S.branch } } }); await loadCatalog(true); } });
   await page.evaluate(async () => { LS.set('warm.' + scope(), 0); await warmScreens(); });

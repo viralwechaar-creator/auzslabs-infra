@@ -18,7 +18,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { ...dev, simple: true }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('testacct', '/scan.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
     return { c, page, errs: () => errs.filter((e) => !/sentry/i.test(e)) };
   };
   const skipTour = async (page) => { try { await page.waitForSelector('.sheet', { timeout: 5000 }); await page.locator('.sheet button', { hasText: /^Skip$/ }).click(); await page.waitForTimeout(400); } catch (e) { /* no tour */ } };
@@ -119,7 +119,7 @@ export default async function run({ browser, stack }) {
   await s.check('AUZsLedger itself is unchanged: no beginner menu, no quick bill, no switch', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 900, simple: true }); const page = await c.newPage();
     await page.goto(stack.url('testacct', '/accounts.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
-    await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
     await page.waitForTimeout(1500); assert(!/Quick bill/.test(await page.locator('.side').innerText()), 'beginner menu leaked into AUZsLedger');
     assert(await page.locator('.sheet').count() === 0, 'a tour opened in AUZsLedger'); assert(/analytics/i.test(await page.locator('.side').innerText()), 'ledger menu changed'); await c.close();
   }, 'critical');

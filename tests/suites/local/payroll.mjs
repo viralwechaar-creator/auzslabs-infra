@@ -246,7 +246,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('testpay', '/payroll.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', email); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(800);
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(800);
     return { c, page, errs };
   };
   const pageOk = async (page, errs, hash, label, mobile) => {

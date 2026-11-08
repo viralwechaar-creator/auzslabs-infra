@@ -25,7 +25,7 @@ export default async function run({ browser, stack }) {
   await s.check('Admin dashboard: owner signs in, sees the dashboard cards, and every Daily Operations page opens', async () => {
     const ctx = await newCtx(browser, stack, { w: 1366, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
     await page.goto(stack.url('testcafe', '/dashboard.html'), { waitUntil: 'load' }); await page.waitForSelector('input[type=password]', { timeout: 15000 });
-    await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /sign in/i }).last().click();
+    await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click();
     await page.waitForSelector('.hello', { timeout: 15000 }); await page.waitForTimeout(1200);
     const t = await page.locator('body').innerText();
     for (const w of ['Order Channels', 'Online Orders Overview', 'Sales Trend', 'Top Performing Items', 'Business Health', 'Expenses & Cash Flow', 'Revenue Leakage', 'Daily Snapshot', 'Quick Actions']) assert(t.includes(w), 'dashboard is missing the "' + w + '" card');
@@ -48,7 +48,7 @@ export default async function run({ browser, stack }) {
   await s.check('Admin console: every sidebar page renders, records can be created, and outlets filter data', async () => {
     const ctx = await newCtx(browser, stack, { w: 1366, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
     await page.goto(stack.url('testcafe', '/dashboard.html'), { waitUntil: 'load' }); await page.waitForSelector('input[type=password]', { timeout: 15000 });
-    await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /sign in/i }).last().click();
+    await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click();
     await page.waitForSelector('.hello', { timeout: 15000 }); await page.waitForTimeout(1200);
     const ids = await page.evaluate(() => flatNav().map((x) => x[0]));
     assert(ids.length > 60, 'console has only ' + ids.length + ' pages');
@@ -80,12 +80,12 @@ export default async function run({ browser, stack }) {
       await s.check(`${name} (${dev.name}): login screen shows; wrong password is refused`, async () => {
         await page.goto(stack.url('testcafe', p), { waitUntil: 'load' }); await page.waitForSelector('input[type=password]', { timeout: 15000 });
         await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', 'wrong-password');
-        await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForTimeout(1200);
+        await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForTimeout(1200);
         assert(await page.locator('input[type=password]').count(), 'wrong password let the user in');
       }, 'critical');
       await s.check(`${name} (${dev.name}): owner signs in and the app opens`, async () => {
         await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD);
-        await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForTimeout(2500);
+        await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForTimeout(2500);
         assert(!(await page.locator('input[type=password]').count()), 'still on the login screen: ' + (await page.locator('body').innerText()).slice(0, 120).replace(/\n/g, ' '));
       }, 'critical');
       await s.shot(page, `${name} ${dev.name} home`);

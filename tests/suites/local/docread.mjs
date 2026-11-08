@@ -86,7 +86,7 @@ export default async function run({ browser, stack }) {
   // ---- Console: menu file -> draft -> items
   const c2 = await newCtx(browser, stack, { w: 1280, h: 900 }); const p2 = await c2.newPage(); const e2 = watch(p2);
   await p2.goto(stack.url('testcafe', '/dashboard.html'), { waitUntil: 'load' }); await p2.waitForSelector('input[type=password]', { timeout: 15000 });
-  await p2.fill('input[type=email]', USERS.cafeOwner); await p2.fill('input[type=password]', PASSWORD); await p2.locator('button', { hasText: /sign in/i }).last().click(); await p2.waitForSelector('.hello', { timeout: 15000 });
+  await p2.fill('input[type=email]', USERS.cafeOwner); await p2.fill('input[type=password]', PASSWORD); await p2.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await p2.waitForSelector('.hello', { timeout: 15000 });
   await s.check('Console: a menu PDF becomes a draft of categories and items; Create adds them', async () => {
     await p2.evaluate(() => go('menu/items')); await p2.waitForSelector('button:has-text("Read menu file")', { timeout: 10000 });
     const [fc] = await Promise.all([p2.waitForEvent('filechooser'), p2.locator('button', { hasText: 'Read menu file' }).click()]); await fc.setFiles({ name: 'menu.pdf', mimeType: 'application/pdf', buffer: mnu.pdf });

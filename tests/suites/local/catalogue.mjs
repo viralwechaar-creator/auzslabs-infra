@@ -467,7 +467,7 @@ export default async function run({ browser, stack }) {
     const ctx = await newCtx(browser, stack, { w: 1366, h: 900 }); const page = await ctx.newPage(); const w = watch(page);
     try {
       await page.goto(stack.url('testcafe', '/dashboard.html'), { waitUntil: 'load' }); await page.waitForSelector('input[type=password]', { timeout: 15000 });
-      await page.fill('input[type=email]', U.cafeOwner); await page.fill('input[type=password]', PW); await page.locator('button', { hasText: /sign in/i }).last().click();
+      await page.fill('input[type=email]', U.cafeOwner); await page.fill('input[type=password]', PW); await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click();
       await page.waitForSelector('.hello', { timeout: 15000 });
       await page.evaluate(() => { location.hash = '#mgmt/config'; }); await page.waitForSelector('select option:has-text("Mobile shop")', { state: 'attached', timeout: 15000 });
       const opts = await page.locator('select:has(option:has-text("Mobile shop")) option').allInnerTexts(); assert(opts.length === 3 && !opts.some((o) => /salon/i.test(o)), 'options: ' + opts);
