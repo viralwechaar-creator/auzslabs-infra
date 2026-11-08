@@ -26,7 +26,7 @@ export default async function run({ browser, stack }) {
     const page = await c2.newPage(); const errs = watch(page);
     await page.goto(stack.url(app.host, app.path)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', app.email); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector(app.ready, { timeout: 20000 }); await page.waitForTimeout(900);
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector(app.ready, { timeout: 20000 }); await page.waitForTimeout(900);
     return { ctx: c2, page, errs };
   };
   // the colour a primary button in this app actually paints, plus the token values

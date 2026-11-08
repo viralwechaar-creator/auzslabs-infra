@@ -323,7 +323,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('demo', '/finance.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', 'demo@auzslab.in'); await page.fill('input[type=password]', 'Auzslab@Demo');
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.hero-n .n', { timeout: 20000 });
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.hero-n .n', { timeout: 20000 });
     await page.waitForSelector('svg.flow', { timeout: 8000 });
     assert(!errs.filter((e) => !/sentry/i.test(e)).length, 'script errors'); await c.close();
     const html = (await import('node:fs')).readFileSync(new URL('../../../site/live-demo.html', import.meta.url), 'utf8');
@@ -334,7 +334,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('testfin', '/finance.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.finOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
     return { c, page, errs: { get length() { return this.l().length; }, l: () => errs.filter((e) => !/sentry/i.test(e)), slice(a, b) { return this.l().slice(a, b); } } };
   };
   for (const dev of [{ name: 'phone', w: 390, h: 844, mobile: true }, { name: 'desktop', w: 1366, h: 800 }]) {
@@ -367,7 +367,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1000, h: 700 }); const page = await c.newPage();
     await page.goto(stack.url('testcafe', '/finance.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('text=not part of your plan', { timeout: 15000 }); await c.close();
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('text=not part of your plan', { timeout: 15000 }); await c.close();
   });
   s.done();
 }

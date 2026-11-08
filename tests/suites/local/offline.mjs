@@ -26,7 +26,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('testmob', '/mob.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.mobOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(900);
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(900);
     return { c, page, errs };
   };
   const queueSale = (page, id, qty) => page.evaluate(async ([id, item, qty]) => {
@@ -97,7 +97,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage();
     await page.goto(stack.url('testmob', '/mob.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.mobOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(900);
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(900);
     const id = uid();
     await onPost(page, (r) => r.fulfill({ status: 502, contentType: 'application/json', body: '{"error":"bad gateway"}' }));
     await queueSale(page, id, 1); await page.waitForTimeout(900);
@@ -116,7 +116,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('testcafe', '/index.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.tbl-tile', { timeout: 20000 }); await page.waitForTimeout(900);
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.tbl-tile', { timeout: 20000 }); await page.waitForTimeout(900);
     return { c, page, errs };
   };
   const posOut = (page) => page.evaluate(async () => (await all('out')).length);

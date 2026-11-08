@@ -163,7 +163,7 @@ export default async function run({ browser, stack }) {
       const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
       await page.goto(stack.url(slug, '/' + file)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
       await page.fill('input[type=email]', email); await page.fill('input[type=password]', PASSWORD);
-      await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+      await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
       await page.waitForSelector('.auzb', { timeout: 15000 });
       await page.locator('.auzb').click(); await page.waitForSelector('.auzp.on'); await page.waitForTimeout(600);
       const sev = await page.locator('.auzp-i.s-critical, .auzp-i.s-warning, .auzp-i.s-info').count(); assert(sev >= 1, `${slug}: no graded notices in the bell`);

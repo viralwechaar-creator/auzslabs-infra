@@ -257,7 +257,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
     await page.evaluate(() => { location.hash = '#/stock'; }); await page.waitForTimeout(800);
     await page.locator('button', { hasText: 'New style' }).first().click(); await page.waitForSelector('.seg button', { timeout: 8000 });
     await page.locator('.seg button', { hasText: 'Simple entry' }).click();
@@ -307,7 +307,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
     await page.waitForTimeout(1200); await page.keyboard.press('Escape');
     await page.keyboard.press('Shift+/'); await page.waitForSelector('.kb-help', { timeout: 4000 }); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
     if (await page.locator('.kb-help').count()) await page.locator('.sheet .btn.plain').first().click();
@@ -335,7 +335,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', USERS.styOwner); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
     const out = await page.evaluate(async () => {
       const cv = document.createElement('canvas'); cv.width = 200; cv.height = 200; const g = cv.getContext('2d'); g.fillStyle = '#0a7'; g.fillRect(0, 0, 200, 200); g.fillStyle = '#fff'; g.fillRect(60, 60, 80, 80);
       const blob = await new Promise((r) => cv.toBlob(r, 'image/jpeg'));
@@ -356,7 +356,7 @@ export default async function run({ browser, stack }) {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
     await page.fill('input[type=email]', email); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(900);
+    await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.waitForTimeout(900);
     return { c, page, errs };
   };
   const screens = async (dev, label) => {

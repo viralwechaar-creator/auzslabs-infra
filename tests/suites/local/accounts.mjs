@@ -387,7 +387,7 @@ export default async function run({ browser, stack }) {
   await s.check('After all of that, every invariant still holds', async () => { const r = await integrity(); assert(r.checks.length >= 10, 'checks missing'); }, 'critical');
 
   // ---------- screens ----------
-  const ownerLogin = async (page, host) => { await page.goto(stack.url(host, '/accounts.html')); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 }); };
+  const ownerLogin = async (page, host) => { await page.goto(stack.url(host, '/accounts.html')); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 }); };
   const ctxD = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctxD.newPage(); const errs = watch(page);
   await s.check('Screens: sign in on desktop, dashboard shows real figures', async () => { await ownerLogin(page, 'testacct'); await page.waitForSelector('.kpi'); assert(/Customers owe you/.test(await page.locator('body').innerText()), 'dashboard'); assert(await page.locator('.side').isVisible(), 'sidebar'); await s.shot(page, 'desktop-home'); }, 'critical');
   await s.check('Editing a posted bill cancels it with a reversal and opens a corrected draft (wrong reverse charge fixed, item added)', async () => {

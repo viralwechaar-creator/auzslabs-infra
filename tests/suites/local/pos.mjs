@@ -27,7 +27,7 @@ export default async function run({ browser, stack }) {
 
   await s.check('Staff sign-in opens the POS on the tables screen', async () => {
     await page.goto(stack.url('testcafe', '/index.html')); await page.waitForSelector('input[type=password]');
-    await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button', { hasText: /sign in/i }).last().click();
+    await page.fill('input[type=email]', USERS.cafeOwner); await page.fill('input[type=password]', PASSWORD); await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click();
     await page.waitForSelector('.tbl-tile', { timeout: 15000 });
   }, 'critical');
   await s.shot(page, 'pos-tables-desktop');
@@ -191,7 +191,7 @@ export default async function run({ browser, stack }) {
   const cctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const cp = await cctx.newPage(); const cerrs = watch(cp);
   await s.check('A cashier\'s 20% discount needs the manager PIN, and the paid bill carries the approval', async () => {
     await cp.goto(stack.url('testcafe', '/index.html')); await cp.waitForSelector('input[type=password]');
-    await cp.fill('input[type=email]', 'cashier-cafe@test.local'); await cp.fill('input[type=password]', PASSWORD); await cp.locator('button', { hasText: /sign in/i }).last().click();
+    await cp.fill('input[type=email]', 'cashier-cafe@test.local'); await cp.fill('input[type=password]', PASSWORD); await cp.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click();
     await cp.waitForSelector('[data-nav="sell"]', { timeout: 15000 });
     await cp.evaluate(() => { S.cur = newOrder({ type: 'Takeaway' }); go('sell'); }); await cp.waitForTimeout(500);
     await cp.locator('.cats [data-cat="cat-start"]').click(); await cp.locator('.items .tile', { hasText: 'Paneer Tikka' }).first().click();
@@ -238,7 +238,7 @@ export default async function run({ browser, stack }) {
   await s.check('Phone: every POS screen fits the width and shows the tab bar', async () => {
     const pctx = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const pp = await pctx.newPage();
     await pp.goto(stack.url('testcafe', '/index.html')); await pp.waitForSelector('input[type=password]');
-    await pp.fill('input[type=email]', USERS.cafeOwner); await pp.fill('input[type=password]', PASSWORD); await pp.locator('button', { hasText: /sign in/i }).last().click();
+    await pp.fill('input[type=email]', USERS.cafeOwner); await pp.fill('input[type=password]', PASSWORD); await pp.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click();
     await pp.waitForSelector('.tabbar', { timeout: 15000 });
     const bad = [];
     for (const k of ['tables', 'sell', 'orders', 'kitchen', 'reserve', 'register', 'more']) {
@@ -369,7 +369,7 @@ export default async function run({ browser, stack }) {
     const open = async (slug, user) => {
       const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const pg = await c.newPage();
       await pg.goto(stack.url(slug, '/index.html')); await pg.waitForSelector('input[type=password]');
-      await pg.fill('input[type=email]', user + '@trial.auzslab.in'); await pg.fill('input[type=password]', 'pw-12345678'); await pg.locator('button', { hasText: /sign in/i }).last().click();
+      await pg.fill('input[type=email]', user + '@trial.auzslab.in'); await pg.fill('input[type=password]', 'pw-12345678'); await pg.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click();
       await pg.waitForSelector('.shell', { timeout: 20000 }); await pg.waitForTimeout(1500);
       return { c, pg };
     };

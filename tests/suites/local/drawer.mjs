@@ -100,7 +100,7 @@ export default async function run({ browser, stack }) {
       const ctx = await newCtx(browser, stack, o); const page = await ctx.newPage(); const errs = watch(page);
       await page.goto(stack.url('testacct', '/accounts.html')); await page.waitForSelector('input[type=password]');
       await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD);
-      await page.locator('button', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 });
+      await page.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 });
       await page.evaluate(() => { location.hash = '#/drawer'; });
       await page.waitForSelector('.dr-notes', { timeout: 10000 });
       const txt = await page.locator('main, .content, body').first().innerText();

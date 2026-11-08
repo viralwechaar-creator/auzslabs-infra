@@ -39,7 +39,7 @@ export default async function run({ browser, stack }) {
   const openPage = async (path, email, dev = { w: 390, h: 844, mobile: true }) => {
     const c = await newCtx(browser, stack, dev); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('testacct', path)); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', email); await page.fill('input[type=password]', PASSWORD);
-    await page.locator('button', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 20000 });
     return { c, page, errs };
   };
   const toScan = async (page) => { await page.evaluate(() => { location.hash = '#/scan'; }); await page.waitForSelector('.scan-hero', { timeout: 10000 }); await page.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; }); };
@@ -384,7 +384,7 @@ export default async function run({ browser, stack }) {
       const no = await rpc(stack, 'acc_bank_import', { p_account: '00000000-0000-0000-0000-000000000000', p_rows: [] }, owner); assert(no.status >= 400 && /AUZsLedger/.test(JSON.stringify(no.data)), 'banking not refused: ' + no.status + JSON.stringify(no.data));
       const c = await newCtx(browser, stack, { w: 390, h: 844, mobile: true }); const pg = await c.newPage();
       await pg.goto(stack.url('testacct', '/accounts.html')); await pg.waitForSelector('input[type=password]'); await pg.fill('input[type=email]', USERS.acctOwner); await pg.fill('input[type=password]', PASSWORD);
-      await pg.locator('button', { hasText: /^Sign in$/ }).click(); await pg.waitForSelector('h1:has-text("Accounting is not enabled")', { timeout: 20000 }); await c.close();
+      await pg.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await pg.waitForSelector('h1:has-text("Accounting is not enabled")', { timeout: 20000 }); await c.close();
       const b = await openPage('/scan.html', USERS.acctOwner); await b.page.waitForSelector('.scan-hero', { timeout: 15000 }).catch(async (e) => { throw new Error('scan page: ' + (await b.page.locator('body').innerText()).slice(0, 200)); }); await b.c.close();
     } finally { await q("update tenant_settings set features = (features - 'scan') || '{\"accounting\":true}'::jsonb where tenant_id=$1", [tid]); }
   });

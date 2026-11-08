@@ -26,7 +26,7 @@ for (let i = 0; i < 3; i++) await rpc(stack, 'acc_save_document', { p: { doc_typ
 async function login(page, host, url, email, ready) {
   await page.goto(stack.url(host, url)); await page.waitForSelector('input[type=password]', { timeout: 20000 });
   await page.fill('input[type=email]', email); await page.fill('input[type=password]', PASSWORD);
-  await page.locator('button', { hasText: /sign in/i }).last().click(); await page.waitForSelector(ready, { timeout: 20000 }); await page.waitForTimeout(1200);
+  await page.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector(ready, { timeout: 20000 }); await page.waitForTimeout(1200);
 }
 const APPS = {
   pos: { host: 'testcafe', url: '/index.html', email: USERS.cafeOwner, ready: '.tbl-tile', views: {

@@ -52,7 +52,7 @@ export default async function run({ browser, stack }) {
   const tid = (await q("select id from tenants where slug='testacct'"))[0].id;
   const c = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await c.newPage(); const errs = watch(page);
   await page.goto(stack.url('testacct', '/accounts.html')); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', USERS.acctOwner); await page.fill('input[type=password]', PASSWORD);
-  await page.locator('button', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 });
+  await page.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 });
   const scan = async (file) => { const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.evaluate(() => scanInvoice('bill'))]); await fc.setFiles(file); };
 
   await s.check('Accounting: a text PDF is read in the browser and opens as a draft bill with the right rows (nothing saved yet)', async () => {
@@ -86,7 +86,7 @@ export default async function run({ browser, stack }) {
   // ---- Console: menu file -> draft -> items
   const c2 = await newCtx(browser, stack, { w: 1280, h: 900 }); const p2 = await c2.newPage(); const e2 = watch(p2);
   await p2.goto(stack.url('testcafe', '/dashboard.html'), { waitUntil: 'load' }); await p2.waitForSelector('input[type=password]', { timeout: 15000 });
-  await p2.fill('input[type=email]', USERS.cafeOwner); await p2.fill('input[type=password]', PASSWORD); await p2.locator('button', { hasText: /sign in/i }).last().click(); await p2.waitForSelector('.hello', { timeout: 15000 });
+  await p2.fill('input[type=email]', USERS.cafeOwner); await p2.fill('input[type=password]', PASSWORD); await p2.locator('button:not(.auth-pill)', { hasText: /sign in/i }).last().click(); await p2.waitForSelector('.hello', { timeout: 15000 });
   await s.check('Console: a menu PDF becomes a draft of categories and items; Create adds them', async () => {
     await p2.evaluate(() => go('menu/items')); await p2.waitForSelector('button:has-text("Read menu file")', { timeout: 10000 });
     const [fc] = await Promise.all([p2.waitForEvent('filechooser'), p2.locator('button', { hasText: 'Read menu file' }).click()]); await fc.setFiles({ name: 'menu.pdf', mimeType: 'application/pdf', buffer: mnu.pdf });
