@@ -37,7 +37,7 @@
       return;
     }
     if (e.key === 'F4') { if (!sheetOpen() && onSell()) { e.preventDefault(); click(document.querySelector('.payrow .btn:not(.fill)')); } return; }
-    if (e.ctrlKey || e.metaKey || e.altKey || typing(e) || sheetOpen()) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || typing(e) || sheetOpen() || !e.key) return;
     if (gap < 45 && e.key.length === 1) return;       // a barcode scanner types much faster than a person
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (e.key === '?' || (e.key === '/' && e.shiftKey)) { e.preventDefault(); help(); return; }
