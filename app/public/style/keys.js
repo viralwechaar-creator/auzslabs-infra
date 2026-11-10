@@ -26,7 +26,7 @@
   window.styShortcuts = help;
 
   document.addEventListener('keydown', (e) => {
-    const now = Date.now(), gap = now - last; if (e.key.length === 1) last = now;   // modifier keys (Shift) do not count as typing speed
+    const now = Date.now(), gap = now - last; if (e.key && e.key.length === 1) last = now;   // modifier keys (Shift) do not count as typing speed; a synthetic keydown (autofill, some on-screen keyboards) can arrive with no .key at all
     if (e.key === 'Escape' && typing(e) && !sheetOpen()) { e.target.blur(); return; }   // Esc leaves the box so the letter shortcuts work
     if (e.ctrlKey && e.key === 'Enter') { const ok = document.querySelector('.sheet .sheet-f .btn.fill'); if (ok && /complete sale/i.test(ok.textContent)) { e.preventDefault(); click(ok); } return; }
     if (e.key === 'F2') { if (!sheetOpen() && focusSearch()) e.preventDefault(); return; }

@@ -129,3 +129,13 @@ alter table tenants add column if not exists delivered_at timestamptz;
 alter table tenants add column if not exists is_demo boolean not null default false;
 alter table tenants add column if not exists is_trial boolean not null default false;
 alter table user_profiles add column if not exists biz_slug text;
+
+-- Found later (Nov 10 2026, via a real production error: WhatsApp bill links 500ing with
+-- "column share_token does not exist"): these four were missed by the original grep above
+-- because their migrations used plain "add column" with no "if not exists" -- so a column
+-- that's actually missing on a given install never showed up as a backfill candidate. Re-grepped
+-- the whole db/ tree for every ADD COLUMN that ISN'T already "if not exists" to catch the rest.
+alter table acc_documents add column if not exists share_token text unique;
+alter table tenants add column if not exists monthly_fee numeric;
+alter table tenants add column if not exists notes text;
+alter table tenants add column if not exists renewal_date date;
