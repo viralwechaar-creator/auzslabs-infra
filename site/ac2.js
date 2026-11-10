@@ -93,7 +93,7 @@
   function word(l, h, p, go_, cls) { return T((cls || '') + ' a3-sm', '<div class="a3-l">' + l + '</div><h3>' + h + '</h3>' + (p ? '<p>' + p + '</p>' : ''), go_); }
 
   function render(id) {
-    var c = counts(), m = $('#a3m-' + id), D = c.D, P = g('PROFILE') || {}, SS = g('SESSIONS') || [], N = g('NOTIFS') || []; tn = 0; var h = '';
+    var c = counts(), m = $('#a3m-' + id), D = c.D, P = g('PROFILE') || {}, N = g('NOTIFS') || []; tn = 0; var h = '';
     if (id === 'overview') {
       head('overview', 'Your account / Overview', 'Everything.<br>In its place.', 'A quiet space for your AUZslab account.',
         btn('Explore services ↗', D ? 'services' : 'cart') + (apps().length ? btn('Open your apps ↗', 'apps', 1) : ''));
@@ -113,7 +113,7 @@
       h = row([word('Profile', esc(P.name || c.name), esc(c.role === 'customer' ? 'Customer' : c.role), '', 'dk'), word('Business', esc(P.business_name || (D && D.tenant.name) || 'Not set yet'), esc(P.city || ' '), '', 'sf'), word('Login', '<span style="font-size:17px;word-break:break-all">' + esc(g('LOGIN_EMAIL') || (D && D.my_email) || '') + '</span>', ini + ' · account active', '')]);
     } else if (id === 'account') {
       head('account', 'Account / Security', 'Account.', 'Your login, business and safety settings.', btn('Privacy &amp; my data ↗', 'privacy'));
-      h = row([word('Signed in as', '<span style="font-size:17px;word-break:break-all">' + esc(D ? D.my_email : '') + '</span>', esc(c.role), 'profile', 'dk'), word('Privacy', 'Your data, your choice', 'Consent, download, requests', 'privacy', 'sf'), stat('Devices', pad(SS.length), 'Where you are signed in', '', 'wh')]);
+      h = row([word('Signed in as', '<span style="font-size:17px;word-break:break-all">' + esc(D ? D.my_email : '') + '</span>', esc(c.role), 'profile', 'dk'), word('Privacy', 'Your data, your choice', 'Consent, download, requests', 'privacy', 'sf')]);
     } else if (id === 'services') {
       head('services', 'Account / Catalogue', 'Services.', 'What is switched on, and what you can add.', btn('View cart (' + c.cart + ') ↗', 'cart'));
       h = row([stat('Active', pad(c.services), 'On your account', '', 'dk'), stat('Available to add', pad(Math.max(0, PRODUCTS.length - c.services)), 'Pick and send a request', 'cart', 'sf'), stat('In your cart', pad(c.cart), 'Waiting for a quote', 'cart', 'wh')]);
