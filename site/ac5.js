@@ -8,7 +8,7 @@
   var host, root, ready = false;
   var $ = function (s) { return root.querySelector(s); }, $$ = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
   var APPDEF = [['pos', 'AUZsPOS', 'Billing, tables, kitchen, QR orders', 'till'], ['payroll', 'AUZsPay', 'Attendance, leave and payslips', 'users'], ['accounting', 'AUZsLedger', 'Accounts, GST and banking', 'book'], ['mobile', 'AUZsMob', 'Phone shop sales and repairs', 'phone'], ['style', 'AUZsStyle', 'Clothing and footwear shop', 'tag'], ['scan', 'AUZsScan', 'Scan to bill', 'scan'], ['salon', 'AUZslab Salon', 'Booking, billing, website', 'tag'], ['finance', 'AUZsFinance', 'Money in, out and dues', 'book']];
-  var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], SESSIONS = [], REQS = [], CART = [], PROFILE = { products: [] };
+  var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], REQS = [], CART = [], PROFILE = { products: [] };
   window.AC5 = { ACT: {}, AFTER: {}, ENTER: {}, OWN: {}, VIEWS: null };
   var S = { mode: 'owner', view: 'home', more: false, railOpen: false, nf: 'all' };
   var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy'];
@@ -27,7 +27,6 @@
     STAFF = (g('STAFF') || []).map(function (s) { return { name: s.name || s.email || '', role: s.role }; }); if (!STAFF.length && D) STAFF = [{ name: ME.name, role: 'owner' }];
     ROLES = g('ROLES') || [];
     NOTIFS = (g('NOTIFS') || []).map(function (n) { return { t: n.title || '', b: n.body || '', at: n.created_at ? new Date(n.created_at).toLocaleDateString() : '', read: !!n.read }; });
-    SESSIONS = g('SESSIONS') || [];
     CART = (window.AUZcart && AUZcart.get()) || [];
     var lab = {}; (g('PRODUCT_CHOICES') || []).forEach(function (p) { lab[p[0]] = p[1].replace(/\s*\(.*$/, ''); });
     CART = CART.map(function (k) { return lab[k] || k; });
@@ -114,8 +113,7 @@ function bentoHTML(){
   if(biz){
     var av=STAFF.slice(0,4).map(function(x){return '<i class="avs">'+esc(x.name.charAt(0))+'</i>'}).join('');
     team='<div class="bl">Your team</div><div class="tbig"><b data-count="'+STAFF.length+'">'+STAFF.length+'</b><small>people can sign in</small></div><div class="avrow">'+av+'</div><button class="lnk" data-go="staff">Manage staff &rarr;</button>';
-    var bars=[40,62,35,80,55,92,68].map(function(h,i){return '<i style="height:'+h+'%"'+(i===5?' class="hi"':'')+'></i>'}).join('');
-    sec='<div class="bl">Sign-ins this week</div><div class="tbig"><b data-count="'+SESSIONS.length+'">'+SESSIONS.length+'</b><small>devices signed in</small></div><div class="bars" aria-hidden="true">'+bars+'</div><button class="lnk" data-go="security">Review security &rarr;</button>';
+    sec='<div class="bl">Account</div><div class="tbig"><b>'+ic('shield')+'</b><small>Password &amp; two-factor</small></div><button class="lnk" data-go="security">Review security &rarr;</button>';
     help='<div class="bl">Quick actions</div><div class="qa"><button data-go="staff">'+ic('users')+'<span>Add staff</span></button><button data-go="roles">'+ic('key')+'<span>Roles</span></button><button data-go="cart">'+ic('bag')+'<span>Add a service</span></button><button data-go="help">'+ic('help')+'<span>Get help</span></button></div>';
   }else{
     team='<div class="bl">Profile</div><div class="tbig"><b>60%</b><small>complete</small></div><div class="prog"><i style="width:60%"></i></div><button class="lnk" data-go="profile">Finish profile &rarr;</button>';
@@ -123,7 +121,7 @@ function bentoHTML(){
     help='<div class="bl">Quick actions</div><div class="qa"><button data-go="profile">'+ic('user')+'<span>Profile</span></button><button data-go="cart">'+ic('bag')+'<span>My cart</span></button><button data-go="privacy">'+ic('lock')+'<span>Privacy</span></button><button data-go="help">'+ic('help')+'<span>Get help</span></button></div>';
   }
   return '<div class="bento">'+
-    '<div class="b-pill"><i class="live"></i><span id="ticker" data-t="'+esc(JSON.stringify(biz?[pillTxt,'Renewal on '+BIZ.renewal,SESSIONS.length+' devices signed in',unread()+' unread notices']:[pillTxt,'Finish your profile to get a quote'])).replace(/&#39;/g,"'")+'">'+esc(pillTxt)+'</span></div>'+
+    '<div class="b-pill"><i class="live"></i><span id="ticker" data-t="'+esc(JSON.stringify(biz?[pillTxt,'Renewal on '+BIZ.renewal,unread()+' unread notices']:[pillTxt,'Finish your profile to get a quote'])).replace(/&#39;/g,"'")+'">'+esc(pillTxt)+'</span></div>'+
     '<section class="b-main">'+main+'</section>'+
     '<section class="b-stack">'+stack+'</section>'+
     '<label class="b-ask"><i class="sp">'+ic('search')+'</i><input id="hAsk" placeholder="Jump to a section" autocomplete="off" aria-label="Jump to a section"></label>'+
@@ -147,7 +145,7 @@ var F=function(label,inner,cls){return '<label class="f '+(cls||'')+'"><span>'+e
 var inp=function(id,val,o){o=o||{};return '<input id="'+id+'" type="'+(o.type||'text')+'" value="'+esc(val)+'"'+(o.ph?' placeholder="'+esc(o.ph)+'"':'')+(o.dis?' disabled':'')+(o.ac?' autocomplete="'+o.ac+'"':'')+'>'};
 var sel=function(id,opts,val){return '<select id="'+id+'">'+opts.map(function(o){var v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:o;return '<option value="'+esc(v)+'"'+(String(v)===String(val)?' selected':'')+'>'+esc(l)+'</option>'}).join('')+'</select>'};
 var blk=function(h,d,body,cls){return '<section class="blk '+(cls||'')+'"><h2>'+esc(h)+'</h2>'+(d?'<p class="d">'+d+'</p>':'')+body+'</section>'};
-var PSTAT=function(){var v=S.view;return {profile:[(typeof profPct==='function'?profPct():60)+'%','profile complete'],security:[SESSIONS.length,'devices signed in'],services:[Object.keys(OWNED).filter(function(k){return ENABLED[k]!==false}).length+'/'+Object.keys(OWNED).length,'services on'],apps:[Object.keys(OWNED).length,'apps ready'],staff:[STAFF.length,'people can sign in'],roles:[ROLES.length,'custom roles'],notifications:[unread(),'unread notices'],cart:[CART.length,'items in request'],privacy:[REQS.length,'open requests'],help:['24h','we reply within']}[v]||['','']};
+var PSTAT=function(){var v=S.view;return {profile:[(typeof profPct==='function'?profPct():60)+'%','profile complete'],security:['Account','password & 2FA'],services:[Object.keys(OWNED).filter(function(k){return ENABLED[k]!==false}).length+'/'+Object.keys(OWNED).length,'services on'],apps:[Object.keys(OWNED).length,'apps ready'],staff:[STAFF.length,'people can sign in'],roles:[ROLES.length,'custom roles'],notifications:[unread(),'unread notices'],cart:[CART.length,'items in request'],privacy:[REQS.length,'open requests'],help:['24h','we reply within']}[v]||['','']};
 var head=function(t,p){var st=PSTAT();return '<div class="ph phero"><div class="orb" aria-hidden="true"><i></i><i></i><i></i></div><div class="pht"><span class="bl">'+esc(t)+'</span><h1>'+esc(t)+'</h1>'+(p?'<p>'+p+'</p>':'')+'</div>'+(st[0]!==''?'<div class="pstat"><b'+(/^\d+$/.test(String(st[0]))?' data-count="'+st[0]+'"':'')+'>'+esc(st[0])+'</b><small>'+esc(st[1])+'</small></div>':'')+'</div>'};
 var copybox=function(url,id){return '<div class="copybox"><code>'+esc(url)+'</code><button class="btn sm" data-copy="'+esc(url)+'">Copy</button></div>'};
 
