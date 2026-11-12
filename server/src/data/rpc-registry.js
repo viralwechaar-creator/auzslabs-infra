@@ -624,4 +624,10 @@ export const RPC = {
   mob_send_due_reminder: { params: ['p_sale_id'], auth: true },
   mob_share_sale: { params: ['p_sale_id', 'p_enable'], defaults: { p_enable: true }, auth: true },
   public_mob_sale: { params: ['p_token'], auth: false },
+
+  // AI connector keys (db/318) -- owner-only, see mcp_api_keys' own comment.
+  mcp_create_key: { params: ['p_label'], defaults: { p_label: 'Connector key' }, auth: true },
+  mcp_list_keys: { params: [], auth: true },
+  mcp_revoke_key: { params: ['p_id'], auth: true },
+  mcp_create_draft_order: { params: ['p_table', 'p_items', 'p_note'], jsonb: ['p_items'], defaults: { p_table: null, p_note: null }, auth: true },
 };
