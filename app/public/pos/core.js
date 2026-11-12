@@ -27,6 +27,7 @@ const addDays = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDat
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const digits = (s) => String(s || '').replace(/\D/g, '');
 const minsSince = (iso) => Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+const fmtDur = (mins) => { const m = Math.max(0, Math.round(mins)); return m < 60 ? m + ' min' : Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; };
 const fmtTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const fmtDay = (d) => { const t = new Date(d.length === 10 ? d + 'T12:00' : d); return t.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }); };
 const fmtDate = (d) => { const t = new Date(d); return t.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); };

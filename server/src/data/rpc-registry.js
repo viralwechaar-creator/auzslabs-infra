@@ -26,6 +26,7 @@ export const RPC = {
   place_order: { params: ['tenant_slug', 't', 'n', 'p', 'nt', 'its'], jsonb: ['its'], auth: false },
   call_waiter: { params: ['tenant_slug', 't'], auth: false },
   public_invoice: { params: ['oid'], auth: false },
+  public_order_status: { params: ['tok'], auth: false },
   submit_feedback: { params: ['oid', 'rating', 'comment'], auth: false },
   wa_my_status: { params: [], auth: true },
   wa_save_settings: { params: ['p'], jsonb: ['p'], auth: true },

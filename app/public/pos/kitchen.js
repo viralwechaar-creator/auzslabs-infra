@@ -61,7 +61,7 @@ function dispatchedBanner() {
   if (!r.length) return null;
   return h('div', { class: 'banner info', 'data-banner': 'dispatched' }, icon('truck', 22), h('div', { class: 'grow' }, h('b', null, 'Out for delivery'), h('span', { class: 'small' }, plural(r.length, 'order'))),
     h('div', { class: 'chips' }, r.map((o) => h('button', { class: 'chip', style: { background: 'var(--card)' }, onclick: async () => { const c = structuredClone(rec(o.id) || o); c.kstat = 'done'; c.deliveredAt = now(); await save('order', c, c.id); render(); } },
-      icon('check', 16), o.no + (o.rider ? ' · ' + o.rider.name : '') + ' · ' + minsSince(o.dispatchAt || o.ktime) + ' min'))));
+      icon('check', 16), o.no + (o.rider ? ' · ' + o.rider.name : '') + ' · ' + fmtDur(minsSince(o.dispatchAt || o.ktime))))));
 }
 
 // KOT report
@@ -74,7 +74,7 @@ V.kotrep = () => {
     h('div', { class: 'row wrap' }, h('input', { class: 'input', type: 'date', value: from, style: { width: '170px' }, 'aria-label': 'From', onchange: (e) => { S.kotFrom = e.target.value; render(); } }), h('span', { class: 'sub' }, 'to'),
       h('input', { class: 'input', type: 'date', value: to, style: { width: '170px' }, 'aria-label': 'To', onchange: (e) => { S.kotTo = e.target.value; render(); } }),
       h('div', { class: 'search grow', style: { minWidth: '200px' } }, icon('search', 18), h('input', { class: 'input', placeholder: 'Order, customer or phone', value: S.kotQ || '', 'aria-label': 'Search', onchange: (e) => { S.kotQ = e.target.value; render(); } }))),
-    rows.length ? h('div', { class: 'list' }, rows.map((k) => liRow({ ic: 'kot', tone: 'orange', title: (k.kotNo ? 'KOT #' + k.kotNo + ' · ' : '') + k.orderNo + ' · ' + k.type + (k.table ? ' · ' + tn(k.table) : ''), sub: k.items.map((x) => x.q + '× ' + x.n).join(', '), value: fmtTime(k.createdAt) + (k.readyAt ? ' · ' + Math.round((new Date(k.readyAt) - new Date(k.createdAt)) / 60000) + ' min' : '') }))) : h('div', { class: 'card' }, empty('kot', 'No KOTs in this range')));
+    rows.length ? h('div', { class: 'list' }, rows.map((k) => liRow({ ic: 'kot', tone: 'orange', title: (k.kotNo ? 'KOT #' + k.kotNo + ' · ' : '') + k.orderNo + ' · ' + k.type + (k.table ? ' · ' + tn(k.table) : ''), sub: k.items.map((x) => x.q + '× ' + x.n).join(', '), value: fmtTime(k.createdAt) + (k.readyAt ? ' · ' + fmtDur(Math.round((new Date(k.readyAt) - new Date(k.createdAt)) / 60000)) : '') }))) : h('div', { class: 'card' }, empty('kot', 'No KOTs in this range')));
 };
 function csv(rows, name) { const s = rows.map((r) => r.map((v) => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(',')).join('\n'), a = h('a', { href: URL.createObjectURL(new Blob([s], { type: 'text/csv' })), download: name }); document.body.append(a); a.click(); a.remove(); }
 

@@ -23,7 +23,7 @@ V.more = () => {
     moreGrid([
       h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Attendance')), h('div', { class: 'list' },
         liRow({ ic: 'clock', tone: mine ? 'green' : 'gray', title: mine ? 'On shift since ' + fmtTime(mine.in) : 'Not clocked in', right: h('button', { class: 'btn sm ' + (mine ? '' : 'fill'), onclick: async () => { if (mine) { mine.out = now(); await save('shift', mine, mine.id); toast('Clocked out'); } else { await save('shift', { u: S.user.id, e: S.user.email || myName(), in: now() }); toast('Clocked in'); } render(); } }, mine ? 'Clock out' : 'Clock in') }),
-        ...sh.slice(0, 5).filter((x) => x.out).map((x) => liRow({ title: fmtDay(localDay(x.in)), sub: fmtTime(x.in) + ' to ' + fmtTime(x.out), value: Math.round((new Date(x.out) - new Date(x.in)) / 60000) + ' min' })))),
+        ...sh.slice(0, 5).filter((x) => x.out).map((x) => liRow({ title: fmtDay(localDay(x.in)), sub: fmtTime(x.in) + ' to ' + fmtTime(x.out), value: fmtDur(Math.round((new Date(x.out) - new Date(x.in)) / 60000)) })))),
       can('m') ? h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'Approvals')), h('div', { class: 'list' },
         liRow({ ic: 'lock', tone: 'orange', title: ps && ps.mine ? 'Change my approval PIN' : 'Set my approval PIN', sub: 'Type it on a cashier\'s till to approve discounts, cancellations and refunds' + (ps ? ' · ' + plural(+ps.approvers || 0, 'approver') + ' set' : ''), chev: true, onclick: setPinFlow }))) : null,
       h('div', { class: 'sec' }, h('div', { class: 'sec-h' }, h('h3', null, 'This device')), h('div', { class: 'list' },
