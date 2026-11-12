@@ -21,7 +21,7 @@
 // staff member) -- no new business logic, no new SQL beyond db/318's own key-management/draft-order functions.
 import { createHash, randomUUID } from 'node:crypto';
 import { pool, withAuth } from '../db.js';
-import { HttpError, readJsonBody } from '../lib/http.js';
+import { HttpError, readJsonBody, rateLimited, clientIp } from '../lib/http.js';
 import { TABLES } from '../data/tables.js';
 import { handleSelect, callRpc } from '../data/queries.js';
 import { mutate, readStaffAdmin } from '../salon/storage.js';
@@ -777,7 +777,7 @@ async function runTool(client, name, args) {
       const template = occasion === 'anniversary' ? 'anniversary_greeting' : 'birthday_greeting';
       const today = new Date().toLocaleDateString('en-CA');
       const all = await crmCustomers(client);
-      const todays = all.filter((c) => c[field] && String(c[field]).slice(5, 10) === today.slice(5, 10) && c.phone);
+      const todays = all.filter((c) => c[field] && String(c[field]).slice(5, 10) === today.slice(5, 10) && c.phone).slice(0, 100);
       const settingsRows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'settings', 'eq.id': 'settings', limit: '1' }));
       const shopName = settingsRows[0]?.data?.name || '';
       const results = [];
@@ -1004,6 +1004,15 @@ async function runSalonTool(userId, tenantId, name, args) {
   }
 }
 
+// Tools that only read. Anything NOT listed here counts as a change: a connection made read-only (a read-only key, or an
+// OAuth grant without "write") can neither see nor call it, and a new tool defaults to "change" until it is marked
+// readOnlyHint: true. Enforced here on the server, not left to the AI app's own confirmation prompts.
+const READ_TOOLS = new Set(TOOLS.filter((t) => t.annotations && t.annotations.readOnlyHint === true).map((t) => t.name));
+const canWrite = (scope) => scope === 'full' || /\bwrite\b/.test(String(scope || ''));
+// Per business, so one runaway AI cannot message the whole customer list or flood the books: any change at all
+// (100 an hour), WhatsApp sends (30 an hour) and the birthday/anniversary broadcast (2 runs an hour, 100 people each).
+const TOOL_LIMITS = { whatsapp_send: ['mcpwa', 30, 3_600_000, 'WhatsApp messages (30 an hour)'], crm_send_birthday_greetings: ['mcpbd', 2, 3_600_000, 'birthday message runs (2 an hour)'] };
+
 function rpcOk(id, result) { return { jsonrpc: '2.0', id, result }; }
 function rpcErr(id, code, message) { return { jsonrpc: '2.0', id, error: { code, message } }; }
 
@@ -1031,9 +1040,15 @@ export async function handle(ctx) {
     resolved = rows[0]?.r;
     keyId = resolved?.id || null;
   }
-  if (!resolved) return unauthorized('invalid, expired or revoked token');
+  if (!resolved) {
+    // wrong guesses are limited per address (a real key has 256 bits, so this is about noise and load, not safety)
+    if (rateLimited('mcpbad:' + clientIp(req), 30, 60_000)) throw new HttpError(429, 'too many attempts, slow down');
+    return unauthorized('invalid, expired or revoked token');
+  }
   if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
   const { user_id, tenant_id } = resolved;
+  const writeOk = canWrite(resolved.scope);
+  if (rateLimited('mcp:' + (keyId || user_id), 240, 60_000)) throw new HttpError(429, 'too many requests, slow down');
 
   const body = await readJsonBody(req, 500_000);
   const { id = null, method, params = {} } = body || {};
@@ -1046,10 +1061,16 @@ export async function handle(ctx) {
     }));
   }
   if (method === 'notifications/initialized') { res.statusCode = 202; res.end(); return; } // no reply expected for a notification
-  if (method === 'tools/list') return reply(200, rpcOk(id, { tools: TOOLS }));
+  if (method === 'tools/list') return reply(200, rpcOk(id, { tools: writeOk ? TOOLS : TOOLS.filter((t) => READ_TOOLS.has(t.name)) }));
   if (method === 'tools/call') {
     const name = params?.name;
     try {
+      if (!READ_TOOLS.has(name)) {
+        if (!writeOk) throw new HttpError(403, 'This connection is read-only, so it cannot make changes. The owner can create a key or connection that allows changes in the account page.');
+        if (rateLimited('mcpw:' + tenant_id, 100, 3_600_000)) throw new HttpError(429, 'The AI connector reached its limit of 100 changes an hour. Try again later.');
+        const lim = TOOL_LIMITS[name];
+        if (lim && rateLimited(lim[0] + ':' + tenant_id, lim[1], lim[2])) throw new HttpError(429, 'The AI connector reached its limit of ' + lim[3] + '. Try again later.');
+      }
       const data = name && name.startsWith('salon_')
         ? await runSalonTool(user_id, tenant_id, name, params?.arguments)
         : await withAuth(user_id, (client) => runTool(client, name, params?.arguments));
