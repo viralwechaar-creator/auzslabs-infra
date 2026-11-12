@@ -387,6 +387,60 @@ const TOOLS = [
       },
     },
   },
+  // ---- AUZsMob (mobile phone retail & repair): thin wrappers over the already-registered mob_* functions.
+  // No dedicated catalog/list RPC exists for this product (unlike AUZsStyle's sty_catalog) -- mob_sync_pull is
+  // the one real read path (db/082's own comment), so mob_catalog/mob_list_repairs trim its full payload down
+  // to what a connector caller needs instead of returning raw sync data. ----
+  {
+    name: 'mob_catalog',
+    description: "AUZsMob's catalogue: accessories/non-serialized stock (with current quantity) and serialized phones currently in stock (by IMEI), plus vendors and customers. Read this first to find item_id/unit_id values before selling. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'mob_report_dashboard',
+    description: "AUZsMob's sales/profit/dues/low-stock dashboard for a date range (defaults to today). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
+    name: 'mob_list_repairs',
+    description: 'List AUZsMob repair jobs with their current status (received/in_repair/ready/delivered/cancelled). Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['received', 'in_repair', 'ready', 'delivered', 'cancelled'] }, limit: { type: 'integer', description: 'default 50, max 200' } } },
+  },
+  {
+    name: 'mob_sell',
+    description: "Record a real AUZsMob sale (a serialized phone by unit_id, or accessories by item_id + qty) -- this bills immediately, it is not a draft. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['items'],
+      properties: {
+        items: { type: 'array', items: { type: 'object', required: ['price'], properties: { unit_id: { type: 'string', description: 'a serialized phone, from mob_catalog' }, item_id: { type: 'string', description: 'an accessory, from mob_catalog' }, qty: { type: 'number', description: 'for item_id lines only; a unit_id line is always 1' }, price: { type: 'number' } } } },
+        customer_name: { type: 'string' }, customer_phone: { type: 'string' },
+        discount: { type: 'number' }, paid: { type: 'number', description: 'amount actually received now; defaults to the full total (nothing due)' },
+        payment_mode: { type: 'string', enum: ['cash', 'upi', 'card', 'credit'] },
+      },
+    },
+  },
+  {
+    name: 'mob_create_repair',
+    description: 'Open a new AUZsMob repair job. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['customer_name', 'customer_phone', 'device_model', 'problem'],
+      properties: {
+        customer_name: { type: 'string' }, customer_phone: { type: 'string' }, device_model: { type: 'string' }, imei: { type: 'string' }, problem: { type: 'string' },
+        advance: { type: 'number' }, estimate: { type: 'number' }, warranty_days: { type: 'integer' },
+      },
+    },
+  },
+  {
+    name: 'mob_update_repair_status',
+    description: "Move an AUZsMob repair job to its next status (received -> in_repair -> ready -> delivered, or cancelled). Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['repair_id', 'status'], properties: { repair_id: { type: 'string', description: 'from mob_list_repairs' }, status: { type: 'string', enum: ['received', 'in_repair', 'ready', 'delivered', 'cancelled'] } } },
+  },
   // ---- WhatsApp: only a business's own already-approved templates, never free text (a WhatsApp Business
   // Platform rule, see db/319's own comment) -- the AI fills in the blanks, it can never compose the message. ----
   {
@@ -788,6 +842,59 @@ async function runTool(client, name, args) {
       return callRpc(client, 'sty_return', {
         p: { id: randomUUID(), saleId: args.sale_id, mode: args.mode || 'cash', reason: args.reason || null, lines: args.lines.map((l) => ({ saleLineId: l.sale_line_id, qty: l.qty, damaged: l.damaged || false })) },
       });
+
+    case 'mob_catalog': {
+      const data = await callRpc(client, 'mob_sync_pull', { p_since: null });
+      const stockByItem = {};
+      for (const m of data.stock_movements || []) stockByItem[m.item_id] = (stockByItem[m.item_id] || 0) + Number(m.qty || 0);
+      const items = (data.items || []).filter((i) => i.active).map((i) => ({
+        id: i.id, name: i.name, category: i.category, serialized: i.serialized,
+        cost_price: i.cost_price, selling_price: i.selling_price,
+        ...(i.serialized ? {} : { stock: stockByItem[i.id] || 0, low_stock_at: i.low_stock_at }),
+      }));
+      const units_in_stock = (data.units || []).filter((u) => u.status === 'in_stock').map((u) => ({ id: u.id, item_id: u.item_id, imei: u.imei, condition: u.condition, cost_price: u.cost_price, selling_price: u.selling_price }));
+      return {
+        items, units_in_stock,
+        vendors: (data.vendors || []).map((v) => ({ id: v.id, name: v.name, phone: v.phone })),
+        customers: (data.customers || []).map((c) => ({ id: c.id, name: c.name, phone: c.phone })),
+      };
+    }
+    case 'mob_report_dashboard':
+      return callRpc(client, 'mob_report_dashboard', { p_from: args.from || null, p_to: args.to || null });
+    case 'mob_list_repairs': {
+      const limit = Math.min(Math.max(parseInt(args.limit, 10) || 50, 1), 200);
+      const data = await callRpc(client, 'mob_sync_pull', { p_since: null });
+      const latestStatus = {};
+      for (const e of (data.repair_events || []).filter((e) => e.type === 'status').sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))) {
+        latestStatus[e.repair_id] = e.status;
+      }
+      let repairs = (data.repairs || []).map((r) => ({ id: r.id, customer_name: r.customer_name, customer_phone: r.customer_phone, device_model: r.device_model, imei: r.imei, problem: r.problem, advance: r.advance, estimate: r.estimate, status: latestStatus[r.id] || 'received', created_at: r.created_at }));
+      if (args.status) repairs = repairs.filter((r) => r.status === args.status);
+      return repairs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, limit);
+    }
+    case 'mob_sell': {
+      if (!Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'items must be a non-empty array');
+      for (const it of args.items) {
+        if (!it.unit_id && !it.item_id) throw new HttpError(400, 'each item needs unit_id or item_id');
+        if (it.price == null) throw new HttpError(400, 'each item needs a price');
+      }
+      const p = {
+        items: args.items.map((it) => (it.unit_id ? { unitId: it.unit_id, qty: 1, price: Number(it.price) } : { itemId: it.item_id, qty: Number(it.qty) || 1, price: Number(it.price) })),
+        customerName: args.customer_name || null, customerPhone: args.customer_phone || null,
+        discount: args.discount || 0, paid: args.paid != null ? Number(args.paid) : undefined, paymentMode: args.payment_mode || 'cash',
+      };
+      return callRpc(client, 'mob_push_sale', { p_id: randomUUID(), p });
+    }
+    case 'mob_create_repair': {
+      if (!args.customer_name || !args.customer_phone || !args.device_model || !args.problem) throw new HttpError(400, 'customer_name, customer_phone, device_model and problem are required');
+      return callRpc(client, 'mob_create_repair', {
+        p_id: randomUUID(),
+        p: { customerName: args.customer_name, customerPhone: args.customer_phone, deviceModel: args.device_model, imei: args.imei || null, problem: args.problem, advance: args.advance || 0, estimate: args.estimate || null, warrantyDays: args.warranty_days || 0 },
+      });
+    }
+    case 'mob_update_repair_status':
+      if (!args.repair_id || !args.status) throw new HttpError(400, 'repair_id and status are required');
+      return callRpc(client, 'mob_push_repair_event', { p_id: randomUUID(), p_repair_id: args.repair_id, p: { type: 'status', status: args.status } });
 
     case 'whatsapp_status':
       return callRpc(client, 'wa_my_status', {});
