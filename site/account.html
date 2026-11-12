@@ -386,7 +386,7 @@ async function renderConnectors() {
     <div class="card" id="mcpList">
       <h3 class="h-2">Your connector keys</h3>
       ${keys.length ? keys.map((k) => `<div style="padding:10px 0;border-top:1px solid var(--line,#e5e5e5);display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <div><b>${esc(k.label)}</b><div class="muted" style="font-size:13px">created ${esc(fmt(k.created_at))} · last used ${esc(fmt(k.last_used_at))}${k.revoked ? ' · <span style="color:var(--accent)">revoked</span>' : ''}</div></div>
+        <div><b>${esc(k.label)}</b><div class="muted" style="font-size:13px">${k.scope === 'read' ? 'read only' : 'can make changes'} · created ${esc(fmt(k.created_at))} · last used ${esc(fmt(k.last_used_at))}${k.revoked ? ' · <span style="color:var(--accent)">revoked</span>' : ''}</div></div>
         ${k.revoked ? '' : `<button class="btn btn-ghost sm" data-revoke="${esc(k.id)}">Revoke</button>`}
       </div>`).join('') : '<p class="muted">No connector keys yet.</p>'}
     </div>`;
@@ -395,7 +395,8 @@ async function renderConnectors() {
     const label = (prompt('Name this key (e.g. "Claude" or "ChatGPT") so you can recognise it later:', 'My AI connector') || '').trim();
     if (!label) return;
     const btn = $('#mcpNewKey'); btn.disabled = true;
-    const { data: created, error: e2 } = await sb.rpc('mcp_create_key', { p_label: label });
+    const full = confirm('Should "' + label + '" be allowed to MAKE CHANGES (add items, post bills, record payments, approve requests, send WhatsApp messages)?\n\nOK = read and make changes\nCancel = read only (recommended: it can look but not change anything)');
+    const { data: created, error: e2 } = await sb.rpc('mcp_create_key', { p_label: label, p_scope: full ? 'full' : 'read' });
     btn.disabled = false; if (e2) return msg(e2.message, true);
     newKey = created.key; await renderConnectors();
   };
