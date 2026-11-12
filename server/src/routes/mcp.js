@@ -24,7 +24,7 @@ import { pool, withAuth } from '../db.js';
 import { HttpError, readJsonBody } from '../lib/http.js';
 import { TABLES } from '../data/tables.js';
 import { handleSelect, callRpc } from '../data/queries.js';
-import { mutate } from '../salon/storage.js';
+import { mutate, readStaffAdmin } from '../salon/storage.js';
 import { addBooking, addInvoice, clientsList, cashRangeSummary } from '../salon/rules.js';
 import { resolveOauthAccessToken } from './oauth.js';
 import { API_URL } from '../config.js';
@@ -371,6 +371,12 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'salon_staff_list',
+    description: 'List Auzsalon staff logins (name, phone, designation, active status, whether linked to payroll). Read-only. Only works for a Salon-niche business. Note: Auzsalon has no staff scheduling/rota or commission tracking yet -- those are not real features to query.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
     name: 'salon_revenue',
     description: "Auzsalon's billed revenue and cash summary for a date range. Read-only. Only works for a Salon-niche business.",
     annotations: { readOnlyHint: true },
@@ -676,6 +682,10 @@ async function runSalonTool(userId, tenantId, name, args) {
       return mutate(tenant, (db) => (db.bookings || []).filter((b) => !args.date || b.date === args.date), ['site', 'data'], []);
     case 'salon_clients':
       return mutate(tenant, (db) => clientsList(db), ['site', 'data'], []);
+    case 'salon_staff_list': {
+      const staff = (await readStaffAdmin(tenant, 'staff')) || { list: [] };
+      return staff.list.map((s) => ({ id: s.id, name: s.name, phone: s.phone || '', designation: s.designation || '', active: s.active !== false, linked_to_payroll: !!s.employeeId }));
+    }
     case 'salon_revenue':
       if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
       return mutate(tenant, (db) => cashRangeSummary(db, args.from, args.to), ['site', 'data'], []);
