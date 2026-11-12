@@ -198,7 +198,7 @@ async function extras(host) {
     sheet({ title: c ? c.code : t('New coupon'), closeLabel: t('Cancel'), body: h('div', { class: 'grid' }, field(t('Code'), code), h('div', { class: 'two' }, field(t('Type'), kind), field(t('Value'), val)), h('div', { class: 'two' }, field(t('Minimum order ₹'), min), field(t('Max uses'), max)), field(t('Ends on (optional)'), ends),
       h('label', { class: 'swrow' }, h('div', { class: 'grow' }, t('First order only')), first), h('label', { class: 'swrow' }, h('div', { class: 'grow' }, t('Active')), act)),
       actions: [{ label: t('Save'), primary: true, onclick: async (close) => { try { await api('sty_coupon_save', { p: { id: cur.id, newId: cur.id ? undefined : uid(), code: code.value, kind: kind.value, value: +val.value || 0, minOrder: +min.value || 0, maxUses: max.value ? +max.value : null, endsOn: ends.value || null, firstOnly: first.checked, active: act.checked } }); toast(t('Saved')); close(); paint(); } catch (e) { toast(e.message, { err: true }); return false; } } },
-        c ? { label: t('Delete'), danger: true, onclick: async (close) => { await api('sty_coupon_delete', { p_id: c.id }); close(); paint(); } } : null] });
+        c ? { label: t('Delete'), danger: true, onclick: async (close) => { if (!await confirmBox(t('Delete this coupon?'), t('Customers will no longer be able to use it.'), t('Delete'), true)) return false; await api('sty_coupon_delete', { p_id: c.id }); close(); paint(); } } : null] });
   }
   paint();
 }

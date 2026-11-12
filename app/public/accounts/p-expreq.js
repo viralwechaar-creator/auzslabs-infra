@@ -27,7 +27,7 @@ function expReqDetail(x, caps, done) {
     acts.push({ label: 'Reject', onclick: (c) => { c(); const why = input({ placeholder: 'Why?' }); sheet({ title: 'Reject request', body: field('Reason', why), actions: [{ label: 'Reject', primary: true, onclick: async (c2) => { if (!why.value.trim()) { toast('Say why', { err: true }); return false; } await api('acc_expense_request_decide', { p_id: x.id, p_decision: 'reject', p_note: why.value }); c2(); toast('Rejected'); done(); } }] }); } });
   }
   if (x.status === 'approved' && caps.can_pay && !x.mine) acts.push({ label: 'Pay now', primary: true, onclick: (c) => { c(); expReqPaySheet(x, done); } });
-  if (x.status === 'pending' && x.mine) acts.push({ label: 'Cancel request', onclick: async (c) => { await api('acc_expense_request_cancel', { p_id: x.id }); c(); toast('Cancelled'); done(); } });
+  if (x.status === 'pending' && x.mine) acts.push({ label: 'Cancel request', onclick: async (c) => { if (!(await confirmBox('Cancel this request?', 'It will no longer wait for approval.', 'Cancel request', true))) return false; await api('acc_expense_request_cancel', { p_id: x.id }); c(); toast('Cancelled'); done(); } });
   sheet({ title: inr(x.amount, 0), closeLabel: 'Close', body: h('div', { class: 'grid' },
     h('div', null, h('div', { style: { fontWeight: 600 } }, x.description), h('div', { class: 'muted small' }, [x.account_name || 'General expenses', 'asked by ' + x.requester, fmtD(x.req_date)].join(' · '))),
     x.note ? h('p', null, x.note) : null, x.decision_note ? h('p', { class: 'muted' }, 'Decision note: ' + x.decision_note) : null,
