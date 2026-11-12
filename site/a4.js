@@ -11,7 +11,7 @@
     scan: ['auzsscan.auzslab.in', '#6a3fb5', ['Scan to bill', 'Item added', 'GST 18%', 'Invoice sent']],
     style: ['auzsstyle.auzslab.in', '#111111', ['Sizes', 'M  L  XL', 'Blue / Black', 'Tag printed']],
     finance: ['auzsfinance.auzslab.in', '#0f5a56', ['Money in', 'Money out', 'Owner loan', 'Balance']],
-    salon: ['demo-salon.auzslab.in', '#7a2e5a', ['Bookings', '11:30 Priya', '13:00 Rohan', 'Bill sent']]
+    salon: ['showoffsalon.auzslab.in', '#7a2e5a', ['Bookings', '11:30 Priya', '13:00 Rohan', 'Bill sent']]
   };
   btns.forEach(function (b) {
     var name = (b.querySelector('b') || b).textContent.replace(/^AUZs(lab\s)?/i, '');
