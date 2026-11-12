@@ -149,6 +149,29 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: true },
     inputSchema: { type: 'object', required: ['doc_id'], properties: { doc_id: { type: 'string' }, payments: { type: 'array', items: { type: 'object' }, description: 'optional payment(s) to record against this document right away' } } },
   },
+  {
+    name: 'ledger_record_payment',
+    description: "Record money received from a customer (kind=receipt) or paid to a supplier (kind=payment) in AuzsLedger, and optionally allocate it against specific open invoices/bills straight away. Use ledger_context for account_id (a bank/cash account) and ledger_list_parties for party_id, and ledger_list_documents to find the doc_id(s) to allocate against. Most AI apps will ask you to confirm before running this -- it changes real financial records.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['kind', 'account_id', 'amount'],
+      properties: {
+        kind: { type: 'string', enum: ['receipt', 'payment'], description: 'receipt = money IN from a customer, payment = money OUT to a supplier' },
+        account_id: { type: 'string', description: 'the bank/cash account the money moved through, from ledger_context' },
+        party_id: { type: 'string', description: 'the customer or supplier, from ledger_list_parties' },
+        amount: { type: 'number' }, mode: { type: 'string', description: 'e.g. cash, bank, upi, card, cheque' },
+        reference: { type: 'string' }, notes: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD' },
+        auto_allocate: { type: 'boolean', description: 'automatically settle this party\'s oldest open invoices/bills first, oldest-due first' },
+        allocations: { type: 'array', items: { type: 'object', required: ['doc_id', 'amount'], properties: { doc_id: { type: 'string' }, amount: { type: 'number' } } }, description: 'specific documents to allocate against instead of auto_allocate' },
+      },
+    },
+  },
+  {
+    name: 'ledger_allocate_payment',
+    description: 'Allocate more of an already-recorded AuzsLedger payment/receipt against a specific open invoice or bill (e.g. the party had an unallocated balance from a previous payment). Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['payment_id', 'doc_id', 'amount'], properties: { payment_id: { type: 'string' }, doc_id: { type: 'string' }, amount: { type: 'number' } } },
+  },
   // ---- AuzsFinance: thin wrappers over the already-registered fin_* functions. ----
   {
     name: 'finance_dashboard',
@@ -342,6 +365,14 @@ async function runTool(client, name, args) {
     case 'ledger_post_document':
       if (!args.doc_id) throw new HttpError(400, 'doc_id is required');
       return callRpc(client, 'acc_post_document', { p_doc_id: args.doc_id, p_payments: args.payments || [] });
+
+    case 'ledger_record_payment':
+      if (!['receipt', 'payment'].includes(args.kind)) throw new HttpError(400, 'kind must be receipt or payment');
+      if (!args.account_id || !(Number(args.amount) > 0)) throw new HttpError(400, 'account_id and a positive amount are required');
+      return callRpc(client, 'acc_save_payment', { p: { kind: args.kind, account_id: args.account_id, party_id: args.party_id || null, amount: args.amount, mode: args.mode || null, reference: args.reference || null, notes: args.notes || null, date: args.date || null, auto_allocate: args.auto_allocate || false, allocations: args.allocations || [] } });
+    case 'ledger_allocate_payment':
+      if (!args.payment_id || !args.doc_id || !(Number(args.amount) > 0)) throw new HttpError(400, 'payment_id, doc_id and a positive amount are required');
+      return callRpc(client, 'acc_allocate', { p_payment: args.payment_id, p_doc: args.doc_id, p_amount: args.amount });
 
     case 'finance_dashboard':
       return callRpc(client, 'fin_dashboard', { p_from: args.from || null, p_to: args.to || null });
