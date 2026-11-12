@@ -125,6 +125,28 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: true },
     inputSchema: { type: 'object', required: ['order_id', 'amount'], properties: { order_id: { type: 'string', description: 'from list_orders' }, amount: { type: 'number' }, reason: { type: 'string' } } },
   },
+  // ---- Due-payment follow-up queue (db/324): the console's "Due Payment" page already lists unpaid bills
+  // with the real balance due -- these tools add the one thing it doesn't have, a persisted "did we already
+  // work this one" state, so an agent (or a human) never re-starts from zero on a bill someone already called
+  // about. scan flags, list reads, mark moves a flag through its lifecycle. ----
+  {
+    name: 'pos_duefollowup_scan',
+    description: "Find due bills that don't already have an open follow-up and flag them for collection. Safe to call repeatedly -- never re-flags a bill that's already pending or contacted. Returns only the newly flagged ones.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'pos_duefollowup_list',
+    description: 'List due-payment follow-ups. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['pending', 'contacted', 'settled', 'dismissed'], description: 'omit for all statuses' } } },
+  },
+  {
+    name: 'pos_duefollowup_mark',
+    description: "Move a follow-up to its next state: 'contacted' after reaching the customer, 'settled' once they've paid (check the real bill first -- this does not record a payment itself), or 'dismissed' to drop it. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['id', 'status'], properties: { id: { type: 'string', description: 'from pos_duefollowup_list' }, status: { type: 'string', enum: ['contacted', 'settled', 'dismissed'] }, note: { type: 'string' } } },
+  },
   // ---- CRM / marketing (café, retail, mobile-repair niches): replicates server-side what the console's
   // CRM/Marketing pages (p-crm.js, p-marketing.js) already compute client-side from `order`/`customer`
   // records -- customers are built from paid/due bills, not a separate master list. Segments are the same
@@ -646,6 +668,14 @@ async function runTool(client, name, args) {
       await callRpc(client, 'push_record', { rid: args.order_id, rkind: 'order', rdata: { ...order.data, refunds }, rdeleted: false, base: null, force: true });
       return { order_id: args.order_id, refunded_now: Number(args.amount), refunded_total: already + Number(args.amount), bill_total: total };
     }
+
+    case 'pos_duefollowup_scan':
+      return callRpc(client, 'pos_duefollowup_scan', {});
+    case 'pos_duefollowup_list':
+      return callRpc(client, 'pos_duefollowup_list', { p_status: args.status || null });
+    case 'pos_duefollowup_mark':
+      if (!args.id || !args.status) throw new HttpError(400, 'id and status are required');
+      return callRpc(client, 'pos_duefollowup_mark', { p_id: args.id, p_status: args.status, p_note: args.note || null });
 
     case 'crm_list_customers': {
       const limit = Math.min(Math.max(parseInt(args.limit, 10) || 100, 1), 500);
