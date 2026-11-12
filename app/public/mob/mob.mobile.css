@@ -1,7 +1,7 @@
 /* AUZsMob: compact (phones, under 600px) and medium (600-899px: tablet portrait, open foldables). Independent of payroll.desktop.css. */
 .shell{min-height:100dvh;padding-bottom:calc(54px + var(--safe-b))}
 .side{display:none}
-.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:76px 1fr 76px;align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
+.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:minmax(76px,auto) minmax(0,1fr) minmax(76px,auto);align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
 .topbar.scrolled{border-bottom-color:var(--sep)}
 .topbar .tt{font-size:17px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar.scrolled .tt{opacity:1}
