@@ -36,7 +36,13 @@
         # the most common way a stored-XSS bug actually gets weaponised (exfiltrating the session token via a 3rd-party host).
         # Hosts here are every external script this project actually loads (grepped site/ and app/public/): Google tag manager,
         # the Sentry error-tracking CDN bundle (dormant unless window.CFG.sentryDsn is set), Razorpay's checkout widget.
-        Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
+        # 'unsafe-eval': account.html's dashboard (ac5.js/ac5-views.js) bridges to the page's own inline-script globals
+        # (PROFILE, DASH, STAFF, ...) with `(0, eval)(name)` to read and `(0, eval)(name + '=...')` to write, since there is
+        # no build step to turn those into real exports. Without this, every read silently returns undefined (g() catches
+        # the CSP violation) and every write throws uncaught (A.set() does not catch it) -- which is exactly what broke
+        # the whole redesigned account dashboard the moment this header shipped: reads went silently blank and every
+        # button that writes state (step navigation, toggles, saves) died with an uncaught EvalError and did nothing.
+        Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
         -Server
     }
 }
@@ -86,9 +92,11 @@
     import shared_files
     route {
         # the hub's combined workspace shows these apps inside its own page; nobody else may frame them.
-        # script-src: same reasoning as the root domain's security_headers block above -- 'unsafe-inline' stays (no
-        # build step/nonces), the real value is blocking a stored-XSS payload from pulling in an attacker's own script.
-        header Content-Security-Policy "frame-ancestors 'self' https://app.{$DOMAIN}; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
+        # script-src: same reasoning as the root domain's security_headers block above -- 'unsafe-inline' and
+        # 'unsafe-eval' stay (no build step/nonces, and some pages bridge to the page's own inline-script globals via
+        # eval -- see that block's comment), the real value is blocking a stored-XSS payload from pulling in an
+        # attacker's own script.
+        header Content-Security-Policy "frame-ancestors 'self' https://app.{$DOMAIN}; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
         @home path /
         rewrite @home {args[0]}
         @mine path {args[0]} {args[1:]}
