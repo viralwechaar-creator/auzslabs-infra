@@ -1072,7 +1072,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <h2 class="h-2">Client requests</h2>
         <p class="p">A visitor sends their details and what they need. Check the business, set the status, build the quote, send the payment link on WhatsApp, confirm the payment, then send the bill.</p>
         <div class="row" style="gap:8px;margin:12px 0;flex-wrap:wrap">
-          <button class="btn btn-primary" data-ordf="open">Open</button><button class="btn btn-ghost" data-ordf="requested">New</button><button class="btn btn-ghost" data-ordf="verifying">Verifying</button><button class="btn btn-ghost" data-ordf="confirmed">Confirmed</button><button class="btn btn-ghost" data-ordf="link_sent">Link sent</button><button class="btn btn-ghost" data-ordf="payment_submitted">To confirm</button><button class="btn btn-ghost" data-ordf="paid">Paid</button><button class="btn btn-ghost" data-ordf="">All</button>
+          <button class="btn btn-primary" data-ordf="open">Open</button><button class="btn btn-ghost" data-ordf="requested">New</button><button class="btn btn-ghost" data-ordf="verifying">Verifying</button><button class="btn btn-ghost" data-ordf="confirmed">Confirmed</button><button class="btn btn-ghost" data-ordf="link_sent">Link sent</button><button class="btn btn-ghost" data-ordf="payment_submitted">To confirm</button><button class="btn btn-ghost" data-ordf="active">Active</button><button class="btn btn-ghost" data-ordf="paid">Paid</button><button class="btn btn-ghost" data-ordf="">All</button>
         </div>
         <div id="ordersList">Loading&hellip;</div>
       </section>
@@ -2825,14 +2825,14 @@ document.getElementById('mkForm').onsubmit = async (e) => {
   g('mkOverlay').classList.remove('open'); sectionLoadedAt.clientPay = 0; if (mkReload) mkReload(); loadBills();
 };
 // ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
-const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
+const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', active: 'Active (no bill yet)', paid: 'Paid', rejected: 'Rejected' };
 const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['finance', 'AUZsFinance'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon']];
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 0;
 const ONBOARDING_DEFAULT = 1360; // flat one-time onboarding fee for every new client; there is no separate setup fee any more
 let ordFilter = 'open', ordCur = null, ordQ = null, ordPrices = null, ordProofUrl = null;
-const ordPill = (s) => `<span class="status-pill ${s === 'paid' ? 'status-active' : s === 'rejected' ? 'status-suspended' : ''}">${esc(ORD_STATUS[s] || s)}</span>`;
+const ordPill = (s) => `<span class="status-pill ${s === 'paid' || s === 'active' ? 'status-active' : s === 'rejected' ? 'status-suspended' : ''}">${esc(ORD_STATUS[s] || s)}</span>`;
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const money2 = (n) => '&#8377;' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const PROD_NAME = Object.fromEntries(ORD_PRODUCTS.concat([['addon_hardware', 'Hardware integration'], ['addon_website', 'Website'], ['addon_whatsapp', 'WhatsApp automation']]));
@@ -2954,6 +2954,10 @@ function renderOrder() {
   ${o.requirement ? `<p class="p" style="margin-top:10px"><b>What they need:</b> ${esc(o.requirement)}</p>` : ''}${o.notes ? `<p class="p"><b>Notes:</b> ${esc(o.notes)}</p>` : ''}
   ${(o.products || []).length ? `<p class="p"><b>Picked:</b> ${(o.products || []).map((k) => esc(PROD_NAME[k] || k)).join(', ')}</p>` : ''}
   ${locked ? '' : `<div class="row-actions" style="margin-top:8px"><button class="btn btn-ghost" id="odSave" type="button">Save details</button></div>`}
+  ${['requested', 'verifying', 'confirmed', 'link_sent', 'payment_submitted'].includes(o.status) ? `
+  <div class="row-actions" style="margin-top:14px"><button class="btn btn-primary" id="odApprove" type="button">Approve &amp; activate</button></div>
+  <p class="p" style="font-size:12px;color:var(--ink-faint);margin-top:4px">Switches on the picked products for this client right away. No bill is made here -- collect payment yourself and log it under Client payments &amp; bills (or build a formal GST bill below any time).</p>` : ''}
+  ${o.status === 'active' ? `<p class="p" style="margin-top:14px;color:var(--ink-faint)">Active since ${esc(String(o.updated_at || '').slice(0, 10))}${o.tenant_slug ? ' &middot; access: <b>' + esc(o.tenant_slug) + '.auzslab.in</b>' : ''}. Log payment under Client payments &amp; bills, or build a formal GST bill below.</p>` : ''}
   ${o.status === 'rejected' ? '' : `
   <div class="label" style="margin-top:20px">${o.status === 'paid' ? 'Bill' : 'Quote: products, price, GST, discount'}</div>
   ${o.status === 'paid' ? '' : `<div id="qItems">${(ordQ.items || []).map(prodRow).join('')}</div>
@@ -2969,11 +2973,11 @@ function renderOrder() {
   <label class="lbl" style="margin-top:10px">Note on the bill (optional)<input id="qNote" class="inp" value="${esc(ordQ.note || '')}"></label>`}
   <div class="ord-tot" id="qTot"></div>
   ${o.status === 'paid' ? '' : `<div class="row-actions" style="margin-top:10px"><button class="btn btn-primary" id="qSend" type="button">${o.status === 'link_sent' || o.status === 'payment_submitted' ? 'Save changes' : 'Save and send to client on WhatsApp'}</button><button class="btn btn-ghost" id="qSave" type="button">Save as draft only</button></div><p class="p" style="margin-top:6px;font-size:12px">Sending uses the AUZslab WhatsApp number and puts the quote on the client's payment page. A repeat send is not possible once the link has gone.</p>`}`}
-  ${(['confirmed', 'link_sent', 'payment_submitted'].includes(o.status) && o.totals) ? `
+  ${(['confirmed', 'link_sent', 'payment_submitted', 'active'].includes(o.status) && o.totals) ? `
   <div class="label" style="margin-top:20px">Payment link</div>
   <label class="lbl">Message to send on WhatsApp<textarea id="waPay" class="inp" rows="9">${esc(payMessage(o))}</textarea></label>
   <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-primary" id="waSendPay" type="button">Send payment link on WhatsApp</button><button class="btn btn-ghost" id="copyPay" type="button">Copy link</button></div>` : ''}
-  ${(['link_sent', 'payment_submitted', 'confirmed'].includes(o.status) && o.totals) ? `
+  ${(['link_sent', 'payment_submitted', 'confirmed', 'active'].includes(o.status) && o.totals) ? `
   <div class="label" style="margin-top:20px">Payment</div>
   <p class="p">${o.payment && o.payment.method === 'cash' ? `The client chose <b>cash in hand</b>. Confirm the payment when you have received the cash.` : o.payment && o.payment.submitted_at ? `The client says they paid. Terms accepted ${esc(String(o.payment.terms_accepted_at || '').slice(0, 16).replace('T', ' '))}.${o.payment.utr ? ' UTR: <b>' + esc(o.payment.utr) + '</b>.' : ''}` : 'Nothing submitted by the client yet.'}</p>
   <div id="proofBox">${proof ? 'Loading screenshot&hellip;' : (o.payment && o.payment.method === 'cash' ? '' : '<p class="p" style="color:var(--ink-faint)">No screenshot yet.</p>')}</div>
@@ -3016,6 +3020,11 @@ async function reloadOrder() { await openOrder(ordCur.id); sectionLoadedAt.order
 function wireOrder() {
   const o = ordCur, g = (id) => document.getElementById(id);
   document.querySelectorAll('[data-ost]').forEach((b) => { b.onclick = async () => { if (b.dataset.ost === 'rejected' && !confirm('Reject this request?')) return; await ordAct('admin_set_order_status', { p_id: o.id, p_status: b.dataset.ost }, reloadOrder); }; });
+  if (g('odApprove')) g('odApprove').onclick = async () => {
+    if (!confirm('Switch on ' + (PROD_NAME[(o.products || [])[0]] ? (o.products || []).map((k) => PROD_NAME[k] || k).join(', ') : 'these products') + ' for ' + (o.business_name || 'this client') + ' right now?\n\nNo bill is made here. Collect payment yourself and log it under Client payments & bills.')) return;
+    const r = await ordAct('admin_approve_order', { p_id: o.id }, reloadOrder);
+    if (r) { sectionLoadedAt.clientPay = 0; refreshOrdersBadge(); }
+  };
   if (g('odSave')) g('odSave').onclick = () => ordAct('admin_update_client_order', { p_id: o.id, p: { contact_name: g('odName').value, phone: g('odPhone').value, email: g('odEmail').value, business_name: g('odBiz').value, gstin: g('odGstin').value, state_code: g('odState').value, niche: g('odNiche').value, slug: g('odSlug') ? g('odSlug').value : undefined, address: g('odAddr').value } }, reloadOrder);
   if (g('odGstin')) g('odGstin').addEventListener('input', () => { const v = g('odGstin').value.trim().toUpperCase(); if (/^\d{2}/.test(v) && ORD_STATES[v.slice(0, 2)]) { g('odState').value = v.slice(0, 2); paintTotals(); } });
   if (g('odState')) g('odState').addEventListener('change', paintTotals);
