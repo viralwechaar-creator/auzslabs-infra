@@ -8,7 +8,13 @@
 // already resolved from the Authorization header, but an MCP client sends one of our own `auz_mcp_...` keys there
 // instead (verifyToken() already returns null for it harmlessly -- it isn't a valid JWT). This module looks the
 // Bearer token up for itself via mcp_resolve_key() (db/318), the same "hash it, look it up, there is no session
-// yet" shape server/src/auth/password.js's login() already uses for a plain password.
+// yet" shape server/src/auth/password.js's login() already uses for a plain password. Since routes/oauth.js
+// (db/320) added a second way in -- an OAuth access token, for AI apps like ChatGPT that require real OAuth
+// discovery rather than a pasted Bearer key -- a presented token is tried against BOTH resolvers below; each
+// one only recognises its own token shape (auz_mcp_ vs auz_oat_) and returns null for the other, so there's no
+// ambiguity. A request with neither gets 401 + WWW-Authenticate pointing at the OAuth protected-resource
+// metadata, which is what lets an OAuth-only client (ChatGPT) discover the flow at all; a Bearer-key client
+// (Claude) never looks at that header and keeps working exactly as before.
 //
 // Every tool below is a thin wrapper around code the rest of the app already runs and already trusts
 // (handleSelect/callRpc from data/queries.js, inside withAuth so RLS applies exactly as it does for a logged-in
@@ -20,6 +26,8 @@ import { TABLES } from '../data/tables.js';
 import { handleSelect, callRpc } from '../data/queries.js';
 import { mutate } from '../salon/storage.js';
 import { addBooking, addInvoice, clientsList, cashRangeSummary } from '../salon/rules.js';
+import { resolveOauthAccessToken } from './oauth.js';
+import { API_URL } from '../config.js';
 
 const sha256 = (v) => createHash('sha256').update(String(v)).digest('hex');
 
@@ -370,14 +378,27 @@ function rpcErr(id, code, message) { return { jsonrpc: '2.0', id, error: { code,
 export async function handle(ctx) {
   const { req, res, url, reply } = ctx;
   if (url.pathname !== '/mcp') return false;
-  if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
 
+  // Auth is checked before the method check: an unauthenticated GET or POST alike must get 401 +
+  // WWW-Authenticate, or an OAuth-only client (ChatGPT) has nothing to discover the flow from. Once
+  // authenticated, only POST is actually supported (plain JSON-RPC, no SSE stream -- see the file's own
+  // header comment), so an authenticated GET still gets a 405.
   const auth = req.headers['authorization'] || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) throw new HttpError(401, 'missing connector key');
-  const { rows } = await pool.query('select mcp_resolve_key($1) as r', [sha256(token)]);
-  const resolved = rows[0]?.r;
-  if (!resolved) throw new HttpError(401, 'invalid or revoked connector key');
+  const unauthorized = (msg) => {
+    res.setHeader('WWW-Authenticate', `Bearer resource_metadata="${API_URL}/.well-known/oauth-protected-resource"`);
+    throw new HttpError(401, msg);
+  };
+  if (!token) return unauthorized('missing bearer token');
+  let resolved = null;
+  if (token.startsWith('auz_oat_')) {
+    resolved = await resolveOauthAccessToken(token);
+  } else {
+    const { rows } = await pool.query('select mcp_resolve_key($1) as r', [sha256(token)]);
+    resolved = rows[0]?.r;
+  }
+  if (!resolved) return unauthorized('invalid, expired or revoked token');
+  if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
   const { user_id, tenant_id } = resolved;
 
   const body = await readJsonBody(req, 500_000);

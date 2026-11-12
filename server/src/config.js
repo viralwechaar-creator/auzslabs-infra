@@ -4,6 +4,9 @@ export const PORT = process.env.PORT || 3000;
 export const DOMAIN = process.env.DOMAIN || '';
 // where links in emails point (the marketing site)
 export const SITE_URL = process.env.PUBLIC_SITE_URL || (DOMAIN && DOMAIN !== 'localhost' ? `https://${DOMAIN}` : 'http://localhost');
+// Where the API itself is publicly reachable -- the OAuth issuer/endpoints (routes/oauth.js) and the MCP
+// endpoint's WWW-Authenticate challenge (routes/mcp.js) both need this exact, stable origin.
+export const API_URL = process.env.PUBLIC_API_URL || (DOMAIN && DOMAIN !== 'localhost' ? `https://api.${DOMAIN}` : `http://localhost:${PORT}`);
 
 // Where a password-reset link may point: our own site or one of its shop subdomains (or localhost when running locally). Anything else falls back to the sign-in page.
 export function safeResetBase(candidate) {
