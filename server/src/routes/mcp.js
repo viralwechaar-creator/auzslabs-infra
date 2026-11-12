@@ -458,6 +458,15 @@ const TOOLS = [
       properties: { to: { type: 'string', description: 'customer phone number' }, template: { type: 'string', description: 'a template key from whatsapp_status' }, params: { type: 'array', items: { type: 'string' }, description: 'fills the template\'s {{1}}, {{2}}, ... placeholders in order' }, ref: { type: 'string', description: 'optional: a unique reference so resending the same ref never double-sends' } },
     },
   },
+  // ---- AI activity: every tool call (this one included) is written to mcp_audit (db/323) the instant it
+  // finishes, success or failure -- the owner can review the same log in the console (Management -> AI
+  // activity), and this tool lets the agent itself see its own recent actions. ----
+  {
+    name: 'mcp_my_activity',
+    description: 'List this connector\'s own recent actions against this business (tool name, when, success/failure, the arguments used). Useful to check what you already did, or to show the owner what happened. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'default 50, max 200' } } },
+  },
   // ---- Auzsalon: a different storage engine (salon_store, not records/RLS), so these go through
   // server/src/salon/{storage,rules}.js directly instead of callRpc -- see mcp.js's own handle() for the auth split. ----
   {
@@ -563,6 +572,19 @@ function crmSegmentFilter(all, segment, today = new Date().toLocaleDateString('e
     case 'bday': return all.filter((c) => c.dob && Number(String(c.dob).slice(5, 7)) === month);
     default: return all;
   }
+}
+
+// Fire-and-forget: a failure to write the audit row must never break the tool call itself (same spirit as
+// pos_audit's own "a failure to audit writes an audit_error row instead of blocking the sale" -- here there's
+// nothing else to block, so this just logs to the server console and moves on).
+function logMcpAudit(tenantId, keyId, tool, ok, error, args) {
+  let trimmedArgs = null;
+  try {
+    const s = JSON.stringify(args ?? {});
+    trimmedArgs = s.length > 4000 ? { truncated: true, preview: s.slice(0, 2000) } : JSON.parse(s);
+  } catch { trimmedArgs = null; }
+  pool.query('select mcp_audit_add($1, $2, $3, $4, $5, $6)', [tenantId, keyId, tool || '(unknown)', ok, error, trimmedArgs])
+    .catch((e) => console.error('mcp_audit_add failed:', e.message));
 }
 
 async function runTool(client, name, args) {
@@ -902,6 +924,9 @@ async function runTool(client, name, args) {
       if (!args.to || !args.template) throw new HttpError(400, 'to and template are required');
       return callRpc(client, 'mcp_send_whatsapp', { p_to: args.to, p_template: args.template, p_params: args.params || [], p_ref: args.ref || null });
 
+    case 'mcp_my_activity':
+      return callRpc(client, 'mcp_audit_list', { p_limit: args.limit || 50 });
+
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
   }
@@ -969,11 +994,13 @@ export async function handle(ctx) {
   };
   if (!token) return unauthorized('missing bearer token');
   let resolved = null;
+  let keyId = null;
   if (token.startsWith('auz_oat_')) {
     resolved = await resolveOauthAccessToken(token);
   } else {
     const { rows } = await pool.query('select mcp_resolve_key($1) as r', [sha256(token)]);
     resolved = rows[0]?.r;
+    keyId = resolved?.id || null;
   }
   if (!resolved) return unauthorized('invalid, expired or revoked token');
   if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
@@ -997,9 +1024,11 @@ export async function handle(ctx) {
       const data = name && name.startsWith('salon_')
         ? await runSalonTool(user_id, tenant_id, name, params?.arguments)
         : await withAuth(user_id, (client) => runTool(client, name, params?.arguments));
+      logMcpAudit(tenant_id, keyId, name, true, null, params?.arguments);
       return reply(200, rpcOk(id, { content: [{ type: 'text', text: JSON.stringify(data) }], isError: false }));
     } catch (err) {
       const message = err instanceof HttpError ? err.message : (err?.message || 'tool call failed');
+      logMcpAudit(tenant_id, keyId, name, false, message, params?.arguments);
       return reply(200, rpcOk(id, { content: [{ type: 'text', text: message }], isError: true }));
     }
   }
