@@ -19,6 +19,11 @@ export async function newCtx(browser, stack, dev = { w: 1280, h: 800 }) {
   // AUZsLedger starts new businesses in the short beginner view (p-easy.js); the older suites test the full menu, so they ask for it
   // unless a suite passes { simple: true }.
   if (!dev.simple) await fullView(ctx);
+  // On phones the sign-in form is a bottom sheet that opens after tapping the big "Sign in" pill; tests fill the form directly, so keep the sheet open.
+  await ctx.addInitScript(() => {
+    const open = () => document.querySelectorAll('.login-form-pane:not(.open),.auth-form-pane:not(.open)').forEach((e) => e.classList.add('open'));
+    new MutationObserver(open).observe(document, { childList: true, subtree: true }); open();
+  });
   return ctx;
 }
 // Horizontal overflow, tiny text and tiny tap targets: the usual "looks broken on phone" problems.
