@@ -341,7 +341,7 @@ function header(o, root) {
   }
   acts.forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
   r.append(bellBtn());
-  r.append(capOff('online_store') || !desk ? null : h('a', { class: 'btn plain icon', href: '/store.html', 'aria-label': 'Open my website', title: 'Open my website' }, icon('globe', 20)));
+  r.append(capOff('online_store') || !desk ? null : h('a', { class: 'btn plain icon', href: 'https://' + ((S.dash.tenant && S.dash.tenant.slug) || '') + '.auzslab.in/store.html', target: '_blank', rel: 'noopener', 'aria-label': 'Open my online store', title: 'Open my online store' }, icon('globe', 20)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }
   if (!desk && root && !o.noLarge) root.prepend(h('h1', { class: 'large-title' }, o.title));
 }
