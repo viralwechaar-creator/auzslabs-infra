@@ -104,6 +104,12 @@ const TOOLS = [
     inputSchema: { type: 'object', required: ['report'], properties: { report: { type: 'string', enum: ['pnl', 'balance_sheet', 'cash_flow', 'trial_balance'] }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
   },
   {
+    name: 'ledger_gst_summary',
+    description: 'AuzsLedger GST summary for a period: output tax, input tax credit and what is payable (the same figures Analytics -> GSTR-3B shows). Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
     name: 'ledger_ageing',
     description: 'Who owes the business money (receivable) or who the business owes (payable), broken down by how overdue. Read-only.',
     annotations: { readOnlyHint: true },
@@ -153,6 +159,23 @@ const TOOLS = [
     description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
+  },
+  // ---- WhatsApp: only a business's own already-approved templates, never free text (a WhatsApp Business
+  // Platform rule, see db/319's own comment) -- the AI fills in the blanks, it can never compose the message. ----
+  {
+    name: 'whatsapp_status',
+    description: 'Whether WhatsApp is connected for this business, and the full list of available templates with their placeholders. Read this first to know which templates whatsapp_send can actually use. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'whatsapp_send',
+    description: 'Send a WhatsApp message to a customer using one of the business\'s own approved templates (see whatsapp_status for the list and their placeholder order) -- never free text. Costs real money per message once past the WhatsApp free tier. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['to', 'template'],
+      properties: { to: { type: 'string', description: 'customer phone number' }, template: { type: 'string', description: 'a template key from whatsapp_status' }, params: { type: 'array', items: { type: 'string' }, description: 'fills the template\'s {{1}}, {{2}}, ... placeholders in order' }, ref: { type: 'string', description: 'optional: a unique reference so resending the same ref never double-sends' } },
+    },
   },
   // ---- Auzsalon: a different storage engine (salon_store, not records/RLS), so these go through
   // server/src/salon/{storage,rules}.js directly instead of callRpc -- see mcp.js's own handle() for the auth split. ----
@@ -258,6 +281,9 @@ async function runTool(client, name, args) {
       if (r === 'trial_balance') return callRpc(client, 'acc_trial_balance', { p_from: args.from || null, p_to: args.to || null, p_all: false });
       throw new HttpError(400, 'report must be one of pnl, balance_sheet, cash_flow, trial_balance');
     }
+    case 'ledger_gst_summary':
+      if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
+      return callRpc(client, 'acc_gst_summary', { p_from: args.from, p_to: args.to });
     case 'ledger_ageing':
       return callRpc(client, 'acc_ageing', { p: { kind: args.kind || 'receivable' } });
     case 'ledger_save_document':
@@ -287,6 +313,12 @@ async function runTool(client, name, args) {
     }
     case 'finance_save_transaction':
       return callRpc(client, 'fin_save_txn', { p: args });
+
+    case 'whatsapp_status':
+      return callRpc(client, 'wa_my_status', {});
+    case 'whatsapp_send':
+      if (!args.to || !args.template) throw new HttpError(400, 'to and template are required');
+      return callRpc(client, 'mcp_send_whatsapp', { p_to: args.to, p_template: args.template, p_params: args.params || [], p_ref: args.ref || null });
 
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
