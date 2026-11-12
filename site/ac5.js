@@ -11,8 +11,8 @@
   var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], REQS = [], CART = [], PROFILE = { products: [] };
   window.AC5 = { ACT: {}, AFTER: {}, ENTER: {}, OWN: {}, VIEWS: null };
   var S = { mode: 'owner', view: 'home', more: false, nf: 'all' };
-  var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy'];
-  var SLOT = { profile: 'profile', security: 'account', services: 'services', staff: 'staff', roles: 'roles', notifications: 'notifications', privacy: 'privacy' };
+  var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors'];
+  var SLOT = { profile: 'profile', security: 'account', services: 'services', staff: 'staff', roles: 'roles', notifications: 'notifications', privacy: 'privacy', connectors: 'connectors' };
   function profPct() { var P = g('PROFILE') || {}, k = ['name', 'phone', 'contact_email', 'business_name', 'business_type', 'city', 'address'], d = k.filter(function (x) { return P[x]; }).length; return Math.round(d / k.length * 100); }
   function sync() {
     var D = g('DASH'), P = g('PROFILE') || {}, A = g('IS_ADMIN');
@@ -57,7 +57,8 @@
     mail: '<path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/>', call: '<path d="M4 5h16v11H9l-5 4V5Z"/>',
     calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
     arrow: '<path d="M7 17 17 7M8 7h9v9"/>', download: '<path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/>',
-    building: '<path d="M4 21V7l8-4 8 4v14"/>', edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
+    building: '<path d="M4 21V7l8-4 8 4v14"/>', edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    connect: '<path d="M7 7 4 10a4 4 0 0 0 5.5 5.5l1-1M17 17l3-3a4 4 0 0 0-5.5-5.5l-1 1M9 15l6-6"/>'
   };
   var ic = function (n, c) { return '<svg class="' + (c || 'ic') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' + (P[n] || '') + '</svg>'; };
 
@@ -72,6 +73,7 @@
     { id: 'notifications', t: 'Notifications', ic: 'bell', g: 'Account', need: ['owner', 'manager', 'admin'], biz: true, badge: true },
     { id: 'security', t: 'Account settings', ic: 'shield', g: 'Account', need: ['owner', 'manager', 'admin'], biz: true },
     { id: 'privacy', t: 'Privacy and my data', ic: 'lock', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] },
+    { id: 'connectors', t: 'AI connectors', ic: 'connect', g: 'Account', need: ['owner'], biz: true },
     { id: 'help', t: 'Help and support', ic: 'help', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] }];
   var can = function (sec) { return sec.need.indexOf(S.mode) > -1; };
   var isOwner = function () { return S.mode === 'owner'; };
@@ -211,9 +213,9 @@
 
   var VIEWS = {}; AC5.VIEWS = VIEWS;
   var slot = function (id) { return '<div class="slotwrap"><slot name="p-' + id + '"></slot></div>'; };
-  var TEXT = { profile: 'Your details and business information.', security: 'Your login, devices and safety settings.', services: 'What is switched on for your business.', staff: 'Staff and their sign-in details.', roles: 'Choose what each team member can open.', notifications: 'A simple inbox for your account.', privacy: 'Your consent, your data and your rights under the DPDP Act 2023.' };
-  ['profile', 'security', 'services', 'staff', 'roles', 'notifications', 'privacy'].forEach(function (id) {
-    VIEWS[id] = function () { return head(({ security: 'Account settings', privacy: 'Privacy and my data' })[id] || (id.charAt(0).toUpperCase() + id.slice(1)), TEXT[id]) + slot(SLOT[id]); };
+  var TEXT = { profile: 'Your details and business information.', security: 'Your login, devices and safety settings.', services: 'What is switched on for your business.', staff: 'Staff and their sign-in details.', roles: 'Choose what each team member can open.', notifications: 'A simple inbox for your account.', privacy: 'Your consent, your data and your rights under the DPDP Act 2023.', connectors: 'Let your own AI app read and act on your business data.' };
+  ['profile', 'security', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors'].forEach(function (id) {
+    VIEWS[id] = function () { return head(({ security: 'Account settings', privacy: 'Privacy and my data', connectors: 'AI connectors' })[id] || (id.charAt(0).toUpperCase() + id.slice(1)), TEXT[id]) + slot(SLOT[id]); };
   });
   VIEWS.apps = function () {
     var mine = ALL_APPS.filter(function (a) { return OWNED[a.k]; });

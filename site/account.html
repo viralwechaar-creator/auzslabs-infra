@@ -167,6 +167,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="acct-nav-btn tenant-only" data-tab="services"><span>Services</span></button>
       <button class="acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none"><span>Staff</span></button>
       <button class="acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
+      <button class="acct-nav-btn" data-tab="connectors" id="tabConnectorsBtn" style="display:none"><span>Connectors</span></button>
       <button class="acct-nav-btn tenant-only" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
       <span class="ac-sep"></span>
       <a href="#" id="openPosLink" target="_blank" rel="noopener" class="" style="display:none"><span id="openPosLabel">Open POS system</span></a>
@@ -185,6 +186,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
         <div class="section-pane" id="pane-staff"></div>
         <div class="section-pane" id="pane-roles"></div>
         <div class="section-pane" id="pane-notifications"></div>
+        <div class="section-pane" id="pane-connectors"></div>
       </section>
       <div class="ac-foot"><button type="button" class="ac-out" id="signOutBtn">Sign out</button></div>
     </div>
@@ -195,7 +197,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 <script src="vendor/qrcode.js"></script>
 <script src="tool/lock.js?v=101"></script><script src="tool/mydata.js?v=201"></script><script src="tool/help.js?v=103"></script><script src="tool/twofa.js?v=101"></script>
 <script src="site.js?v=113"></script>
-<script src="ac5.js?v=14"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
+<script src="ac5.js?v=15"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
 <script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -357,6 +359,53 @@ async function renderPrivacy() {
     await renderPrivacy(); setTimeout(() => msg('Request sent. We will acknowledge it within 2 days.'), 400);
   };
 }
+// AI connectors (db/318, server/src/routes/mcp.js): lets the owner generate a key for their own AI app (Claude,
+// ChatGPT, etc.) to add as an MCP connector against our server -- the same pattern Claude.ai's own GitHub/Drive
+// connectors use. The key is shown in full exactly once, right after creation (never stored anywhere that could
+// show it again, same discipline as a password-reset link), so newKey holds it only for that one render pass.
+let newKey = null;
+async function renderConnectors() {
+  const pane = $('#pane-connectors'); pane.innerHTML = '<div class="card"><p class="muted">Loading...</p></div>';
+  const { data, error } = await sb.rpc('mcp_list_keys');
+  if (error) { pane.innerHTML = '<div class="card"><p class="muted">' + esc(error.message) + '</p></div>'; return; }
+  const keys = data || [];
+  const fmt = (t) => t ? new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'never';
+  pane.innerHTML = `
+    <div class="card">
+      <h3 class="h-2">AI connectors</h3>
+      <p class="muted">Let your own AI app (Claude, ChatGPT, or anything else that supports MCP connectors) read your sales, inventory and staff, and draft orders for you to review. It uses your own AI subscription -- this never costs AUZslab anything, and your AI app never gets your password, only this key.</p>
+      ${newKey ? `
+        <div class="card" style="background:var(--tint,#fff8e1);margin:12px 0">
+          <b>Copy this key now -- you will not be able to see it again.</b>
+          <div class="field wide" style="margin-top:8px"><input readonly value="${esc(newKey)}" onclick="this.select()" style="font-family:monospace;font-size:13px"></div>
+          <p class="muted" style="font-size:13px;margin-top:8px">In Claude (or your AI app), add a new connector with URL <code>https://api.auzslab.in/mcp</code> and this key as the Bearer token / API key.</p>
+        </div>` : ''}
+      <button class="btn btn-primary form-submit" id="mcpNewKey" style="margin-top:4px">Create a new connector key</button>
+      <div id="mcpMsg" class="muted" style="margin-top:8px"></div>
+    </div>
+    <div class="card" id="mcpList">
+      <h3 class="h-2">Your connector keys</h3>
+      ${keys.length ? keys.map((k) => `<div style="padding:10px 0;border-top:1px solid var(--line,#e5e5e5);display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div><b>${esc(k.label)}</b><div class="muted" style="font-size:13px">created ${esc(fmt(k.created_at))} · last used ${esc(fmt(k.last_used_at))}${k.revoked ? ' · <span style="color:var(--accent)">revoked</span>' : ''}</div></div>
+        ${k.revoked ? '' : `<button class="btn btn-ghost sm" data-revoke="${esc(k.id)}">Revoke</button>`}
+      </div>`).join('') : '<p class="muted">No connector keys yet.</p>'}
+    </div>`;
+  const msg = (t, bad) => { const m = $('#mcpMsg'); if (m) { m.textContent = t; m.style.color = bad ? 'var(--accent)' : ''; } };
+  $('#mcpNewKey').onclick = async () => {
+    const label = (prompt('Name this key (e.g. "Claude" or "ChatGPT") so you can recognise it later:', 'My AI connector') || '').trim();
+    if (!label) return;
+    const btn = $('#mcpNewKey'); btn.disabled = true;
+    const { data: created, error: e2 } = await sb.rpc('mcp_create_key', { p_label: label });
+    btn.disabled = false; if (e2) return msg(e2.message, true);
+    newKey = created.key; await renderConnectors();
+  };
+  pane.querySelectorAll('[data-revoke]').forEach((b) => b.onclick = async () => {
+    if (!confirm('Revoke this key? Any AI app using it will stop working immediately.')) return;
+    const { error: e2 } = await sb.rpc('mcp_revoke_key', { p_id: b.dataset.revoke });
+    if (e2) return msg(e2.message, true);
+    newKey = null; await renderConnectors();
+  });
+}
 // A one-time notice when the privacy policy changed (or was never confirmed): shown above the tabs on any page of the account.
 function hideConsentBanner() { const b = $('#consentBanner'); if (b) b.remove(); }
 async function checkConsent() {
@@ -415,7 +464,7 @@ async function boot() {
   $('#pageLede').textContent = 'Manage your account, services, staff, and notifications.';
   $('#tabsSection').style.display = 'block';
   $('#acctNav').style.display = 'flex';
-  if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; }
+  if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; $('#tabConnectorsBtn').style.display = ''; }
   // Salon tenants run AUZslab Salon (app/public/salon/), not the POS -- its
   // staff/owner console lives at /salon/admin/. Everyone else only gets this
   // link when they actually have the pos feature -- it used to show
@@ -482,6 +531,7 @@ function showTab(tab) {
   if (tab === 'staff') renderStaff();
   if (tab === 'roles') renderRoles();
   if (tab === 'notifications') renderNotifications();
+  if (tab === 'connectors') renderConnectors();
 }
 
 function renderAccount() {
