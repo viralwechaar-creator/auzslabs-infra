@@ -125,6 +125,54 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: true },
     inputSchema: { type: 'object', required: ['order_id', 'amount'], properties: { order_id: { type: 'string', description: 'from list_orders' }, amount: { type: 'number' }, reason: { type: 'string' } } },
   },
+  // ---- CRM / marketing (café, retail, mobile-repair niches): replicates server-side what the console's
+  // CRM/Marketing pages (p-crm.js, p-marketing.js) already compute client-side from `order`/`customer`
+  // records -- customers are built from paid/due bills, not a separate master list. Segments are the same
+  // fixed rules the console offers (no free-form audience query), and sending stays within what WhatsApp's
+  // Business Platform actually allows: a pre-approved template via mcp_send_whatsapp, never free text --
+  // see whatsapp_send's own note. The console's per-customer wa.me tap-through for a free-text campaign
+  // message is a manual, human-in-the-loop action by design and is deliberately NOT replicated here as an
+  // automated bulk-send; that would mean either inventing a "send free text" capability that does not exist
+  // (and that WhatsApp would reject), or silently taking over the owner's own WhatsApp number. ----
+  {
+    name: 'crm_list_customers',
+    description: "List customers, built the same way the console does: from this business's own paid/due bills (not a separate customer master list). Each entry has visit count, lifetime spend, first/last visit, and loyalty tier (Bronze/Silver/Gold by spend). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        segment: { type: 'string', enum: ['all', 'new', 'repeat', 'lapsed', 'gold', 'silver', 'bday'], description: 'same segment rules as the console: new = first visit in last 30 days, repeat = 2+ visits, lapsed = no visit in 30+ days, gold/silver = loyalty tier, bday = birthday this month (needs a saved birthday)' },
+        limit: { type: 'integer', description: 'default 100, max 500' },
+      },
+    },
+  },
+  {
+    name: 'crm_list_campaigns',
+    description: 'List planned/sent marketing campaigns (name, type, target segment, planned date, message, how many customers the segment currently has, how many have been sent to so far). Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'default 50, max 200' } } },
+  },
+  {
+    name: 'crm_create_campaign',
+    description: "Plan a marketing campaign: give it a name, type, target segment and a message. This only plans it -- same as the console's \"New campaign\" -- it does NOT send anything (WhatsApp does not allow sending free-text marketing messages automatically; a human sends it from the console's own Message screen, one tap per customer, from the business's own WhatsApp). Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['name', 'segment', 'message'],
+      properties: {
+        name: { type: 'string' },
+        type: { type: 'string', enum: ['Offer', 'Festival', 'Win-back', 'Birthday', 'New item', 'Announcement'] },
+        segment: { type: 'string', enum: ['all', 'new', 'repeat', 'lapsed', 'gold', 'silver', 'bday'] },
+        date: { type: 'string', description: 'planned date, YYYY-MM-DD, optional' },
+        message: { type: 'string', description: 'use {name} for the customer\'s own name' },
+      },
+    },
+  },
+  {
+    name: 'crm_send_birthday_greetings',
+    description: "Actually send (not just plan) a real WhatsApp birthday or anniversary greeting to every customer with a saved birthday/anniversary matching today's date, using AUZslab's own pre-approved WhatsApp template (birthday_greeting / anniversary_greeting) -- same channel as whatsapp_send, never free text. Skips anyone already sent to today (safe to re-run). Costs real money per message once past the WhatsApp free tier. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', properties: { occasion: { type: 'string', enum: ['birthday', 'anniversary'], description: 'defaults to birthday' } } },
+  },
   // ---- AuzsLedger (Accounting): thin wrappers over the already-registered acc_* functions, same
   // acc_guard()-enforced permissions a human user of the real app would hit. ----
   {
@@ -408,6 +456,61 @@ const TOOLS = [
 
 const itemFilters = (extra) => { const p = new URLSearchParams({ 'eq.kind': 'item', 'eq.deleted': 'false', order: 'updated_at', ...extra }); return p; };
 
+const phoneKey = (phone) => String(phone || '').replace(/\D/g, '').slice(-10);
+const dayOf = (iso) => (iso ? new Date(iso).toLocaleDateString('en-CA') : '');
+const tierOf = (spend) => (spend >= 10000 ? 'Gold' : spend >= 3000 ? 'Silver' : 'Bronze');
+const netOf = (data) => {
+  const total = Number(data.t?.total ?? data.total) || 0;
+  const refunded = (data.refunds || []).reduce((s, r) => s + (Number(r.amt) || 0), 0);
+  return Math.round((total - refunded) * 100) / 100;
+};
+
+// Replicates allCustomers()/customerStats() from app/public/console/p-crm.js + p-reports.js: a customer isn't
+// a separate master record, it's built from this tenant's own paid/due bills, same as the real console shows.
+async function crmCustomers(client) {
+  const orderRows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'order', 'eq.deleted': 'false', limit: '5000' }));
+  const byPhone = {};
+  for (const r of orderRows) {
+    const d = r.data || {};
+    if (!['paid', 'due'].includes(d.status)) continue;
+    const k = phoneKey(d.cust?.phone);
+    if (!k) continue;
+    const c = (byPhone[k] = byPhone[k] || { phone: k, name: '', visits: 0, spend: 0, first: null, last: null });
+    c.name = c.name || d.cust?.name || '';
+    c.visits++;
+    c.spend = Math.round((c.spend + netOf(d)) * 100) / 100;
+    const day = dayOf(d.paidAt || d.created);
+    if (day && (!c.first || day < c.first)) c.first = day;
+    if (day && (!c.last || day > c.last)) c.last = day;
+  }
+  const customerRows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'customer', 'eq.deleted': 'false', limit: '2000' }));
+  for (const r of customerRows) {
+    const d = r.data || {};
+    const k = phoneKey(d.phone);
+    if (!k) continue;
+    const c = (byPhone[k] = byPhone[k] || { phone: k, name: '', visits: 0, spend: 0, first: null, last: null });
+    c.name = c.name || d.name || '';
+    c.email = d.email;
+    c.dob = d.dob;
+    c.anniv = d.anniv;
+  }
+  return Object.values(byPhone).map((c) => ({ ...c, tier: tierOf(c.spend) }));
+}
+
+function crmSegmentFilter(all, segment, today = new Date().toLocaleDateString('en-CA')) {
+  const addDays = (iso, n) => { const d = new Date(iso); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-CA'); };
+  const month = new Date().getMonth() + 1;
+  switch (segment) {
+    case 'new': return all.filter((c) => c.first && c.first >= addDays(today, -30));
+    case 'repeat': return all.filter((c) => c.visits > 1);
+    case 'lapsed': return all.filter((c) => c.last && c.last < addDays(today, -30));
+    case 'gold': return all.filter((c) => c.tier === 'Gold');
+    case 'silver': return all.filter((c) => c.tier === 'Silver');
+    case 'bday': return all.filter((c) => c.dob && Number(String(c.dob).slice(5, 7)) === month);
+    default: return all;
+  }
+}
+
 async function runTool(client, name, args) {
   args = args && typeof args === 'object' ? args : {};
   switch (name) {
@@ -542,6 +645,47 @@ async function runTool(client, name, args) {
       const refunds = [...(order.data.refunds || []), { amt: Number(args.amount), at: new Date().toISOString(), reason: args.reason || null }];
       await callRpc(client, 'push_record', { rid: args.order_id, rkind: 'order', rdata: { ...order.data, refunds }, rdeleted: false, base: null, force: true });
       return { order_id: args.order_id, refunded_now: Number(args.amount), refunded_total: already + Number(args.amount), bill_total: total };
+    }
+
+    case 'crm_list_customers': {
+      const limit = Math.min(Math.max(parseInt(args.limit, 10) || 100, 1), 500);
+      const all = await crmCustomers(client);
+      const filtered = crmSegmentFilter(all, args.segment || 'all').sort((a, b) => b.spend - a.spend);
+      return filtered.slice(0, limit);
+    }
+    case 'crm_list_campaigns': {
+      const limit = Math.min(Math.max(parseInt(args.limit, 10) || 50, 1), 200);
+      const rows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'campaign', 'eq.deleted': 'false', order: 'updated_at', limit: String(limit) }));
+      const all = await crmCustomers(client);
+      return rows.map((r) => ({ id: r.id, ...r.data, audience_now: crmSegmentFilter(all, r.data?.rule || 'all').length, sent_count: (r.data?.sent || []).length }));
+    }
+    case 'crm_create_campaign': {
+      if (!args.name || !args.segment || !args.message) throw new HttpError(400, 'name, segment and message are required');
+      const rid = randomUUID();
+      const data = { name: String(args.name), type: args.type || 'Offer', rule: args.segment, date: args.date || null, msg: String(args.message), sent: [], createdAt: new Date().toISOString() };
+      await callRpc(client, 'push_record', { rid, rkind: 'campaign', rdata: data, rdeleted: false, base: null, force: true });
+      return { id: rid, ...data };
+    }
+    case 'crm_send_birthday_greetings': {
+      const occasion = args.occasion === 'anniversary' ? 'anniversary' : 'birthday';
+      const field = occasion === 'anniversary' ? 'anniv' : 'dob';
+      const template = occasion === 'anniversary' ? 'anniversary_greeting' : 'birthday_greeting';
+      const today = new Date().toLocaleDateString('en-CA');
+      const all = await crmCustomers(client);
+      const todays = all.filter((c) => c[field] && String(c[field]).slice(5, 10) === today.slice(5, 10) && c.phone);
+      const settingsRows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'settings', 'eq.id': 'settings', limit: '1' }));
+      const shopName = settingsRows[0]?.data?.name || '';
+      const results = [];
+      for (const c of todays) {
+        const ref = `${template}-${today}-${c.phone}`;
+        try {
+          await callRpc(client, 'mcp_send_whatsapp', { p_to: c.phone, p_template: template, p_params: [c.name || 'there', shopName], p_ref: ref });
+          results.push({ phone: c.phone, name: c.name, sent: true });
+        } catch (err) {
+          results.push({ phone: c.phone, name: c.name, sent: false, reason: err.message || String(err) });
+        }
+      }
+      return { occasion, matched_today: todays.length, results };
     }
 
     case 'ledger_context':
