@@ -287,6 +287,58 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', required: ['request_id', 'approve'], properties: { request_id: { type: 'string' }, approve: { type: 'boolean' } } },
   },
+  // ---- AUZsStyle (clothing/footwear retail): thin wrappers over the already-registered sty_* functions. ----
+  {
+    name: 'style_catalog',
+    description: "AUZsStyle's catalogue -- styles, colour/size variants, prices and current stock. Read this first to find variant_id values before selling or returning. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { branch_id: { type: 'string' } } },
+  },
+  {
+    name: 'style_list_sales',
+    description: "List AUZsStyle bills. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'style_crm_overview',
+    description: "AUZsStyle's customer overview (counts, segments, repeat-purchase stats). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'style_list_customers',
+    description: 'Search AUZsStyle customers. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'style_sell',
+    description: "Record a real AUZsStyle sale. Use style_catalog first to get variant_id values. Stock is checked and reduced for real. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['lines'],
+      properties: {
+        lines: { type: 'array', items: { type: 'object', required: ['variant_id', 'qty'], properties: { variant_id: { type: 'string' }, qty: { type: 'integer' }, price: { type: 'number', description: 'override the catalogue price, optional' } } } },
+        customer_id: { type: 'string', description: 'optional, from style_list_customers' },
+        branch_id: { type: 'string' },
+        payments: { type: 'array', items: { type: 'object', required: ['mode', 'amount'], properties: { mode: { type: 'string', description: 'cash, upi, card, credit, ...' }, amount: { type: 'number' } } } },
+      },
+    },
+  },
+  {
+    name: 'style_return',
+    description: 'Process a return/exchange against an existing AUZsStyle bill. Returns past the business\'s own return-days window need a manager -- an owner connector key always qualifies as one. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: true },
+    inputSchema: {
+      type: 'object', required: ['sale_id', 'lines'],
+      properties: {
+        sale_id: { type: 'string', description: 'from style_list_sales' },
+        lines: { type: 'array', items: { type: 'object', required: ['sale_line_id', 'qty'], properties: { sale_line_id: { type: 'string' }, qty: { type: 'integer' }, damaged: { type: 'boolean' } } } },
+        mode: { type: 'string', enum: ['cash', 'credit_note', 'exchange'] }, reason: { type: 'string' },
+      },
+    },
+  },
   // ---- WhatsApp: only a business's own already-approved templates, never free text (a WhatsApp Business
   // Platform rule, see db/319's own comment) -- the AI fills in the blanks, it can never compose the message. ----
   {
@@ -563,6 +615,29 @@ async function runTool(client, name, args) {
     case 'payroll_decide_claim':
       if (!args.request_id || args.approve == null) throw new HttpError(400, 'request_id and approve are required');
       return callRpc(client, 'pay_claim_decide', { p_id: args.request_id, p_approve: !!args.approve, p: {} });
+
+    case 'style_catalog':
+      return callRpc(client, 'sty_catalog', { p_branch: args.branch_id || null });
+    case 'style_list_sales':
+      return callRpc(client, 'sty_list_sales', { p: { search: args.search || null, from: args.from || null, to: args.to || null, limit: args.limit || 60 } });
+    case 'style_crm_overview':
+      return callRpc(client, 'sty_crm_overview', {});
+    case 'style_list_customers':
+      return callRpc(client, 'sty_list_customers', { p_q: args.search || null, p_limit: args.limit || 200 });
+    case 'style_sell':
+      if (!Array.isArray(args.lines) || !args.lines.length) throw new HttpError(400, 'lines must be a non-empty array of {variant_id,qty}');
+      return callRpc(client, 'sty_sell', {
+        p: {
+          id: randomUUID(), branchId: args.branch_id || null, customerId: args.customer_id || null,
+          lines: args.lines.map((l) => ({ variantId: l.variant_id, qty: l.qty, price: l.price })),
+          payments: args.payments || [],
+        },
+      });
+    case 'style_return':
+      if (!args.sale_id || !Array.isArray(args.lines) || !args.lines.length) throw new HttpError(400, 'sale_id and a non-empty lines array are required');
+      return callRpc(client, 'sty_return', {
+        p: { id: randomUUID(), saleId: args.sale_id, mode: args.mode || 'cash', reason: args.reason || null, lines: args.lines.map((l) => ({ saleLineId: l.sale_line_id, qty: l.qty, damaged: l.damaged || false })) },
+      });
 
     case 'whatsapp_status':
       return callRpc(client, 'wa_my_status', {});
