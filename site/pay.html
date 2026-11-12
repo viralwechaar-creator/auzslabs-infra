@@ -144,7 +144,7 @@ function show() {
   if (st === 'paid') {
     head('Paid', 'Thank you. You are all set.', 'Your payment is confirmed and your access is on.');
     steps(3);
-    box.innerHTML = `<section class="tl-card"><div class="tl-row"><span>Bill number</span><b>${esc(o.invoice_no || '')}</b></div><div class="tl-row"><span>Amount paid</span><b>${inr(o.totals && o.totals.total)}</b></div><div class="tl-actions">${o.invoice_no ? `<a class="tb pri" href="inv.html?t=${encodeURIComponent(TOKEN)}">View my bill</a>` : ''}<a class="tb" href="https://app.auzslab.in/start.html">Open my apps</a></div></section>`;
+    box.innerHTML = `<section class="tl-card"><div class="tl-row"><span>Bill number</span><b>${esc(o.invoice_no || '')}</b></div><div class="tl-row"><span>Amount paid</span><b>${inr(o.totals && o.totals.total)}</b></div><div class="tl-actions">${o.invoice_no ? `<a class="tb pri" href="inv.html?t=${encodeURIComponent(TOKEN)}">View my bill</a>` : ''}<a class="tb" href="account.html">Open my apps</a></div></section>`;
     return;
   }
   if (st === 'payment_submitted') {

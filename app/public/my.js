@@ -272,7 +272,7 @@
           var h = cfg.hidden || []; if (hid) h = h.filter(function (x) { return x !== a[0]; }); else if (visible().length > 1) h = h.concat([a[0]]);
           cfg.hidden = h; save(); if (current === a[0] && h.indexOf(a[0]) >= 0) open(visible()[0][0]); chips(); panel(); } })]));
     });
-    p.append(el('p', {}, [el('a', { href: '/start.html?switch=1', style: 'color:#fff', text: 'Account, requests and all apps' })]),
+    p.append(el('p', {}, [el('a', { href: 'https://auzslab.in/account.html', style: 'color:#fff', text: 'Account, requests and all apps' })]),
       el('button', { class: 'btn ghost', type: 'button', text: 'Sign out', onclick: async function () { await sb.auth.signOut(); location.reload(); } }),
       el('button', { class: 'btn done', type: 'button', text: 'Done', onclick: function () { $('panel').hidden = true; $('scrim').hidden = true; } }));
   }
@@ -287,7 +287,7 @@
     list = APPS.filter(function (a) { return a[3](D); });
     try { var fd0 = JSON.parse(localStorage.getItem('auz_feat_done') || 'null'), k0 = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'), c0 = JSON.parse(localStorage.getItem(k0) || '{}'); var fl = fd0 || c0.feat;
       if (fl && fl.length) { var fa = FEATS.filter(function (f) { return fl.indexOf(f[0]) >= 0 && SCREEN[f[0]] && own(D, f[3]); }).map(function (f) { return [f[0], f[1], embedUrl(SCREEN[f[0]]), function () { return true; }]; }); if (fa.length) list = fa; } } catch (e) {}
-    if (!list.length) { show('build'); HAS_SESSION = true; var g0 = $('go'); g0.textContent = ''; g0.append(el('p', { class: 'note', text: 'This login already runs ' + (D.tenant ? D.tenant.name : 'a business') + ', and none of its apps are switched on for you here. Open your apps from the hub, or ask AUZslab.' }), el('a', { class: 'btn ghost', href: '/start.html?switch=1', text: 'Open my apps' })); return; }
+    if (!list.length) { show('build'); HAS_SESSION = true; var g0 = $('go'); g0.textContent = ''; g0.append(el('p', { class: 'note', text: 'This login already runs ' + (D.tenant ? D.tenant.name : 'a business') + ', and none of its apps are switched on for you here. Open your apps from the hub, or ask AUZslab.' }), el('a', { class: 'btn ghost', href: 'https://auzslab.in/account.html', text: 'Open my apps' })); return; }
     cfgKey = 'my.cfg.' + (D.tenant ? D.tenant.slug : 'x'); cfg = load();
     try { var bd = JSON.parse(localStorage.getItem('auz_build_design') || 'null'); if (bd && !cfg.designed) { cfg.nav = bd.nav; cfg.card = bd.card; cfg.theme = bd.theme; cfg.accent = bd.accent; cfg.designed = 1; save(); localStorage.removeItem('auz_build_design'); } } catch (e) {}
     try { var fd = JSON.parse(localStorage.getItem('auz_feat_done') || 'null'); if (fd && !cfg.feat) { cfg.feat = fd; save(); localStorage.removeItem('auz_feat_done'); } } catch (e) {}

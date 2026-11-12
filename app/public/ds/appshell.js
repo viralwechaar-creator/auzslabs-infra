@@ -36,12 +36,10 @@
 
   function b64(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   function hubUrl() {
-    var u = 'https://app.auzslab.in/start.html';
-    try {
-      var s = JSON.parse(localStorage.getItem('auz_session') || 'null');
-      if (s && s.access_token && s.user) u += '#auz_gt=' + b64({ t: s.access_token, u: s.user });
-    } catch (e) { /* no session */ }
-    return u;
+    // start.html (the old sign-in hub this pointed at) is gone; the real sign-in page is on the
+    // main site. Native-app session handoff (#auz_gt=) has no receiver there yet -- nothing live
+    // depends on it today, so this just points home instead of 404ing.
+    return 'https://auzslab.in/signup.html';
   }
 
 
@@ -57,17 +55,17 @@
     if (/^app\./.test(location.hostname)) {
       try {
         var p = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
-        if (p && p.t && p.u) { localStorage.setItem('auz_session', JSON.stringify({ access_token: p.t, user: p.u })); location.replace('/start.html?s=' + Date.now()); return; }
+        if (p && p.t && p.u) { localStorage.setItem('auz_session', JSON.stringify({ access_token: p.t, user: p.u })); location.replace('https://auzslab.in/signup.html'); return; }
       } catch (e) { /* fall through */ }
     }
-    location.href = 'https://app.auzslab.in/start.html#auz_gt=' + m[1];
+    location.href = 'https://auzslab.in/signup.html';
   }
   try { var Cap = window.Capacitor; if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.addListener) Cap.Plugins.App.addListener('appUrlOpen', function (e) { takeLink(e && e.url); }); if (Cap && Cap.Plugins && Cap.Plugins.App && Cap.Plugins.App.getLaunchUrl) Cap.Plugins.App.getLaunchUrl().then(function (r) { if (r && r.url) takeLink(r.url); }, function () {}); } catch (e) { /* no plugin */ }
 
   function ready(fn) { if (document.body) fn(); else document.addEventListener('DOMContentLoaded', fn); }
   ready(function () {
     // 1. the way home (not on the hub itself)
-    if (!/\/start\.html$/.test(location.pathname)) {
+    {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'auz-hub-pill'; b.setAttribute('aria-label', 'Back to AUZslab');
       b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.5 9.6V19a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5V9.6"/></svg>';
       b.onclick = function () { location.href = hubUrl(); };

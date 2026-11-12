@@ -127,7 +127,7 @@ export async function handlePushEvent({ tenant_id, title, body, user_ids, platfo
       const { rows: subs } = await pool.query('select * from platform_web_push where user_id = any($1::uuid[])', [user_ids]);
       await Promise.allSettled(subs.map(async (s) => {
         try {
-          const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '', tag: 'platform', url: '/start.html' });
+          const res = await sendWebPush(s.endpoint, s.p256dh, s.auth, { title: title || 'AUZslab', body: body || '', tag: 'platform', url: '/admin.html' });
           if (!res.ok && (res.status === 404 || res.status === 410)) await pool.query('delete from platform_web_push where id = $1', [s.id]);
           else if (!res.ok) console.error('platform web push failed', res.status);
         } catch (e) { console.error('platform web push error', e.message); }
