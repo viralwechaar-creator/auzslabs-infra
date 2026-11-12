@@ -91,6 +91,40 @@ const TOOLS = [
       },
     },
   },
+  // ---- POS: purchase orders and refunds -- same records-engine writes the real POS/Back Office UI makes,
+  // just replicated exactly (push_record with the same kinds/shapes), not new business logic. ----
+  {
+    name: 'pos_list_purchase_orders',
+    description: "List the business's purchase orders (draft or received). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['draft', 'received'] }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'pos_create_purchase_order',
+    description: 'Create a draft purchase order for a supplier/vendor (materials and quantities, not yet received). Use pos_receive_purchase_order once the goods actually arrive. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['supplier', 'items'],
+      properties: { supplier: { type: 'string' }, note: { type: 'string' }, items: { type: 'array', items: { type: 'object', required: ['ing', 'qty'], properties: { ing: { type: 'string', description: 'material/ingredient name' }, qty: { type: 'number' }, price: { type: 'number', description: 'estimated price per unit, optional' } } } } },
+    },
+  },
+  {
+    name: 'pos_receive_purchase_order',
+    description: "Mark a purchase order received: adds the received quantity to each material's stock, records the actual purchase cost, and closes the order. This changes real stock levels -- most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: true },
+    inputSchema: {
+      type: 'object', required: ['po_id'], properties: {
+        po_id: { type: 'string', description: 'from pos_list_purchase_orders' },
+        items: { type: 'array', description: 'optional: override received qty/price per material (defaults to what was ordered)', items: { type: 'object', required: ['ing', 'qty'], properties: { ing: { type: 'string' }, qty: { type: 'number' }, price: { type: 'number' } } } },
+      },
+    },
+  },
+  {
+    name: 'pos_refund_order',
+    description: "Record a refund against an already-paid bill (a customer return/money back). Adds to the bill's refund history -- cannot exceed the bill's total, and cannot be undone once recorded. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: true },
+    inputSchema: { type: 'object', required: ['order_id', 'amount'], properties: { order_id: { type: 'string', description: 'from list_orders' }, amount: { type: 'number' }, reason: { type: 'string' } } },
+  },
   // ---- AuzsLedger (Accounting): thin wrappers over the already-registered acc_* functions, same
   // acc_guard()-enforced permissions a human user of the real app would hit. ----
   {
@@ -339,6 +373,62 @@ async function runTool(client, name, args) {
     case 'create_draft_order':
       if (!Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'items must be a non-empty array of {name,qty,price}');
       return callRpc(client, 'mcp_create_draft_order', { p_table: args.table || null, p_items: args.items, p_note: args.note || null });
+
+    case 'pos_list_purchase_orders': {
+      const p = new URLSearchParams({ 'eq.kind': 'po', 'eq.deleted': 'false', order: 'updated_at', limit: String(Math.min(args.limit || 100, 2000)) });
+      const rows = await handleSelect(client, 'records', TABLES.records, p);
+      const filtered = args.status ? rows.filter((r) => r.data?.status === args.status) : rows;
+      return filtered.map((r) => ({ id: r.id, ...r.data }));
+    }
+    case 'pos_create_purchase_order': {
+      if (!args.supplier || !Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'supplier and a non-empty items array are required');
+      const existing = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'po' }));
+      const no = 'PO-' + String(existing.length + 1).padStart(4, '0');
+      const rid = randomUUID();
+      const items = args.items.map((i) => ({ ing: i.ing, qty: Number(i.qty), price: Number(i.price) || 0 }));
+      await callRpc(client, 'push_record', { rid, rkind: 'po', rdata: { supplier: args.supplier, note: args.note || '', items, status: 'draft', createdAt: new Date().toISOString(), no }, rdeleted: false, base: null, force: true });
+      return { id: rid, no, status: 'draft' };
+    }
+    case 'pos_receive_purchase_order': {
+      if (!args.po_id) throw new HttpError(400, 'po_id is required');
+      const poRows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.id': args.po_id, 'eq.kind': 'po', limit: '1' }));
+      const po = poRows[0];
+      if (!po) throw new HttpError(404, 'no such purchase order (check the id from pos_list_purchase_orders)');
+      if (po.data.status === 'received') throw new HttpError(400, 'this purchase order was already received');
+      const toReceive = Array.isArray(args.items) && args.items.length ? args.items : po.data.items;
+      const ingRows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'ing' }));
+      const purchaseItems = []; let amount = 0;
+      for (const it of toReceive) {
+        const q = Number(it.qty); if (!(q > 0)) continue;
+        const p = Number(it.price) || 0;
+        const existingIng = ingRows.find((r) => (r.data?.name || '').trim().toLowerCase() === String(it.ing).trim().toLowerCase());
+        const cc = existingIng ? { ...existingIng.data } : { name: it.ing, unit: '', qty: 0, low: 0 };
+        cc.qty = Math.round(((cc.qty || 0) + q) * 1000) / 1000;
+        if (p > 0) cc.cost = p;
+        cc.purchases = [...(cc.purchases || []), { vendor: args.supplier || po.data.supplier || '', qty: q, price: p, tax: 0, amt: Math.round(q * p * 100) / 100, d: new Date().toISOString().slice(0, 10), at: new Date().toISOString() }];
+        await callRpc(client, 'push_record', { rid: existingIng ? existingIng.id : randomUUID(), rkind: 'ing', rdata: cc, rdeleted: false, base: null, force: true });
+        purchaseItems.push({ desc: it.ing, qty: q, unit: cc.unit || '', unitPrice: p });
+        amount += q * p;
+      }
+      amount = Math.round(amount * 100) / 100;
+      const purchaseId = randomUUID();
+      await callRpc(client, 'push_record', { rid: purchaseId, rkind: 'purchase', rdata: { vendorId: null, vendorName: po.data.supplier || 'Unknown', items: purchaseItems, amount, date: new Date().toISOString().slice(0, 10), notes: 'Received ' + (po.data.no || 'PO'), poId: args.po_id }, rdeleted: false, base: null, force: true });
+      await callRpc(client, 'push_record', { rid: args.po_id, rkind: 'po', rdata: { ...po.data, status: 'received', receivedAt: new Date().toISOString() }, rdeleted: false, base: null, force: true });
+      return { po_id: args.po_id, purchase_id: purchaseId, amount, items_received: purchaseItems.length, status: 'received' };
+    }
+    case 'pos_refund_order': {
+      if (!args.order_id || !(Number(args.amount) > 0)) throw new HttpError(400, 'order_id and a positive amount are required');
+      const rows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.id': args.order_id, 'eq.kind': 'order', limit: '1' }));
+      const order = rows[0];
+      if (!order) throw new HttpError(404, 'no such order (check the id from list_orders)');
+      if (order.data.status !== 'paid') throw new HttpError(400, `only a paid bill can be refunded (this one is "${order.data.status}")`);
+      const already = (order.data.refunds || []).reduce((s, r) => s + (Number(r.amt) || 0), 0);
+      const total = Number(order.data.t?.total ?? order.data.total) || 0;
+      if (already + Number(args.amount) > total + 0.5) throw new HttpError(400, `refunds so far (₹${already}) plus this amount would exceed the bill total (₹${total})`);
+      const refunds = [...(order.data.refunds || []), { amt: Number(args.amount), at: new Date().toISOString(), reason: args.reason || null }];
+      await callRpc(client, 'push_record', { rid: args.order_id, rkind: 'order', rdata: { ...order.data, refunds }, rdeleted: false, base: null, force: true });
+      return { order_id: args.order_id, refunded_now: Number(args.amount), refunded_total: already + Number(args.amount), bill_total: total };
+    }
 
     case 'ledger_context':
       return callRpc(client, 'acc_context', {});
