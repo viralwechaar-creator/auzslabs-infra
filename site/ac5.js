@@ -35,7 +35,7 @@
   }
   var P = {
     home: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
-    user: '<path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-6h6v6"/>',
+    user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
     shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/>',
     grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 5a3 3 0 0 1 0 6"/><path d="M18 14a6 6 0 0 1 3 6"/>',
@@ -88,7 +88,7 @@
       if (s.g !== last) { } // group already opened above
     });
     // wrap consecutive same-group buttons into a .ng div
-    return '<div class="rbrand"><span class="mk">A</span><span>auzslab<span class="dot">.</span></span></div>' +
+    return '<div class="rbrand"><img class="rlogo" src="logo.png" alt="AUZslab"></div>' +
       '<div class="wss"><span class="av">' + esc((hasBiz() ? BIZ.name : ME.name).charAt(0).toUpperCase()) + '</span><div class="cp"><strong>' + esc(hasBiz() ? BIZ.name : ME.name) + '</strong><small>Client workspace</small></div></div>' +
       '<nav class="side-nav">' + groupWrap(out) + '</nav>' +
       '<div class="rbot"><div class="hcard"><div class="ic">' + ic('help') + '</div><strong>Need a hand?</strong><p>Our team is here whenever you need us.</p><button data-go="help">Visit help centre &rarr;</button></div>' +
@@ -249,7 +249,7 @@
   function setup() {
     host = document.createElement('div'); host.id = 'a5'; document.body.appendChild(host);
     root = host.attachShadow({ mode: 'open' });
-    var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'ac5.css?v=12'; root.appendChild(link);
+    var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'ac5.css?v=13'; root.appendChild(link);
     var fontlink = document.createElement('link'); fontlink.rel = 'stylesheet'; fontlink.href = 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap'; root.appendChild(fontlink);
     var box = document.createElement('div'); box.innerHTML = '<main class="sheet m-home" id="app"><aside class="rail" id="rail"></aside><div class="mainc"><header class="top" id="topbar"></header><slot name="banner"></slot><div class="home" id="home"></div><div class="pagewrap" id="pagewrap"></div></div></main><nav class="tabbar" id="tabbar" aria-label="Main"></nav><div id="sheetwrap"></div><div class="toast" id="toast" role="status"></div>';
     while (box.firstChild) root.appendChild(box.firstChild);
