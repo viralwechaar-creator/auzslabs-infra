@@ -18,6 +18,8 @@ import { pool, withAuth } from '../db.js';
 import { HttpError, readJsonBody } from '../lib/http.js';
 import { TABLES } from '../data/tables.js';
 import { handleSelect, callRpc } from '../data/queries.js';
+import { mutate } from '../salon/storage.js';
+import { addBooking, addInvoice, clientsList, cashRangeSummary } from '../salon/rules.js';
 
 const sha256 = (v) => createHash('sha256').update(String(v)).digest('hex');
 
@@ -75,6 +77,125 @@ const TOOLS = [
       },
     },
   },
+  // ---- AuzsLedger (Accounting): thin wrappers over the already-registered acc_* functions, same
+  // acc_guard()-enforced permissions a human user of the real app would hit. ----
+  {
+    name: 'ledger_context',
+    description: "AuzsLedger's chart of accounts, tax codes, branches, warehouses and permissions -- read this first to find account_id/tax_code_id values before saving a document. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'ledger_list_parties',
+    description: 'Search AuzsLedger customers/suppliers by name, to find a party_id before saving a document. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, kind: { type: 'string', enum: ['customer', 'supplier'] } } },
+  },
+  {
+    name: 'ledger_list_documents',
+    description: 'List AuzsLedger invoices/bills/expenses/etc, optionally filtered. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, types: { type: 'array', items: { type: 'string' } }, status: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'ledger_reports',
+    description: 'A standard AuzsLedger financial report. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['report'], properties: { report: { type: 'string', enum: ['pnl', 'balance_sheet', 'cash_flow', 'trial_balance'] }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
+    name: 'ledger_ageing',
+    description: 'Who owes the business money (receivable) or who the business owes (payable), broken down by how overdue. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { kind: { type: 'string', enum: ['receivable', 'payable'] } } },
+  },
+  {
+    name: 'ledger_save_document',
+    description: "Create or update an AuzsLedger document (invoice, bill, expense, credit_note, ...). Use ledger_context and ledger_list_parties first to get real account_id/party_id values. Same validation the real app enforces (GST, balanced lines) -- a bad value is refused with a clear reason, not silently accepted. Does not finalize it (see ledger_post_document). Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['doc_type', 'lines'],
+      properties: {
+        doc_type: { type: 'string', enum: ['invoice', 'bill', 'expense', 'credit_note', 'debit_note', 'quotation', 'sales_order', 'purchase_order'] },
+        id: { type: 'string', description: 'set to edit an existing draft/open document' },
+        party_id: { type: 'string' }, doc_date: { type: 'string' }, note: { type: 'string' },
+        lines: { type: 'array', items: { type: 'object', required: ['qty', 'rate'], properties: { account_id: { type: 'string' }, product_id: { type: 'string' }, description: { type: 'string' }, qty: { type: 'number' }, rate: { type: 'number' }, tax_code_id: { type: 'string' } } } },
+      },
+    },
+  },
+  {
+    name: 'ledger_post_document',
+    description: 'Finalize (post) an AuzsLedger document created with ledger_save_document, optionally recording payment against it immediately. Posting is final -- most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: true },
+    inputSchema: { type: 'object', required: ['doc_id'], properties: { doc_id: { type: 'string' }, payments: { type: 'array', items: { type: 'object' }, description: 'optional payment(s) to record against this document right away' } } },
+  },
+  // ---- AuzsFinance: thin wrappers over the already-registered fin_* functions. ----
+  {
+    name: 'finance_dashboard',
+    description: "AuzsFinance's dashboard summary (balances, recent activity). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string' }, to: { type: 'string' } } },
+  },
+  {
+    name: 'finance_reports',
+    description: 'A standard AuzsFinance report. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['report'], properties: { report: { type: 'string', enum: ['pnl', 'balance_sheet', 'trial_balance', 'cash'] }, from: { type: 'string' }, to: { type: 'string' } } },
+  },
+  {
+    name: 'finance_people',
+    description: 'Who owes money and who is owed, plus loans and partner balances tracked in AuzsFinance. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_save_transaction',
+    description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
+  },
+  // ---- Auzsalon: a different storage engine (salon_store, not records/RLS), so these go through
+  // server/src/salon/{storage,rules}.js directly instead of callRpc -- see mcp.js's own handle() for the auth split. ----
+  {
+    name: 'salon_bookings',
+    description: "List Auzsalon bookings/appointments, optionally for one date. Read-only. Only works for a Salon-niche business.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { date: { type: 'string', description: 'YYYY-MM-DD, optional' } } },
+  },
+  {
+    name: 'salon_clients',
+    description: 'List Auzsalon clients (visits, amount billed, last visit). Read-only. Only works for a Salon-niche business.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'salon_revenue',
+    description: "Auzsalon's billed revenue and cash summary for a date range. Read-only. Only works for a Salon-niche business.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string' }, to: { type: 'string' } } },
+  },
+  {
+    name: 'salon_create_booking',
+    description: 'Create a confirmed Auzsalon appointment. Only works for a Salon-niche business. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['name', 'phone', 'date', 'time', 'services'],
+      properties: { name: { type: 'string' }, phone: { type: 'string' }, email: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD' }, time: { type: 'string', description: 'HH:MM, 24h' }, note: { type: 'string' }, services: { type: 'array', items: { type: 'string' }, description: 'service ids' } },
+    },
+  },
+  {
+    name: 'salon_create_invoice',
+    description: 'Create and bill an Auzsalon invoice directly (not a draft -- this records a real bill). Only works for a Salon-niche business. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['client', 'items'],
+      properties: {
+        client: { type: 'object', required: ['name'], properties: { name: { type: 'string' }, phone: { type: 'string' }, email: { type: 'string' } } },
+        items: { type: 'array', items: { type: 'object', required: ['name', 'price'], properties: { name: { type: 'string' }, qty: { type: 'number' }, price: { type: 'number' } } } },
+        paymentMode: { type: 'string', enum: ['cash', 'upi', 'card', 'credit'] }, note: { type: 'string' },
+      },
+    },
+  },
 ];
 
 const itemFilters = (extra) => { const p = new URLSearchParams({ 'eq.kind': 'item', 'eq.deleted': 'false', order: 'updated_at', ...extra }); return p; };
@@ -122,6 +243,90 @@ async function runTool(client, name, args) {
     case 'create_draft_order':
       if (!Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'items must be a non-empty array of {name,qty,price}');
       return callRpc(client, 'mcp_create_draft_order', { p_table: args.table || null, p_items: args.items, p_note: args.note || null });
+
+    case 'ledger_context':
+      return callRpc(client, 'acc_context', {});
+    case 'ledger_list_parties':
+      return callRpc(client, 'acc_list_parties', { p: { kind: args.kind || null, search: args.search || null } });
+    case 'ledger_list_documents':
+      return callRpc(client, 'acc_list_documents', { p: { search: args.search || null, types: args.types || [], status: args.status || null, from: args.from || null, to: args.to || null, limit: args.limit || 50 } });
+    case 'ledger_reports': {
+      const r = args.report;
+      if (r === 'pnl') return callRpc(client, 'acc_pnl', { p_from: args.from || null, p_to: args.to || null });
+      if (r === 'balance_sheet') return callRpc(client, 'acc_balance_sheet', { p_asof: args.to || null });
+      if (r === 'cash_flow') return callRpc(client, 'acc_cash_flow', { p_from: args.from || null, p_to: args.to || null });
+      if (r === 'trial_balance') return callRpc(client, 'acc_trial_balance', { p_from: args.from || null, p_to: args.to || null, p_all: false });
+      throw new HttpError(400, 'report must be one of pnl, balance_sheet, cash_flow, trial_balance');
+    }
+    case 'ledger_ageing':
+      return callRpc(client, 'acc_ageing', { p: { kind: args.kind || 'receivable' } });
+    case 'ledger_save_document':
+      if (!args.doc_type || !Array.isArray(args.lines) || !args.lines.length) throw new HttpError(400, 'doc_type and a non-empty lines array are required');
+      return callRpc(client, 'acc_save_document', { p: args });
+    case 'ledger_post_document':
+      if (!args.doc_id) throw new HttpError(400, 'doc_id is required');
+      return callRpc(client, 'acc_post_document', { p_doc_id: args.doc_id, p_payments: args.payments || [] });
+
+    case 'finance_dashboard':
+      return callRpc(client, 'fin_dashboard', { p_from: args.from || null, p_to: args.to || null });
+    case 'finance_reports': {
+      const r = args.report;
+      if (r === 'pnl') return callRpc(client, 'fin_report_pl', { p_from: args.from || null, p_to: args.to || null });
+      if (r === 'balance_sheet') return callRpc(client, 'fin_report_bs', { p_to: args.to || null });
+      if (r === 'trial_balance') return callRpc(client, 'fin_report_tb', { p_to: args.to || null });
+      if (r === 'cash') return callRpc(client, 'fin_report_cash', { p_from: args.from || null, p_to: args.to || null });
+      throw new HttpError(400, 'report must be one of pnl, balance_sheet, trial_balance, cash');
+    }
+    case 'finance_people': {
+      const [people, partners, loans] = await Promise.all([
+        callRpc(client, 'fin_people_balances', {}),
+        callRpc(client, 'fin_partner_list', {}),
+        callRpc(client, 'fin_loan_list', {}),
+      ]);
+      return { people, partners, loans };
+    }
+    case 'finance_save_transaction':
+      return callRpc(client, 'fin_save_txn', { p: args });
+
+    default:
+      throw new HttpError(404, `unknown tool: ${name}`);
+  }
+}
+
+// Auzsalon tools: a different storage engine entirely (salon_store JSON documents or the generic engine,
+// picked per-tenant -- see salon/storage.js's own comment), not RLS/app_uid-scoped, so these never go through
+// withAuth()/callRpc() above. mcp_resolve_key already proved the caller IS this tenant's owner (db/318's own
+// owner-only check at key creation time), so looking the tenant up directly by id here -- the same one-line
+// computation salon_tenant(slug) does (db/170), just by id instead of slug since that's what we have -- is safe.
+// Reads via withAuth (app.uid = this owner), not a bare pool query: `tenants`/`tenant_settings` have their own
+// RLS, which a plain `app`-role connection with no app.uid set fails silently (zero rows, not an error) -- the
+// exact "RLS policy keyed on app_uid() invisible without it" trap db/072's own session notes already hit once.
+async function salonTenantFor(userId, tenantId) {
+  const row = await withAuth(userId, (client) => client.query(
+    `select t.id, t.name, t.slug, t.is_demo, coalesce(ts.business_rules->>'salonEngine', 'store') as engine
+     from tenants t left join tenant_settings ts on ts.tenant_id = t.id where t.id = $1 and t.niche = 'salon'`,
+    [tenantId],
+  ).then((r) => r.rows[0]));
+  if (!row) throw new HttpError(400, 'This business is not set up as a Salon (Auzsalon) tenant.');
+  return row;
+}
+
+async function runSalonTool(userId, tenantId, name, args) {
+  args = args && typeof args === 'object' ? args : {};
+  const tenant = await salonTenantFor(userId, tenantId);
+  switch (name) {
+    case 'salon_bookings':
+      return mutate(tenant, (db) => (db.bookings || []).filter((b) => !args.date || b.date === args.date), ['site', 'data'], []);
+    case 'salon_clients':
+      return mutate(tenant, (db) => clientsList(db), ['site', 'data'], []);
+    case 'salon_revenue':
+      if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
+      return mutate(tenant, (db) => cashRangeSummary(db, args.from, args.to), ['site', 'data'], []);
+    case 'salon_create_booking':
+      return mutate(tenant, (db) => addBooking(db, { ...args, website: '' }, true), ['site', 'data'], ['data']);
+    case 'salon_create_invoice':
+      if (!args.client || !Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'client and a non-empty items array are required');
+      return mutate(tenant, (db) => addInvoice(db, args, { role: 'owner' }), ['site', 'data'], ['data']);
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
   }
@@ -141,7 +346,7 @@ export async function handle(ctx) {
   const { rows } = await pool.query('select mcp_resolve_key($1) as r', [sha256(token)]);
   const resolved = rows[0]?.r;
   if (!resolved) throw new HttpError(401, 'invalid or revoked connector key');
-  const { user_id } = resolved;
+  const { user_id, tenant_id } = resolved;
 
   const body = await readJsonBody(req, 500_000);
   const { id = null, method, params = {} } = body || {};
@@ -158,7 +363,9 @@ export async function handle(ctx) {
   if (method === 'tools/call') {
     const name = params?.name;
     try {
-      const data = await withAuth(user_id, (client) => runTool(client, name, params?.arguments));
+      const data = name && name.startsWith('salon_')
+        ? await runSalonTool(user_id, tenant_id, name, params?.arguments)
+        : await withAuth(user_id, (client) => runTool(client, name, params?.arguments));
       return reply(200, rpcOk(id, { content: [{ type: 'text', text: JSON.stringify(data) }], isError: false }));
     } catch (err) {
       const message = err instanceof HttpError ? err.message : (err?.message || 'tool call failed');
