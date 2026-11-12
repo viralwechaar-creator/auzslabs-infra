@@ -158,6 +158,25 @@ window.auzTheme(h.getAttribute('data-theme')==='light'?'dark':'light');},true);}
             </div>
             <div id="captchaBox" style="display:none;margin:0 0 14px"></div>
             <button id="submitBtn" class="btn btn-primary auth-cta form-submit">Log in</button>
+            <div id="staffRow" class="auth-forgot" style="display:none;margin-top:10px">
+              <button id="staffLink" type="button">Sign in as staff instead</button>
+            </div>
+          </div>
+
+          <div id="staffFields" style="display:none">
+            <div class="field">
+              <label for="staffUser">Username</label>
+              <input id="staffUser" type="text" placeholder="e.g. ravi.yourshop" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
+            </div>
+            <div class="field">
+              <label for="staffPin">PIN</label>
+              <input id="staffPin" type="password" inputmode="numeric" maxlength="6" placeholder="4 or 6 digit PIN" autocomplete="current-password">
+            </div>
+            <p style="margin:0 0 16px;font-size:12.5px;color:var(--ink-dim)">Your owner gave you a username and PIN. No email needed.</p>
+            <button id="staffSubmitBtn" class="btn btn-primary auth-cta form-submit" type="button">Continue</button>
+            <div class="auth-forgot" style="margin-top:10px">
+              <button id="staffBackLink" type="button">Back to email sign in</button>
+            </div>
           </div>
 
           <div id="phoneFields" style="display:none">
@@ -246,8 +265,33 @@ function setMode(m) {
   document.getElementById('pageLede').textContent = m === 'signup' ? 'Sign up with your Google account.' : 'Pick up where you left off.';
   setAuthMethod('email');
   document.getElementById('forgotRow').style.display = m === 'login' ? 'block' : 'none';
+  document.getElementById('staffRow').style.display = m === 'login' ? 'block' : 'none';
+  showStaff(false);
   showCaptcha(m === 'signup');
 }
+// Staff (username + PIN, no email) sign in -- same /auth/staff-login endpoint every staff app's own
+// login screen already uses (app/public/ds/staffpin.js); this is its own copy because that file lives
+// under app/public, not reachable from the marketing site's own domain (see "no shared JS modules").
+function showStaff(on) {
+  document.getElementById('emailFields').style.display = on ? 'none' : (authMethod === 'email' && mode === 'login' ? 'block' : 'none');
+  document.getElementById('staffFields').style.display = on ? 'block' : 'none';
+  document.getElementById('authErr').textContent = '';
+}
+document.getElementById('staffLink').onclick = () => showStaff(true);
+document.getElementById('staffBackLink').onclick = () => showStaff(false);
+document.getElementById('staffSubmitBtn').onclick = async () => {
+  const u = document.getElementById('staffUser').value.trim(), p = document.getElementById('staffPin').value.trim();
+  const errEl = document.getElementById('authErr'), btn = document.getElementById('staffSubmitBtn');
+  errEl.textContent = '';
+  if (!u || !/^\d{4,6}$/.test(p)) { errEl.textContent = 'Enter your username and your 4 or 6 digit PIN.'; return; }
+  btn.disabled = true;
+  try {
+    const { data, error } = await sb.auth.signInWithStaffPin(u, p);
+    if (error) { errEl.textContent = error.message || 'Wrong username or PIN'; document.getElementById('staffPin').value = ''; return; }
+    afterSignIn(data.user);
+  } finally { btn.disabled = false; }
+};
+document.getElementById('staffPin').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('staffSubmitBtn').click(); });
 // ---- CAPTCHA (Cloudflare Turnstile): only shown on sign-up, and only if a site key is configured ----
 let captchaToken = '', captchaWidget = null;
 function showCaptcha(on) {

@@ -165,10 +165,16 @@
     handle @a_fin {
         import one_app /finance.html /finance.html /finance/*
     }
-    # the hub: also shows a customer's bill (their link is auzslab.in/b/<code>, which forwards here)
+    # the hub: also shows a customer's bill (their link is auzslab.in/b/<code>, which forwards here).
+    # start.html (the old sign-in hub) is gone -- the bare address and that path now both send people
+    # to the real sign-in page on the main site instead.
     @a_hub host app.{$DOMAIN}
     handle @a_hub {
-        import one_app /start.html /start.html /start.js /verify.html /my.html /my.js /my.css /admin/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /chapterone/logo-full.png
+        route {
+            redir / https://{$DOMAIN}/signup.html permanent
+            redir /start.html https://{$DOMAIN}/signup.html permanent
+            import one_app /my.html /verify.html /my.js /my.css /admin/* /stybill.html /stybill.js /bill.html /mobbill.html /i.html /mob/receipt* /accounts/bill.js /accounts/invoice-templates.js /accounts/taxinv.js /accounts/accounts.css /chapterone/logo-full.png
+        }
     }
 
     # ---- every other name: a shop address, only for a shop with a website ----

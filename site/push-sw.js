@@ -9,10 +9,10 @@ self.addEventListener('push', function (e) {
     data: { url: d.url || '' }
   }));
 });
-// The hub on app.auzslab.in sends each person to their own place (admin, client requests).
+// A platform alert with no specific page just opens the admin panel directly.
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();
   var u = (e.notification.data && e.notification.data.url) || '';
-  if (!u || u === '/start.html') u = 'https://app.auzslab.in/start.html';
+  if (!u || u === '/start.html') u = 'https://auzslab.in/admin.html';
   e.waitUntil(clients.openWindow(u));
 });
