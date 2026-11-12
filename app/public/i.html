@@ -34,6 +34,24 @@ th.c,td.c{text-align:center}th.r,td.r{text-align:right}
 .powered{text-align:center;padding-top:36px;font-size:11px;color:var(--mute)}
 .powered a{color:var(--mute)}
 .err{padding:80px 20px;text-align:center;font-size:15px;color:var(--mute)}
+.trk{padding:60px 20px 80px;max-width:420px;margin:0 auto;text-align:center}
+.trk h3{font-size:19px;font-weight:700;margin:0 0 6px}
+.trk p.sub{font-size:13px;color:var(--mute);margin:0 0 34px}
+.trk .steps{display:flex;flex-direction:column;gap:0;text-align:left}
+.trk .st{display:flex;align-items:flex-start;gap:14px;padding:0 0 26px;position:relative}
+.trk .st:last-child{padding-bottom:0}
+.trk .st::before{content:'';position:absolute;left:11px;top:26px;bottom:0;width:2px;background:var(--line)}
+.trk .st:last-child::before{display:none}
+.trk .dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;background:var(--paper)}
+.trk .st.done .dot{border-color:var(--ink);background:var(--ink)}
+.trk .st.done .dot::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--paper)}
+.trk .st.now .dot{border-color:var(--ink)}
+.trk .st.now .dot::after{content:'';width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.trk .lb{padding-top:1px}
+.trk .lb b{display:block;font-size:14.5px;font-weight:600}
+.trk .st:not(.done):not(.now) .lb b{color:var(--mute)}
+.trk .lb small{font-size:12px;color:var(--mute)}
+.trk .rej{color:#9a3b2e}
 .fb{margin-top:34px;padding-top:28px;border-top:1px solid var(--line)}
 .fb h4{font-size:15px;font-weight:700;margin:0 0 12px}
 .stars{display:flex;gap:8px}
@@ -53,6 +71,30 @@ th.c,td.c{text-align:center}th.r,td.r{text-align:right}
 <script src=/sb-client.js?v=8></script><script src=/config.js></script><script src=/pos/bill-templates.js?v=2></script><script>
 const sb=supabase.createClient(CFG.url,CFG.key),A=document.getElementById('a'),esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';'),r2=n=>Math.round(n*100)/100,inr=n=>'₹'+r2(n).toLocaleString('en-IN');
 const id=new URLSearchParams(location.search).get('o');
+// Live order tracking: shown while an order has no bill yet (placed but not accepted, or accepted and
+// being cooked/delivered). Polls public_order_status(tok) -- the same token place_order hands the
+// customer the instant they order (db/245) -- and once it reports a bill exists, reloads into the
+// normal invoice view above instead of duplicating that rendering here.
+const TRK_STEPS=[['placed','Order placed','We have your order'],['new','In the kitchen','Your order has been accepted'],['preparing','Preparing','Being cooked fresh'],['ready','Ready','Ready to be served or picked up'],['dispatched','Out for delivery','On its way to you'],['billed','Delivered','Enjoy your meal!']];
+function trackHTML(stage){
+ if(stage==='rejected')return '<div class=trk><h3 class=rej>Order not accepted</h3><p class=sub>Please check with our staff or call the restaurant.</p></div>';
+ if(stage==='void')return '<div class=trk><h3>Order cancelled</h3><p class=sub>This order was cancelled. Please check with our staff.</p></div>';
+ // a dine-in/takeaway order usually skips "Out for delivery"; a delivery order usually skips the final
+ // "Served" step being named "Delivered" twice -- simplest correct behaviour is to just never show a step
+ // that is provably behind without being the current stage, which the index comparison below already does.
+ const order=['placed','new','preparing','ready','dispatched','billed'];
+ const cur=order.indexOf(stage)>-1?order.indexOf(stage):0;
+ return '<div class=trk><h3>Track your order</h3><p class=sub>This page updates on its own -- no need to keep refreshing.</p><div class=steps>'+
+  TRK_STEPS.map(([k,label,sub],i)=>'<div class="st '+(i<cur?'done':i===cur?'now':'')+'"><span class=dot></span><div class=lb><b>'+esc(label)+'</b><small>'+esc(sub)+'</small></div></div>').join('')+
+  '</div></div>';
+}
+async function trackOrder(){
+ const{data}=await sb.rpc('public_order_status',{tok:id});
+ if(!data||!data.found){A.innerHTML='<div class=err>No order found for this link. If you just placed an order, try again in a minute.</div>';return;}
+ if(data.stage==='billed'){location.reload();return;}
+ A.innerHTML=trackHTML(data.stage);
+ setTimeout(trackOrder,8000);
+}
 (async()=>{
  if(!id)return A.innerHTML='<div class=err>Invoice not found.</div>';
  const{data,error}=await sb.rpc('public_invoice',{oid:id});
@@ -60,7 +102,7 @@ const id=new URLSearchParams(location.search).get('o');
  // db/213), before staff have accepted or billed it -- so "no order yet" here is the normal, expected
  // state for the first minute or two, not necessarily a dead link. Softened the message to say so; a
  // genuinely wrong/expired link still ends up here too, since this page has no way to tell the two apart.
- if(error||!data||!data.order)return A.innerHTML='<div class=err>No bill yet. If you just placed an order, this page will show your bill as soon as it is ready — try refreshing in a minute.</div>';
+ if(error||!data||!data.order)return trackOrder();
  const o=data.order,s=data.cfg||{},t=o.t,b=s.brand||null,logo=s.logo||'/logo.png';
  // A tenant's own brand (colours/font/doodle, the same settings.brand
  // object booking.html reads) re-themes this same invoice markup instead

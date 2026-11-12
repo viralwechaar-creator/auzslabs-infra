@@ -378,7 +378,7 @@ async function boot() {
     setInterval(() => { if (navigator.onLine && S.user && isRestaurant()) loadBookings(today()).then(() => { if ((S.tab === 'tables' || S.tab === 'reserve') && !isTyping()) render(); }); }, 120000);
     // live clocks without rebuilding the screen (a full redraw every second used to swallow taps)
     setInterval(() => { $$('[data-kt]').forEach((e) => (e.textContent = clockText(e.dataset.kt))); }, 1000);
-    setInterval(() => { $$('[data-since]').forEach((e) => (e.textContent = minsSince(e.dataset.since) + ' min')); }, 30000);
+    setInterval(() => { $$('[data-since]').forEach((e) => (e.textContent = fmtDur(minsSince(e.dataset.since)))); }, 30000);
   }
   await syncNow(); getG(); checkAlerts();
   if (can('o') && !L('cat').length && !localStorage.seeded) await seed();

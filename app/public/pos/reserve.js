@@ -108,7 +108,7 @@ async function seatBooking(b, tableId) {
 // walk-in waitlist
 function waitRow(w) {
   const waited = minsSince(w.at), over = w.quoted && waited > w.quoted;
-  return liRow({ ic: 'people', tone: over ? 'red' : 'teal', title: '#' + w.no + ' · ' + w.name + ' · ' + plural(w.party, 'guest'), sub: 'Waiting ' + waited + ' min' + (w.quoted ? ' · quoted ' + w.quoted + ' min' : '') + (w.notifiedAt ? ' · told ' + fmtTime(w.notifiedAt) : ''), chev: true, onclick: () => waitActions(w) });
+  return liRow({ ic: 'people', tone: over ? 'red' : 'teal', title: '#' + w.no + ' · ' + w.name + ' · ' + plural(w.party, 'guest'), sub: 'Waiting ' + fmtDur(waited) + (w.quoted ? ' · quoted ' + fmtDur(w.quoted) : '') + (w.notifiedAt ? ' · told ' + fmtTime(w.notifiedAt) : ''), chev: true, onclick: () => waitActions(w) });
 }
 function waitActions(w) {
   const upd = async (patch, msg) => { await save('waitlist', { ...w, ...patch }, w.id); if (msg) toast(msg); render(); };
