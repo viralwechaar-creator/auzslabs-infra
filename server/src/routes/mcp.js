@@ -58,6 +58,12 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: { days: { type: 'integer', description: 'how many days back to include (default 1)' } } },
   },
   {
+    name: 'business_daily_closing',
+    description: "A timestamped end-of-day summary for the POS side of the business (sales, cash drawer movements, expenses, wastage entries, due/void orders) for one calendar day, with its own source and limits spelled out so figures are never mistaken for more than they are. This does NOT cover AuzsLedger or AuzsFinance -- use ledger_reports/finance_reports for those, since mixing figures from different books would misrepresent them. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { date: { type: 'string', description: 'YYYY-MM-DD, defaults to today (server date)' } } },
+  },
+  {
     name: 'add_inventory_item',
     description: 'Add a new menu/inventory item. Most AI apps will ask you to confirm before running this -- it changes real data.',
     annotations: { readOnlyHint: false, destructiveHint: false },
@@ -257,6 +263,42 @@ async function runTool(client, name, args) {
       const billed = rows.filter((r) => r.data && ['paid', 'due'].includes(r.data.status));
       const revenue = billed.reduce((sum, r) => sum + (Number(r.data.total) || 0), 0);
       return { since_days: days, orders_seen: rows.length, bills: billed.length, revenue_sum: Math.round(revenue * 100) / 100 };
+    }
+    case 'business_daily_closing': {
+      const day = /^\d{4}-\d{2}-\d{2}$/.test(args.date || '') ? args.date : new Date().toISOString().slice(0, 10);
+      const dayStart = `${day}T00:00:00.000Z`, dayEnd = `${day}T23:59:59.999Z`;
+      const forKind = async (kind) => handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': kind, 'eq.deleted': 'false', 'gte.updated_at': dayStart, 'lte.updated_at': dayEnd, limit: '5000' }));
+      const [orders, cashmoves, expenses, waste] = await Promise.all([forKind('order'), forKind('cashmove'), forKind('exp'), forKind('waste')]);
+      const notes = ['Day boundary is UTC updated_at, not necessarily the business\'s own local trading day -- cross-check against the POS app for a date near midnight.'];
+
+      const billed = orders.filter((r) => r.data && ['paid', 'due'].includes(r.data.status));
+      const voided = orders.filter((r) => r.data?.status === 'void');
+      const due = orders.filter((r) => r.data?.status === 'due');
+      const revenue_total = Math.round(billed.reduce((s, r) => s + (Number(r.data.total) || 0), 0) * 100) / 100;
+      const by_payment_mode = {};
+      for (const r of billed) for (const p of (r.data.pays || [])) by_payment_mode[p.m] = Math.round(((by_payment_mode[p.m] || 0) + (Number(p.amt) || 0)) * 100) / 100;
+      if (!billed.some((r) => Array.isArray(r.data.pays) && r.data.pays.length)) notes.push('No per-payment-mode breakdown found on these orders (pays[] missing or empty) -- by_payment_mode may be incomplete.');
+
+      const cash_in = cashmoves.filter((r) => r.data?.type === 'in').reduce((s, r) => s + (Number(r.data.amt) || 0), 0);
+      const cash_out = cashmoves.filter((r) => r.data?.type === 'out').reduce((s, r) => s + (Number(r.data.amt) || 0), 0);
+      if (!cashmoves.length) notes.push('No cash drawer activity recorded for this day -- the register may not have been opened, or this business does not use it.');
+
+      const expenses_total = Math.round(expenses.reduce((s, r) => s + (Number(r.data.amt) || 0), 0) * 100) / 100;
+      const expenses_by_category = {};
+      for (const r of expenses) { const c = r.data.cat || 'Uncategorised'; expenses_by_category[c] = Math.round(((expenses_by_category[c] || 0) + (Number(r.data.amt) || 0)) * 100) / 100; }
+
+      const cash_sales = by_payment_mode.cash || 0;
+      const expected_cash_in_drawer = Math.round((cash_sales + cash_in - cash_out - expenses_total) * 100) / 100;
+      if (!by_payment_mode.cash) notes.push('expected_cash_in_drawer assumes 0 cash sales (no cash payments found) -- treat it as a lower bound, not a confirmed figure, if that seems wrong.');
+
+      return {
+        date: day, generated_at: new Date().toISOString(), source: 'records (kind: order, cashmove, exp, waste) -- POS side of the business only',
+        sales: { orders_billed: billed.length, revenue_total, by_payment_mode, orders_due: due.length, due_amount: Math.round(due.reduce((s, r) => s + (Number(r.data.total) || 0), 0) * 100) / 100, orders_void: voided.length, void_amount: Math.round(voided.reduce((s, r) => s + (Number(r.data.total) || 0), 0) * 100) / 100 },
+        cash_drawer: { cash_in: Math.round(cash_in * 100) / 100, cash_out: Math.round(cash_out * 100) / 100, moves_count: cashmoves.length, expected_cash_in_drawer },
+        expenses: { total: expenses_total, by_category: expenses_by_category, count: expenses.length },
+        wastage: { entries: waste.length, note: 'Count only -- wastage records a quantity of ingredient, not a rupee value, so no total is computed here.' },
+        notes,
+      };
     }
     case 'add_inventory_item': {
       if (!args.name || args.price == null) throw new HttpError(400, 'name and price are required');
