@@ -125,6 +125,16 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: true },
     inputSchema: { type: 'object', required: ['order_id', 'amount'], properties: { order_id: { type: 'string', description: 'from list_orders' }, amount: { type: 'number' }, reason: { type: 'string' } } },
   },
+  // ---- Reorder suggestions (café/retail raw materials): replicates, exactly, the same velocity-based math
+  // the console's own Inventory Reports -> Reorder tab already computes client-side (invReport('reorder') in
+  // app/public/console/p-inventory.js) -- no new table, no new business logic, just the same real calculation
+  // made readable to an agent. To act on it, call pos_create_purchase_order (already exists). ----
+  {
+    name: 'pos_reorder_suggestions',
+    description: "Raw materials that are at/below their reorder level, or will run out within 7 days at their recent daily usage rate -- the same calculation the console's own Inventory Reports -> Reorder tab shows, read-only. Use pos_create_purchase_order to actually act on one.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
   // ---- CRM / marketing (café, retail, mobile-repair niches): replicates server-side what the console's
   // CRM/Marketing pages (p-crm.js, p-marketing.js) already compute client-side from `order`/`customer`
   // records -- customers are built from paid/due bills, not a separate master list. Segments are the same
@@ -645,6 +655,25 @@ async function runTool(client, name, args) {
       const refunds = [...(order.data.refunds || []), { amt: Number(args.amount), at: new Date().toISOString(), reason: args.reason || null }];
       await callRpc(client, 'push_record', { rid: args.order_id, rkind: 'order', rdata: { ...order.data, refunds }, rdeleted: false, base: null, force: true });
       return { order_id: args.order_id, refunded_now: Number(args.amount), refunded_total: already + Number(args.amount), bill_total: total };
+    }
+
+    case 'pos_reorder_suggestions': {
+      const rows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'ing', 'eq.deleted': 'false', limit: '2000' }));
+      const cutoff = new Date(Date.now() - 14 * 86_400_000);
+      const now = Date.now();
+      const out = [];
+      for (const r of rows) {
+        const g = r.data || {};
+        const usage = (g.usage || []).filter((u) => u.d && new Date(u.d) >= cutoff);
+        const span = usage.length ? Math.max(1, Math.min(14, Math.round((now - new Date(usage[0].d)) / 86_400_000) + 1)) : 0;
+        const vel = usage.length ? Math.round((usage.reduce((a, u) => a + (Number(u.q) || 0), 0) / span) * 100) / 100 : 0;
+        const daysLeft = vel > 0 ? Math.floor((g.qty || 0) / vel) : null;
+        const low = (g.qty || 0) <= (g.low || 0);
+        if (!low && !(daysLeft != null && daysLeft <= 7)) continue;
+        const suggestedQty = vel > 0 ? Math.ceil(vel * 7) : Math.max(0, (g.low || 0) * 2 - (g.qty || 0));
+        out.push({ id: r.id, name: g.name, unit: g.unit || '', on_hand: g.qty || 0, reorder_level: g.low || 0, daily_usage: vel, days_left: daysLeft, suggested_order_qty: suggestedQty, vendor: g.vendor || null, cost_per_unit: g.cost || 0 });
+      }
+      return out;
     }
 
     case 'crm_list_customers': {
