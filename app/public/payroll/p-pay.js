@@ -297,7 +297,7 @@ async function batchSheet(id, r) {
   const ref = input({ placeholder: 'Bank reference (optional)' }), dt = dateInput(today(), { max: today() });
   if (pending.length && can('pay_pay')) body.append(section('Mark everyone waiting as paid', h('div', { class: 'two' }, field('Paid on', dt), field('Reference', ref))));
   const s = sheet({ title: 'Payment', closeLabel: 'Done', body, wide: true, noFocus: true, onClose: () => route_(),
-    actions: pending.length && can('pay_pay') ? [b.status !== 'paid' && !lines.some((l) => l.status === 'paid') ? { label: 'Cancel batch', danger: true, onclick: async (close) => { await api('pay_batch_cancel', { p_batch: b.id }); close(); } } : null,
+    actions: pending.length && can('pay_pay') ? [b.status !== 'paid' && !lines.some((l) => l.status === 'paid') ? { label: 'Cancel batch', danger: true, onclick: async (close) => { if (!(await confirmBox('Cancel this payment batch?', 'Nothing is paid from it. You can make a new batch later.', 'Cancel batch', true))) return false; await api('pay_batch_cancel', { p_batch: b.id }); close(); } } : null,
       { label: 'Mark paid', primary: true, onclick: async (close) => { await api('pay_batch_mark', { p_batch: b.id, p: { all: 'paid', paid_on: dt.value, ref: ref.value } }); toast('Marked as paid'); close(); } }] : [] });
 }
 

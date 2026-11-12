@@ -131,7 +131,7 @@ async function docList(v, o) {
       const vs = (await api('acc_list_views', { p_scope: o.scope })).rows;
       menu(anchor, [...vs.map((x) => ({ label: x.name, icon: 'star', run: () => { Object.assign(F, x.filters, { offset: 0 }); search.input.value = F.search || ''; chipsHost.replaceChildren(statusChips()); load(); } })), vs.length ? '-' : null,
         { label: 'Save current view…', icon: 'plus', run: async () => { const n = await askText('Save view', 'Saves the current search, status and dates.', 'Name'); if (n) { await api('acc_save_view', { p: { scope: o.scope, name: n, filters: { search: F.search, status: F.status, from: F.from, to: F.to } } }); toast('View saved'); } } },
-        ...vs.map((x) => ({ label: 'Delete “' + x.name + '”', icon: 'trash', danger: true, run: async () => { await api('acc_delete_view', { p_id: x.id }); toast('View deleted'); } }))].filter(Boolean));
+        ...vs.map((x) => ({ label: 'Delete “' + x.name + '”', icon: 'trash', danger: true, run: async () => { if (!(await confirmBox('Delete this view?', x.name, 'Delete', true))) return; await api('acc_delete_view', { p_id: x.id }); toast('View deleted'); } }))].filter(Boolean));
     } catch (e) { fail(e); }
   }
   async function doExport(anchor) {

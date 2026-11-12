@@ -42,7 +42,7 @@ async function raViews(v, id, f, apply) {
   const load = async () => {
     const r = await api('acc_list_views', { p_scope: 'analytics:' + id }).catch(() => ({ rows: [] }));
     clear(wrap).append(h('button', { class: 'btn', type: 'button', onclick: async () => { const n = prompt('Name this view'); if (!n) return; try { await api('acc_save_view', { p: { scope: 'analytics:' + id, name: n, filters: f } }); toast('View saved'); load(); } catch (e) { toast(e.message); } } }, icon('file', 16), 'Save view'),
-      ...(r.rows || []).map((x) => h('span', { class: 'chip' }, h('button', { type: 'button', class: 'linkbtn', onclick: () => apply(x.filters) }, x.name), h('button', { type: 'button', class: 'linkbtn', 'aria-label': 'Delete view ' + x.name, onclick: async () => { await api('acc_delete_view', { p_id: x.id }); load(); } }, '×'))));
+      ...(r.rows || []).map((x) => h('span', { class: 'chip' }, h('button', { type: 'button', class: 'linkbtn', onclick: () => apply(x.filters) }, x.name), h('button', { type: 'button', class: 'linkbtn', 'aria-label': 'Delete view ' + x.name, onclick: async () => { if (!(await confirmBox('Delete this view?', x.name, 'Delete', true))) return; await api('acc_delete_view', { p_id: x.id }); load(); } }, '×'))));
   };
   await load(); return wrap;
 }

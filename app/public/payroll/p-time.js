@@ -136,7 +136,7 @@ function holidaySheet(x = {}) {
   sheet({ title: x.id ? 'Holiday' : 'Add a holiday', body: h('div', { class: 'grid' },
     field('Date', dateInput(f.date, { onchange: (e) => { f.date = e.target.value; } })), field('Name', input({ value: f.name, placeholder: 'e.g. Diwali', oninput: (e) => { f.name = e.target.value; } })),
     (S.ctx.locations || []).length > 1 ? field('Where', selectEl([['', 'Everywhere'], ...S.ctx.locations.map((l) => [l.id, l.name])], f.location_id, { onchange: (e) => { f.location_id = e.target.value; } })) : null),
-  actions: [x.id ? { label: 'Delete', danger: true, onclick: async (close) => { await api('pay_delete_holiday', { p_id: x.id }); await loadCtx(); close(); route_(); } } : null,
+  actions: [x.id ? { label: 'Delete', danger: true, onclick: async (close) => { if (!(await confirmBox('Delete this holiday?', 'It will no longer count as a day off.', 'Delete', true))) return false; await api('pay_delete_holiday', { p_id: x.id }); await loadCtx(); close(); route_(); } } : null,
     { label: 'Save', primary: true, onclick: async (close) => { await api('pay_save_holiday', { p: f }); await loadCtx(); close(); toast('Saved'); route_(); } }] });
 }
 
