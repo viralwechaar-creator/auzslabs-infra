@@ -94,6 +94,18 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'ledger_list_products',
+    description: "AuzsLedger's own product/service catalogue -- name, SKU, selling and purchase price, current stock and stock value, category, unit, active status. This is AuzsLedger's real inventory (acc_products), separate from the POS-style list_inventory tool, which reads menu items instead. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, category: { type: 'string' }, low_stock: { type: 'boolean', description: 'only items at or below their reorder level' }, include_inactive: { type: 'boolean' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'ledger_product_stock',
+    description: 'Stock breakdown by warehouse/branch for one AuzsLedger product, plus its recent stock movements. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['product_id'], properties: { product_id: { type: 'string', description: 'from ledger_list_products' } } },
+  },
+  {
     name: 'ledger_list_parties',
     description: 'Search AuzsLedger customers/suppliers by name, to find a party_id before saving a document. Read-only.',
     annotations: { readOnlyHint: true },
@@ -277,6 +289,11 @@ async function runTool(client, name, args) {
 
     case 'ledger_context':
       return callRpc(client, 'acc_context', {});
+    case 'ledger_list_products':
+      return callRpc(client, 'acc_list_products', { p: { search: args.search || null, category: args.category || null, low_stock: args.low_stock || false, include_inactive: args.include_inactive || false, limit: args.limit || 2000 } });
+    case 'ledger_product_stock':
+      if (!args.product_id) throw new HttpError(400, 'product_id is required');
+      return callRpc(client, 'acc_product_stock', { p_product: args.product_id });
     case 'ledger_list_parties':
       return callRpc(client, 'acc_list_parties', { p: { kind: args.kind || null, search: args.search || null } });
     case 'ledger_list_documents':
