@@ -231,6 +231,62 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
   },
+  // ---- AUZsPay (Payroll): thin wrappers over the already-registered pay_* functions. Scoped to HR
+  // operations (employees, attendance, leave/loan/claim approvals) -- deliberately NOT the payroll run/
+  // calculate/finalize/bank-disbursal pipeline (pay_run_*/pay_batch_*), since those move real salary money
+  // and deserve their own, carefully scoped pass rather than being folded in here. Employee/salary data is
+  // sensitive -- tool descriptions say so, same owner-trust model as every other write tool in this file. ----
+  {
+    name: 'payroll_dashboard',
+    description: "AUZsPay's dashboard summary (headcount, pending approvals, today's attendance). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'payroll_list_employees',
+    description: 'List employees in AUZsPay. Includes salary details if the connector key belongs to someone with salary-view permission (normally the owner) -- treat this as sensitive personal/financial data. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, status: { type: 'string', enum: ['current', 'all', 'onboarding', 'active', 'notice', 'exited'] } } },
+  },
+  {
+    name: 'payroll_attendance_month',
+    description: "One employee's attendance for a given month. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['employee_id', 'month'], properties: { employee_id: { type: 'string', description: 'from payroll_list_employees' }, month: { type: 'string', description: 'YYYY-MM' } } },
+  },
+  {
+    name: 'payroll_list_pending_requests',
+    description: 'Leave requests, attendance corrections, loans/advances and expense claims waiting for a decision. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['pending', 'all'] }, employee_id: { type: 'string' } } },
+  },
+  {
+    name: 'payroll_mark_attendance',
+    description: "Mark an employee's attendance for one day (present/half-day/absent/weekly off/holiday, or specific in/out times). Refused if that day's payroll is already finalised. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['employee_id', 'date'],
+      properties: { employee_id: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD' }, status: { type: 'string', enum: ['present', 'half', 'absent', 'weekly_off', 'holiday', 'auto'] }, in: { type: 'string', description: 'HH:MM, alternative to status' }, out: { type: 'string', description: 'HH:MM' } },
+    },
+  },
+  {
+    name: 'payroll_decide_leave',
+    description: 'Approve or reject a pending leave request (from payroll_list_pending_requests). Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['request_id', 'approve'], properties: { request_id: { type: 'string' }, approve: { type: 'boolean' }, note: { type: 'string' } } },
+  },
+  {
+    name: 'payroll_decide_loan',
+    description: 'Approve or reject a pending loan/salary-advance request. Most AI apps will ask you to confirm before running this -- it affects real money owed.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['request_id', 'approve'], properties: { request_id: { type: 'string' }, approve: { type: 'boolean' } } },
+  },
+  {
+    name: 'payroll_decide_claim',
+    description: 'Approve or reject a pending expense claim. Most AI apps will ask you to confirm before running this -- it affects real money owed.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['request_id', 'approve'], properties: { request_id: { type: 'string' }, approve: { type: 'boolean' } } },
+  },
   // ---- WhatsApp: only a business's own already-approved templates, never free text (a WhatsApp Business
   // Platform rule, see db/319's own comment) -- the AI fills in the blanks, it can never compose the message. ----
   {
@@ -484,6 +540,29 @@ async function runTool(client, name, args) {
     }
     case 'finance_save_transaction':
       return callRpc(client, 'fin_save_txn', { p: args });
+
+    case 'payroll_dashboard':
+      return callRpc(client, 'pay_dashboard', {});
+    case 'payroll_list_employees':
+      return callRpc(client, 'pay_list_employees', { p: { q: args.search || null, status: args.status || null } });
+    case 'payroll_attendance_month':
+      if (!args.employee_id || !args.month) throw new HttpError(400, 'employee_id and month are required');
+      return callRpc(client, 'pay_attendance_month', { p_emp: args.employee_id, p_month: args.month });
+    case 'payroll_list_pending_requests':
+      return callRpc(client, 'pay_list_requests', { p: { status: args.status || 'pending', employee_id: args.employee_id || null } });
+    case 'payroll_mark_attendance':
+      if (!args.employee_id || !args.date) throw new HttpError(400, 'employee_id and date are required');
+      if (!args.status && !args.in) throw new HttpError(400, 'provide either status or an in time');
+      return callRpc(client, 'pay_mark_attendance', { p_emp: args.employee_id, p_date: args.date, p: { status: args.status || null, in: args.in || null, out: args.out || null } });
+    case 'payroll_decide_leave':
+      if (!args.request_id || args.approve == null) throw new HttpError(400, 'request_id and approve are required');
+      return callRpc(client, 'pay_leave_decide', { p_id: args.request_id, p_approve: !!args.approve, p_note: args.note || null });
+    case 'payroll_decide_loan':
+      if (!args.request_id || args.approve == null) throw new HttpError(400, 'request_id and approve are required');
+      return callRpc(client, 'pay_loan_decide', { p_id: args.request_id, p_approve: !!args.approve, p: {} });
+    case 'payroll_decide_claim':
+      if (!args.request_id || args.approve == null) throw new HttpError(400, 'request_id and approve are required');
+      return callRpc(client, 'pay_claim_decide', { p_id: args.request_id, p_approve: !!args.approve, p: {} });
 
     case 'whatsapp_status':
       return callRpc(client, 'wa_my_status', {});
