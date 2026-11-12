@@ -8,7 +8,13 @@
 // already resolved from the Authorization header, but an MCP client sends one of our own `auz_mcp_...` keys there
 // instead (verifyToken() already returns null for it harmlessly -- it isn't a valid JWT). This module looks the
 // Bearer token up for itself via mcp_resolve_key() (db/318), the same "hash it, look it up, there is no session
-// yet" shape server/src/auth/password.js's login() already uses for a plain password.
+// yet" shape server/src/auth/password.js's login() already uses for a plain password. Since routes/oauth.js
+// (db/320) added a second way in -- an OAuth access token, for AI apps like ChatGPT that require real OAuth
+// discovery rather than a pasted Bearer key -- a presented token is tried against BOTH resolvers below; each
+// one only recognises its own token shape (auz_mcp_ vs auz_oat_) and returns null for the other, so there's no
+// ambiguity. A request with neither gets 401 + WWW-Authenticate pointing at the OAuth protected-resource
+// metadata, which is what lets an OAuth-only client (ChatGPT) discover the flow at all; a Bearer-key client
+// (Claude) never looks at that header and keeps working exactly as before.
 //
 // Every tool below is a thin wrapper around code the rest of the app already runs and already trusts
 // (handleSelect/callRpc from data/queries.js, inside withAuth so RLS applies exactly as it does for a logged-in
@@ -20,6 +26,8 @@ import { TABLES } from '../data/tables.js';
 import { handleSelect, callRpc } from '../data/queries.js';
 import { mutate } from '../salon/storage.js';
 import { addBooking, addInvoice, clientsList, cashRangeSummary } from '../salon/rules.js';
+import { resolveOauthAccessToken } from './oauth.js';
+import { API_URL } from '../config.js';
 
 const sha256 = (v) => createHash('sha256').update(String(v)).digest('hex');
 
@@ -104,6 +112,12 @@ const TOOLS = [
     inputSchema: { type: 'object', required: ['report'], properties: { report: { type: 'string', enum: ['pnl', 'balance_sheet', 'cash_flow', 'trial_balance'] }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
   },
   {
+    name: 'ledger_gst_summary',
+    description: 'AuzsLedger GST summary for a period: output tax, input tax credit and what is payable (the same figures Analytics -> GSTR-3B shows). Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
     name: 'ledger_ageing',
     description: 'Who owes the business money (receivable) or who the business owes (payable), broken down by how overdue. Read-only.',
     annotations: { readOnlyHint: true },
@@ -153,6 +167,23 @@ const TOOLS = [
     description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
+  },
+  // ---- WhatsApp: only a business's own already-approved templates, never free text (a WhatsApp Business
+  // Platform rule, see db/319's own comment) -- the AI fills in the blanks, it can never compose the message. ----
+  {
+    name: 'whatsapp_status',
+    description: 'Whether WhatsApp is connected for this business, and the full list of available templates with their placeholders. Read this first to know which templates whatsapp_send can actually use. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'whatsapp_send',
+    description: 'Send a WhatsApp message to a customer using one of the business\'s own approved templates (see whatsapp_status for the list and their placeholder order) -- never free text. Costs real money per message once past the WhatsApp free tier. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['to', 'template'],
+      properties: { to: { type: 'string', description: 'customer phone number' }, template: { type: 'string', description: 'a template key from whatsapp_status' }, params: { type: 'array', items: { type: 'string' }, description: 'fills the template\'s {{1}}, {{2}}, ... placeholders in order' }, ref: { type: 'string', description: 'optional: a unique reference so resending the same ref never double-sends' } },
+    },
   },
   // ---- Auzsalon: a different storage engine (salon_store, not records/RLS), so these go through
   // server/src/salon/{storage,rules}.js directly instead of callRpc -- see mcp.js's own handle() for the auth split. ----
@@ -258,6 +289,9 @@ async function runTool(client, name, args) {
       if (r === 'trial_balance') return callRpc(client, 'acc_trial_balance', { p_from: args.from || null, p_to: args.to || null, p_all: false });
       throw new HttpError(400, 'report must be one of pnl, balance_sheet, cash_flow, trial_balance');
     }
+    case 'ledger_gst_summary':
+      if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
+      return callRpc(client, 'acc_gst_summary', { p_from: args.from, p_to: args.to });
     case 'ledger_ageing':
       return callRpc(client, 'acc_ageing', { p: { kind: args.kind || 'receivable' } });
     case 'ledger_save_document':
@@ -287,6 +321,12 @@ async function runTool(client, name, args) {
     }
     case 'finance_save_transaction':
       return callRpc(client, 'fin_save_txn', { p: args });
+
+    case 'whatsapp_status':
+      return callRpc(client, 'wa_my_status', {});
+    case 'whatsapp_send':
+      if (!args.to || !args.template) throw new HttpError(400, 'to and template are required');
+      return callRpc(client, 'mcp_send_whatsapp', { p_to: args.to, p_template: args.template, p_params: args.params || [], p_ref: args.ref || null });
 
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
@@ -338,14 +378,27 @@ function rpcErr(id, code, message) { return { jsonrpc: '2.0', id, error: { code,
 export async function handle(ctx) {
   const { req, res, url, reply } = ctx;
   if (url.pathname !== '/mcp') return false;
-  if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
 
+  // Auth is checked before the method check: an unauthenticated GET or POST alike must get 401 +
+  // WWW-Authenticate, or an OAuth-only client (ChatGPT) has nothing to discover the flow from. Once
+  // authenticated, only POST is actually supported (plain JSON-RPC, no SSE stream -- see the file's own
+  // header comment), so an authenticated GET still gets a 405.
   const auth = req.headers['authorization'] || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) throw new HttpError(401, 'missing connector key');
-  const { rows } = await pool.query('select mcp_resolve_key($1) as r', [sha256(token)]);
-  const resolved = rows[0]?.r;
-  if (!resolved) throw new HttpError(401, 'invalid or revoked connector key');
+  const unauthorized = (msg) => {
+    res.setHeader('WWW-Authenticate', `Bearer resource_metadata="${API_URL}/.well-known/oauth-protected-resource"`);
+    throw new HttpError(401, msg);
+  };
+  if (!token) return unauthorized('missing bearer token');
+  let resolved = null;
+  if (token.startsWith('auz_oat_')) {
+    resolved = await resolveOauthAccessToken(token);
+  } else {
+    const { rows } = await pool.query('select mcp_resolve_key($1) as r', [sha256(token)]);
+    resolved = rows[0]?.r;
+  }
+  if (!resolved) return unauthorized('invalid, expired or revoked token');
+  if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
   const { user_id, tenant_id } = resolved;
 
   const body = await readJsonBody(req, 500_000);
