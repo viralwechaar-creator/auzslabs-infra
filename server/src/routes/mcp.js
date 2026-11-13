@@ -332,6 +332,48 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', required: ['payment_id', 'doc_id', 'amount'], properties: { payment_id: { type: 'string' }, doc_id: { type: 'string' }, amount: { type: 'number' } } },
   },
+  {
+    name: 'ledger_list_payments',
+    description: "List AuzsLedger receipts (money in) and payments (money out), with how much of each is still unallocated against an invoice/bill. Use this before ledger_allocate_payment to find a payment_id, or to answer 'what payments has this customer made'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { kind: { type: 'string', enum: ['receipt', 'payment'] }, party_id: { type: 'string' }, search: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'ledger_get_payment',
+    description: 'Full detail of one AuzsLedger payment/receipt, including exactly which invoices/bills it has been allocated against. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['payment_id'], properties: { payment_id: { type: 'string' } } },
+  },
+  {
+    name: 'ledger_account_ledger',
+    description: "An account's or a party's running ledger -- every journal line against it with the running balance, exactly what 'why is this balance X' needs. Give either account_id (from ledger_context) or party_id (from ledger_list_parties), not both. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { account_id: { type: 'string', description: 'from ledger_context' }, party_id: { type: 'string', description: 'from ledger_list_parties -- use this for a customer/supplier ledger' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'ledger_journal_detail',
+    description: 'Full detail of one AuzsLedger journal entry (voucher): every debit/credit line, the account and party on each, and (if it was reversed, or is itself a reversal) the linked journal. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['journal_id'], properties: { journal_id: { type: 'string' } } },
+  },
+  {
+    name: 'ledger_product_stock',
+    description: "One product's current stock, broken down by warehouse. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['product_id'], properties: { product_id: { type: 'string', description: 'from ledger_list_products' } } },
+  },
+  {
+    name: 'ledger_stock_summary',
+    description: 'Stock valuation across every product as of a date (or today): quantity on hand, average cost, total value, and which products are at or below their reorder level. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { as_of: { type: 'string', description: 'YYYY-MM-DD, defaults to today' }, warehouse_id: { type: 'string' } } },
+  },
+  {
+    name: 'ledger_stock_moves',
+    description: "Line-by-line stock movement history -- exactly what changed, when, why (purchase/sale/return/transfer/adjustment), the quantity before and after each move, and the real invoice/bill number behind it when the move came from a document. This is the tool to answer 'why did stock go up/down' or 'which bill caused this stock change', not ledger_stock_summary (which only gives a current total). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { product_id: { type: 'string' }, warehouse_id: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string', enum: ['opening', 'purchase', 'sale', 'sale_return', 'purchase_return', 'stock_in', 'stock_out', 'transfer_out', 'transfer_in', 'adjustment', 'reversal'] } } },
+  },
   // ---- AuzsFinance: thin wrappers over the already-registered fin_* functions. ----
   {
     name: 'finance_dashboard',
@@ -1132,6 +1174,24 @@ async function runTool(client, name, args) {
     case 'ledger_allocate_payment':
       if (!args.payment_id || !args.doc_id || !(Number(args.amount) > 0)) throw new HttpError(400, 'payment_id, doc_id and a positive amount are required');
       return callRpc(client, 'acc_allocate', { p_payment: args.payment_id, p_doc: args.doc_id, p_amount: args.amount });
+    case 'ledger_list_payments':
+      return callRpc(client, 'acc_list_payments', { p: args });
+    case 'ledger_get_payment':
+      if (!args.payment_id) throw new HttpError(400, 'payment_id is required');
+      return callRpc(client, 'acc_get_payment', { p_id: args.payment_id });
+    case 'ledger_account_ledger':
+      if (!args.account_id && !args.party_id) throw new HttpError(400, 'account_id or party_id is required');
+      return callRpc(client, 'acc_ledger', { p: args });
+    case 'ledger_journal_detail':
+      if (!args.journal_id) throw new HttpError(400, 'journal_id is required');
+      return callRpc(client, 'acc_journal_detail', { p_id: args.journal_id });
+    case 'ledger_product_stock':
+      if (!args.product_id) throw new HttpError(400, 'product_id is required');
+      return callRpc(client, 'acc_product_stock', { p_product: args.product_id });
+    case 'ledger_stock_summary':
+      return callRpc(client, 'acc_stock_summary', { p: args });
+    case 'ledger_stock_moves':
+      return callRpc(client, 'acc_stock_moves_list', { p: args });
     case 'ledger_save_party':
       if (!args.name || !args.kind) throw new HttpError(400, 'name and kind are required');
       return callRpc(client, 'acc_save_party', {
