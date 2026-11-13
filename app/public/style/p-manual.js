@@ -1,6 +1,8 @@
 /* AUZsStyle: offline user manual. Plain text built into this file (service worker precaches it like any other
    script), so it opens with zero internet -- exactly the situation someone reaching for a manual is often in.
-   Search just filters the sections below; nothing here calls the server. */
+   Search just filters the sections below; nothing here calls the server.
+   Kept byte-identical in content to server/src/data/help-guides.js's GUIDES.style (the AI connector's
+   style_how_to tool reads that copy) -- update both together. */
 'use strict';
 const MANUAL = [
   { h: 'Getting started', body: [
@@ -12,7 +14,7 @@ const MANUAL = [
     'Open Sell. Tap a product\'s picture (or the + button) to add it to the cart. If it comes in more than one colour or size, a picker opens first -- pick the colour, then the size.',
     'A product with a dot under its photo has more than one picture; a "Sold out" or "Limited stock" label shows when stock is low or zero.',
     'In the cart, tap a line to change its quantity, give a line discount, or remove it. A whole-bill discount and the customer can be set from the cart screen too.',
-    'Tap Pay to collect money. Cash, UPI (shows a QR with the exact amount once UPI is set up in Settings), card, store credit and exchange credit are all supported; a bill can be split across more than one mode.',
+    'Tap Pay to collect money. Cash, UPI (shows a QR with the exact amount once UPI is set up in Settings -- more than one UPI id can be saved there, and the cashier can switch which one this bill\'s QR uses right from the Pay screen), card, store credit and exchange credit are all supported; a bill can be split across more than one mode.',
     'Store credit and exchange credit are the same balance on the customer\'s account -- a return or exchange adds to it, and it is always checked against what the customer actually has, never trusted blindly from the bill.',
     'After payment, print the bill, or share it on WhatsApp with a link the customer can open any time. The bill\'s look (Classic/Compact/Formal) is whatever is chosen in Settings -> Bill template.',
   ] },
@@ -26,7 +28,7 @@ const MANUAL = [
     'Stock lists every style. Tap one to see its colours x sizes grid with stock for each. Tap a number in the grid to adjust it (add, remove, mark damaged/lost, or do a physical count).',
     'New style: give it a name, category, price/MRP, pick its colours and sizes, and AUZsStyle creates one row (a "variant") with its own barcode for every colour+size combination automatically.',
     'Barcode tags: Stock -> a style -> Print tags. Choose how many of each size to print (by stock on hand, 1 each, or your own number), pick a label size (50x25mm, 2-across, 38x25mm, or A4 sheet of 40) and a tag design (GenX premium, Classic, Minimal or Detailed) -- every design\'s barcode is already sized with a safety margin so it will not print past the edge of the label.',
-    'Transfers move stock between branches/warehouses without it ever looking like a sale or a loss.',
+    'Transfers move stock between branches/warehouses without it ever looking like a sale or a loss (Stock screen -> page tools -> Transfers -> New transfer; the receiving branch then taps Receive).',
     'Export Excel (Stock screen) downloads every product\'s colour/size/barcode/price/stock as one real Excel file. Import Excel reads a corrected sheet back in and updates Price and Stock for every matching row (matched by Barcode, or by Style+Colour+Size) -- useful for a yearly stock count done on paper first, or bulk price changes done in Excel.',
   ] },
   { h: 'Bills, returns and exchanges', body: [
@@ -54,7 +56,7 @@ const MANUAL = [
   { h: 'Settings', body: [
     'Shop: name, address, phone, GSTIN, logo, bill footer and prefix.',
     'Bill template: pick how every printed/shared bill looks (Classic, Compact, or a Formal tax invoice with GSTIN and item-wise tax) -- changes instantly for every device at the shop, with a live preview right there.',
-    'Pay by UPI: your UPI id so a QR with the exact amount appears automatically at checkout.',
+    'Pay by UPI: add one or more UPI ids (each with its own label and the name shown to the customer); pick one as the default. At billing, the cashier can switch between them before showing the QR.',
     'Selling rules: how much discount staff can give without a manager, how many days returns are allowed, whether selling with no stock is allowed.',
     'Backup: one button downloads your inventory, customers and bills as a single Excel file (not a code/database file) -- open it directly in Excel or Google Sheets, and keep a copy somewhere safe.',
     'Branches/warehouses, day close (locks bills up to a date so nothing old can be changed by mistake), and a health check that confirms bill totals, stock and returns all agree with each other.',

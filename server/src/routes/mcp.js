@@ -28,6 +28,7 @@ import { mutate, readStaffAdmin } from '../salon/storage.js';
 import { addBooking, addInvoice, clientsList, cashRangeSummary } from '../salon/rules.js';
 import { resolveOauthAccessToken } from './oauth.js';
 import { API_URL } from '../config.js';
+import { searchGuide } from '../data/help-guides.js';
 
 const sha256 = (v) => createHash('sha256').update(String(v)).digest('hex');
 
@@ -634,6 +635,12 @@ const TOOLS = [
     description: 'List everyone with a login on this AUZsStyle tenant. Read-only.',
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'style_how_to',
+    description: "The real AUZsStyle user manual -- the same content shown in-app (Settings -> User manual), written for a shop owner/staff member, not for an API caller. Use this to answer a plain question like \"how do I give a refund\" or \"how do I print barcode tags\" with exact, real steps instead of guessing. Pass a question/topic to get the most relevant section(s); omit it to get the whole manual. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { question: { type: 'string', description: 'e.g. "how do I process a return", "barcode printing", "cash drawer"' } } },
   },
   // ---- AUZsMob (mobile phone retail & repair): thin wrappers over the already-registered mob_* functions.
   // No dedicated catalog/list RPC exists for this product (unlike AUZsStyle's sty_catalog) -- mob_sync_pull is
@@ -1246,6 +1253,8 @@ async function runTool(client, name, args) {
 
     case 'style_staff_list':
       return callRpc(client, 'sty_staff_list', {});
+    case 'style_how_to':
+      return searchGuide('style', args.question);
 
     case 'mob_catalog': {
       const data = await callRpc(client, 'mob_sync_pull', { p_since: null });
