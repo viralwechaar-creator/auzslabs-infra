@@ -220,6 +220,20 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: { search: { type: 'string' }, kind: { type: 'string', enum: ['customer', 'supplier'] } } },
   },
   {
+    name: 'ledger_save_party',
+    description: "Create a new AuzsLedger customer or supplier, or update an existing one by id. Use ledger_list_parties first to check it doesn't already exist. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['name', 'kind'],
+      properties: {
+        id: { type: 'string', description: 'set to update an existing party' }, name: { type: 'string' }, kind: { type: 'string', enum: ['customer', 'supplier'] },
+        gstin: { type: 'string' }, pan: { type: 'string' }, phone: { type: 'string' }, email: { type: 'string' },
+        billing_address: { type: 'string' }, shipping_address: { type: 'string' }, state_code: { type: 'string', description: 'two-digit GST state code; inferred from the GSTIN if omitted' },
+        credit_limit: { type: 'number' }, credit_days: { type: 'integer' }, category: { type: 'string' }, notes: { type: 'string' }, active: { type: 'boolean' },
+      },
+    },
+  },
+  {
     name: 'ledger_list_documents',
     description: 'List AuzsLedger invoices/bills/expenses/etc, optionally filtered. Read-only.',
     annotations: { readOnlyHint: true },
@@ -1072,6 +1086,15 @@ async function runTool(client, name, args) {
     case 'ledger_allocate_payment':
       if (!args.payment_id || !args.doc_id || !(Number(args.amount) > 0)) throw new HttpError(400, 'payment_id, doc_id and a positive amount are required');
       return callRpc(client, 'acc_allocate', { p_payment: args.payment_id, p_doc: args.doc_id, p_amount: args.amount });
+    case 'ledger_save_party':
+      if (!args.name || !args.kind) throw new HttpError(400, 'name and kind are required');
+      return callRpc(client, 'acc_save_party', {
+        p: {
+          id: args.id || null, name: args.name, kind: args.kind, gstin: args.gstin || null, pan: args.pan || null, phone: args.phone || null, email: args.email || null,
+          billing_address: args.billing_address || null, shipping_address: args.shipping_address || null, state_code: args.state_code || null,
+          credit_limit: args.credit_limit, credit_days: args.credit_days, category: args.category || null, notes: args.notes || null, active: args.active,
+        },
+      });
 
     case 'finance_dashboard':
       return callRpc(client, 'fin_dashboard', { p_from: args.from || null, p_to: args.to || null });
