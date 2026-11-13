@@ -422,6 +422,24 @@ const TOOLS = [
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'finance_reconciliation',
+    description: "One AuzsFinance account's bank-reconciliation view: the book balance, the cleared balance (only transactions marked as cleared), and every transaction on that account with whether it's cleared yet. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['account_id'], properties: { account_id: { type: 'string' } } },
+  },
+  {
+    name: 'finance_list_assets',
+    description: 'Every fixed asset tracked in AuzsFinance, with its cost, accumulated depreciation and current book value. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_list_recurring',
+    description: "AuzsFinance's repeating entries (rent, salary, EMI, subscriptions) -- amount, frequency, next due date, and whether one is due now. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
   // ---- AUZsPay (Payroll): thin wrappers over the already-registered pay_* functions. Scoped to HR
   // operations (employees, attendance, leave/loan/claim approvals) -- deliberately NOT the payroll run/
   // calculate/finalize/bank-disbursal pipeline (pay_run_*/pay_batch_*), since those move real salary money
@@ -1250,6 +1268,13 @@ async function runTool(client, name, args) {
       return callRpc(client, 'fin_txn_list', { p: args });
     case 'finance_list_loans':
       return callRpc(client, 'fin_loan_list', {});
+    case 'finance_reconciliation':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      return callRpc(client, 'fin_recon_list', { p_account: args.account_id });
+    case 'finance_list_assets':
+      return callRpc(client, 'fin_asset_list', {});
+    case 'finance_list_recurring':
+      return callRpc(client, 'fin_recurring_list', {});
 
     case 'payroll_dashboard':
       return callRpc(client, 'pay_dashboard', {});
