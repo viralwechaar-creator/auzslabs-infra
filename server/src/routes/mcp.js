@@ -29,8 +29,25 @@ import { addBooking, addInvoice, clientsList, cashRangeSummary } from '../salon/
 import { resolveOauthAccessToken } from './oauth.js';
 import { API_URL } from '../config.js';
 import { searchGuide } from '../data/help-guides.js';
+import { readDocUpload } from '../storage.js';
 
 const sha256 = (v) => createHash('sha256').update(String(v)).digest('hex');
+
+// Shared by ledger_download_attachment/finance_download_attachment: the RPC already re-checked tenant
+// ownership (acc_guard/fin_guard) and handed back {name, url, size_bytes} -- this reads the real bytes off
+// disk/object storage the exact same way the browser-facing GET /storage/acc|fin routes do (readDocUpload),
+// base64-encodes them, and never writes anything new to disk. Capped well under the MCP response body limit
+// (500KB, see readJsonBody above) so a large scan can't blow out the tool result.
+const ATTACHMENT_URL_RE = /^\/storage\/(acc|fin)\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)$/;
+async function downloadAttachment(att) {
+  const m = ATTACHMENT_URL_RE.exec(att.url || '');
+  if (!m) throw new HttpError(500, 'this attachment has no readable file on record');
+  if ((att.size_bytes || 0) > 3_000_000) throw new HttpError(400, `this file is too large to return here (${att.size_bytes} bytes, limit ~3MB) -- ask the owner to open it in the app instead`);
+  const [, empId, tenantId, filename] = m;
+  const doc = await readDocUpload({ tenantId, empId, filename });
+  if (!doc) throw new HttpError(404, 'the attachment record exists but its file could not be found in storage');
+  return { name: att.name, content_type: doc.type, size_bytes: doc.buffer.length, base64: doc.buffer.toString('base64') };
+}
 
 // ---- tool catalogue -----------------------------------------------------------------------------------------
 const TOOLS = [
@@ -304,6 +321,12 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: { search: { type: 'string' }, category: { type: 'string' } } },
   },
   {
+    name: 'ledger_download_attachment',
+    description: "Read an attachment's actual file content (a receipt/bill photo or PDF) by its id -- from ledger_get_document's attachments array. Returns it base64-encoded. Refuses files over ~3MB. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['attachment_id'], properties: { attachment_id: { type: 'string', description: "an id from ledger_get_document's attachments array" } } },
+  },
+  {
     name: 'ledger_post_document',
     description: 'Finalize (post) an AuzsLedger document created with ledger_save_document, optionally recording payment against it immediately. Posting is final -- most AI apps will ask you to confirm before running this.',
     annotations: { readOnlyHint: false, destructiveHint: true },
@@ -398,6 +421,12 @@ const TOOLS = [
     description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
+  },
+  {
+    name: 'finance_download_attachment',
+    description: "Read an attachment's actual file content (a receipt/bill photo or PDF) by its id -- a transaction's 'files' array carries these ids. Returns it base64-encoded. Refuses files over ~3MB. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['attachment_id'], properties: { attachment_id: { type: 'string' } } },
   },
   // ---- AUZsPay (Payroll): thin wrappers over the already-registered pay_* functions. Scoped to HR
   // operations (employees, attendance, leave/loan/claim approvals) -- deliberately NOT the payroll run/
@@ -1163,6 +1192,11 @@ async function runTool(client, name, args) {
       return callRpc(client, 'acc_get_document', { p_id: args.doc_id });
     case 'ledger_list_products':
       return callRpc(client, 'acc_list_products', { p: { search: args.search || null, category: args.category || null } });
+    case 'ledger_download_attachment': {
+      if (!args.attachment_id) throw new HttpError(400, 'attachment_id is required');
+      const att = await callRpc(client, 'acc_get_attachment', { p_id: args.attachment_id });
+      return downloadAttachment(att);
+    }
     case 'ledger_post_document':
       if (!args.doc_id) throw new HttpError(400, 'doc_id is required');
       return callRpc(client, 'acc_post_document', { p_doc_id: args.doc_id, p_payments: args.payments || [] });
@@ -1222,6 +1256,11 @@ async function runTool(client, name, args) {
     }
     case 'finance_save_transaction':
       return callRpc(client, 'fin_save_txn', { p: args });
+    case 'finance_download_attachment': {
+      if (!args.attachment_id) throw new HttpError(400, 'attachment_id is required');
+      const att = await callRpc(client, 'fin_get_attachment', { p_id: args.attachment_id });
+      return downloadAttachment(att);
+    }
 
     case 'payroll_dashboard':
       return callRpc(client, 'pay_dashboard', {});
