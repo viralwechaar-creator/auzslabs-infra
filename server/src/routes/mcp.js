@@ -253,6 +253,36 @@ const TOOLS = [
     inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
   },
   {
+    name: 'ledger_gst_register',
+    description: "One of AuzsLedger's GSTR-1/GSTR-2-style registers for a period -- the same line-level detail GSTR filing needs, grouped the way the return expects it. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      type: 'object', required: ['type', 'from', 'to'],
+      properties: {
+        type: { type: 'string', enum: ['b2b', 'b2c', 'cdn', 'hsn', 'exempt', 'purchases', 'itc', 'rcm'], description: 'b2b/b2c/cdn (credit+debit notes)/hsn summary = sales side; purchases/itc (input tax credit eligible)/rcm (reverse charge) = purchase side' },
+        from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' },
+      },
+    },
+  },
+  {
+    name: 'ledger_gst_exceptions',
+    description: "Things a reviewer should fix before filing GST for a period -- missing GSTIN on a registered customer's invoice, a line with no HSN/SAC code, input tax credit claimed from a supplier with no GSTIN, CGST/SGST charged on an inter-state sale (or IGST on intra-state), a line's tax rate differing from the product's master rate, a B2B invoice with no e-invoice IRN yet, or a still-unposted draft inside the period. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
+    name: 'ledger_gst_2b_reconciliation',
+    description: "Compares this business's purchase bills against GSTR-2B data imported from the government portal (the owner downloads and imports that file in-app; this tool never calls the portal itself) for a filing period, showing which bills match, which are only in the books, and which are only in GSTR-2B. Empty if nothing has been imported for that period yet. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['period'], properties: { period: { type: 'string', description: "GST filing period, e.g. '2026-04' for April 2026" } } },
+  },
+  {
+    name: 'ledger_duplicate_documents',
+    description: "Possible duplicate invoices/bills/expenses or payments in AuzsLedger -- the same party, same amount and same document type (or same payment kind/amount/date) recorded more than once within 7 days of each other. A real, common bookkeeping mistake this surfaces for a human to check, not a definite error. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
     name: 'ledger_ageing',
     description: 'Who owes the business money (receivable) or who the business owes (payable), broken down by how overdue. Read-only.',
     annotations: { readOnlyHint: true },
@@ -1150,6 +1180,17 @@ async function runTool(client, name, args) {
     case 'ledger_gst_summary':
       if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
       return callRpc(client, 'acc_gst_summary', { p_from: args.from, p_to: args.to });
+    case 'ledger_gst_register':
+      if (!args.type || !args.from || !args.to) throw new HttpError(400, 'type, from and to are required');
+      return callRpc(client, 'acc_gst_register', { p: { type: args.type, from: args.from, to: args.to } });
+    case 'ledger_gst_exceptions':
+      if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
+      return callRpc(client, 'acc_gst_exceptions', { p_from: args.from, p_to: args.to });
+    case 'ledger_gst_2b_reconciliation':
+      if (!args.period) throw new HttpError(400, 'period is required');
+      return callRpc(client, 'acc_gst_recon_list', { p_period: args.period });
+    case 'ledger_duplicate_documents':
+      return callRpc(client, 'acc_rep_duplicates', { p: { from: args.from || null, to: args.to || null } });
     case 'ledger_ageing':
       return callRpc(client, 'acc_ageing', { p: { kind: args.kind || 'receivable' } });
     case 'ledger_save_document':
