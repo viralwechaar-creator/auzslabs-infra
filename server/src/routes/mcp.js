@@ -125,6 +125,16 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: true },
     inputSchema: { type: 'object', required: ['order_id', 'amount'], properties: { order_id: { type: 'string', description: 'from list_orders' }, amount: { type: 'number' }, reason: { type: 'string' } } },
   },
+  // ---- Reorder suggestions (café/retail raw materials): replicates, exactly, the same velocity-based math
+  // the console's own Inventory Reports -> Reorder tab already computes client-side (invReport('reorder') in
+  // app/public/console/p-inventory.js) -- no new table, no new business logic, just the same real calculation
+  // made readable to an agent. To act on it, call pos_create_purchase_order (already exists). ----
+  {
+    name: 'pos_reorder_suggestions',
+    description: "Raw materials that are at/below their reorder level, or will run out within 7 days at their recent daily usage rate -- the same calculation the console's own Inventory Reports -> Reorder tab shows, read-only. Use pos_create_purchase_order to actually act on one.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
   // ---- Due-payment follow-up queue (db/324): the console's "Due Payment" page already lists unpaid bills
   // with the real balance due -- these tools add the one thing it doesn't have, a persisted "did we already
   // work this one" state, so an agent (or a human) never re-starts from zero on a bill someone already called
@@ -409,6 +419,60 @@ const TOOLS = [
       },
     },
   },
+  // ---- AUZsMob (mobile phone retail & repair): thin wrappers over the already-registered mob_* functions.
+  // No dedicated catalog/list RPC exists for this product (unlike AUZsStyle's sty_catalog) -- mob_sync_pull is
+  // the one real read path (db/082's own comment), so mob_catalog/mob_list_repairs trim its full payload down
+  // to what a connector caller needs instead of returning raw sync data. ----
+  {
+    name: 'mob_catalog',
+    description: "AUZsMob's catalogue: accessories/non-serialized stock (with current quantity) and serialized phones currently in stock (by IMEI), plus vendors and customers. Read this first to find item_id/unit_id values before selling. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'mob_report_dashboard',
+    description: "AUZsMob's sales/profit/dues/low-stock dashboard for a date range (defaults to today). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
+    name: 'mob_list_repairs',
+    description: 'List AUZsMob repair jobs with their current status (received/in_repair/ready/delivered/cancelled). Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['received', 'in_repair', 'ready', 'delivered', 'cancelled'] }, limit: { type: 'integer', description: 'default 50, max 200' } } },
+  },
+  {
+    name: 'mob_sell',
+    description: "Record a real AUZsMob sale (a serialized phone by unit_id, or accessories by item_id + qty) -- this bills immediately, it is not a draft. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['items'],
+      properties: {
+        items: { type: 'array', items: { type: 'object', required: ['price'], properties: { unit_id: { type: 'string', description: 'a serialized phone, from mob_catalog' }, item_id: { type: 'string', description: 'an accessory, from mob_catalog' }, qty: { type: 'number', description: 'for item_id lines only; a unit_id line is always 1' }, price: { type: 'number' } } } },
+        customer_name: { type: 'string' }, customer_phone: { type: 'string' },
+        discount: { type: 'number' }, paid: { type: 'number', description: 'amount actually received now; defaults to the full total (nothing due)' },
+        payment_mode: { type: 'string', enum: ['cash', 'upi', 'card', 'credit'] },
+      },
+    },
+  },
+  {
+    name: 'mob_create_repair',
+    description: 'Open a new AUZsMob repair job. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['customer_name', 'customer_phone', 'device_model', 'problem'],
+      properties: {
+        customer_name: { type: 'string' }, customer_phone: { type: 'string' }, device_model: { type: 'string' }, imei: { type: 'string' }, problem: { type: 'string' },
+        advance: { type: 'number' }, estimate: { type: 'number' }, warranty_days: { type: 'integer' },
+      },
+    },
+  },
+  {
+    name: 'mob_update_repair_status',
+    description: "Move an AUZsMob repair job to its next status (received -> in_repair -> ready -> delivered, or cancelled). Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['repair_id', 'status'], properties: { repair_id: { type: 'string', description: 'from mob_list_repairs' }, status: { type: 'string', enum: ['received', 'in_repair', 'ready', 'delivered', 'cancelled'] } } },
+  },
   // ---- WhatsApp: only a business's own already-approved templates, never free text (a WhatsApp Business
   // Platform rule, see db/319's own comment) -- the AI fills in the blanks, it can never compose the message. ----
   {
@@ -425,6 +489,15 @@ const TOOLS = [
       type: 'object', required: ['to', 'template'],
       properties: { to: { type: 'string', description: 'customer phone number' }, template: { type: 'string', description: 'a template key from whatsapp_status' }, params: { type: 'array', items: { type: 'string' }, description: 'fills the template\'s {{1}}, {{2}}, ... placeholders in order' }, ref: { type: 'string', description: 'optional: a unique reference so resending the same ref never double-sends' } },
     },
+  },
+  // ---- AI activity: every tool call (this one included) is written to mcp_audit (db/323) the instant it
+  // finishes, success or failure -- the owner can review the same log in the console (Management -> AI
+  // activity), and this tool lets the agent itself see its own recent actions. ----
+  {
+    name: 'mcp_my_activity',
+    description: 'List this connector\'s own recent actions against this business (tool name, when, success/failure, the arguments used). Useful to check what you already did, or to show the owner what happened. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'default 50, max 200' } } },
   },
   // ---- Auzsalon: a different storage engine (salon_store, not records/RLS), so these go through
   // server/src/salon/{storage,rules}.js directly instead of callRpc -- see mcp.js's own handle() for the auth split. ----
@@ -531,6 +604,19 @@ function crmSegmentFilter(all, segment, today = new Date().toLocaleDateString('e
     case 'bday': return all.filter((c) => c.dob && Number(String(c.dob).slice(5, 7)) === month);
     default: return all;
   }
+}
+
+// Fire-and-forget: a failure to write the audit row must never break the tool call itself (same spirit as
+// pos_audit's own "a failure to audit writes an audit_error row instead of blocking the sale" -- here there's
+// nothing else to block, so this just logs to the server console and moves on).
+function logMcpAudit(tenantId, keyId, tool, ok, error, args) {
+  let trimmedArgs = null;
+  try {
+    const s = JSON.stringify(args ?? {});
+    trimmedArgs = s.length > 4000 ? { truncated: true, preview: s.slice(0, 2000) } : JSON.parse(s);
+  } catch { trimmedArgs = null; }
+  pool.query('select mcp_audit_add($1, $2, $3, $4, $5, $6)', [tenantId, keyId, tool || '(unknown)', ok, error, trimmedArgs])
+    .catch((e) => console.error('mcp_audit_add failed:', e.message));
 }
 
 async function runTool(client, name, args) {
@@ -677,6 +763,25 @@ async function runTool(client, name, args) {
       if (!args.id || !args.status) throw new HttpError(400, 'id and status are required');
       return callRpc(client, 'pos_duefollowup_mark', { p_id: args.id, p_status: args.status, p_note: args.note || null });
 
+    case 'pos_reorder_suggestions': {
+      const rows = await handleSelect(client, 'records', TABLES.records, new URLSearchParams({ 'eq.kind': 'ing', 'eq.deleted': 'false', limit: '2000' }));
+      const cutoff = new Date(Date.now() - 14 * 86_400_000);
+      const now = Date.now();
+      const out = [];
+      for (const r of rows) {
+        const g = r.data || {};
+        const usage = (g.usage || []).filter((u) => u.d && new Date(u.d) >= cutoff);
+        const span = usage.length ? Math.max(1, Math.min(14, Math.round((now - new Date(usage[0].d)) / 86_400_000) + 1)) : 0;
+        const vel = usage.length ? Math.round((usage.reduce((a, u) => a + (Number(u.q) || 0), 0) / span) * 100) / 100 : 0;
+        const daysLeft = vel > 0 ? Math.floor((g.qty || 0) / vel) : null;
+        const low = (g.qty || 0) <= (g.low || 0);
+        if (!low && !(daysLeft != null && daysLeft <= 7)) continue;
+        const suggestedQty = vel > 0 ? Math.ceil(vel * 7) : Math.max(0, (g.low || 0) * 2 - (g.qty || 0));
+        out.push({ id: r.id, name: g.name, unit: g.unit || '', on_hand: g.qty || 0, reorder_level: g.low || 0, daily_usage: vel, days_left: daysLeft, suggested_order_qty: suggestedQty, vendor: g.vendor || null, cost_per_unit: g.cost || 0 });
+      }
+      return out;
+    }
+
     case 'crm_list_customers': {
       const limit = Math.min(Math.max(parseInt(args.limit, 10) || 100, 1), 500);
       const all = await crmCustomers(client);
@@ -819,11 +924,67 @@ async function runTool(client, name, args) {
         p: { id: randomUUID(), saleId: args.sale_id, mode: args.mode || 'cash', reason: args.reason || null, lines: args.lines.map((l) => ({ saleLineId: l.sale_line_id, qty: l.qty, damaged: l.damaged || false })) },
       });
 
+    case 'mob_catalog': {
+      const data = await callRpc(client, 'mob_sync_pull', { p_since: null });
+      const stockByItem = {};
+      for (const m of data.stock_movements || []) stockByItem[m.item_id] = (stockByItem[m.item_id] || 0) + Number(m.qty || 0);
+      const items = (data.items || []).filter((i) => i.active).map((i) => ({
+        id: i.id, name: i.name, category: i.category, serialized: i.serialized,
+        cost_price: i.cost_price, selling_price: i.selling_price,
+        ...(i.serialized ? {} : { stock: stockByItem[i.id] || 0, low_stock_at: i.low_stock_at }),
+      }));
+      const units_in_stock = (data.units || []).filter((u) => u.status === 'in_stock').map((u) => ({ id: u.id, item_id: u.item_id, imei: u.imei, condition: u.condition, cost_price: u.cost_price, selling_price: u.selling_price }));
+      return {
+        items, units_in_stock,
+        vendors: (data.vendors || []).map((v) => ({ id: v.id, name: v.name, phone: v.phone })),
+        customers: (data.customers || []).map((c) => ({ id: c.id, name: c.name, phone: c.phone })),
+      };
+    }
+    case 'mob_report_dashboard':
+      return callRpc(client, 'mob_report_dashboard', { p_from: args.from || null, p_to: args.to || null });
+    case 'mob_list_repairs': {
+      const limit = Math.min(Math.max(parseInt(args.limit, 10) || 50, 1), 200);
+      const data = await callRpc(client, 'mob_sync_pull', { p_since: null });
+      const latestStatus = {};
+      for (const e of (data.repair_events || []).filter((e) => e.type === 'status').sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))) {
+        latestStatus[e.repair_id] = e.status;
+      }
+      let repairs = (data.repairs || []).map((r) => ({ id: r.id, customer_name: r.customer_name, customer_phone: r.customer_phone, device_model: r.device_model, imei: r.imei, problem: r.problem, advance: r.advance, estimate: r.estimate, status: latestStatus[r.id] || 'received', created_at: r.created_at }));
+      if (args.status) repairs = repairs.filter((r) => r.status === args.status);
+      return repairs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, limit);
+    }
+    case 'mob_sell': {
+      if (!Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'items must be a non-empty array');
+      for (const it of args.items) {
+        if (!it.unit_id && !it.item_id) throw new HttpError(400, 'each item needs unit_id or item_id');
+        if (it.price == null) throw new HttpError(400, 'each item needs a price');
+      }
+      const p = {
+        items: args.items.map((it) => (it.unit_id ? { unitId: it.unit_id, qty: 1, price: Number(it.price) } : { itemId: it.item_id, qty: Number(it.qty) || 1, price: Number(it.price) })),
+        customerName: args.customer_name || null, customerPhone: args.customer_phone || null,
+        discount: args.discount || 0, paid: args.paid != null ? Number(args.paid) : undefined, paymentMode: args.payment_mode || 'cash',
+      };
+      return callRpc(client, 'mob_push_sale', { p_id: randomUUID(), p });
+    }
+    case 'mob_create_repair': {
+      if (!args.customer_name || !args.customer_phone || !args.device_model || !args.problem) throw new HttpError(400, 'customer_name, customer_phone, device_model and problem are required');
+      return callRpc(client, 'mob_create_repair', {
+        p_id: randomUUID(),
+        p: { customerName: args.customer_name, customerPhone: args.customer_phone, deviceModel: args.device_model, imei: args.imei || null, problem: args.problem, advance: args.advance || 0, estimate: args.estimate || null, warrantyDays: args.warranty_days || 0 },
+      });
+    }
+    case 'mob_update_repair_status':
+      if (!args.repair_id || !args.status) throw new HttpError(400, 'repair_id and status are required');
+      return callRpc(client, 'mob_push_repair_event', { p_id: randomUUID(), p_repair_id: args.repair_id, p: { type: 'status', status: args.status } });
+
     case 'whatsapp_status':
       return callRpc(client, 'wa_my_status', {});
     case 'whatsapp_send':
       if (!args.to || !args.template) throw new HttpError(400, 'to and template are required');
       return callRpc(client, 'mcp_send_whatsapp', { p_to: args.to, p_template: args.template, p_params: args.params || [], p_ref: args.ref || null });
+
+    case 'mcp_my_activity':
+      return callRpc(client, 'mcp_audit_list', { p_limit: args.limit || 50 });
 
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
@@ -892,11 +1053,13 @@ export async function handle(ctx) {
   };
   if (!token) return unauthorized('missing bearer token');
   let resolved = null;
+  let keyId = null;
   if (token.startsWith('auz_oat_')) {
     resolved = await resolveOauthAccessToken(token);
   } else {
     const { rows } = await pool.query('select mcp_resolve_key($1) as r', [sha256(token)]);
     resolved = rows[0]?.r;
+    keyId = resolved?.id || null;
   }
   if (!resolved) return unauthorized('invalid, expired or revoked token');
   if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
@@ -920,9 +1083,11 @@ export async function handle(ctx) {
       const data = name && name.startsWith('salon_')
         ? await runSalonTool(user_id, tenant_id, name, params?.arguments)
         : await withAuth(user_id, (client) => runTool(client, name, params?.arguments));
+      logMcpAudit(tenant_id, keyId, name, true, null, params?.arguments);
       return reply(200, rpcOk(id, { content: [{ type: 'text', text: JSON.stringify(data) }], isError: false }));
     } catch (err) {
       const message = err instanceof HttpError ? err.message : (err?.message || 'tool call failed');
+      logMcpAudit(tenant_id, keyId, name, false, message, params?.arguments);
       return reply(200, rpcOk(id, { content: [{ type: 'text', text: message }], isError: true }));
     }
   }
