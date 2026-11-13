@@ -411,6 +411,30 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'payroll_list_runs',
+    description: "List AUZsPay's payroll runs (one per month, or an off-cycle run), each with its status and headline gross/net totals. Use this to find a run_id for payroll_run_detail. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { kind: { type: 'string' }, year: { type: 'string', description: 'e.g. 2026' }, include_cancelled: { type: 'boolean' } } },
+  },
+  {
+    name: 'payroll_run_detail',
+    description: "Full detail of one payroll run: every employee's payslip line (gross, deductions, net, paid days, LOP days, payslip number), the approval audit trail (who created/calculated/approved/finalized it and when), and the payment batches raised against it. This is the tool for 'who approved this payroll' or 'show me everyone's payslip for this month', not payroll_dashboard. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['run_id'], properties: { run_id: { type: 'string', description: 'from payroll_list_runs' } } },
+  },
+  {
+    name: 'payroll_list_loans',
+    description: 'Every loan/advance request in AUZsPay, any status (not just pending) -- amount, EMI terms, how much has been repaid, and the outstanding balance. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { employee_id: { type: 'string' }, status: { type: 'string' } } },
+  },
+  {
+    name: 'payroll_list_claims',
+    description: 'Every expense/reimbursement claim in AUZsPay, any status (not just pending). Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { employee_id: { type: 'string' }, status: { type: 'string' } } },
+  },
+  {
     name: 'payroll_list_employees',
     description: 'List employees in AUZsPay. Includes salary details if the connector key belongs to someone with salary-view permission (normally the owner) -- treat this as sensitive personal/financial data. Read-only.',
     annotations: { readOnlyHint: true },
@@ -1225,6 +1249,15 @@ async function runTool(client, name, args) {
 
     case 'payroll_dashboard':
       return callRpc(client, 'pay_dashboard', {});
+    case 'payroll_list_runs':
+      return callRpc(client, 'pay_list_runs', { p: { kind: args.kind || null, year: args.year || null, include_cancelled: !!args.include_cancelled } });
+    case 'payroll_run_detail':
+      if (!args.run_id) throw new HttpError(400, 'run_id is required');
+      return callRpc(client, 'pay_get_run', { p_id: args.run_id });
+    case 'payroll_list_loans':
+      return callRpc(client, 'pay_list_loans', { p: { employee_id: args.employee_id || null, status: args.status || null } });
+    case 'payroll_list_claims':
+      return callRpc(client, 'pay_list_claims', { p: { employee_id: args.employee_id || null, status: args.status || null } });
     case 'payroll_list_employees':
       return callRpc(client, 'pay_list_employees', { p: { q: args.search || null, status: args.status || null } });
     case 'payroll_attendance_month':
