@@ -800,6 +800,12 @@ const TOOLS = [
       properties: { to: { type: 'string', description: 'customer phone number' }, template: { type: 'string', description: 'a template key from whatsapp_status' }, params: { type: 'array', items: { type: 'string' }, description: 'fills the template\'s {{1}}, {{2}}, ... placeholders in order' }, ref: { type: 'string', description: 'optional: a unique reference so resending the same ref never double-sends' } },
     },
   },
+  {
+    name: 'whatsapp_message_history',
+    description: "Every WhatsApp message this business has sent to one customer (which template, when, delivery status) -- unlike whatsapp_status's 'recent' list (the whole tenant's last 30 messages, across every customer), this is scoped to one phone number so a busy business's other customers don't crowd it out. Outbound only -- there is no stored log of what a customer replied, only an opt-out (STOP) if they ever sent one. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { phone: { type: 'string', description: 'omit to see the whole tenant\'s recent messages (same as whatsapp_status but with a higher limit)' }, limit: { type: 'integer' } } },
+  },
   // ---- AI activity: every tool call (this one included) is written to mcp_audit (db/323) the instant it
   // finishes, success or failure -- the owner can review the same log in the console (Management -> AI
   // activity), and this tool lets the agent itself see its own recent actions. ----
@@ -1436,6 +1442,8 @@ async function runTool(client, name, args) {
     case 'whatsapp_send':
       if (!args.to || !args.template) throw new HttpError(400, 'to and template are required');
       return callRpc(client, 'mcp_send_whatsapp', { p_to: args.to, p_template: args.template, p_params: args.params || [], p_ref: args.ref || null });
+    case 'whatsapp_message_history':
+      return callRpc(client, 'mcp_whatsapp_history', { p_phone: args.phone || null, p_limit: args.limit || 50 });
 
     case 'mcp_my_activity':
       return callRpc(client, 'mcp_audit_list', { p_limit: args.limit || 50 });
