@@ -857,6 +857,12 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'salon_list_invoices',
+    description: "List Auzsalon invoices -- client, items, total, payment mode, and whether a credit (pay-later) bill has been settled yet. Use this to answer 'who still owes us' (unsettled credit bills) or to find a specific client's billing history. Only works for a Salon-niche business. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, client_phone: { type: 'string' }, unsettled_only: { type: 'boolean', description: 'only credit bills not yet paid' }, limit: { type: 'integer' } } },
+  },
 ];
 
 const itemFilters = (extra) => { const p = new URLSearchParams({ 'eq.kind': 'item', 'eq.deleted': 'false', order: 'updated_at', ...extra }); return p; };
@@ -1483,6 +1489,13 @@ async function runSalonTool(userId, tenantId, name, args) {
     case 'salon_create_invoice':
       if (!args.client || !Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'client and a non-empty items array are required');
       return mutate(tenant, (db) => addInvoice(db, args, { role: 'owner' }), ['site', 'data'], ['data']);
+    case 'salon_list_invoices':
+      return mutate(tenant, (db) => (db.invoices || [])
+        .filter((v) => !args.from || v.date >= args.from)
+        .filter((v) => !args.to || v.date <= args.to)
+        .filter((v) => !args.client_phone || v.client?.phone === args.client_phone)
+        .filter((v) => !args.unsettled_only || (v.paymentMode === 'credit' && !v.settled))
+        .slice(0, Math.min(Math.max(parseInt(args.limit, 10) || 100, 1), 500)), ['site', 'data'], []);
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
   }
