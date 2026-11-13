@@ -440,6 +440,51 @@ const TOOLS = [
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: {} },
   },
+  {
+    name: 'finance_anomalies',
+    description: "Things in AuzsFinance that look wrong and are worth a second look: the same amount entered twice, an expense far above that category's usual size, a large payment with no bill/receipt attached, an account balance below zero, a loan past its due date, or money owed to the business for a long time. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_bank_import_preview',
+    description: "Check a bank statement against AuzsFinance before importing it, without changing anything -- each row comes back marked 'matched' (an existing transaction on the books looks like this bank line, give its txn_id/txn_title), 'duplicate' (already imported or already has this reference), 'new' (no match, would create a transaction), or 'skip' (no usable date/amount). Always run this before finance_bank_import_commit so a human can review the matches. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      type: 'object', required: ['account_id', 'rows'],
+      properties: {
+        account_id: { type: 'string', description: 'the AuzsFinance account this statement is for' },
+        rows: {
+          type: 'array', description: 'up to 2000 bank statement lines',
+          items: { type: 'object', required: ['date'], properties: { date: { type: 'string', description: 'YYYY-MM-DD' }, credit: { type: 'number' }, debit: { type: 'number' }, ref: { type: 'string' }, desc: { type: 'string' } } },
+        },
+      },
+    },
+  },
+  {
+    name: 'finance_bank_import_commit',
+    description: "Actually import a bank statement into AuzsFinance: for each row, either 'match' it to an existing transaction (marks that transaction cleared) or create it as a new transaction (anything not explicitly marked 'match' or 'skip' is created new) -- always run finance_bank_import_preview first and pass back its row statuses/txn_ids so matches land correctly. Most AI apps will ask you to confirm before running this -- it changes real financial records.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['account_id', 'rows'],
+      properties: {
+        account_id: { type: 'string' },
+        rows: {
+          type: 'array', description: 'the same rows from finance_bank_import_preview, each with an action added',
+          items: {
+            type: 'object', required: ['date'],
+            properties: {
+              date: { type: 'string', description: 'YYYY-MM-DD' }, credit: { type: 'number' }, debit: { type: 'number' }, ref: { type: 'string' }, desc: { type: 'string' },
+              action: { type: 'string', enum: ['new', 'match', 'skip'], description: "default 'new'; 'match' requires txn_id from the preview" },
+              txn_id: { type: 'string', description: 'required when action is match' },
+              kind: { type: 'string', enum: ['money_in', 'expense'], description: 'for a new row, default money_in for a credit / expense for a debit' },
+              category_id: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  },
   // ---- AUZsPay (Payroll): thin wrappers over the already-registered pay_* functions. Scoped to HR
   // operations (employees, attendance, leave/loan/claim approvals) -- deliberately NOT the payroll run/
   // calculate/finalize/bank-disbursal pipeline (pay_run_*/pay_batch_*), since those move real salary money
@@ -1275,6 +1320,15 @@ async function runTool(client, name, args) {
       return callRpc(client, 'fin_asset_list', {});
     case 'finance_list_recurring':
       return callRpc(client, 'fin_recurring_list', {});
+    case 'finance_anomalies':
+      return callRpc(client, 'fin_anomalies', {});
+    case 'finance_bank_import_preview':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      return callRpc(client, 'fin_import_preview', { p_account: args.account_id, p_rows: args.rows || [] });
+    case 'finance_bank_import_commit':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      for (const r of (args.rows || [])) { if (r.action === 'match' && !r.txn_id) throw new HttpError(400, "a 'match' row needs txn_id"); }
+      return callRpc(client, 'fin_import_commit', { p_account: args.account_id, p_rows: args.rows || [] });
 
     case 'payroll_dashboard':
       return callRpc(client, 'pay_dashboard', {});
