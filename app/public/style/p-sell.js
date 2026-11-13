@@ -239,7 +239,7 @@ function paySheet(c, done) {
     // A walk-in (no customer attached) has nowhere to carry a balance due, so nothing entered at all would
     // previously have silently gone through as a free, fully-cash sale (Cash defaulted to the full amount).
     // Now that nothing defaults, require at least one method to actually be chosen for a walk-in.
-    ok.disabled = !!(upiId && pay.upi > 0 && !upiGot) || (!cust && s <= 0.005);
+    ok.disabled = !!(upiAccounts.length && pay.upi > 0 && !upiGot) || (!cust && s <= 0.005);
   };
   MODES.forEach(([m, l]) => {
     const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); upd(); } }); inputs[m] = i;
