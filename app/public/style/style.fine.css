@@ -326,6 +326,7 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .upiq-i{width:132px;height:132px;border-radius:10px;background:#fff;flex:none}
 .upiq-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.upiq-t b{font-size:20px}.upiq-t .small{overflow:hidden;text-overflow:ellipsis}
 .upiq .upic{flex-basis:100%;min-height:40px;padding:6px 2px}
+.upiq-sw{flex-basis:100%;display:flex;align-items:center;gap:8px}.upiq-sw .select{flex:1;min-width:0}
 
 /* store visitor analytics */
 .hbar{display:grid;grid-template-columns:minmax(80px,32%) 1fr auto;gap:8px;align-items:center;padding:5px 0;font-size:12px}
