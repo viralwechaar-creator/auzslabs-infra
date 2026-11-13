@@ -36,13 +36,13 @@ const sha256 = (v) => createHash('sha256').update(String(v)).digest('hex');
 const TOOLS = [
   {
     name: 'list_inventory',
-    description: "List this business's menu/inventory items (name, price, stock). Read-only.",
+    description: "AUZsPOS's own menu/inventory only (name, price, stock) -- NOT AUZsStyle, AUZsMob or AuzsLedger, each of which has its own separate catalogue and its own tools (style_catalog, mob_catalog, ledger_list_products). If this business has more than one AUZslab app, check which one actually holds the item you're looking for. Read-only.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'max items to return (default 50, max 200)' } } },
   },
   {
     name: 'list_orders',
-    description: "List this business's most recent orders/bills (items, total, status). Read-only.",
+    description: "AUZsPOS's own orders/bills only (items, total, status) -- NOT AUZsStyle sales or AuzsLedger invoices, each of which has its own separate tools (style_list_sales, ledger_list_documents). Read-only.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'max orders to return (default 20, max 100)' } } },
   },
@@ -54,7 +54,7 @@ const TOOLS = [
   },
   {
     name: 'sales_summary',
-    description: 'A quick revenue/order-count summary since a given number of days ago (default 1 = today). Approximate: based on when records were last updated, not a full accounting report.',
+    description: "AUZsPOS's own revenue/order-count summary only (since a given number of days ago, default 1 = today) -- NOT AUZsStyle, AuzsLedger or AuzsFinance, each of which has its own report tools. Approximate: based on when records were last updated, not a full accounting report.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { days: { type: 'integer', description: 'how many days back to include (default 1)' } } },
   },
@@ -66,7 +66,7 @@ const TOOLS = [
   },
   {
     name: 'add_inventory_item',
-    description: 'Add a new menu/inventory item. Most AI apps will ask you to confirm before running this -- it changes real data.',
+    description: "Add a new menu/inventory item to AUZsPOS ONLY -- for AUZsStyle use style_save_style, for AUZsMob there is a separate catalogue, for AuzsLedger use ledger_save_product. Adding it here does nothing for those other apps even if this business also has them. Most AI apps will ask you to confirm before running this -- it changes real data.",
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: {
       type: 'object', required: ['name', 'price'],
@@ -75,13 +75,13 @@ const TOOLS = [
   },
   {
     name: 'update_item_price',
-    description: "Update an existing item's price. Most AI apps will ask you to confirm before running this -- it changes real data.",
+    description: "Update an existing AUZsPOS item's price ONLY -- for AUZsStyle use style_save_style, for AuzsLedger use ledger_save_product. Read with list_inventory first to confirm the item is actually in AUZsPOS's own catalogue, not another app's. Most AI apps will ask you to confirm before running this -- it changes real data.",
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', required: ['item_id', 'price'], properties: { item_id: { type: 'string', description: 'the id from list_inventory' }, price: { type: 'number' } } },
   },
   {
     name: 'create_draft_order',
-    description: "Draft a new order/bill from a list of items. This does NOT finalize a sale -- it lands in the business's existing order inbox for staff to review and accept, same as a customer's own QR order, so a wrong or made-up order never becomes a real bill unattended. Most AI apps will ask you to confirm before running this.",
+    description: "Draft a new order/bill in AUZsPOS ONLY from a list of items (for AUZsStyle use style_sell, for AuzsLedger use ledger_save_document). This does NOT finalize a sale -- it lands in AUZsPOS's own order inbox for staff to review and accept, same as a customer's own QR order, so a wrong or made-up order never becomes a real bill unattended. Most AI apps will ask you to confirm before running this.",
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: {
       type: 'object', required: ['items'],
