@@ -740,6 +740,24 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'mob_sales_ledger',
+    description: "Every AUZsMob sale item line in a date range, each with the IMEI (for a serialized phone), who sold it, which vendor/purchase it came from and who bought it in, cost, sale price and profit. This is the right tool for 'who sold this phone', 'what did we pay for this IMEI', or 'how much profit on this item' -- mob_report_dashboard only gives totals. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, staff_id: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'mob_adjust_stock',
+    description: 'Adjust an AUZsMob accessory/non-serialized item\'s quantity up or down with a note (stock count correction, damage, etc). For a serialized phone, use mob_catalog to manage units directly, not this. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['item_id', 'qty_delta'], properties: { item_id: { type: 'string' }, qty_delta: { type: 'number', description: 'positive to add, negative to remove' }, note: { type: 'string' } } },
+  },
+  {
+    name: 'mob_stock_moves',
+    description: "Line-by-line stock movement history for AUZsMob's non-serialized items (accessories etc.) -- quantity before/after each move, why it changed (purchase/sale/repair part/void/adjustment/secondhand intake), and the real bill number, vendor or repair job behind it. A serialized phone's own history is better read from mob_catalog (its units) or mob_sales_ledger (by IMEI). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { item_id: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, type: { type: 'string', enum: ['purchase', 'sale', 'repair_part', 'void_sale', 'adjustment', 'secondhand_intake'] } } },
+  },
+  {
     name: 'mob_report_dashboard',
     description: "AUZsMob's sales/profit/dues/low-stock dashboard for a date range (defaults to today). Read-only.",
     annotations: { readOnlyHint: true },
@@ -1430,6 +1448,13 @@ async function runTool(client, name, args) {
     case 'mob_update_repair_status':
       if (!args.repair_id || !args.status) throw new HttpError(400, 'repair_id and status are required');
       return callRpc(client, 'mob_push_repair_event', { p_id: randomUUID(), p_repair_id: args.repair_id, p: { type: 'status', status: args.status } });
+    case 'mob_sales_ledger':
+      return callRpc(client, 'mob_report_ledger', { p_from: args.from || null, p_to: args.to || null, p_staff_id: args.staff_id || null, p_limit: args.limit || 2000 });
+    case 'mob_adjust_stock':
+      if (!args.item_id || args.qty_delta == null) throw new HttpError(400, 'item_id and qty_delta are required');
+      return callRpc(client, 'mob_adjust_stock', { p_id: randomUUID(), p_item_id: args.item_id, p_qty_delta: args.qty_delta, p_note: args.note || null });
+    case 'mob_stock_moves':
+      return callRpc(client, 'mob_stock_moves_list', { p: args });
 
     case 'whatsapp_status':
       return callRpc(client, 'wa_my_status', {});

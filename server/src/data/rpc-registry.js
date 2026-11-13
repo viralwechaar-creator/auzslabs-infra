@@ -620,6 +620,7 @@ export const RPC = {
   mob_data_epoch: { params: [], auth: true },
   mob_report_mine: { params: ['p_from', 'p_to', 'p_limit'], defaults: { p_from: null, p_to: null, p_limit: 500 }, auth: true },
   mob_report_ledger: { params: ['p_from', 'p_to', 'p_staff_id', 'p_limit'], defaults: { p_from: null, p_to: null, p_staff_id: null, p_limit: 2000 }, auth: true },
+  mob_stock_moves_list: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   mob_integrity_check: { params: [], auth: true },
   mob_export_all: { params: [], auth: true },
   mob_send_due_reminder: { params: ['p_sale_id'], auth: true },
