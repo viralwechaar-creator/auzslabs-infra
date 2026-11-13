@@ -156,8 +156,35 @@ page('settings', {
     v.header({ title: t('Settings') });
     const st = S.ctx.settings;
     const feat = (st.features && typeof st.features === 'object') ? st.features : {};
+    // Multiple UPI accounts (switchable at billing, p-sell.js): feat.upiAccounts is the list; feat.upiId/upiName
+    // (the single-account fields this used to be) are kept in sync with whichever account is active, purely so
+    // anything still reading those two directly (the online store toggle in p-store.js, this page's own old
+    // data) keeps working without its own migration -- a tenant that never had more than one UPI id just sees
+    // that same id as its only, active account.
+    let upiAccounts = Array.isArray(feat.upiAccounts) && feat.upiAccounts.length ? feat.upiAccounts.map((a) => ({ ...a })) :
+      (feat.upiId ? [{ id: uid(), label: t('Default'), upiId: feat.upiId, upiName: feat.upiName || '' }] : []);
+    let activeUpiId = feat.activeUpiAccountId && upiAccounts.some((a) => a.id === feat.activeUpiAccountId) ? feat.activeUpiAccountId : (upiAccounts[0] && upiAccounts[0].id) || null;
+    const upiHost = h('div', { class: 'list' });
+    const paintUpi = () => clear(upiHost).append(upiAccounts.length ? null : h('p', { class: 'muted small' }, t('Add a UPI id to show a QR at billing.')),
+      ...upiAccounts.map((a) => liRow({
+        icon: 'wallet', title: a.label || a.upiId, sub: a.upiId + (a.id === activeUpiId ? ' · ' + t('Default') : ''),
+        onclick: () => upiForm(a),
+        right: h('div', { class: 'row', style: { gap: '4px' } },
+          a.id !== activeUpiId ? h('button', { class: 'btn sm', type: 'button', onclick: (ev) => { ev.stopPropagation(); activeUpiId = a.id; paintUpi(); } }, t('Make default')) : null,
+          h('button', { class: 'btn sm danger', type: 'button', onclick: (ev) => { ev.stopPropagation(); upiAccounts = upiAccounts.filter((x) => x.id !== a.id); if (activeUpiId === a.id) activeUpiId = (upiAccounts[0] && upiAccounts[0].id) || null; paintUpi(); } }, icon('trash', 16))),
+      })));
+    function upiForm(a) {
+      const label = input({ value: a ? a.label || '' : '', placeholder: t('e.g. Main counter, Store 2') }), id = input({ value: a ? a.upiId || '' : '', placeholder: 'name@bank', mode: 'email' }), name = input({ value: a ? a.upiName || '' : '', placeholder: t('Name shown to the customer') });
+      sheet({ title: a ? t('Edit UPI account') : t('Add UPI account'), body: h('div', { class: 'grid' }, field(t('Label (for your own reference)'), label), field(t('UPI id'), id), field(t('Shown as'), name)),
+        actions: [{ label: t('Save'), primary: true, onclick: (close) => {
+          const v = id.value.trim(); if (!/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(v)) { toast(t('That UPI id does not look right. It looks like name@bank.'), { err: true }); return false; }
+          if (a) { a.label = label.value.trim(); a.upiId = v; a.upiName = name.value.trim(); }
+          else { const na = { id: uid(), label: label.value.trim(), upiId: v, upiName: name.value.trim() }; upiAccounts.push(na); if (!activeUpiId) activeUpiId = na.id; }
+          paintUpi(); close();
+        } }] });
+    }
+    paintUpi();
     const F = {
-      upiId: input({ value: feat.upiId || '', placeholder: 'name@bank', mode: 'email' }), upiName: input({ value: feat.upiName || '', placeholder: t('Name shown to the customer') }),
       shopName: input({ value: st.shopName || '' }), address: input({ value: st.address || '' }), phone: input({ value: st.phone || '', mode: 'tel' }), gstin: input({ value: st.gstin || '' }), billFooter: input({ value: st.billFooter || '', placeholder: 'Thank you, visit again' }), billPrefix: input({ value: st.billPrefix || 'AS', max: 6 }),
       maxDiscountPct: input({ type: 'number', mode: 'decimal', value: st.maxDiscountPct }), returnDays: input({ type: 'number', mode: 'numeric', value: st.returnDays }),
       defaultTaxPct: input({ type: 'number', mode: 'decimal', value: st.defaultTaxPct }), loyaltyEarnPct: input({ type: 'number', mode: 'decimal', value: st.loyaltyEarnPct }), loyaltyPointValue: input({ type: 'number', mode: 'decimal', value: st.loyaltyPointValue }),
@@ -214,8 +241,8 @@ page('settings', {
       ev.currentTarget.disabled = true;
       try {
         const sl = []; if (N(s1.value) && N(r1.value) >= 0) sl.push({ upto: N(s1.value), rate: N(r1.value) }); if (r2_.value !== '') sl.push({ rate: N(r2_.value) });
-        const upi = F.upiId.value.trim(); if (upi && !/^[\w.\-]{2,}@[\w.\-]{2,}$/.test(upi)) { toast(t('That UPI id does not look right. It looks like name@bank.'), { err: true }); ev.currentTarget.disabled = false; return; }
-        const p = { features: Object.assign({}, feat, { upiId: upi, upiName: F.upiName.value.trim(), appIcon, receiptTemplate: billTplSel.value }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
+        const activeAcc = upiAccounts.find((a) => a.id === activeUpiId) || upiAccounts[0];
+        const p = { features: Object.assign({}, feat, { upiAccounts, activeUpiAccountId: activeAcc ? activeAcc.id : null, upiId: activeAcc ? activeAcc.upiId : '', upiName: activeAcc ? activeAcc.upiName : '', appIcon, receiptTemplate: billTplSel.value }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
           defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
           allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
         S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); setTimeout(() => location.reload(), 350);
@@ -224,7 +251,7 @@ page('settings', {
     v.root.append(h('div', { class: 'grid setg' },
       section(t('Shop'), h('div', { class: 'card grid' }, h('div', { class: 'logo-row' }, logoImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('Shop logo') + ' · ' + t('used for the home-screen icon')), logoBtns)), h('div', { class: 'logo-row' }, iconImg, h('div', { class: 'grow' }, h('div', { class: 'cap' }, t('App icon (home screen)') + ' · ' + t('fills the whole icon')), iconBtns)), field(t('Shop name'), F.shopName), field(t('Address'), F.address), h('div', { class: 'two' }, field(t('Phone'), F.phone), field('GSTIN', F.gstin)), h('div', { class: 'two' }, field(t('Bill prefix'), F.billPrefix), field(t('Bill footer'), F.billFooter)))),
       section(t('Bill template'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Switch the look of every printed/shared bill. Turn it on here -- nothing else to install.')), field(t('Design'), billTplSel), billPrev)),
-      section(t('Pay by UPI'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Your UPI id. At billing, a QR with the exact amount appears so the customer can scan and pay.')), h('div', { class: 'two' }, field(t('UPI id'), F.upiId), field(t('Shown as'), F.upiName)))),
+      section(t('Pay by UPI'), h('div', { class: 'card grid' }, h('div', { class: 'muted small' }, t('Add one or more UPI ids. At billing, the cashier can switch between them before showing the QR.')), upiHost, h('button', { class: 'btn', type: 'button', onclick: () => upiForm() }, icon('plus', 16), t('Add UPI account')))),
       section(t('Pictures'), h('div', { class: 'card grid' }, h('div', { class: 'mut small' }, t('New pictures are shrunk automatically. Press this once to shrink the old, heavy ones so they load fast on every phone.')), (() => { const out = h('div', { class: 'mut small' }); const b = h('button', { class: 'btn', type: 'button', onclick: async () => { b.disabled = true; try { const r = await lightenPictures((d, n) => { out.textContent = d + ' / ' + n; }); out.textContent = r.changed + ' ' + t('styles lightened') + ' · ' + r.savedKb + ' KB ' + t('saved') + (r.failed ? ' · ' + r.failed + ' ' + t('could not be read') : ''); } catch (e) { toast(e.message || t('Failed'), { err: true }); } b.disabled = false; } }, icon('camera', 16), t('Make old pictures lighter')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),
         sw('allowNegativeStock', t('Allow selling with no stock'), t('Useful while stock is not entered yet')), sw('roundOff', t('Round bills to the nearest rupee')), sw('requireCustomerPhone', t('Ask for the customer phone on every bill')), sw('staffSeeCost', t('Let staff see purchase cost and profit')))),

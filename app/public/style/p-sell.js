@@ -245,11 +245,20 @@ function paySheet(c, done) {
     const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); upd(); } }); inputs[m] = i;
     rows.append(h('div', { class: 'payl' }, h('label', null, l), i, h('button', { class: 'btn sm', type: 'button', onclick: () => { MODES.forEach(([x]) => { pay[x] = 0; inputs[x].value = ''; }); pay[m] = m === 'credit' ? Math.min(due0, cust.credit) : due0; inputs[m].value = pay[m]; upd(); } }, t('Exact'))));
   });
-  const upiId = ((st.features || {}).upiId || '').trim(), upiName = ((st.features || {}).upiName || st.shopName || '').trim();
+  // One or more saved UPI accounts (Settings -> Pay by UPI); fall back to the single legacy upiId/upiName so a
+  // shop that never added more than one account keeps working unchanged. The cashier can switch which account
+  // this bill's QR uses -- a per-bill choice, defaulting to the shop's own default account, never saved back
+  // to Settings.
+  const feat = st.features || {};
+  const upiAccounts = Array.isArray(feat.upiAccounts) && feat.upiAccounts.length ? feat.upiAccounts :
+    (feat.upiId ? [{ id: 'legacy', label: t('Default'), upiId: feat.upiId, upiName: feat.upiName || '' }] : []);
+  let activeUpiAccId = feat.activeUpiAccountId && upiAccounts.some((a) => a.id === feat.activeUpiAccountId) ? feat.activeUpiAccountId : (upiAccounts[0] && upiAccounts[0].id) || null;
+  const activeUpiAcc = () => upiAccounts.find((a) => a.id === activeUpiAccId) || upiAccounts[0];
   const qrBox = h('div', { class: 'upiq' }); let upiGot = false;
   // the QR opens in its own popup: Change payment (close) or Payment received (confirm)
   const openQr = () => {
     const amt = r2(pay.upi || 0); if (amt <= 0) return;
+    const acc = activeUpiAcc(); const upiId = (acc.upiId || '').trim(), upiName = (acc.upiName || st.shopName || '').trim();
     let img = null;
     try { const q = qrcode(0, 'M'); q.addData('upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + encodeURIComponent(upiName) + '&am=' + amt.toFixed(2) + '&cu=INR&tn=' + encodeURIComponent('Bill ' + (S.ctx.settings.billPrefix || ''))); q.make(); img = q.createDataURL(7, 2); } catch (e) { /* no QR library */ }
     const row = (k, v) => h('div', { class: 'upiq-r' }, h('span', { class: 'muted small' }, k), h('b', null, v));
@@ -263,8 +272,11 @@ function paySheet(c, done) {
     const amt = r2(pay.upi || 0); clear(qrBox);
     if (amt <= 0) { qrBox.hidden = true; upiGot = false; return; }
     qrBox.hidden = false;
-    if (!upiId) { qrBox.append(h('div', { class: 'muted small' }, t('Add your UPI id in Settings to show a QR here.')), can('sty_manage') ? h('button', { class: 'btn sm', type: 'button', onclick: () => { sh.close(); go('settings'); } }, t('Open Settings')) : null); return; }
-    qrBox.append(h('div', { class: 'upiq-t' }, h('b', { class: 'num' }, inr(amt)), h('span', { class: 'muted small' }, upiGot ? t('Payment received on UPI') : t('Customer pays by UPI'))),
+    if (!upiAccounts.length) { qrBox.append(h('div', { class: 'muted small' }, t('Add your UPI id in Settings to show a QR here.')), can('sty_manage') ? h('button', { class: 'btn sm', type: 'button', onclick: () => { sh.close(); go('settings'); } }, t('Open Settings')) : null); return; }
+    qrBox.append(
+      upiAccounts.length > 1 ? h('div', { class: 'upiq-sw' }, h('span', { class: 'muted small' }, t('Pay to') + ':'),
+        selectEl(upiAccounts.map((a) => [a.id, a.label || a.upiId]), activeUpiAccId, { onchange: (e) => { activeUpiAccId = e.target.value; paintQr(); } })) : null,
+      h('div', { class: 'upiq-t' }, h('b', { class: 'num' }, inr(amt)), h('span', { class: 'muted small' }, upiGot ? t('Payment received on UPI') : t('Customer pays by UPI'))),
       upiGot ? h('button', { class: 'btn sm', type: 'button', onclick: () => { upiGot = false; upd(); } }, t('Undo')) : h('button', { class: 'btn sm fill', type: 'button', onclick: openQr }, t('Show QR')));
   };
   const note = input({ placeholder: t('Note (optional)') });
