@@ -863,6 +863,12 @@ const TOOLS = [
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, client_phone: { type: 'string' }, unsettled_only: { type: 'boolean', description: 'only credit bills not yet paid' }, limit: { type: 'integer' } } },
   },
+  {
+    name: 'salon_client_history',
+    description: "One Auzsalon client's full history by phone number -- every appointment/booking and every bill, merged into one chronological feed (newest first). Use this to answer 'what has this client had done before' or 'when did they last visit'. Only works for a Salon-niche business. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['phone'], properties: { phone: { type: 'string' } } },
+  },
 ];
 
 const itemFilters = (extra) => { const p = new URLSearchParams({ 'eq.kind': 'item', 'eq.deleted': 'false', order: 'updated_at', ...extra }); return p; };
@@ -1496,6 +1502,15 @@ async function runSalonTool(userId, tenantId, name, args) {
         .filter((v) => !args.client_phone || v.client?.phone === args.client_phone)
         .filter((v) => !args.unsettled_only || (v.paymentMode === 'credit' && !v.settled))
         .slice(0, Math.min(Math.max(parseInt(args.limit, 10) || 100, 1), 500)), ['site', 'data'], []);
+    case 'salon_client_history':
+      if (!args.phone) throw new HttpError(400, 'phone is required');
+      return mutate(tenant, (db) => {
+        const bookings = (db.bookings || []).filter((b) => b.phone === args.phone)
+          .map((b) => ({ type: 'booking', date: b.date, time: b.time || null, services: b.services || [], status: b.status || null, id: b.id }));
+        const invoices = (db.invoices || []).filter((v) => v.client?.phone === args.phone)
+          .map((v) => ({ type: 'invoice', date: v.date, no: v.no, items: v.items, total: v.total, servedBy: v.servedBy || null, void: !!v.void, settled: v.settled, id: v.id }));
+        return [...bookings, ...invoices].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      }, ['site', 'data'], []);
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
   }
