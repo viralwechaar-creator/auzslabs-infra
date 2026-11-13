@@ -13,7 +13,7 @@ const NAV_LEDGER = [
   { group: 'Stock', items: ['products', 'stock', 'labels'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
   { group: 'Accounts', items: ['books', 'banking', 'drawer', 'assets'] },
-  { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'settings'] },
+  { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'ai', 'settings'] },
 ];
 const NAV = SCANAPP ? [
   { group: '', items: ['scan'] },
