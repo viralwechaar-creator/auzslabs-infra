@@ -260,7 +260,7 @@ const TOOLS = [
   },
   {
     name: 'ledger_save_document',
-    description: "Create or update an AuzsLedger document (invoice, bill, expense, credit_note, ...). Use ledger_context and ledger_list_parties first to get real account_id/party_id values. Same validation the real app enforces (GST, balanced lines) -- a bad value is refused with a clear reason, not silently accepted. Does not finalize it (see ledger_post_document). Most AI apps will ask you to confirm before running this.",
+    description: "Create or update an AuzsLedger document (invoice, bill, expense, credit_note, ...). Use ledger_context and ledger_list_parties first to get real account_id/party_id values. For each line, check ledger_list_products -- if the product isn't in the catalogue yet (common when copying an invoice from an uploaded PDF), call ledger_save_product to create it first and use its id; a line with no product_id is saved as plain free text, with no product record and no stock effect. Same validation the real app enforces (GST, balanced lines) -- a bad value is refused with a clear reason, not silently accepted. Does not finalize it (see ledger_post_document). Most AI apps will ask you to confirm before running this.",
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: {
       type: 'object', required: ['doc_type', 'lines'],
@@ -268,9 +268,40 @@ const TOOLS = [
         doc_type: { type: 'string', enum: ['invoice', 'bill', 'expense', 'credit_note', 'debit_note', 'quotation', 'sales_order', 'purchase_order'] },
         id: { type: 'string', description: 'set to edit an existing draft/open document' },
         party_id: { type: 'string' }, doc_date: { type: 'string' }, note: { type: 'string' },
-        lines: { type: 'array', items: { type: 'object', required: ['qty', 'rate'], properties: { account_id: { type: 'string' }, product_id: { type: 'string' }, description: { type: 'string' }, qty: { type: 'number' }, rate: { type: 'number' }, tax_code_id: { type: 'string' } } } },
+        price_includes_tax: { type: 'boolean', description: 'true if the rate on each line already includes GST (tax is backed out of it); false (the default) if GST is added on top of the rate. Check ledger_get_document or ledger_list_products if unsure which the business actually uses.' },
+        lines: { type: 'array', items: { type: 'object', required: ['qty', 'rate'], properties: { account_id: { type: 'string' }, product_id: { type: 'string', description: 'IMPORTANT: a line with no product_id is saved as plain free text and never touches the product catalogue or stock -- it does NOT create a product. If a line is for a product that is not in ledger_list_products yet (e.g. reading it off an uploaded invoice PDF), call ledger_save_product FIRST to create it, then put the id it returns here.' }, description: { type: 'string' }, qty: { type: 'number' }, rate: { type: 'number' }, tax_code_id: { type: 'string' } } } },
       },
     },
+  },
+  {
+    name: 'ledger_save_product',
+    description: "Create a new product/service in AuzsLedger's catalogue, or update an existing one by id. Use ledger_list_products first to check it doesn't already exist (match by name/SKU/HSN) -- creating a duplicate for the same real item makes stock and reports split across two rows. Call this before ledger_save_document whenever a line is for something not yet in the catalogue (e.g. a new item read off an uploaded invoice/bill PDF) -- ledger_save_document never creates products on its own. Most AI apps will ask you to confirm before running this.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['name', 'sku'],
+      properties: {
+        id: { type: 'string', description: 'set to update an existing product' },
+        name: { type: 'string' }, sku: { type: 'string' }, barcode: { type: 'string' }, category: { type: 'string' }, brand: { type: 'string' },
+        unit: { type: 'string', description: 'e.g. Nos, Kg, Box; defaults to Nos' }, hsn: { type: 'string' },
+        tax_rate: { type: 'number', description: 'GST %, must be a rate already configured for this business (check ledger_list_products for rates already in use); defaults to 18' },
+        tax_inclusive: { type: 'boolean', description: 'true if this product\'s own price already includes GST' },
+        purchase_price: { type: 'number' }, sale_price: { type: 'number' }, mrp: { type: 'number' },
+        is_service: { type: 'boolean', description: 'true for a service with no stock to track' },
+        track_stock: { type: 'boolean' }, reorder_level: { type: 'number' }, reorder_qty: { type: 'number' }, notes: { type: 'string' },
+      },
+    },
+  },
+  {
+    name: 'ledger_get_document',
+    description: "Full detail of one AuzsLedger document by id: every line, the tax breakdown (CGST/SGST/IGST/cess), and whether its prices include or exclude GST (price_includes_tax). Use this to check how an existing invoice/bill was actually taxed -- ledger_list_documents' summary rows don't carry that detail. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['doc_id'], properties: { doc_id: { type: 'string', description: 'from ledger_list_documents' } } },
+  },
+  {
+    name: 'ledger_list_products',
+    description: "AuzsLedger's product/service catalogue -- price, HSN code, GST rate, whether that product's own price includes GST by default (tax_inclusive), and current stock. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, category: { type: 'string' } } },
   },
   {
     name: 'ledger_post_document',
@@ -1082,6 +1113,14 @@ async function runTool(client, name, args) {
     case 'ledger_save_document':
       if (!args.doc_type || !Array.isArray(args.lines) || !args.lines.length) throw new HttpError(400, 'doc_type and a non-empty lines array are required');
       return callRpc(client, 'acc_save_document', { p: args });
+    case 'ledger_save_product':
+      if (!args.name || !args.sku) throw new HttpError(400, 'name and sku are required');
+      return callRpc(client, 'acc_save_product', { p: args });
+    case 'ledger_get_document':
+      if (!args.doc_id) throw new HttpError(400, 'doc_id is required');
+      return callRpc(client, 'acc_get_document', { p_id: args.doc_id });
+    case 'ledger_list_products':
+      return callRpc(client, 'acc_list_products', { p: { search: args.search || null, category: args.category || null } });
     case 'ledger_post_document':
       if (!args.doc_id) throw new HttpError(400, 'doc_id is required');
       return callRpc(client, 'acc_post_document', { p_doc_id: args.doc_id, p_payments: args.payments || [] });
