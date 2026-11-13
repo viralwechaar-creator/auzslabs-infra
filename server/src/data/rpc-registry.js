@@ -243,6 +243,7 @@ export const RPC = {
   acc_payment_mode_sales: { params: ['p_from', 'p_to'], auth: true },
   acc_stock_summary: { params: ['p'], jsonb: ['p'], auth: true },
   acc_stock_movement: { params: ['p_from', 'p_to'], auth: true },
+  acc_stock_moves_list: { params: ['p'], jsonb: ['p'], auth: true },
   acc_stock_velocity: { params: ['p_days'], defaults: {'p_days': 90}, auth: true },
   acc_stock_batches: { params: ['p_before'], auth: true },
   acc_gst_summary: { params: ['p_from', 'p_to'], auth: true },
