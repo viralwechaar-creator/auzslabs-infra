@@ -587,6 +587,7 @@ export const RPC = {
   fin_forecast: { params: [], auth: true },
   fin_tax_summary: { params: ['p_from', 'p_to'], auth: true },
   sty_dashboard: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  sty_stock_moves_list: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_analytics: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_analytics_groups: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_insights: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
