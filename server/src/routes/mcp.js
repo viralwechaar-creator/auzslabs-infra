@@ -395,9 +395,32 @@ const TOOLS = [
   },
   {
     name: 'finance_save_transaction',
-    description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
+    description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person/partner/loan ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
     annotations: { readOnlyHint: false, destructiveHint: false },
-    inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
+    inputSchema: {
+      type: 'object', required: ['kind', 'amount'],
+      properties: {
+        kind: { type: 'string', enum: ['money_in', 'expense', 'capital_in', 'drawing', 'loan_taken', 'loan_given', 'loan_repay', 'loan_collect', 'transfer', 'credit_sale', 'credit_purchase', 'dues_in', 'dues_out', 'asset_buy'], description: 'money_in/expense/asset_buy need account_id; capital_in/drawing need account_id + partner_id; loan_* need account_id + loan_id; transfer needs account_id + to_account_id; credit_sale/credit_purchase need person_id; dues_in/dues_out need account_id + person_id' },
+        amount: { type: 'number' }, interest: { type: 'number', description: 'extra paid/received on a loan_repay or loan_collect, on top of amount' },
+        date: { type: 'string', description: 'YYYY-MM-DD, defaults to today' },
+        account_id: { type: 'string' }, to_account_id: { type: 'string', description: 'for a transfer' },
+        person_id: { type: 'string' }, partner_id: { type: 'string' }, loan_id: { type: 'string' }, category_id: { type: 'string', description: 'an account_id from finance_dashboard\'s by_category or ledger_context, to categorise an expense/income' },
+        purpose: { type: 'string' }, method: { type: 'string' }, note: { type: 'string' }, due_date: { type: 'string' },
+        evidence: { type: 'string', enum: ['have', 'none'], description: 'whether a receipt/bill exists for this' },
+      },
+    },
+  },
+  {
+    name: 'finance_list_transactions',
+    description: "Search/list individual AuzsFinance transactions (not just the dashboard totals) -- by date range, account, person, partner, loan, a text search in the purpose/note, whether it needs review, or whether evidence (a receipt/bill) is attached. Use this to find a specific transaction, or to answer 'what did we spend on X'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string' }, account_id: { type: 'string' }, person_id: { type: 'string' }, partner_id: { type: 'string' }, loan_id: { type: 'string' }, q: { type: 'string', description: 'text search in purpose/note' }, review: { type: 'string', enum: ['needs_review', 'reviewed'] }, evidence: { type: 'string', enum: ['have', 'missing'] }, with_reversed: { type: 'boolean', description: 'include reversed/cancelled transactions, default true' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'finance_list_loans',
+    description: 'Every loan taken or given tracked in AuzsFinance, with its running balance. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
   },
   // ---- AUZsPay (Payroll): thin wrappers over the already-registered pay_* functions. Scoped to HR
   // operations (employees, attendance, leave/loan/claim approvals) -- deliberately NOT the payroll run/
@@ -1221,7 +1244,12 @@ async function runTool(client, name, args) {
       return { people, partners, loans };
     }
     case 'finance_save_transaction':
+      if (!args.kind || !(Number(args.amount) > 0)) throw new HttpError(400, 'kind and a positive amount are required');
       return callRpc(client, 'fin_save_txn', { p: args });
+    case 'finance_list_transactions':
+      return callRpc(client, 'fin_txn_list', { p: args });
+    case 'finance_list_loans':
+      return callRpc(client, 'fin_loan_list', {});
 
     case 'payroll_dashboard':
       return callRpc(client, 'pay_dashboard', {});
