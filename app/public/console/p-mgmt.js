@@ -132,3 +132,33 @@ PAGES['mgmt/whatsapp']=()=>{if(!S.wa&&!S.waLoading){S.waLoading=1;loadWa()}
   card(cardHead('Recent messages'),table([{label:'When',get:m=>fmtDT(m.created_at)},{label:'To',get:m=>'+'+m.to_phone},{label:'Message',get:m=>(w.templates.find(t=>t.key==m.template)||{}).title||m.template},{label:'Status',get:m=>h('span',{},pill(m.status,WA_TONE[m.status]||'n'),m.error?h('div',{class:'sub'},m.error):null)}],w.recent||[],{empty:'No messages yet'})),
   card(cardHead('Message templates (one-time setup in Meta WhatsApp Manager)'),h('div',{style:'padding:0 16px 14px'},h('p',{class:'sub'},'WhatsApp only allows automatic messages from approved templates. Create each of these once in your WhatsApp account with exactly this name and text, language English. Approval usually takes minutes.'),
    ...w.templates.map(t=>h('div',{style:'margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px'},h('b',{},t.name),h('div',{class:'sub'},t.body),h('div',{class:'sub'},'Variables: '+t.params.map((p,i)=>'{{'+(i+1)+'}} = '+p).join(', '))))))]};
+
+// ---------- AI connector (db/318, server/src/routes/mcp.js): lets the owner connect an AI app (Claude, ChatGPT, anything
+// that supports MCP connectors) and see what it has done, from inside the admin console instead of only the marketing
+// site's Account page. Key create/list/revoke are owner-only at the database level (mcp_create_key etc. check role='owner'
+// themselves); a manager can still view this page and the activity log. ----------
+const AI_TOOL_LABEL={create_draft_order:'Drafted an order',add_inventory_item:'Added a menu/inventory item',update_item_price:'Changed a price',whatsapp_send:'Sent a WhatsApp message',crm_create_campaign:'Planned a campaign',crm_send_birthday_greetings:'Sent birthday/anniversary greetings',pos_create_purchase_order:'Created a purchase order',pos_receive_purchase_order:'Received a purchase order',pos_refund_order:'Refunded an order',pos_duefollowup_mark:'Updated a due-payment follow-up'};
+const aiToolLabel=t=>AI_TOOL_LABEL[t]||(t||'').replace(/^[a-z]+_/,'').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase());
+async function loadAiKeys(){if(S.role!='owner'){S.aiKeys=[];return}try{const r=await sb.rpc('mcp_list_keys');S.aiKeys=r.error?[]:(r.data||[])}catch{S.aiKeys=[]}if(S.page=='mgmt/ai')render()}
+async function loadAiAudit(){try{const r=await sb.rpc('mcp_audit_list',{p_limit:100});S.aiAudit=r.error?[]:(r.data||[])}catch{S.aiAudit=[]}if(S.page=='mgmt/ai')render()}
+function aiNewKey(){formModal('New connector key',[{k:'label',label:'Name this key',req:true,placeholder:'e.g. Claude, ChatGPT'},{k:'full',label:'Can make changes (off = read only, recommended to start with)',type:'check'}],
+ async v=>{const r=await sb.rpc('mcp_create_key',{p_label:v.label,p_scope:v.full?'full':'read'});if(r.error){toast(r.error.message||'Could not create key');return false}S.aiKeys=null;S.aiKeysLoading=0;aiShowKey(r.data.key)});
+}
+function aiShowKey(key){modal('Copy this key now',[h('p',{style:'margin:0 0 10px'},'You will not be able to see it again. Paste it into your AI app’s connector setup as the Bearer token / API key.'),
+ h('input',{value:key,readonly:true,style:'font-family:monospace;font-size:13px',onclick:e=>e.target.select()}),
+ h('div',{class:'mf'},btn('Copy',async()=>{try{await navigator.clipboard.writeText(key);toast('Copied')}catch{}},'p'))],{onClose:()=>{S.aiKeys=null;S.aiKeysLoading=0;render()}})}
+function aiRevokeKey(k){confirmBox('Revoke "'+k.label+'"? Any AI app using this key stops working immediately.',async()=>{const r=await sb.rpc('mcp_revoke_key',{p_id:k.id});if(r.error)return toast(r.error.message);toast('Revoked');S.aiKeys=null;S.aiKeysLoading=0;render()},'Revoke')}
+PAGES['mgmt/ai']=()=>{
+ if(!S.aiKeys&&!S.aiKeysLoading){S.aiKeysLoading=1;loadAiKeys()}
+ if(!S.aiAudit&&!S.aiAuditLoading){S.aiAuditLoading=1;loadAiAudit()}
+ const owner=S.role=='owner',url=(location.origin.replace(/^https?:\/\/[^.]+\./,'https://api.')||'https://api.auzslab.in')+'/mcp',keys=S.aiKeys,audit=S.aiAudit;
+ const fmt=t=>t?fmtDT(t):'never';
+ return[pageHead('AI connector','Let Claude, ChatGPT or any AI app that supports MCP connectors read this business’s data and, if you allow it, make changes.',btn('Refresh',()=>{S.aiKeys=null;S.aiKeysLoading=0;S.aiAudit=null;S.aiAuditLoading=0;render()},'')),
+  card(cardHead('Connect an AI app'),h('div',{style:'padding:0 16px 14px'},h('p',{class:'sub'},'It uses your own AI subscription -- this never costs AUZslab anything, and the AI app never sees your password, only a connector key.'),
+   h('div',{class:'bar-row',style:'margin-top:10px'},h('code',{style:'font-family:monospace;font-size:13px;padding:6px 10px;background:var(--bg2,#f4f4f4);border-radius:8px'},url),btn('Copy',async()=>{try{await navigator.clipboard.writeText(url);toast('Copied')}catch{}})))),
+  owner?null:note('Only the owner can create or revoke connector keys. You can view keys and the activity log.'),
+  card(cardHead('Connector keys',owner?btn('New key',aiNewKey,'p','plus'):null),
+   !keys?table([],[],{empty:'Loading…'}):table([{label:'Name',get:k=>h('b',{},k.label)},{label:'Access',get:k=>pill(k.scope=='read'?'Read only':'Can make changes',k.scope=='read'?'n':'a')},{label:'Created',get:k=>fmt(k.created_at)},{label:'Last used',get:k=>fmt(k.last_used_at)},{label:'',get:k=>k.revoked?pill('Revoked','r'):(owner?actBtns(btn('Revoke',()=>aiRevokeKey(k),'d sm2')):'')}],keys,{empty:owner?'No connector keys yet':'No connector keys'})),
+  card(cardHead('Recent AI activity'),h('div',{style:'padding:0 16px 14px'},h('p',{class:'sub'},'Every action taken through a connector key -- what it tried, when, and whether it worked.')),
+   !audit?table([],[],{empty:'Loading…'}):table([{label:'Action',get:a=>h('span',{},aiToolLabel(a.tool),a.key_label?h('div',{class:'sub'},a.key_label):null)},{label:'When',get:a=>fmtDT(a.at)},{label:'Result',get:a=>a.ok?pill('OK','g'):pill('Failed','r')}],audit.slice(0,100),{empty:'Nothing yet'}))]};
+{const g=NAV.find(n=>n[0]=='g:mgmt');if(g&&!g[3].some(c=>c[0]=='mgmt/ai'))g[3].push(['mgmt/ai','AI connector'])}
