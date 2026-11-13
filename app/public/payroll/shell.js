@@ -8,7 +8,7 @@ const NAV_HR = [
   { group: '', items: ['home'] },
   { group: 'People', items: ['people', 'time', 'leave'] },
   { group: 'Pay', items: ['pay', 'loans', 'claims', 'compliance'] },
-  { group: 'More', items: ['reports', 'settings'] },
+  { group: 'More', items: ['reports', 'ai', 'settings'] },
 ];
 const NAV_ME = [{ group: 'For me', items: ['today', 'my-time', 'my-leave', 'my-pay', 'my-profile', 'team'] }];
 let route = { id: 'home', args: [], q: new URLSearchParams() };

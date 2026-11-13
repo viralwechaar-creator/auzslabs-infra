@@ -23,6 +23,7 @@ function allNav() {
   if (can('mob_reports')) items.push(['reports', 'reports', 'chart']);
   if (can('mob_sell') && !can('mob_reports')) items.push(['myreport', 'myreport', 'chart']);
   if (feat('customers') || feat('vendors')) items.push(['dues', 'dues', 'wallet']);
+  items.push(['ai', 'AI connector', 'refresh']);
   items.push(['settings', 'settings', 'gear']);
   return items.filter(([id]) => allowed(PAGES[id]));
 }
