@@ -76,8 +76,8 @@ function manualSheet() {
   const paint = () => {
     const k = q.trim().toLowerCase();
     const list = !k ? MANUAL : MANUAL.map((sec) => ({ h: sec.h, body: sec.body.filter((p) => p.toLowerCase().includes(k) || sec.h.toLowerCase().includes(k)) })).filter((sec) => sec.body.length || sec.h.toLowerCase().includes(k));
-    clear(body).append(!list.length ? h('div', { class: 'muted small', style: { padding: '14px' } }, t('No match')) :
-      list.map((sec) => h('div', { class: 'man-sec' }, h('h3', null, sec.h), sec.body.length ? sec.body.map((p) => h('p', null, p)) : sec.body.map((p) => h('p', null, p)))));
+    add(clear(body), [!list.length ? h('div', { class: 'muted small', style: { padding: '14px' } }, t('No match')) :
+      list.map((sec) => h('div', { class: 'man-sec' }, h('h3', null, sec.h), sec.body.length ? sec.body.map((p) => h('p', null, p)) : sec.body.map((p) => h('p', null, p))))]);
   };
   paint();
   sheet({ title: t('User manual'), full: true, closeLabel: t('Close'), body: h('div', { class: 'grid' },

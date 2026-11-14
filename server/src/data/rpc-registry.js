@@ -589,6 +589,7 @@ export const RPC = {
   fin_forecast: { params: [], auth: true },
   fin_tax_summary: { params: ['p_from', 'p_to'], auth: true },
   sty_dashboard: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  sty_stock_moves_list: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_analytics: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_analytics_groups: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_insights: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
@@ -622,6 +623,7 @@ export const RPC = {
   mob_data_epoch: { params: [], auth: true },
   mob_report_mine: { params: ['p_from', 'p_to', 'p_limit'], defaults: { p_from: null, p_to: null, p_limit: 500 }, auth: true },
   mob_report_ledger: { params: ['p_from', 'p_to', 'p_staff_id', 'p_limit'], defaults: { p_from: null, p_to: null, p_staff_id: null, p_limit: 2000 }, auth: true },
+  mob_stock_moves_list: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   mob_integrity_check: { params: [], auth: true },
   mob_export_all: { params: [], auth: true },
   mob_send_due_reminder: { params: ['p_sale_id'], auth: true },
@@ -634,6 +636,7 @@ export const RPC = {
   mcp_revoke_key: { params: ['p_id'], auth: true },
   mcp_create_draft_order: { params: ['p_table', 'p_items', 'p_note'], jsonb: ['p_items'], defaults: { p_table: null, p_note: null }, auth: true },
   mcp_send_whatsapp: { params: ['p_to', 'p_template', 'p_params', 'p_ref'], jsonb: ['p_params'], defaults: { p_params: [], p_ref: null }, auth: true },
+  mcp_whatsapp_history: { params: ['p_phone', 'p_limit'], defaults: { p_phone: null, p_limit: 50 }, auth: true },
   mcp_audit_list: { params: ['p_limit'], defaults: { p_limit: 100 }, auth: true },
 
   // Due-payment follow-up queue (db/324) -- see pos_due_followups' own comment.

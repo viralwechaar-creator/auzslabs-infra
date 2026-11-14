@@ -53,13 +53,13 @@ async function downloadAttachment(att) {
 const TOOLS = [
   {
     name: 'list_inventory',
-    description: "List this business's menu/inventory items (name, price, stock). Read-only.",
+    description: "AUZsPOS's own menu/inventory only (name, price, stock) -- NOT AUZsStyle, AUZsMob or AuzsLedger, each of which has its own separate catalogue and its own tools (style_catalog, mob_catalog, ledger_list_products). If this business has more than one AUZslab app, check which one actually holds the item you're looking for. Read-only.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'max items to return (default 50, max 200)' } } },
   },
   {
     name: 'list_orders',
-    description: "List this business's most recent orders/bills (items, total, status). Read-only.",
+    description: "AUZsPOS's own orders/bills only (items, total, status) -- NOT AUZsStyle sales or AuzsLedger invoices, each of which has its own separate tools (style_list_sales, ledger_list_documents). Read-only.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { limit: { type: 'integer', description: 'max orders to return (default 20, max 100)' } } },
   },
@@ -71,7 +71,7 @@ const TOOLS = [
   },
   {
     name: 'sales_summary',
-    description: 'A quick revenue/order-count summary since a given number of days ago (default 1 = today). Approximate: based on when records were last updated, not a full accounting report.',
+    description: "AUZsPOS's own revenue/order-count summary only (since a given number of days ago, default 1 = today) -- NOT AUZsStyle, AuzsLedger or AuzsFinance, each of which has its own report tools. Approximate: based on when records were last updated, not a full accounting report.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { days: { type: 'integer', description: 'how many days back to include (default 1)' } } },
   },
@@ -83,7 +83,7 @@ const TOOLS = [
   },
   {
     name: 'add_inventory_item',
-    description: 'Add a new menu/inventory item. Most AI apps will ask you to confirm before running this -- it changes real data.',
+    description: "Add a new menu/inventory item to AUZsPOS ONLY -- for AUZsStyle use style_save_style, for AUZsMob there is a separate catalogue, for AuzsLedger use ledger_save_product. Adding it here does nothing for those other apps even if this business also has them. Most AI apps will ask you to confirm before running this -- it changes real data.",
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: {
       type: 'object', required: ['name', 'price'],
@@ -92,13 +92,13 @@ const TOOLS = [
   },
   {
     name: 'update_item_price',
-    description: "Update an existing item's price. Most AI apps will ask you to confirm before running this -- it changes real data.",
+    description: "Update an existing AUZsPOS item's price ONLY -- for AUZsStyle use style_save_style, for AuzsLedger use ledger_save_product. Read with list_inventory first to confirm the item is actually in AUZsPOS's own catalogue, not another app's. Most AI apps will ask you to confirm before running this -- it changes real data.",
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', required: ['item_id', 'price'], properties: { item_id: { type: 'string', description: 'the id from list_inventory' }, price: { type: 'number' } } },
   },
   {
     name: 'create_draft_order',
-    description: "Draft a new order/bill from a list of items. This does NOT finalize a sale -- it lands in the business's existing order inbox for staff to review and accept, same as a customer's own QR order, so a wrong or made-up order never becomes a real bill unattended. Most AI apps will ask you to confirm before running this.",
+    description: "Draft a new order/bill in AUZsPOS ONLY from a list of items (for AUZsStyle use style_sell, for AuzsLedger use ledger_save_document). This does NOT finalize a sale -- it lands in AUZsPOS's own order inbox for staff to review and accept, same as a customer's own QR order, so a wrong or made-up order never becomes a real bill unattended. Most AI apps will ask you to confirm before running this.",
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: {
       type: 'object', required: ['items'],
@@ -270,6 +270,36 @@ const TOOLS = [
     inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
   },
   {
+    name: 'ledger_gst_register',
+    description: "One of AuzsLedger's GSTR-1/GSTR-2-style registers for a period -- the same line-level detail GSTR filing needs, grouped the way the return expects it. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      type: 'object', required: ['type', 'from', 'to'],
+      properties: {
+        type: { type: 'string', enum: ['b2b', 'b2c', 'cdn', 'hsn', 'exempt', 'purchases', 'itc', 'rcm'], description: 'b2b/b2c/cdn (credit+debit notes)/hsn summary = sales side; purchases/itc (input tax credit eligible)/rcm (reverse charge) = purchase side' },
+        from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' },
+      },
+    },
+  },
+  {
+    name: 'ledger_gst_exceptions',
+    description: "Things a reviewer should fix before filing GST for a period -- missing GSTIN on a registered customer's invoice, a line with no HSN/SAC code, input tax credit claimed from a supplier with no GSTIN, CGST/SGST charged on an inter-state sale (or IGST on intra-state), a line's tax rate differing from the product's master rate, a B2B invoice with no e-invoice IRN yet, or a still-unposted draft inside the period. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['from', 'to'], properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
+    name: 'ledger_gst_2b_reconciliation',
+    description: "Compares this business's purchase bills against GSTR-2B data imported from the government portal (the owner downloads and imports that file in-app; this tool never calls the portal itself) for a filing period, showing which bills match, which are only in the books, and which are only in GSTR-2B. Empty if nothing has been imported for that period yet. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['period'], properties: { period: { type: 'string', description: "GST filing period, e.g. '2026-04' for April 2026" } } },
+  },
+  {
+    name: 'ledger_duplicate_documents',
+    description: "Possible duplicate invoices/bills/expenses or payments in AuzsLedger -- the same party, same amount and same document type (or same payment kind/amount/date) recorded more than once within 7 days of each other. A real, common bookkeeping mistake this surfaces for a human to check, not a definite error. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
     name: 'ledger_ageing',
     description: 'Who owes the business money (receivable) or who the business owes (payable), broken down by how overdue. Read-only.',
     annotations: { readOnlyHint: true },
@@ -325,6 +355,12 @@ const TOOLS = [
     description: "Read an attachment's actual file content (a receipt/bill photo or PDF) by its id -- from ledger_get_document's attachments array. Returns it base64-encoded. Refuses files over ~3MB. Read-only.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', required: ['attachment_id'], properties: { attachment_id: { type: 'string', description: "an id from ledger_get_document's attachments array" } } },
+  },
+  {
+    name: 'ledger_audit_log',
+    description: "AuzsLedger's audit trail -- who changed what, when, including the before/after values (old_value/new_value), covering both AuzsLedger's own books and AuzsFinance (they post to the same shared books -- see ledger_account_ledger). Filter by entity (e.g. 'document', 'payment', 'journal', 'fin_txn') or search by action/entity/actor email. Use this to answer 'who posted/cancelled/changed this' or 'what happened to document X'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string', description: 'matches action, entity, actor email, or an exact entity_id' }, entity: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, limit: { type: 'integer' } } },
   },
   {
     name: 'ledger_post_document',
@@ -418,9 +454,95 @@ const TOOLS = [
   },
   {
     name: 'finance_save_transaction',
-    description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
+    description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person/partner/loan ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
     annotations: { readOnlyHint: false, destructiveHint: false },
-    inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
+    inputSchema: {
+      type: 'object', required: ['kind', 'amount'],
+      properties: {
+        kind: { type: 'string', enum: ['money_in', 'expense', 'capital_in', 'drawing', 'loan_taken', 'loan_given', 'loan_repay', 'loan_collect', 'transfer', 'credit_sale', 'credit_purchase', 'dues_in', 'dues_out', 'asset_buy'], description: 'money_in/expense/asset_buy need account_id; capital_in/drawing need account_id + partner_id; loan_* need account_id + loan_id; transfer needs account_id + to_account_id; credit_sale/credit_purchase need person_id; dues_in/dues_out need account_id + person_id' },
+        amount: { type: 'number' }, interest: { type: 'number', description: 'extra paid/received on a loan_repay or loan_collect, on top of amount' },
+        date: { type: 'string', description: 'YYYY-MM-DD, defaults to today' },
+        account_id: { type: 'string' }, to_account_id: { type: 'string', description: 'for a transfer' },
+        person_id: { type: 'string' }, partner_id: { type: 'string' }, loan_id: { type: 'string' }, category_id: { type: 'string', description: 'an account_id from finance_dashboard\'s by_category or ledger_context, to categorise an expense/income' },
+        purpose: { type: 'string' }, method: { type: 'string' }, note: { type: 'string' }, due_date: { type: 'string' },
+        evidence: { type: 'string', enum: ['have', 'none'], description: 'whether a receipt/bill exists for this' },
+      },
+    },
+  },
+  {
+    name: 'finance_list_transactions',
+    description: "Search/list individual AuzsFinance transactions (not just the dashboard totals) -- by date range, account, person, partner, loan, a text search in the purpose/note, whether it needs review, or whether evidence (a receipt/bill) is attached. Use this to find a specific transaction, or to answer 'what did we spend on X'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string' }, account_id: { type: 'string' }, person_id: { type: 'string' }, partner_id: { type: 'string' }, loan_id: { type: 'string' }, q: { type: 'string', description: 'text search in purpose/note' }, review: { type: 'string', enum: ['needs_review', 'reviewed'] }, evidence: { type: 'string', enum: ['have', 'missing'] }, with_reversed: { type: 'boolean', description: 'include reversed/cancelled transactions, default true' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'finance_list_loans',
+    description: 'Every loan taken or given tracked in AuzsFinance, with its running balance. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_reconciliation',
+    description: "One AuzsFinance account's bank-reconciliation view: the book balance, the cleared balance (only transactions marked as cleared), and every transaction on that account with whether it's cleared yet. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['account_id'], properties: { account_id: { type: 'string' } } },
+  },
+  {
+    name: 'finance_list_assets',
+    description: 'Every fixed asset tracked in AuzsFinance, with its cost, accumulated depreciation and current book value. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_list_recurring',
+    description: "AuzsFinance's repeating entries (rent, salary, EMI, subscriptions) -- amount, frequency, next due date, and whether one is due now. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_anomalies',
+    description: "Things in AuzsFinance that look wrong and are worth a second look: the same amount entered twice, an expense far above that category's usual size, a large payment with no bill/receipt attached, an account balance below zero, a loan past its due date, or money owed to the business for a long time. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_bank_import_preview',
+    description: "Check a bank statement against AuzsFinance before importing it, without changing anything -- each row comes back marked 'matched' (an existing transaction on the books looks like this bank line, give its txn_id/txn_title), 'duplicate' (already imported or already has this reference), 'new' (no match, would create a transaction), or 'skip' (no usable date/amount). Always run this before finance_bank_import_commit so a human can review the matches. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      type: 'object', required: ['account_id', 'rows'],
+      properties: {
+        account_id: { type: 'string', description: 'the AuzsFinance account this statement is for' },
+        rows: {
+          type: 'array', description: 'up to 2000 bank statement lines',
+          items: { type: 'object', required: ['date'], properties: { date: { type: 'string', description: 'YYYY-MM-DD' }, credit: { type: 'number' }, debit: { type: 'number' }, ref: { type: 'string' }, desc: { type: 'string' } } },
+        },
+      },
+    },
+  },
+  {
+    name: 'finance_bank_import_commit',
+    description: "Actually import a bank statement into AuzsFinance: for each row, either 'match' it to an existing transaction (marks that transaction cleared) or create it as a new transaction (anything not explicitly marked 'match' or 'skip' is created new) -- always run finance_bank_import_preview first and pass back its row statuses/txn_ids so matches land correctly. Most AI apps will ask you to confirm before running this -- it changes real financial records.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['account_id', 'rows'],
+      properties: {
+        account_id: { type: 'string' },
+        rows: {
+          type: 'array', description: 'the same rows from finance_bank_import_preview, each with an action added',
+          items: {
+            type: 'object', required: ['date'],
+            properties: {
+              date: { type: 'string', description: 'YYYY-MM-DD' }, credit: { type: 'number' }, debit: { type: 'number' }, ref: { type: 'string' }, desc: { type: 'string' },
+              action: { type: 'string', enum: ['new', 'match', 'skip'], description: "default 'new'; 'match' requires txn_id from the preview" },
+              txn_id: { type: 'string', description: 'required when action is match' },
+              kind: { type: 'string', enum: ['money_in', 'expense'], description: 'for a new row, default money_in for a credit / expense for a debit' },
+              category_id: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   },
   {
     name: 'finance_download_attachment',
@@ -438,6 +560,30 @@ const TOOLS = [
     description: "AUZsPay's dashboard summary (headcount, pending approvals, today's attendance). Read-only.",
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'payroll_list_runs',
+    description: "List AUZsPay's payroll runs (one per month, or an off-cycle run), each with its status and headline gross/net totals. Use this to find a run_id for payroll_run_detail. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { kind: { type: 'string' }, year: { type: 'string', description: 'e.g. 2026' }, include_cancelled: { type: 'boolean' } } },
+  },
+  {
+    name: 'payroll_run_detail',
+    description: "Full detail of one payroll run: every employee's payslip line (gross, deductions, net, paid days, LOP days, payslip number), the approval audit trail (who created/calculated/approved/finalized it and when), and the payment batches raised against it. This is the tool for 'who approved this payroll' or 'show me everyone's payslip for this month', not payroll_dashboard. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['run_id'], properties: { run_id: { type: 'string', description: 'from payroll_list_runs' } } },
+  },
+  {
+    name: 'payroll_list_loans',
+    description: 'Every loan/advance request in AUZsPay, any status (not just pending) -- amount, EMI terms, how much has been repaid, and the outstanding balance. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { employee_id: { type: 'string' }, status: { type: 'string' } } },
+  },
+  {
+    name: 'payroll_list_claims',
+    description: 'Every expense/reimbursement claim in AUZsPay, any status (not just pending). Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { employee_id: { type: 'string' }, status: { type: 'string' } } },
   },
   {
     name: 'payroll_list_employees',
@@ -484,6 +630,18 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', required: ['request_id', 'approve'], properties: { request_id: { type: 'string' }, approve: { type: 'boolean' } } },
   },
+  {
+    name: 'payroll_audit_log',
+    description: "AUZsPay's audit trail -- who changed what, when, including the before/after values for salary, attendance and leave corrections. Filter by employee or entity to answer 'who changed this employee's salary and when'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { employee_id: { type: 'string' }, entity: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'payroll_integrity_check',
+    description: "AUZsPay's books health check (salary totals match their components, attendance/leave balances reconcile, no orphaned records). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
   // ---- AUZsStyle (clothing/footwear retail): thin wrappers over the already-registered sty_* functions. ----
   {
     name: 'style_catalog',
@@ -508,6 +666,18 @@ const TOOLS = [
     description: 'Search AUZsStyle customers. Read-only.',
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { search: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'style_crm_customers',
+    description: "AUZsStyle's CRM customer list -- unlike style_list_customers (a plain name/phone search), this carries each customer's tier, loyalty points, store credit, visit count, lifetime spend and WhatsApp opt-in, and can be filtered to a segment (e.g. customers with credit, with points, or a specific tier). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, segment: { type: 'string', description: "e.g. 'credit', 'points', 'gold', 'silver', 'bronze', or a status" }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'style_integrity_check',
+    description: "AUZsStyle's books health check (bill totals match their lines, every bill line has a matching stock move, no negative stock, returns never exceed quantity sold). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'style_sell',
@@ -542,6 +712,12 @@ const TOOLS = [
   // sty_delete_styles is a genuine hard delete (no soft-hide fallback); sty_void_sale needs sty_manage, not
   // sty_sell; sty_save_supplier/sty_pay_supplier/sty_transfer*/sty_receive_transfer/sty_cancel_transfer all
   // return the WHOLE list they belong to, not just the one row touched. ----
+  {
+    name: 'style_stock_moves',
+    description: "Line-by-line stock movement history for AUZsStyle -- exactly what changed, when, why (purchase/sale/return/exchange/transfer/adjustment/damage/loss), the quantity before and after each move, and the real bill/purchase-invoice/transfer number behind it. Use this to answer 'why did stock go up/down' or 'which bill caused this stock change', not style_dashboard (which only gives a current total). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { variant_id: { type: 'string' }, branch_id: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string', enum: ['opening', 'purchase', 'sale', 'return', 'exchange_in', 'adjust', 'damage', 'lost', 'transfer_out', 'transfer_in', 'void', 'count'] } } },
+  },
   {
     name: 'style_save_style',
     description: "Create a new AUZsStyle style, or update an existing one by id. Creating one builds every colour x size combination given as real, sellable variants (with opening stock if given). Most AI apps will ask you to confirm before running this.",
@@ -769,6 +945,24 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'mob_sales_ledger',
+    description: "Every AUZsMob sale item line in a date range, each with the IMEI (for a serialized phone), who sold it, which vendor/purchase it came from and who bought it in, cost, sale price and profit. This is the right tool for 'who sold this phone', 'what did we pay for this IMEI', or 'how much profit on this item' -- mob_report_dashboard only gives totals. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, staff_id: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'mob_adjust_stock',
+    description: 'Adjust an AUZsMob accessory/non-serialized item\'s quantity up or down with a note (stock count correction, damage, etc). For a serialized phone, use mob_catalog to manage units directly, not this. Most AI apps will ask you to confirm before running this.',
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: { type: 'object', required: ['item_id', 'qty_delta'], properties: { item_id: { type: 'string' }, qty_delta: { type: 'number', description: 'positive to add, negative to remove' }, note: { type: 'string' } } },
+  },
+  {
+    name: 'mob_stock_moves',
+    description: "Line-by-line stock movement history for AUZsMob's non-serialized items (accessories etc.) -- quantity before/after each move, why it changed (purchase/sale/repair part/void/adjustment/secondhand intake), and the real bill number, vendor or repair job behind it. A serialized phone's own history is better read from mob_catalog (its units) or mob_sales_ledger (by IMEI). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { item_id: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, type: { type: 'string', enum: ['purchase', 'sale', 'repair_part', 'void_sale', 'adjustment', 'secondhand_intake'] } } },
+  },
+  {
     name: 'mob_report_dashboard',
     description: "AUZsMob's sales/profit/dues/low-stock dashboard for a date range (defaults to today). Read-only.",
     annotations: { readOnlyHint: true },
@@ -779,6 +973,18 @@ const TOOLS = [
     description: 'List AUZsMob repair jobs with their current status (received/in_repair/ready/delivered/cancelled). Read-only.',
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['received', 'in_repair', 'ready', 'delivered', 'cancelled'] }, limit: { type: 'integer', description: 'default 50, max 200' } } },
+  },
+  {
+    name: 'mob_activity_log',
+    description: "AUZsMob's staff activity feed -- every sale, purchase and repair booked, with who booked it and when, for a date range (defaults to the last 7 days). Use this to answer 'what has staff member X done' or to spot unusual activity. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
+    name: 'mob_integrity_check',
+    description: "AUZsMob's books health check (every sold unit has a matching stock movement, sale totals match subtotal minus discount, bill numbers are unique, and more). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'mob_sell',
@@ -828,6 +1034,12 @@ const TOOLS = [
       type: 'object', required: ['to', 'template'],
       properties: { to: { type: 'string', description: 'customer phone number' }, template: { type: 'string', description: 'a template key from whatsapp_status' }, params: { type: 'array', items: { type: 'string' }, description: 'fills the template\'s {{1}}, {{2}}, ... placeholders in order' }, ref: { type: 'string', description: 'optional: a unique reference so resending the same ref never double-sends' } },
     },
+  },
+  {
+    name: 'whatsapp_message_history',
+    description: "Every WhatsApp message this business has sent to one customer (which template, when, delivery status) -- unlike whatsapp_status's 'recent' list (the whole tenant's last 30 messages, across every customer), this is scoped to one phone number so a busy business's other customers don't crowd it out. Outbound only -- there is no stored log of what a customer replied, only an opt-out (STOP) if they ever sent one. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { phone: { type: 'string', description: 'omit to see the whole tenant\'s recent messages (same as whatsapp_status but with a higher limit)' }, limit: { type: 'integer' } } },
   },
   // ---- AI activity: every tool call (this one included) is written to mcp_audit (db/323) the instant it
   // finishes, success or failure -- the owner can review the same log in the console (Management -> AI
@@ -885,6 +1097,18 @@ const TOOLS = [
         paymentMode: { type: 'string', enum: ['cash', 'upi', 'card', 'credit'] }, note: { type: 'string' },
       },
     },
+  },
+  {
+    name: 'salon_list_invoices',
+    description: "List Auzsalon invoices -- client, items, total, payment mode, and whether a credit (pay-later) bill has been settled yet. Use this to answer 'who still owes us' (unsettled credit bills) or to find a specific client's billing history. Only works for a Salon-niche business. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, client_phone: { type: 'string' }, unsettled_only: { type: 'boolean', description: 'only credit bills not yet paid' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'salon_client_history',
+    description: "One Auzsalon client's full history by phone number -- every appointment/booking and every bill, merged into one chronological feed (newest first). Use this to answer 'what has this client had done before' or 'when did they last visit'. Only works for a Salon-niche business. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['phone'], properties: { phone: { type: 'string' } } },
   },
 ];
 
@@ -1179,6 +1403,17 @@ async function runTool(client, name, args) {
     case 'ledger_gst_summary':
       if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
       return callRpc(client, 'acc_gst_summary', { p_from: args.from, p_to: args.to });
+    case 'ledger_gst_register':
+      if (!args.type || !args.from || !args.to) throw new HttpError(400, 'type, from and to are required');
+      return callRpc(client, 'acc_gst_register', { p: { type: args.type, from: args.from, to: args.to } });
+    case 'ledger_gst_exceptions':
+      if (!args.from || !args.to) throw new HttpError(400, 'from and to (YYYY-MM-DD) are required');
+      return callRpc(client, 'acc_gst_exceptions', { p_from: args.from, p_to: args.to });
+    case 'ledger_gst_2b_reconciliation':
+      if (!args.period) throw new HttpError(400, 'period is required');
+      return callRpc(client, 'acc_gst_recon_list', { p_period: args.period });
+    case 'ledger_duplicate_documents':
+      return callRpc(client, 'acc_rep_duplicates', { p: { from: args.from || null, to: args.to || null } });
     case 'ledger_ageing':
       return callRpc(client, 'acc_ageing', { p: { kind: args.kind || 'receivable' } });
     case 'ledger_save_document':
@@ -1197,6 +1432,8 @@ async function runTool(client, name, args) {
       const att = await callRpc(client, 'acc_get_attachment', { p_id: args.attachment_id });
       return downloadAttachment(att);
     }
+    case 'ledger_audit_log':
+      return callRpc(client, 'acc_list_audit', { p: { search: args.search || null, entity: args.entity || null, from: args.from || null, limit: args.limit || 200 } });
     case 'ledger_post_document':
       if (!args.doc_id) throw new HttpError(400, 'doc_id is required');
       return callRpc(client, 'acc_post_document', { p_doc_id: args.doc_id, p_payments: args.payments || [] });
@@ -1255,15 +1492,45 @@ async function runTool(client, name, args) {
       return { people, partners, loans };
     }
     case 'finance_save_transaction':
+      if (!args.kind || !(Number(args.amount) > 0)) throw new HttpError(400, 'kind and a positive amount are required');
       return callRpc(client, 'fin_save_txn', { p: args });
     case 'finance_download_attachment': {
       if (!args.attachment_id) throw new HttpError(400, 'attachment_id is required');
       const att = await callRpc(client, 'fin_get_attachment', { p_id: args.attachment_id });
       return downloadAttachment(att);
     }
+    case 'finance_list_transactions':
+      return callRpc(client, 'fin_txn_list', { p: args });
+    case 'finance_list_loans':
+      return callRpc(client, 'fin_loan_list', {});
+    case 'finance_reconciliation':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      return callRpc(client, 'fin_recon_list', { p_account: args.account_id });
+    case 'finance_list_assets':
+      return callRpc(client, 'fin_asset_list', {});
+    case 'finance_list_recurring':
+      return callRpc(client, 'fin_recurring_list', {});
+    case 'finance_anomalies':
+      return callRpc(client, 'fin_anomalies', {});
+    case 'finance_bank_import_preview':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      return callRpc(client, 'fin_import_preview', { p_account: args.account_id, p_rows: args.rows || [] });
+    case 'finance_bank_import_commit':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      for (const r of (args.rows || [])) { if (r.action === 'match' && !r.txn_id) throw new HttpError(400, "a 'match' row needs txn_id"); }
+      return callRpc(client, 'fin_import_commit', { p_account: args.account_id, p_rows: args.rows || [] });
 
     case 'payroll_dashboard':
       return callRpc(client, 'pay_dashboard', {});
+    case 'payroll_list_runs':
+      return callRpc(client, 'pay_list_runs', { p: { kind: args.kind || null, year: args.year || null, include_cancelled: !!args.include_cancelled } });
+    case 'payroll_run_detail':
+      if (!args.run_id) throw new HttpError(400, 'run_id is required');
+      return callRpc(client, 'pay_get_run', { p_id: args.run_id });
+    case 'payroll_list_loans':
+      return callRpc(client, 'pay_list_loans', { p: { employee_id: args.employee_id || null, status: args.status || null } });
+    case 'payroll_list_claims':
+      return callRpc(client, 'pay_list_claims', { p: { employee_id: args.employee_id || null, status: args.status || null } });
     case 'payroll_list_employees':
       return callRpc(client, 'pay_list_employees', { p: { q: args.search || null, status: args.status || null } });
     case 'payroll_attendance_month':
@@ -1284,6 +1551,10 @@ async function runTool(client, name, args) {
     case 'payroll_decide_claim':
       if (!args.request_id || args.approve == null) throw new HttpError(400, 'request_id and approve are required');
       return callRpc(client, 'pay_claim_decide', { p_id: args.request_id, p_approve: !!args.approve, p: {} });
+    case 'payroll_audit_log':
+      return callRpc(client, 'pay_list_audit', { p: { employee_id: args.employee_id || null, entity: args.entity || null, from: args.from || null, limit: args.limit || 300 } });
+    case 'payroll_integrity_check':
+      return callRpc(client, 'pay_integrity_check', {});
 
     case 'style_catalog':
       return callRpc(client, 'sty_catalog', { p_branch: args.branch_id || null });
@@ -1293,6 +1564,10 @@ async function runTool(client, name, args) {
       return callRpc(client, 'sty_crm_overview', {});
     case 'style_list_customers':
       return callRpc(client, 'sty_list_customers', { p_q: args.search || null, p_limit: args.limit || 200 });
+    case 'style_crm_customers':
+      return callRpc(client, 'sty_crm_list', { p: { q: args.search || null, segment: args.segment || null, limit: args.limit || 300 } });
+    case 'style_integrity_check':
+      return callRpc(client, 'sty_integrity_check', {});
     case 'style_sell':
       if (!Array.isArray(args.lines) || !args.lines.length) throw new HttpError(400, 'lines must be a non-empty array of {variant_id,qty}');
       return callRpc(client, 'sty_sell', {
@@ -1308,6 +1583,8 @@ async function runTool(client, name, args) {
         p: { id: randomUUID(), saleId: args.sale_id, mode: args.mode || 'cash', reason: args.reason || null, lines: args.lines.map((l) => ({ saleLineId: l.sale_line_id, qty: l.qty, damaged: l.damaged || false })) },
       });
 
+    case 'style_stock_moves':
+      return callRpc(client, 'sty_stock_moves_list', { p: args });
     case 'style_save_style': {
       if (!args.name || args.price == null) throw new HttpError(400, 'name and price are required');
       const p = { name: args.name, category: args.category, brand: args.brand, cost: args.cost, price: args.price, mrp: args.mrp, colours: args.colours, sizes: args.sizes, active: args.active };
@@ -1446,6 +1723,10 @@ async function runTool(client, name, args) {
       if (args.status) repairs = repairs.filter((r) => r.status === args.status);
       return repairs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, limit);
     }
+    case 'mob_activity_log':
+      return callRpc(client, 'mob_report_activity', { p_from: args.from || null, p_to: args.to || null });
+    case 'mob_integrity_check':
+      return callRpc(client, 'mob_integrity_check', {});
     case 'mob_sell': {
       if (!Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'items must be a non-empty array');
       for (const it of args.items) {
@@ -1469,12 +1750,21 @@ async function runTool(client, name, args) {
     case 'mob_update_repair_status':
       if (!args.repair_id || !args.status) throw new HttpError(400, 'repair_id and status are required');
       return callRpc(client, 'mob_push_repair_event', { p_id: randomUUID(), p_repair_id: args.repair_id, p: { type: 'status', status: args.status } });
+    case 'mob_sales_ledger':
+      return callRpc(client, 'mob_report_ledger', { p_from: args.from || null, p_to: args.to || null, p_staff_id: args.staff_id || null, p_limit: args.limit || 2000 });
+    case 'mob_adjust_stock':
+      if (!args.item_id || args.qty_delta == null) throw new HttpError(400, 'item_id and qty_delta are required');
+      return callRpc(client, 'mob_adjust_stock', { p_id: randomUUID(), p_item_id: args.item_id, p_qty_delta: args.qty_delta, p_note: args.note || null });
+    case 'mob_stock_moves':
+      return callRpc(client, 'mob_stock_moves_list', { p: args });
 
     case 'whatsapp_status':
       return callRpc(client, 'wa_my_status', {});
     case 'whatsapp_send':
       if (!args.to || !args.template) throw new HttpError(400, 'to and template are required');
       return callRpc(client, 'mcp_send_whatsapp', { p_to: args.to, p_template: args.template, p_params: args.params || [], p_ref: args.ref || null });
+    case 'whatsapp_message_history':
+      return callRpc(client, 'mcp_whatsapp_history', { p_phone: args.phone || null, p_limit: args.limit || 50 });
 
     case 'mcp_my_activity':
       return callRpc(client, 'mcp_audit_list', { p_limit: args.limit || 50 });
@@ -1522,6 +1812,22 @@ async function runSalonTool(userId, tenantId, name, args) {
     case 'salon_create_invoice':
       if (!args.client || !Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'client and a non-empty items array are required');
       return mutate(tenant, (db) => addInvoice(db, args, { role: 'owner' }), ['site', 'data'], ['data']);
+    case 'salon_list_invoices':
+      return mutate(tenant, (db) => (db.invoices || [])
+        .filter((v) => !args.from || v.date >= args.from)
+        .filter((v) => !args.to || v.date <= args.to)
+        .filter((v) => !args.client_phone || v.client?.phone === args.client_phone)
+        .filter((v) => !args.unsettled_only || (v.paymentMode === 'credit' && !v.settled))
+        .slice(0, Math.min(Math.max(parseInt(args.limit, 10) || 100, 1), 500)), ['site', 'data'], []);
+    case 'salon_client_history':
+      if (!args.phone) throw new HttpError(400, 'phone is required');
+      return mutate(tenant, (db) => {
+        const bookings = (db.bookings || []).filter((b) => b.phone === args.phone)
+          .map((b) => ({ type: 'booking', date: b.date, time: b.time || null, services: b.services || [], status: b.status || null, id: b.id }));
+        const invoices = (db.invoices || []).filter((v) => v.client?.phone === args.phone)
+          .map((v) => ({ type: 'invoice', date: v.date, no: v.no, items: v.items, total: v.total, servedBy: v.servedBy || null, void: !!v.void, settled: v.settled, id: v.id }));
+        return [...bookings, ...invoices].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      }, ['site', 'data'], []);
     default:
       throw new HttpError(404, `unknown tool: ${name}`);
   }
