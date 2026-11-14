@@ -161,7 +161,7 @@ async function pickParty(kind, current) {
   });
 }
 
-function productInput(line, sales, onPick, onType) {
+function productInput(line, sales, onPick, onType, onBlur) {
   const inp = h('input', { class: 'input', placeholder: 'Item or service', value: line.description || '', 'aria-label': 'Item', autocomplete: 'off' });
   const pop = h('div', { class: 'pop hidden', role: 'listbox' });
   let idx = 0, list = [], seq = 0, timer = null;
@@ -195,7 +195,7 @@ function productInput(line, sales, onPick, onType) {
   };
   inp.addEventListener('input', () => { idx = 0; onType(inp.value); show(); });
   inp.addEventListener('focus', () => { if (!line.product_id) show(); });
-  inp.addEventListener('blur', () => setTimeout(() => pop.classList.add('hidden'), 120));
+  inp.addEventListener('blur', () => setTimeout(() => { pop.classList.add('hidden'); onBlur && onBlur(); }, 120));
   inp.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown' && !pop.classList.contains('hidden')) { e.preventDefault(); idx = Math.min(idx + 1, list.length - 1); show(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(idx - 1, 0); show(); }
@@ -319,10 +319,24 @@ async function docEditor(v, type, existing) {
     const amt = h('div', { class: 'lf r amt' }, h('label', { class: 'lf-l' }, 'Amount'), h('div', { class: 'money num', style: { fontWeight: 600, padding: '8px 0' } }, inr(0)));
     amountCells[i] = $('.money', amt);
     const num = (key, ph, step) => h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: l[key], placeholder: ph || '', 'aria-label': key, oninput: (e) => { l[key] = e.target.value; recalc(); }, onkeydown: (e) => { if (e.key === 'Enter' && key === 'tax_rate' && i === D.lines.length - 1) { e.preventDefault(); D.lines.push(blankLine(type)); drawLines(true); } else if (e.key === 'Enter' && ['qty', 'rate', 'disc_pct'].includes(key)) { e.preventDefault(); const nx = { qty: 'rate', rate: 'disc_pct', disc_pct: 'GST rate' }[key], ln = e.target.closest('.line'), t = ln && (ln.querySelector('[aria-label="' + nx + '"]')); if (t) { t.focus(); t.select && t.select(); } else if (i === D.lines.length - 1) { D.lines.push(blankLine(type)); drawLines(true); } } } });
+    // Excel-like continuous entry: the moment the LAST row gets a real item (picked from the catalogue, or
+    // typed as free text and then left), a fresh blank row appears after it automatically -- no "+ Add line"
+    // tap needed to keep going. Keyed off blur rather than keydown('Enter') because a phone's numeric keypad
+    // for Qty/Rate/Disc/GST often has no Enter key at all, so the previous Enter-chain (still below, for a
+    // real keyboard) silently did nothing on mobile. Only ever fires once per row: after the row is no
+    // longer the last one, `i === D.lines.length - 1` is false on any later blur.
+    const ensureTrailingBlank = () => {
+      if (i === D.lines.length - 1 && (l.description || l.product_id)) {
+        const fk = focusKey(document.activeElement);
+        D.lines.push(blankLine(type)); drawLines(); restoreFocus(fk);
+        return true;
+      }
+      return false;
+    };
     const prod = productInput(l, sales, (p) => {
       l.product_id = p.id; l.description = p.name; l.hsn = p.hsn || ''; l.unit = p.unit || ''; l.rate = String(sales ? p.sale_price : p.purchase_price); l.tax_rate = String(p.tax_rate); if (p.tax_inclusive) D.price_includes_tax = true;
-      drawLines(); recalc(); setTimeout(() => { const qi = $$('.line')[i] && $('[aria-label=qty]', $$('.line')[i]); qi && qi.select(); }, 30);
-    }, (txt) => { l.description = txt; if (!txt) l.product_id = ''; });
+      if (!ensureTrailingBlank()) drawLines(); recalc(); setTimeout(() => { const qi = $$('.line')[i] && $('[aria-label=qty]', $$('.line')[i]); qi && qi.select(); }, 30);
+    }, (txt) => { l.description = txt; if (!txt) l.product_id = ''; }, ensureTrailingBlank);
     const rates = taxRates().map(String); if (!rates.includes(String(l.tax_rate))) rates.push(String(l.tax_rate));
     const taxSel = selectEl(rates.map((r) => [r, r + '%']), String(l.tax_rate), { label: 'GST rate', onchange: () => { l.tax_rate = taxSel.value; recalc(); } });
     const stock = ((S.products || []).find((p) => p.id === l.product_id) || {});
@@ -358,6 +372,20 @@ async function docEditor(v, type, existing) {
     const line = e.target.closest && e.target.closest('.line'); if (!line) return;
     e.preventDefault(); addPasted(t, $$('.line', linesEl).indexOf(line));
   });
+  // A redraw triggered mid-typing (ensureTrailingBlank, below) must not steal focus off whatever field the
+  // user had just tabbed/clicked into, or every Tab press would throw them back to nothing. Capture which
+  // line/field/cursor position was focused before a redraw, then put focus back in the same place after.
+  function focusKey(el) {
+    const line = el && el.closest && el.closest('.line'); if (!line) return null;
+    const idx = $$('.line', linesEl).indexOf(line), label = el.getAttribute && el.getAttribute('aria-label');
+    return idx < 0 || !label ? null : { idx, label, start: el.selectionStart, end: el.selectionEnd };
+  }
+  function restoreFocus(fk) {
+    if (!fk) return;
+    const line = $$('.line', linesEl)[fk.idx]; if (!line) return;
+    const el = $('[aria-label="' + fk.label + '"]', line); if (!el) return;
+    el.focus(); if (el.setSelectionRange && fk.start != null) { try { el.setSelectionRange(fk.start, fk.end); } catch {} }
+  }
   function drawLines(focusLast) {
     clear(linesEl); amountCells.length = 0;
     D.lines.forEach((l, i) => linesEl.append(lineNode(l, i)));
