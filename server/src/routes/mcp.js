@@ -565,6 +565,18 @@ const TOOLS = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     inputSchema: { type: 'object', required: ['request_id', 'approve'], properties: { request_id: { type: 'string' }, approve: { type: 'boolean' } } },
   },
+  {
+    name: 'payroll_audit_log',
+    description: "AUZsPay's audit trail -- who changed what, when, including the before/after values for salary, attendance and leave corrections. Filter by employee or entity to answer 'who changed this employee's salary and when'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { employee_id: { type: 'string' }, entity: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'payroll_integrity_check',
+    description: "AUZsPay's books health check (salary totals match their components, attendance/leave balances reconcile, no orphaned records). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
   // ---- AUZsStyle (clothing/footwear retail): thin wrappers over the already-registered sty_* functions. ----
   {
     name: 'style_catalog',
@@ -589,6 +601,18 @@ const TOOLS = [
     description: 'Search AUZsStyle customers. Read-only.',
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { search: { type: 'string' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'style_crm_customers',
+    description: "AUZsStyle's CRM customer list -- unlike style_list_customers (a plain name/phone search), this carries each customer's tier, loyalty points, store credit, visit count, lifetime spend and WhatsApp opt-in, and can be filtered to a segment (e.g. customers with credit, with points, or a specific tier). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string' }, segment: { type: 'string', description: "e.g. 'credit', 'points', 'gold', 'silver', 'bronze', or a status" }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'style_integrity_check',
+    description: "AUZsStyle's books health check (bill totals match their lines, every bill line has a matching stock move, no negative stock, returns never exceed quantity sold). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'style_sell',
@@ -884,6 +908,18 @@ const TOOLS = [
     description: 'List AUZsMob repair jobs with their current status (received/in_repair/ready/delivered/cancelled). Read-only.',
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { status: { type: 'string', enum: ['received', 'in_repair', 'ready', 'delivered', 'cancelled'] }, limit: { type: 'integer', description: 'default 50, max 200' } } },
+  },
+  {
+    name: 'mob_activity_log',
+    description: "AUZsMob's staff activity feed -- every sale, purchase and repair booked, with who booked it and when, for a date range (defaults to the last 7 days). Use this to answer 'what has staff member X done' or to spot unusual activity. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' } } },
+  },
+  {
+    name: 'mob_integrity_check',
+    description: "AUZsMob's books health check (every sold unit has a matching stock movement, sale totals match subtotal minus discount, bill numbers are unique, and more). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'mob_sell',
@@ -1427,6 +1463,10 @@ async function runTool(client, name, args) {
     case 'payroll_decide_claim':
       if (!args.request_id || args.approve == null) throw new HttpError(400, 'request_id and approve are required');
       return callRpc(client, 'pay_claim_decide', { p_id: args.request_id, p_approve: !!args.approve, p: {} });
+    case 'payroll_audit_log':
+      return callRpc(client, 'pay_list_audit', { p: { employee_id: args.employee_id || null, entity: args.entity || null, from: args.from || null, limit: args.limit || 300 } });
+    case 'payroll_integrity_check':
+      return callRpc(client, 'pay_integrity_check', {});
 
     case 'style_catalog':
       return callRpc(client, 'sty_catalog', { p_branch: args.branch_id || null });
@@ -1436,6 +1476,10 @@ async function runTool(client, name, args) {
       return callRpc(client, 'sty_crm_overview', {});
     case 'style_list_customers':
       return callRpc(client, 'sty_list_customers', { p_q: args.search || null, p_limit: args.limit || 200 });
+    case 'style_crm_customers':
+      return callRpc(client, 'sty_crm_list', { p: { q: args.search || null, segment: args.segment || null, limit: args.limit || 300 } });
+    case 'style_integrity_check':
+      return callRpc(client, 'sty_integrity_check', {});
     case 'style_sell':
       if (!Array.isArray(args.lines) || !args.lines.length) throw new HttpError(400, 'lines must be a non-empty array of {variant_id,qty}');
       return callRpc(client, 'sty_sell', {
@@ -1591,6 +1635,10 @@ async function runTool(client, name, args) {
       if (args.status) repairs = repairs.filter((r) => r.status === args.status);
       return repairs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, limit);
     }
+    case 'mob_activity_log':
+      return callRpc(client, 'mob_report_activity', { p_from: args.from || null, p_to: args.to || null });
+    case 'mob_integrity_check':
+      return callRpc(client, 'mob_integrity_check', {});
     case 'mob_sell': {
       if (!Array.isArray(args.items) || !args.items.length) throw new HttpError(400, 'items must be a non-empty array');
       for (const it of args.items) {
