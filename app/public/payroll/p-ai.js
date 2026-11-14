@@ -9,6 +9,31 @@ const AI_TOOL_LABEL = {
   payroll_decide_claim: 'Decided an expense claim',
 };
 const aiToolLabel = (t) => AI_TOOL_LABEL[t] || (t || '').replace(/^[a-z]+_/, '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+// Plain-text rendering of a tool call's arguments for the activity log detail sheet -- an owner reading
+// "what did the AI actually do" should see "Amount: 500, Date: 2026-01-10", never raw JSON with braces and
+// quotes. One line per field; a nested line-items array (e.g. ledger_save_document's lines) is summarised
+// readably rather than shown as nested code.
+const aiLabel = (k) => String(k).replace(/_/g, ' ').replace(/\bid\b/gi, 'ID').replace(/^./, (c) => c.toUpperCase());
+function aiValueText(v) {
+  if (v == null || v === '') return '—';
+  if (Array.isArray(v)) {
+    if (!v.length) return 'none';
+    if (v.every((x) => x == null || typeof x !== 'object')) return v.join(', ');
+    return v.length + ' item' + (v.length === 1 ? '' : 's') + ': ' + v.map((item) => aiValueText(item)).join('; ');
+  }
+  if (typeof v === 'object') {
+    const parts = Object.entries(v).filter(([, vv]) => vv != null && vv !== '').map(([kk, vv]) => aiLabel(kk) + ' ' + aiValueText(vv));
+    return parts.length ? parts.join(', ') : '—';
+  }
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  return String(v);
+}
+function aiArgsNode(args) {
+  const entries = Object.entries(args || {}).filter(([, v]) => v != null && v !== '');
+  if (!entries.length) return h('div', { class: 'small muted' }, 'No details recorded for this action.');
+  return h('div', { class: 'card grid', style: { gap: '4px' } }, entries.map(([k, v]) => h('div', { class: 'small' }, h('b', null, aiLabel(k) + ': '), aiValueText(v))));
+}
+
 
 page('ai', {
   title: 'AI connector', icon: 'bolt', perm: 'pay_audit',
@@ -85,5 +110,5 @@ function aiAuditDetail(a) {
     h('div', { class: 'small muted' }, fmtDT(a.at) + (a.key_label ? ' · ' + a.key_label : '')),
     h('div', { class: 'small muted' }, 'Tool: ' + a.tool),
     a.ok ? h('div', { class: 'small' }, 'Completed successfully.') : h('div', { class: 'banner bad' }, a.error || 'Failed'),
-    a.args ? h('div', { class: 'card', style: { whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '12px' } }, JSON.stringify(a.args, null, 1)) : null) });
+    a.args ? aiArgsNode(a.args) : null) });
 }
