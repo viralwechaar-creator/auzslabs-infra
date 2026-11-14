@@ -514,6 +514,12 @@ const TOOLS = [
   // sty_sell; sty_save_supplier/sty_pay_supplier/sty_transfer*/sty_receive_transfer/sty_cancel_transfer all
   // return the WHOLE list they belong to, not just the one row touched. ----
   {
+    name: 'style_stock_moves',
+    description: "Line-by-line stock movement history for AUZsStyle -- exactly what changed, when, why (purchase/sale/return/exchange/transfer/adjustment/damage/loss), the quantity before and after each move, and the real bill/purchase-invoice/transfer number behind it. Use this to answer 'why did stock go up/down' or 'which bill caused this stock change', not style_dashboard (which only gives a current total). Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { variant_id: { type: 'string' }, branch_id: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string', enum: ['opening', 'purchase', 'sale', 'return', 'exchange_in', 'adjust', 'damage', 'lost', 'transfer_out', 'transfer_in', 'void', 'count'] } } },
+  },
+  {
     name: 'style_save_style',
     description: "Create a new AUZsStyle style, or update an existing one by id. Creating one builds every colour x size combination given as real, sellable variants (with opening stock if given). Most AI apps will ask you to confirm before running this.",
     annotations: { readOnlyHint: false, destructiveHint: false },
@@ -1269,6 +1275,8 @@ async function runTool(client, name, args) {
         p: { id: randomUUID(), saleId: args.sale_id, mode: args.mode || 'cash', reason: args.reason || null, lines: args.lines.map((l) => ({ saleLineId: l.sale_line_id, qty: l.qty, damaged: l.damaged || false })) },
       });
 
+    case 'style_stock_moves':
+      return callRpc(client, 'sty_stock_moves_list', { p: args });
     case 'style_save_style': {
       if (!args.name || args.price == null) throw new HttpError(400, 'name and price are required');
       const p = { name: args.name, category: args.category, brand: args.brand, cost: args.cost, price: args.price, mrp: args.mrp, colours: args.colours, sizes: args.sizes, active: args.active };
