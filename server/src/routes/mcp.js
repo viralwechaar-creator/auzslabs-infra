@@ -304,6 +304,12 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: { search: { type: 'string' }, category: { type: 'string' } } },
   },
   {
+    name: 'ledger_audit_log',
+    description: "AuzsLedger's audit trail -- who changed what, when, including the before/after values (old_value/new_value), covering both AuzsLedger's own books and AuzsFinance (they post to the same shared books -- see ledger_account_ledger). Filter by entity (e.g. 'document', 'payment', 'journal', 'fin_txn') or search by action/entity/actor email. Use this to answer 'who posted/cancelled/changed this' or 'what happened to document X'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { search: { type: 'string', description: 'matches action, entity, actor email, or an exact entity_id' }, entity: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, limit: { type: 'integer' } } },
+  },
+  {
     name: 'ledger_post_document',
     description: 'Finalize (post) an AuzsLedger document created with ledger_save_document, optionally recording payment against it immediately. Posting is final -- most AI apps will ask you to confirm before running this.',
     annotations: { readOnlyHint: false, destructiveHint: true },
@@ -1351,6 +1357,8 @@ async function runTool(client, name, args) {
       return callRpc(client, 'acc_get_document', { p_id: args.doc_id });
     case 'ledger_list_products':
       return callRpc(client, 'acc_list_products', { p: { search: args.search || null, category: args.category || null } });
+    case 'ledger_audit_log':
+      return callRpc(client, 'acc_list_audit', { p: { search: args.search || null, entity: args.entity || null, from: args.from || null, limit: args.limit || 200 } });
     case 'ledger_post_document':
       if (!args.doc_id) throw new HttpError(400, 'doc_id is required');
       return callRpc(client, 'acc_post_document', { p_doc_id: args.doc_id, p_payments: args.payments || [] });
