@@ -395,9 +395,95 @@ const TOOLS = [
   },
   {
     name: 'finance_save_transaction',
-    description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
+    description: 'Record a transaction in AuzsFinance (use finance_people/finance_dashboard first to find account/person/partner/loan ids). Most AI apps will ask you to confirm before running this -- it changes real financial records.',
     annotations: { readOnlyHint: false, destructiveHint: false },
-    inputSchema: { type: 'object', properties: { account_id: { type: 'string' }, amount: { type: 'number' }, type: { type: 'string' }, date: { type: 'string' }, note: { type: 'string' }, person_id: { type: 'string' }, category: { type: 'string' } } },
+    inputSchema: {
+      type: 'object', required: ['kind', 'amount'],
+      properties: {
+        kind: { type: 'string', enum: ['money_in', 'expense', 'capital_in', 'drawing', 'loan_taken', 'loan_given', 'loan_repay', 'loan_collect', 'transfer', 'credit_sale', 'credit_purchase', 'dues_in', 'dues_out', 'asset_buy'], description: 'money_in/expense/asset_buy need account_id; capital_in/drawing need account_id + partner_id; loan_* need account_id + loan_id; transfer needs account_id + to_account_id; credit_sale/credit_purchase need person_id; dues_in/dues_out need account_id + person_id' },
+        amount: { type: 'number' }, interest: { type: 'number', description: 'extra paid/received on a loan_repay or loan_collect, on top of amount' },
+        date: { type: 'string', description: 'YYYY-MM-DD, defaults to today' },
+        account_id: { type: 'string' }, to_account_id: { type: 'string', description: 'for a transfer' },
+        person_id: { type: 'string' }, partner_id: { type: 'string' }, loan_id: { type: 'string' }, category_id: { type: 'string', description: 'an account_id from finance_dashboard\'s by_category or ledger_context, to categorise an expense/income' },
+        purpose: { type: 'string' }, method: { type: 'string' }, note: { type: 'string' }, due_date: { type: 'string' },
+        evidence: { type: 'string', enum: ['have', 'none'], description: 'whether a receipt/bill exists for this' },
+      },
+    },
+  },
+  {
+    name: 'finance_list_transactions',
+    description: "Search/list individual AuzsFinance transactions (not just the dashboard totals) -- by date range, account, person, partner, loan, a text search in the purpose/note, whether it needs review, or whether evidence (a receipt/bill) is attached. Use this to find a specific transaction, or to answer 'what did we spend on X'. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string' }, account_id: { type: 'string' }, person_id: { type: 'string' }, partner_id: { type: 'string' }, loan_id: { type: 'string' }, q: { type: 'string', description: 'text search in purpose/note' }, review: { type: 'string', enum: ['needs_review', 'reviewed'] }, evidence: { type: 'string', enum: ['have', 'missing'] }, with_reversed: { type: 'boolean', description: 'include reversed/cancelled transactions, default true' }, limit: { type: 'integer' } } },
+  },
+  {
+    name: 'finance_list_loans',
+    description: 'Every loan taken or given tracked in AuzsFinance, with its running balance. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_reconciliation',
+    description: "One AuzsFinance account's bank-reconciliation view: the book balance, the cleared balance (only transactions marked as cleared), and every transaction on that account with whether it's cleared yet. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', required: ['account_id'], properties: { account_id: { type: 'string' } } },
+  },
+  {
+    name: 'finance_list_assets',
+    description: 'Every fixed asset tracked in AuzsFinance, with its cost, accumulated depreciation and current book value. Read-only.',
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_list_recurring',
+    description: "AuzsFinance's repeating entries (rent, salary, EMI, subscriptions) -- amount, frequency, next due date, and whether one is due now. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_anomalies',
+    description: "Things in AuzsFinance that look wrong and are worth a second look: the same amount entered twice, an expense far above that category's usual size, a large payment with no bill/receipt attached, an account balance below zero, a loan past its due date, or money owed to the business for a long time. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'finance_bank_import_preview',
+    description: "Check a bank statement against AuzsFinance before importing it, without changing anything -- each row comes back marked 'matched' (an existing transaction on the books looks like this bank line, give its txn_id/txn_title), 'duplicate' (already imported or already has this reference), 'new' (no match, would create a transaction), or 'skip' (no usable date/amount). Always run this before finance_bank_import_commit so a human can review the matches. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: {
+      type: 'object', required: ['account_id', 'rows'],
+      properties: {
+        account_id: { type: 'string', description: 'the AuzsFinance account this statement is for' },
+        rows: {
+          type: 'array', description: 'up to 2000 bank statement lines',
+          items: { type: 'object', required: ['date'], properties: { date: { type: 'string', description: 'YYYY-MM-DD' }, credit: { type: 'number' }, debit: { type: 'number' }, ref: { type: 'string' }, desc: { type: 'string' } } },
+        },
+      },
+    },
+  },
+  {
+    name: 'finance_bank_import_commit',
+    description: "Actually import a bank statement into AuzsFinance: for each row, either 'match' it to an existing transaction (marks that transaction cleared) or create it as a new transaction (anything not explicitly marked 'match' or 'skip' is created new) -- always run finance_bank_import_preview first and pass back its row statuses/txn_ids so matches land correctly. Most AI apps will ask you to confirm before running this -- it changes real financial records.",
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    inputSchema: {
+      type: 'object', required: ['account_id', 'rows'],
+      properties: {
+        account_id: { type: 'string' },
+        rows: {
+          type: 'array', description: 'the same rows from finance_bank_import_preview, each with an action added',
+          items: {
+            type: 'object', required: ['date'],
+            properties: {
+              date: { type: 'string', description: 'YYYY-MM-DD' }, credit: { type: 'number' }, debit: { type: 'number' }, ref: { type: 'string' }, desc: { type: 'string' },
+              action: { type: 'string', enum: ['new', 'match', 'skip'], description: "default 'new'; 'match' requires txn_id from the preview" },
+              txn_id: { type: 'string', description: 'required when action is match' },
+              kind: { type: 'string', enum: ['money_in', 'expense'], description: 'for a new row, default money_in for a credit / expense for a debit' },
+              category_id: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
   },
   // ---- AUZsPay (Payroll): thin wrappers over the already-registered pay_* functions. Scoped to HR
   // operations (employees, attendance, leave/loan/claim approvals) -- deliberately NOT the payroll run/
@@ -1269,7 +1355,28 @@ async function runTool(client, name, args) {
       return { people, partners, loans };
     }
     case 'finance_save_transaction':
+      if (!args.kind || !(Number(args.amount) > 0)) throw new HttpError(400, 'kind and a positive amount are required');
       return callRpc(client, 'fin_save_txn', { p: args });
+    case 'finance_list_transactions':
+      return callRpc(client, 'fin_txn_list', { p: args });
+    case 'finance_list_loans':
+      return callRpc(client, 'fin_loan_list', {});
+    case 'finance_reconciliation':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      return callRpc(client, 'fin_recon_list', { p_account: args.account_id });
+    case 'finance_list_assets':
+      return callRpc(client, 'fin_asset_list', {});
+    case 'finance_list_recurring':
+      return callRpc(client, 'fin_recurring_list', {});
+    case 'finance_anomalies':
+      return callRpc(client, 'fin_anomalies', {});
+    case 'finance_bank_import_preview':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      return callRpc(client, 'fin_import_preview', { p_account: args.account_id, p_rows: args.rows || [] });
+    case 'finance_bank_import_commit':
+      if (!args.account_id) throw new HttpError(400, 'account_id is required');
+      for (const r of (args.rows || [])) { if (r.action === 'match' && !r.txn_id) throw new HttpError(400, "a 'match' row needs txn_id"); }
+      return callRpc(client, 'fin_import_commit', { p_account: args.account_id, p_rows: args.rows || [] });
 
     case 'payroll_dashboard':
       return callRpc(client, 'pay_dashboard', {});
