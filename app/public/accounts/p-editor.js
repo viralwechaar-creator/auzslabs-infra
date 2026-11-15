@@ -161,7 +161,7 @@ async function pickParty(kind, current) {
   });
 }
 
-function productInput(line, sales, onPick, onType, onBlur) {
+function productInput(line, sales, onPick, onType, onBlur, onEditShortcut) {
   const inp = h('input', { class: 'input', placeholder: 'Item or service', value: line.description || '', 'aria-label': 'Item', autocomplete: 'off' });
   const pop = h('div', { class: 'pop hidden', role: 'listbox' });
   let idx = 0, list = [], seq = 0, timer = null;
@@ -199,8 +199,17 @@ function productInput(line, sales, onPick, onType, onBlur) {
   inp.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown' && !pop.classList.contains('hidden')) { e.preventDefault(); idx = Math.min(idx + 1, list.length - 1); show(); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(idx - 1, 0); show(); }
-    else if (e.key === 'Enter' && !pop.classList.contains('hidden') && list[idx]) { e.preventDefault(); pick(list[idx]); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!pop.classList.contains('hidden') && list[idx]) { pick(list[idx]); return; }
+      // No catalogue match to pick (plain free-text item, or nothing typed yet) -- Enter used to do nothing
+      // here, breaking the type-then-Enter rhythm the moment an item wasn't an exact match. Move on to the
+      // next field instead, same destination Tab already goes to, so Enter keeps the line moving either way.
+      const ln = inp.closest('.line'), next = ln && ln.querySelector('[aria-label="HSN or SAC"]');
+      if (next) { next.focus(); next.select && next.select(); }
+    }
     else if (e.key === 'Escape') pop.classList.add('hidden');
+    else if (e.key === 'F4' && line.product_id && onEditShortcut) { e.preventDefault(); onEditShortcut(); }
   });
   return h('div', { class: 'picker' }, inp, pop);
 }
@@ -336,7 +345,19 @@ async function docEditor(v, type, existing) {
     const prod = productInput(l, sales, (p) => {
       l.product_id = p.id; l.description = p.name; l.hsn = p.hsn || ''; l.unit = p.unit || ''; l.rate = String(sales ? p.sale_price : p.purchase_price); l.tax_rate = String(p.tax_rate); if (p.tax_inclusive) D.price_includes_tax = true;
       if (!ensureTrailingBlank()) drawLines(); recalc(); setTimeout(() => { const qi = $$('.line')[i] && $('[aria-label=qty]', $$('.line')[i]); qi && qi.select(); }, 30);
-    }, (txt) => { l.description = txt; if (!txt) l.product_id = ''; }, ensureTrailingBlank);
+    }, (txt) => { l.description = txt; if (!txt) l.product_id = ''; }, ensureTrailingBlank, () => {
+      // F4 on a line with a product already picked: edit that product's master record (price/GST/HSN/...)
+      // without leaving the bill -- the same "select item, hit a shortcut key, edit, save, line picks up the
+      // new numbers" flow Marg/Tally/Busy have always had. acc_save_product only returns the new id, so
+      // re-fetch the catalogue rather than trust the save result's shape.
+      const current = (S.products || []).find((x) => x.id === l.product_id); if (!current) return;
+      productSheet(current, async () => {
+        const fresh = (await products(true)).find((x) => x.id === l.product_id);
+        if (!fresh) return;
+        l.description = fresh.name; l.hsn = fresh.hsn || ''; l.unit = fresh.unit || ''; l.rate = String(sales ? fresh.sale_price : fresh.purchase_price); l.tax_rate = String(fresh.tax_rate);
+        drawLines(); recalc();
+      });
+    });
     const rates = taxRates().map(String); if (!rates.includes(String(l.tax_rate))) rates.push(String(l.tax_rate));
     const taxSel = selectEl(rates.map((r) => [r, r + '%']), String(l.tax_rate), { label: 'GST rate', onchange: () => { l.tax_rate = taxSel.value; recalc(); } });
     const stock = ((S.products || []).find((p) => p.id === l.product_id) || {});
