@@ -136,5 +136,5 @@ main.content .btn,main.content .btn-ghost,main.content .btn-primary,.u-pill,.u-m
 .u-dock .pill{background:rgba(255,255,255,.96)!important;box-shadow:0 4px 24px rgba(0,0,0,.1)!important}
 .u-sheet{background:#fff;border-radius:0}
 .modal{border-radius:14px 14px 0 0!important}
-/* footer: calmer, square-cornered */
-.ftwrap{border-radius:0!important}.ftwrap footer,.ftstrip{border-radius:10px!important}
+/* footer: calmer, smooth-cornered (collapsible accordion unchanged) */
+.ftwrap{border-radius:22px 22px 0 0!important}.ftwrap footer,.ftstrip{border-radius:14px!important}
