@@ -62,48 +62,7 @@
     show(nodes[0]);
   }
 
-  /* ---------- LIVE DEMO: picker ---------- */
-  var dm = $('.dm-wrap');
-  if (dm) {
-    var bt = $$('.dm-list button', dm), card = $('.dm-card', dm);
-    var D = JSON.parse($('#dm-data').textContent);
-    function mk(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
-    function render(id) {
-      var d = D[id]; if (!d) return;
-      card.classList.add('sw');
-      setTimeout(function () {
-        card.innerHTML = '';
-        card.appendChild(mk('span', 'mk-eye', d.tag));
-        card.appendChild(mk('h2', '', d.name));
-        card.appendChild(mk('p', '', d.text));
-        var cr = mk('div', 'dm-cred');
-        d.rows.forEach(function (r) {
-          var row = mk('div'); row.appendChild(mk('span', '', r[0])); row.appendChild(mk('b', '', r[1]));
-          var c = mk('button', '', 'Copy'); c.type = 'button';
-          c.addEventListener('click', function () { var v = r[1].split(' · ').pop().replace(/^username\s+/, ''); (navigator.clipboard ? navigator.clipboard.writeText(r[2] || v) : Promise.reject()).then(function () { c.textContent = 'Copied'; c.classList.add('ok'); setTimeout(function () { c.textContent = 'Copy'; c.classList.remove('ok'); }, 1400); }, function () { }); });
-          row.appendChild(c); cr.appendChild(row);
-        });
-        card.appendChild(cr);
-        var act = mk('div', 'mk-row');
-        d.links.forEach(function (l, i) { var a = mk('a', 'mk-btn' + (i ? '' : ' solid'), l[0]); a.href = l[1]; a.target = '_blank'; a.rel = 'noopener'; act.appendChild(a); });
-        card.appendChild(act);
-        if (d.note) card.appendChild(mk('div', 'dm-note', d.note));
-        card.classList.remove('sw');
-      }, 180);
-      bt.forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-id') === id); });
-      try { history.replaceState(null, '', '#' + id); } catch (e) { }
-    }
-    bt.forEach(function (b) { b.addEventListener('click', function () { render(b.getAttribute('data-id')); }); });
-    var more = $('.dm-more', dm), exp = $('.dm-explore', dm);
-    if (more && exp) exp.addEventListener('click', function () {
-      var open = more.style.display !== 'none';
-      more.style.display = open ? 'none' : 'contents';
-      exp.textContent = open ? 'Explore more' : 'Show fewer';
-    });
-    var start = location.hash.slice(1);
-    if (more && D[start] && more.style.display === 'none' && $$('.dm-more button', dm).some(function (b) { return b.getAttribute('data-id') === start; })) { more.style.display = 'contents'; exp.textContent = 'Show fewer'; }
-    render(D[start] ? start : bt[0].getAttribute('data-id'));
-  }
+  /* ---------- LIVE DEMO: picker is now built entirely by a4.js (editorial card layout) ---------- */
 
   /* ---------- DOWNLOAD: device switch ---------- */
   var dl = $('.dl-seg');
