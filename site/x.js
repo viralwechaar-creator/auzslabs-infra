@@ -94,7 +94,15 @@
       try { history.replaceState(null, '', '#' + id); } catch (e) { }
     }
     bt.forEach(function (b) { b.addEventListener('click', function () { render(b.getAttribute('data-id')); }); });
-    var start = location.hash.slice(1); render(D[start] ? start : bt[0].getAttribute('data-id'));
+    var more = $('.dm-more', dm), exp = $('.dm-explore', dm);
+    if (more && exp) exp.addEventListener('click', function () {
+      var open = more.style.display !== 'none';
+      more.style.display = open ? 'none' : 'contents';
+      exp.textContent = open ? 'Explore more' : 'Show fewer';
+    });
+    var start = location.hash.slice(1);
+    if (more && D[start] && more.style.display === 'none' && $$('.dm-more button', dm).some(function (b) { return b.getAttribute('data-id') === start; })) { more.style.display = 'contents'; exp.textContent = 'Show fewer'; }
+    render(D[start] ? start : bt[0].getAttribute('data-id'));
   }
 
   /* ---------- DOWNLOAD: device switch ---------- */
