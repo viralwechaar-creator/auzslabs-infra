@@ -1,12 +1,12 @@
 /* AUZsStyle: Sell (the till). Left/top: styles grid with category chips + barcode/search. Right (desktop) or a bottom bar
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
-const BILL = { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 };
+const BILL = { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 };
 const UI = { q: '', cat: 'All', col: null };
 // How the style cards look on the Sell screen: big picture cards, small picture cards, or a plain list with no pictures (remembered on this device).
 const SELL_VIEWS = ['photos', 'small', 'list'];
 const sellView = () => { try { const v = localStorage.getItem('sty.sellView'); return SELL_VIEWS.includes(v) ? v : 'photos'; } catch { return 'photos'; } };
-const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 }); };
+const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 }); };
 const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt, extraAmt: BILL.couponDiscount });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
 
@@ -119,10 +119,12 @@ page('sell', {
         h('div', { class: 'bill-h' }, h('b', null, t('Bill')), h('span', { class: 'muted small' }, unitCount() + ' ' + t('Units')), h('span', { class: 'grow' }), BILL.lines.length ? h('button', { class: 'btn plain sm', type: 'button', onclick: async () => { if (await confirmBox(t('Clear'), t('Remove everything from this bill?'), t('Clear'), true)) { newBill(); paintCart(); inSheet && inSheet(true); } } }, t('Clear')) : null),
         BILL.customer
           ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('user', 18), h('span', { class: 'grow' }, BILL.customer.name + (BILL.customer.phone ? ' · ' + BILL.customer.phone : '')), h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')), h('span', { class: 'cust-x', role: 'button', 'aria-label': t('Clear'), onclick: (e) => { e.stopPropagation(); BILL.customer = null; BILL.exchange = 0; paintCart(); inSheet && inSheet(); } }, icon('x', 14)))
-          : h('div', { class: 'custrow' },
-            h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
-            h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
-            h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
+          : h('div', { class: 'grid', style: { gap: '8px' } },
+            h('div', { class: 'custrow' },
+              h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
+              h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
+              h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
+            canGstLookup() ? (BILL.showGstin ? gstBillRow(inSheet) : h('button', { class: 'btn plain sm', type: 'button', style: { alignSelf: 'flex-start' }, onclick: () => { BILL.showGstin = true; paintCart(); inSheet && inSheet(); } }, icon('plus', 14), t('Bill to a GST number'))) : null),
         BILL.lines.length ? h('div', { class: 'blines' }, lines, inSheet ? null : quickAdd()) : h('div', { class: 'bempty' }, icon('tag', 26), h('div', null, t('Cart is empty')), h('div', { class: 'small' }, t('Tap a style or scan a tag'))),
         BILL.lines.length ? h('div', { class: 'tots' },
           trow(t('Subtotal'), inr(c.subtotal)), c.discount > 0 ? trow(t('Discount'), '-' + inr(c.discount), 'g') : null, trow(t('Tax') + ' (incl.)', inr(c.tax)), c.rounding ? trow(t('Round off'), inr(c.rounding)) : null,
@@ -308,13 +310,21 @@ function paySheet(c, done) {
     } catch (e) { ok.disabled = false; fail(e); }
   };
 }
-// a name and/or phone typed on the bill becomes a customer (found by phone, else created) before paying; offline it is skipped
+// B2B bill: a GST number typed on the bill, with a Fetch details button (same gstFetchRow helper the customer/supplier forms use) --
+// filling the business's name from the GST record when the cashier hasn't typed one. Only shown where the admin switched gst_lookup on.
+function gstBillRow(inSheet) {
+  const g = input({ value: BILL.custGstin, placeholder: 'GSTIN', max: 15, oninput: (e) => { BILL.custGstin = e.target.value.toUpperCase(); } });
+  const row = gstFetchRow(g, (d) => { if (!BILL.custName.trim()) BILL.custName = d.trade_name || d.legal_name || ''; paintCart(); inSheet && inSheet(); });
+  return h('div', { class: 'custrow' }, g, row,
+    h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Clear'), onclick: () => { BILL.custGstin = ''; BILL.showGstin = false; paintCart(); inSheet && inSheet(); } }, icon('x', 14)));
+}
+// a name/phone/GSTIN typed on the bill becomes a customer (found by phone, else created) before paying; offline it is skipped
 async function resolveTypedCustomer() {
   if (BILL.customer) return;
-  const name = (BILL.custName || '').trim(), phone = (BILL.custPhone || '').trim();
-  if (!name && !phone) return;
+  const name = (BILL.custName || '').trim(), phone = (BILL.custPhone || '').trim(), gstin = (BILL.custGstin || '').trim().toUpperCase();
+  if (!name && !phone && !gstin) return;
   if (netDown()) return;
-  try { BILL.customer = await api('sty_save_customer', { p: { newId: uid(), name: name || phone, phone: phone || undefined } }); } catch { /* the bill can still go through as walk-in */ }
+  try { BILL.customer = await api('sty_save_customer', { p: { newId: uid(), name: name || gstin || phone, phone: phone || undefined, gstin: gstin || undefined } }); } catch { /* the bill can still go through as walk-in */ }
 }
 function provisional(p, c) {
   return { number: 'WAITING', at: new Date().toISOString(), customer: BILL.customer, lines: c.lines.map((l, i) => ({ name: BILL.lines[i].name, colour: BILL.lines[i].colour, size: BILL.lines[i].size, qty: l.qty, price: l.unit, net: l.net })),
