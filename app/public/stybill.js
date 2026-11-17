@@ -59,5 +59,57 @@
     el('div', 'foot', sh.footer || 'Thank you, visit again'));
   if (sh.logoUrl) { const im = sheet.querySelector('.shop img'); im.alt = ''; im.src = sh.logoUrl; im.onerror = () => im.remove(); }
   const printBtn = el('button', null, 'Print or save as PDF'); printBtn.onclick = () => window.print();
-  app.append(sheet, el('div', 'bar', printBtn));
+  const bar = el('div', 'bar', printBtn);
+  // customer self-service return/exchange request (db/330): only while the shop switched it on, the bill
+  // is still inside its own return window, it was not cancelled, and there isn't an open request already.
+  const withinWindow = sh.returnDays ? (Date.now() - d.getTime()) / 86400000 <= Number(sh.returnDays) : false;
+  const returnableLines = lines.filter((l) => (l.qty - Number(l.returned || 0)) > 0);
+  if (!cancelled && sh.allowReturnRequests && withinWindow && returnableLines.length) {
+    if (s.returnRequested) {
+      bar.append(el('div', 'reqnote', 'Return/exchange request submitted -- the shop will be in touch.'));
+    } else {
+      const reqBtn = el('button', 'ghost', 'Request return or exchange');
+      reqBtn.onclick = () => openReturnModal();
+      bar.append(reqBtn);
+    }
+  }
+  app.append(sheet, bar);
+
+  function openReturnModal() {
+    const picks = {}; returnableLines.forEach((l) => { picks[l.lineId] = 0; });
+    const modeSel = el('select', null, el('option', null, 'Return'), el('option', null, 'Exchange'));
+    modeSel.value = 'Return';
+    const reasonBox = el('textarea', null); reasonBox.placeholder = 'Why? (size, defect, changed mind...)'; reasonBox.maxLength = 200;
+    const err = el('div', 'rmerr');
+    const rows = returnableLines.map((l) => {
+      const max = l.qty - Number(l.returned || 0);
+      const qtyEl = el('b', null, '0');
+      const minus = el('button', null, '-'); const plus = el('button', null, '+');
+      minus.type = 'button'; plus.type = 'button';
+      minus.onclick = () => { picks[l.lineId] = Math.max(0, picks[l.lineId] - 1); qtyEl.textContent = picks[l.lineId]; };
+      plus.onclick = () => { picks[l.lineId] = Math.min(max, picks[l.lineId] + 1); qtyEl.textContent = picks[l.lineId]; };
+      return el('div', 'rmline', el('div', 'rmname', l.name, el('small', null, [l.colour, l.size].filter(Boolean).join(' · ') + ' · bought ' + l.qty)), el('div', 'rmstep', minus, qtyEl, plus));
+    });
+    const cancelBtn = el('button', 'ghost', 'Cancel'); const submitBtn = el('button', null, 'Submit request');
+    cancelBtn.type = 'button'; submitBtn.type = 'button';
+    const modal = el('div', 'modal', el('h2', null, 'Request return or exchange'), el('div', 'rmlines', rows),
+      el('label', null, 'How to settle', modeSel), el('label', null, 'Reason', reasonBox), err,
+      el('div', 'rmact', cancelBtn, submitBtn));
+    const ovl = el('div', 'ovl', modal);
+    ovl.onclick = (e) => { if (e.target === ovl) ovl.remove(); };
+    cancelBtn.onclick = () => ovl.remove();
+    submitBtn.onclick = async () => {
+      const reqLines = Object.keys(picks).filter((id) => picks[id] > 0).map((id) => ({ saleLineId: id, qty: picks[id] }));
+      if (!reqLines.length) { err.textContent = 'Pick what you want to bring back.'; return; }
+      if (reasonBox.value.trim().length < 3) { err.textContent = 'Tell us why.'; return; }
+      submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; err.textContent = '';
+      try {
+        const res = await fetch(window.CFG.url.replace(/\/$/, '') + '/rpc/public_sty_sale_return_request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: token, p: { mode: modeSel.value.toLowerCase(), reason: reasonBox.value.trim(), lines: reqLines } }) });
+        const body = await res.json();
+        if (!res.ok) throw new Error((body && body.error && body.error.message) || 'Could not submit the request.');
+        ovl.remove(); bar.replaceChildren(printBtn, el('div', 'reqnote', 'Request submitted -- the shop will be in touch.'));
+      } catch (e2) { err.textContent = e2.message; submitBtn.disabled = false; submitBtn.textContent = 'Submit request'; }
+    };
+    document.body.append(ovl);
+  }
 })();
