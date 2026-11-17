@@ -213,13 +213,14 @@ page('settings', {
       const EV = [['invoice_link', t('Bill link after every bill')], ['birthday_greeting', t('Birthday wishes')], ['anniversary_greeting', t('Anniversary wishes')], ['style_winback', t('We miss you (not back in 60 days)')]];
       (async () => {
         let w; try { w = await api('wa_my_status'); } catch (e) { clear(host).append(h('p', { class: 'muted small' }, t('Only the owner or manager can change WhatsApp settings.'))); return; }
-        const on = h('input', { type: 'checkbox', checked: !!w.enabled }), ev = {};
-        const rows = EV.map(([k, l]) => { const c = h('input', { type: 'checkbox', checked: (w.events || {})[k] !== false }); ev[k] = c; return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, l), c); });
+        const on = h('input', { type: 'checkbox', checked: !!w.enabled && w.automation_allowed, disabled: !w.automation_allowed }), ev = {};
+        const rows = EV.map(([k, l]) => { const c = h('input', { type: 'checkbox', checked: (w.events || {})[k] !== false, disabled: !w.automation_allowed }); ev[k] = c; return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, l), c); });
         clear(host).append(
+          w.automation_allowed ? null : banner('warn', 'alert', t('Ask AUZslab to approve WhatsApp automation for your business first. Until then this switch does nothing.')),
           w.allow_platform ? banner('ok', 'check', t('AUZslab has allowed this shop to send from the AUZslab WhatsApp number.')) : banner('warn', 'alert', t('Ask AUZslab to allow this shop first. Until then nothing is sent.')),
           h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('b', null, t('Send messages automatically')), h('div', { class: 'muted small' }, t('Needs both: AUZslab allowing the shop, and this switch.'))), on), ...rows,
           h('p', { class: 'muted small' }, t('Messages go only to customers who have a phone number and have not turned messages off.')),
-          h('button', { class: 'btn', type: 'button', onclick: async () => { try { const evs = {}; EV.forEach(([k]) => { evs[k] = ev[k].checked; }); await api('wa_save_settings', { p: { enabled: on.checked, events: evs } }); toast(t('Saved')); } catch (e) { fail(e); } } }, t('Save WhatsApp settings')));
+          h('button', { class: 'btn', type: 'button', disabled: !w.automation_allowed, onclick: async () => { try { const evs = {}; EV.forEach(([k]) => { evs[k] = ev[k].checked; }); await api('wa_save_settings', { p: { enabled: on.checked, events: evs } }); toast(t('Saved')); } catch (e) { fail(e); } } }, t('Save WhatsApp settings')));
       })();
       return host;
     };

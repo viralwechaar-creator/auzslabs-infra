@@ -636,6 +636,7 @@ export const RPC = {
   // AI connector keys (db/318) -- owner-only, see mcp_api_keys' own comment.
   mcp_create_key: { params: ['p_label', 'p_scope'], defaults: { p_label: 'Connector key', p_scope: 'read' }, auth: true },
   mcp_list_keys: { params: [], auth: true },
+  mcp_connector_status: { params: [], auth: true },
   mcp_revoke_key: { params: ['p_id'], auth: true },
   mcp_create_draft_order: { params: ['p_table', 'p_items', 'p_note'], jsonb: ['p_items'], defaults: { p_table: null, p_note: null }, auth: true },
   mcp_send_whatsapp: { params: ['p_to', 'p_template', 'p_params', 'p_ref'], jsonb: ['p_params'], defaults: { p_params: [], p_ref: null }, auth: true },

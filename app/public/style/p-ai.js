@@ -43,6 +43,7 @@ page('ai', {
   async render(v) {
     v.header({ title: 'AI connector' });
     const isOwner = S.user.role === 'owner';
+    let allowed = true; if (isOwner) { try { allowed = (await api('mcp_connector_status')).allowed; } catch { allowed = true; } }
     const url = (location.origin.replace(/^https?:\/\/[^.]+\./, 'https://api.') || 'https://api.auzslab.in') + '/mcp';
     let keys = []; if (isOwner) { try { keys = (await api('mcp_list_keys')) || []; } catch (e) { keys = null; } }
     let audit = []; try { audit = (await api('mcp_audit_list', { p_limit: 100 })) || []; } catch (e) { audit = null; }
@@ -55,18 +56,18 @@ page('ai', {
           h('code', { style: { fontFamily: 'monospace', fontSize: '13px' } }, url),
           h('button', { class: 'btn sm', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(url); toast('Copied'); } catch { toast('Could not copy -- select and copy manually', { err: true }); } } }, 'Copy')),
         h('p', { class: 'muted small' }, 'In your AI app, add a new connector with the URL above, and one of the keys below as the Bearer token / API key.')),
-      aiKeysCard(isOwner, keys, v),
+      aiKeysCard(isOwner, keys, v, allowed),
       aiAuditCard(audit),
     );
   },
 });
 
-function aiKeysCard(isOwner, keys, v) {
+function aiKeysCard(isOwner, keys, v, allowed) {
   const fmt = (t) => t ? fmtDT(t) : 'never';
   if (!isOwner) return h('div', { class: 'card grid' }, h('h3', { class: 'h-2' }, 'Connector keys'), h('p', { class: 'muted small' }, 'Only the business owner can create or revoke connector keys.'));
   if (keys === null) return h('div', { class: 'card' }, h('p', { class: 'muted small' }, 'Could not load connector keys.'));
   return h('div', { class: 'card grid' },
-    h('div', { class: 'row sp' }, h('h3', { class: 'h-2' }, 'Connector keys'), h('button', { class: 'btn sm fill', type: 'button', onclick: () => aiNewKeySheet(() => v.refresh()) }, 'New key')),
+    h('div', { class: 'row sp' }, h('h3', { class: 'h-2' }, 'Connector keys'), (allowed ? h('button', { class: 'btn sm fill', type: 'button', onclick: () => aiNewKeySheet(() => v.refresh()) }, 'New key') : h('span', { class: 'muted small' }, 'Waiting for AUZslab to approve this'))),
     keys.length ? h('div', { class: 'list' }, keys.map((k) => h('div', { class: 'li' },
       h('div', { class: 'grow' }, h('div', { class: 't' }, k.label), h('div', { class: 's' }, (k.scope === 'read' ? 'Read only' : 'Can make changes') + ' · created ' + fmt(k.created_at) + ' · last used ' + fmt(k.last_used_at) + (k.revoked ? ' · revoked' : ''))),
       k.revoked ? badge('Revoked') : h('button', { class: 'btn sm', type: 'button', onclick: async () => {
