@@ -11,6 +11,7 @@ page('bills', {
     async function load() {
       clear(list).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
       if (BU.src === 'web') return loadWeb();
+      if (BU.src === 'requests') return loadRequests();
       let rows = []; try { rows = await api('sty_list_sales', { p: { from: custId ? '' : BU.from, to: custId ? '' : BU.to, q: BU.q, status: BU.status, customerId: custId, limit: 200 } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
       const live = rows.filter((r) => r.status !== 'void'), tot = live.reduce((a, r) => a + r.total, 0);
       clear(kp).append(kpi(t('Sales'), inr(tot, 0), live.length + ' ' + t('Bills')), kpi(t('Due'), inr(live.reduce((a, r) => a + Math.max(r.total - r.paid, 0), 0), 0), '', null, ''));
@@ -25,9 +26,32 @@ page('bills', {
       clear(kp).append(kpi(t('Website orders'), inr(live.reduce((a, r) => a + r.total, 0), 0), live.length + ' ' + t('Orders')), kpi(t('New'), String(rows.filter((r) => r.status === 'new').length), '', null, ''));
       clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: 'globe', title: r.number + ' · ' + r.customer.name, sub: fmtDT(r.createdAt) + ' · ' + r.lines.reduce((a, l) => a + l.qty, 0) + ' ' + t('Units') + (r.saleNo ? ' · ' + t('Bill') + ' ' + r.saleNo : ''), value: inr(r.total), valueSub: t(WST[r.status] || r.status) + (r.paymentStatus === 'paid' ? ' · ' + t('Paid') : ''), chevron: true, onclick: () => orderSheet(r, load) })) : [empty('globe', t('No website orders'), t('Orders from your online store show here.'))]));
     }
-    const srcSeg = seg([['shop', t('Shop bills')], ['web', t('Website orders')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
-    v.root.append(h('div', { class: 'grid' }, srcSeg, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : (BU.src === 'web' ? null : rangePicker(BU, load)),
-      searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
+    async function loadRequests() {
+      let rows = []; try { rows = await api('sty_return_requests_list') || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
+      const pending = rows.filter((r) => r.status === 'pending');
+      clear(kp).append(kpi(t('Pending requests'), String(pending.length), '', null, ''), kpi(t('Handled'), String(rows.length - pending.length), '', null, ''));
+      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: 'swap', title: r.number + (r.customer ? ' · ' + r.customer : ''), sub: fmtDT(r.createdAt) + ' · ' + r.lines.reduce((a, l) => a + l.qty, 0) + ' ' + t('Units') + ' · ' + r.reason, value: r.mode === 'exchange' ? t('Exchange') : t('Return'), valueSub: r.status === 'pending' ? t('Pending') : r.status === 'rejected' ? t('Rejected') : t('Done'), chevron: r.status === 'pending', onclick: () => r.status === 'pending' && requestSheet(r, load) })) : [empty('swap', t('No requests'), t('Return/exchange requests customers send from their bill link show here.'))]));
+    }
+    function requestSheet(req, reload) {
+      const rejectNote = input({ placeholder: t('Reason (shown only to staff)') });
+      sheet({ title: req.number, body: h('div', { class: 'grid' },
+        h('div', { class: 'list' }, liRow({ icon: 'user', title: req.customer || t('Walk-in customer'), sub: (req.mode === 'exchange' ? t('Wants to exchange') : t('Wants to return')) + ' · ' + req.reason })),
+        section(t('Items'), h('div', { class: 'list' }, req.lines.map((l) => liRow({ icon: 'tag', title: l.name, sub: [l.colour, l.size].filter(Boolean).join(' · '), value: l.qty + ' ' + t('pcs') })))),
+        h('div', { class: 'muted small' }, t('When the customer brings the item in, press Process -- it opens the usual return screen with these items already picked.')),
+        field(t('If you reject instead') + ' (' + t('optional note') + ')', rejectNote)),
+        actions: [
+          { label: t('Reject'), onclick: async (close) => {
+            try { await api('sty_return_requests_decide', { p_id: req.id, p: { status: 'rejected', note: rejectNote.value } }); close(); reload && reload(); toast(t('Rejected')); } catch (e) { fail(e); }
+          } },
+          { label: t('Process now'), primary: true, onclick: async (close) => {
+            let sale; try { sale = await api('sty_get_sale', { p_id: req.saleId }); } catch (e) { return fail(e); }
+            close();
+            returnSheet(sale, reload, { requestId: req.id, mode: req.mode, reason: req.reason, lines: req.lines.map((l) => ({ saleLineId: l.saleLineId, qty: l.qty })) });
+          } }] });
+    }
+    const srcSeg = seg([['shop', t('Shop bills')], ['web', t('Website orders')], ['requests', t('Return requests')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
+    v.root.append(h('div', { class: 'grid' }, srcSeg, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : (BU.src === 'web' || BU.src === 'requests' ? null : rangePicker(BU, load)),
+      BU.src === 'requests' ? null : searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
     load();
   },
 });
@@ -109,16 +133,17 @@ function collectDue(sale, done) {
   sheet({ title: t('Collect due'), body: h('div', { class: 'grid' }, h('div', { class: 'kv' }, h('span', null, t('Due')), h('b', { class: 'num' }, inr(sale.balance))), field(t('Amount'), amt), field(t('Mode'), mode)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => { if (!N(amt.value)) { toast(t('Enter an amount'), { err: true }); return false; } await api('sty_collect_due', { p_id: sale.id, p_amount: N(amt.value), p_mode: mode.value }); close(); toast(t('Payment saved')); done && done(); } }] });
 }
-function returnSheet(sale, done) {
+function returnSheet(sale, done, prefill) {
   const picks = {}; sale.lines.forEach((l) => picks[l.id] = { qty: 0, dmg: false });
+  if (prefill && prefill.lines) prefill.lines.forEach((pl) => { if (picks[pl.saleLineId]) picks[pl.saleLineId].qty = Math.min(pl.qty, sale.lines.find((l) => l.id === pl.saleLineId).qty - sale.lines.find((l) => l.id === pl.saleLineId).returned); });
   const st = S.ctx.settings;
-  const mode = selectEl([['cash', t('Cash refund')], ['upi', t('UPI refund')], ['card', t('Card refund')], ['credit_note', t('Store credit')], ['exchange', t('Exchange for other items')]], sale.customer ? 'credit_note' : 'cash');
-  const reason = input({ placeholder: t('Reason (size, defect, changed mind)') });
+  const mode = selectEl([['cash', t('Cash refund')], ['upi', t('UPI refund')], ['card', t('Card refund')], ['credit_note', t('Store credit')], ['exchange', t('Exchange for other items')]], (prefill && prefill.mode === 'exchange') ? 'exchange' : sale.customer ? 'credit_note' : 'cash');
+  const reason = input({ placeholder: t('Reason (size, defect, changed mind)'), value: (prefill && prefill.reason) || '' });
   const tot = h('div', { class: 'paytot' }); const rows = h('div', { class: 'list' });
   const paintTot = () => { const amt = sale.lines.reduce((a, l) => a + (picks[l.id].qty ? l.net / l.qty * picks[l.id].qty : 0), 0); clear(tot).append(h('span', null, t('Refund value')), h('b', { class: 'num' }, inr(r2(amt)))); };
   sale.lines.forEach((l) => {
     const max = l.qty - l.returned; if (max <= 0) return;
-    const q = h('b', { class: 'num' }, '0'); const dm = h('input', { type: 'checkbox', 'aria-label': t('Damaged'), onchange: () => { picks[l.id].dmg = dm.checked; } });
+    const q = h('b', { class: 'num' }, String(picks[l.id].qty)); const dm = h('input', { type: 'checkbox', 'aria-label': t('Damaged'), onchange: () => { picks[l.id].dmg = dm.checked; } });
     rows.append(h('div', { class: 'li' }, h('div', { class: 'grow' }, h('div', { class: 't' }, l.name), h('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' · ' + t('bought') + ' ' + l.qty + (l.returned ? ' · ' + t('returned') + ' ' + l.returned : ''))),
       h('label', { class: 'small muted', style: { display: 'flex', gap: '4px', alignItems: 'center' } }, dm, t('Damaged')),
       h('div', { class: 'stp' }, h('button', { type: 'button', onclick: () => { picks[l.id].qty = Math.max(0, picks[l.id].qty - 1); q.textContent = picks[l.id].qty; paintTot(); } }, icon('minus', 16)), q, h('button', { type: 'button', onclick: () => { picks[l.id].qty = Math.min(max, picks[l.id].qty + 1); q.textContent = picks[l.id].qty; paintTot(); } }, icon('plus', 16)))));
@@ -130,7 +155,9 @@ function returnSheet(sale, done) {
       const lines = sale.lines.filter((l) => picks[l.id].qty > 0).map((l) => ({ saleLineId: l.id, qty: picks[l.id].qty, damaged: picks[l.id].dmg }));
       if (!lines.length) { toast(t('Pick what is coming back'), { err: true }); return false; }
       const value = r2(sale.lines.reduce((a, l) => a + (picks[l.id].qty ? l.net / l.qty * picks[l.id].qty : 0), 0));
-      const r = await sendOrQueue('sty_return', { p: { id: uid(), saleId: sale.id, mode: mode.value, reason: reason.value, lines } });
+      const retId = uid();
+      const r = await sendOrQueue('sty_return', { p: { id: retId, saleId: sale.id, mode: mode.value, reason: reason.value, lines } });
+      if (prefill && prefill.requestId) { try { await api('sty_return_requests_decide', { p_id: prefill.requestId, p: { status: 'completed', returnId: retId } }); } catch { /* already handled, not fatal */ } }
       close(); S.catAt = 0; toast(r.done ? t('Return saved') : t('Saved on this device'));
       if (mode.value === 'exchange') { BILL.customer = sale.customer || null; BILL.exchange = value; go('sell'); } else done && done();
     } }] });
