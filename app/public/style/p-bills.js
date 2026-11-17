@@ -45,6 +45,12 @@ page('bills', {
           } },
           { label: t('Process now'), primary: true, onclick: async (close) => {
             let sale; try { sale = await api('sty_get_sale', { p_id: req.saleId }); } catch (e) { return fail(e); }
+            // The item may have already been returned/exchanged directly (not through this request) since
+            // it was submitted -- sty_return auto-completes a request when that happens, but a request
+            // that still shows "Pending" here (page not yet refreshed) would otherwise open a return screen
+            // with nothing left to pick. Check first and say so plainly instead of a confusing dead end.
+            const stillOwed = req.lines.some((l) => { const sl = sale.lines.find((x) => x.id === l.saleLineId); return sl && (sl.qty - sl.returned) > 0; });
+            if (!stillOwed) { close(); toast(t('This was already taken back in the shop -- nothing left to process.')); reload && reload(); return; }
             close();
             returnSheet(sale, reload, { requestId: req.id, mode: req.mode, reason: req.reason, lines: req.lines.map((l) => ({ saleLineId: l.saleLineId, qty: l.qty })) });
           } }] });
@@ -135,7 +141,13 @@ function collectDue(sale, done) {
 }
 function returnSheet(sale, done, prefill) {
   const picks = {}; sale.lines.forEach((l) => picks[l.id] = { qty: 0, dmg: false });
-  if (prefill && prefill.lines) prefill.lines.forEach((pl) => { if (picks[pl.saleLineId]) picks[pl.saleLineId].qty = Math.min(pl.qty, sale.lines.find((l) => l.id === pl.saleLineId).qty - sale.lines.find((l) => l.id === pl.saleLineId).returned); });
+  let clamped = false;
+  if (prefill && prefill.lines) prefill.lines.forEach((pl) => {
+    const l = sale.lines.find((x) => x.id === pl.saleLineId); if (!l || !picks[l.id]) return;
+    const avail = Math.max(0, l.qty - l.returned); const got = Math.min(pl.qty, avail);
+    if (got < pl.qty) clamped = true;
+    picks[l.id].qty = got;
+  });
   const st = S.ctx.settings;
   const mode = selectEl([['cash', t('Cash refund')], ['upi', t('UPI refund')], ['card', t('Card refund')], ['credit_note', t('Store credit')], ['exchange', t('Exchange for other items')]], (prefill && prefill.mode === 'exchange') ? 'exchange' : sale.customer ? 'credit_note' : 'cash');
   const reason = input({ placeholder: t('Reason (size, defect, changed mind)'), value: (prefill && prefill.reason) || '' });
@@ -150,7 +162,8 @@ function returnSheet(sale, done, prefill) {
   });
   paintTot();
   const old = (Date.now() - new Date(sale.at).getTime()) / 86400000 > st.returnDays;
-  sheet({ title: t('Return or exchange'), full: true, body: h('div', { class: 'grid' }, old && !can('sty_manage') ? banner('warn', 'alert', t('This bill is older than') + ' ' + st.returnDays + ' ' + t('days. A manager must take it back.')) : null, rows, tot, field(t('How to settle'), mode), field(t('Reason'), reason)),
+  sheet({ title: t('Return or exchange'), full: true, body: h('div', { class: 'grid' }, old && !can('sty_manage') ? banner('warn', 'alert', t('This bill is older than') + ' ' + st.returnDays + ' ' + t('days. A manager must take it back.')) : null,
+    clamped ? banner('warn', 'alert', t('Some of what the customer asked for was already taken back separately -- only what is still available is picked below.')) : null, rows, tot, field(t('How to settle'), mode), field(t('Reason'), reason)),
     actions: [{ label: t('Take back'), primary: true, onclick: async (close) => {
       const lines = sale.lines.filter((l) => picks[l.id].qty > 0).map((l) => ({ saleLineId: l.id, qty: picks[l.id].qty, damaged: picks[l.id].dmg }));
       if (!lines.length) { toast(t('Pick what is coming back'), { err: true }); return false; }

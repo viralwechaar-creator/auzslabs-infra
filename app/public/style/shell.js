@@ -315,12 +315,12 @@ async function refreshNotes() {
   try { const { data } = await sb.from('notifications').select('id,type,title,body,read,created_at').gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString()).order('created_at').limit(500); NOTES = (data || []).filter((x) => NOTE_TYPES.test(x.type)).reverse(); } catch { return; }
   document.querySelectorAll('.btn.bell').forEach((b) => b.replaceWith(bellBtn()));
 }
-function noteTarget(n) { return n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : 'store'; }
+function noteTarget(n) { return n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : n.type === 'style_return_request' ? 'bills' : 'store'; }
 function notesSheet() {
   // Every notice, kept short: title and time only. Unread ones have a dot.
   const unread = NOTES.filter((n) => !n.read);
-  const open = async (n, s) => { s.close(); if (!n.read) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } if (noteTarget(n) === 'store') OST.tab = 'orders'; go(noteTarget(n)); refreshNotes(); };
-  const rows = NOTES.length ? NOTES.slice(0, 40).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, sub: fmtDT(n.created_at), chevron: true, badge: n.read ? null : h('span', { class: 'dot', style: { background: 'var(--tint)', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' } }), onclick: () => open(n, s) })) : [empty('bell', t('No notifications'), t('Website orders, returns and requests show here.'))];
+  const open = async (n, s) => { s.close(); if (!n.read) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } const tgt = noteTarget(n); if (tgt === 'store') OST.tab = 'orders'; else if (tgt === 'bills' && n.type === 'style_return_request') BU.src = 'requests'; go(tgt); refreshNotes(); };
+  const rows = NOTES.length ? NOTES.slice(0, 40).map((n) => liRow({ icon: n.type === 'store_order' ? 'globe' : n.type === 'store_return' || n.type === 'style_return_request' ? 'swap' : n.type === 'store_paid' ? 'cash' : 'bell', title: n.title, sub: fmtDT(n.created_at), chevron: true, badge: n.read ? null : h('span', { class: 'dot', style: { background: 'var(--tint)', width: '8px', height: '8px', borderRadius: '50%', display: 'inline-block' } }), onclick: () => open(n, s) })) : [empty('bell', t('No notifications'), t('Website orders, returns and requests show here.'))];
   const s = sheet({ title: t('Notifications'), closeLabel: t('Done'), body: h('div', { class: 'grid' }, unread.length ? h('button', { class: 'btn sm', type: 'button', onclick: async () => { for (const n of unread) { n.read = true; try { await sb.from('notifications').update({ read: true }).eq('id', n.id); } catch {} } s.close(); refreshNotes(); } }, t('Mark all as read')) : null, h('div', { class: 'list' }, rows)) });
 }
 setTimeout(refreshNotes, 1500); setInterval(refreshNotes, 60000);
