@@ -124,7 +124,7 @@ page('sell', {
               h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
               h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
               h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
-            canGstLookup() ? (BILL.showGstin ? gstBillRow(inSheet) : h('button', { class: 'btn plain sm', type: 'button', style: { alignSelf: 'flex-start' }, onclick: () => { BILL.showGstin = true; paintCart(); inSheet && inSheet(); } }, icon('plus', 14), t('Bill to a GST number'))) : null),
+            canGstLookup() ? (BILL.showGstin ? gstBillRow(paintCart, inSheet) : h('button', { class: 'btn plain sm', type: 'button', style: { alignSelf: 'flex-start' }, onclick: () => { BILL.showGstin = true; paintCart(); inSheet && inSheet(); } }, icon('plus', 14), t('Bill to a GST number'))) : null),
         BILL.lines.length ? h('div', { class: 'blines' }, lines, inSheet ? null : quickAdd()) : h('div', { class: 'bempty' }, icon('tag', 26), h('div', null, t('Cart is empty')), h('div', { class: 'small' }, t('Tap a style or scan a tag'))),
         BILL.lines.length ? h('div', { class: 'tots' },
           trow(t('Subtotal'), inr(c.subtotal)), c.discount > 0 ? trow(t('Discount'), '-' + inr(c.discount), 'g') : null, trow(t('Tax') + ' (incl.)', inr(c.tax)), c.rounding ? trow(t('Round off'), inr(c.rounding)) : null,
@@ -312,7 +312,7 @@ function paySheet(c, done) {
 }
 // B2B bill: a GST number typed on the bill, with a Fetch details button (same gstFetchRow helper the customer/supplier forms use) --
 // filling the business's name from the GST record when the cashier hasn't typed one. Only shown where the admin switched gst_lookup on.
-function gstBillRow(inSheet) {
+function gstBillRow(paintCart, inSheet) {
   const g = input({ value: BILL.custGstin, placeholder: 'GSTIN', max: 15, oninput: (e) => { BILL.custGstin = e.target.value.toUpperCase(); } });
   const row = gstFetchRow(g, (d) => { if (!BILL.custName.trim()) BILL.custName = d.trade_name || d.legal_name || ''; paintCart(); inSheet && inSheet(); });
   return h('div', { class: 'custrow' }, g, row,
