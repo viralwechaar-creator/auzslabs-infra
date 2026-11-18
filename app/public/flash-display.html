@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flash customer display</title>
+<style>
+  :root{--ink:#161618;--accent:#800020;--bg:#f5f4f2;--muted:#6b6a63;--line:#e4e2da;--ok:#1f8a4c;--err:#c2410c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,system-ui,sans-serif}
+  .wrap{max-width:640px;margin:0 auto;padding:24px 18px 60px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:15px;margin:0 0 8px}
+  .muted{color:var(--muted);font-size:13px}
+  .step{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+  .step b{display:inline-flex;min-width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+  input[type=file]{display:block;margin:10px 0}
+  button{font:inherit;background:var(--accent);color:#fff;border:none;padding:11px 18px;border-radius:9px;cursor:pointer;font-weight:600}
+  button:disabled{opacity:.5;cursor:default}
+  button.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .bar{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:10px 0}
+  .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+  pre{background:#14141a;color:#cfead8;font:12px/1.5 ui-monospace,monospace;padding:10px 12px;border-radius:10px;max-height:220px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin:10px 0 0}
+  .status{font-weight:600}
+  .status.ok{color:var(--ok)} .status.err{color:var(--err)}
+  .unsupported{background:#fef3c7;border:1px solid #fcd9a0;border-radius:10px;padding:12px 14px;color:#7a4a08;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Flash the customer display</h1>
+  <div class="sub">For a brand-new (or blank) Waveshare ESP32-S3-LCD-2.8 board only. An already-flashed board updates itself automatically over WiFi — see Settings &rarr; Customer-facing screen in AUZsStyle instead.</div>
+
+  <div id="unsupported" class="unsupported" style="display:none">
+    This browser can't talk to USB devices. Open this page in <b>Chrome</b> or <b>Edge</b> (desktop or Android) instead.
+  </div>
+
+  <div id="main">
+    <div class="card">
+      <h2>Before you start</h2>
+      <div class="step"><b>1</b><div>Get the <code>.merged.bin</code> file for this firmware — produced once by compiling <code>firmware/customer-display/AUZLAB_Display_Test.ino</code> in Arduino IDE (Sketch &rarr; Export Compiled Binary). Look in the sketch's build output folder for a file ending in <code>.merged.bin</code>. If there isn't one, see this page's note at the bottom.</div></div>
+      <div class="step"><b>2</b><div>Plug the board into this computer's USB port. Close Arduino IDE's Serial Monitor if it's open (it locks the port).</div></div>
+      <div class="step"><b>3</b><div>Pick the file below, then press Flash. A browser prompt will ask you to choose the USB device — pick the one listed (often "USB JTAG/serial debug unit").</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Flash</h2>
+      <input type="file" id="file" accept=".bin">
+      <div class="bar"><i id="bar"></i></div>
+      <div id="status" class="status muted">Choose the file, then press Flash.</div>
+      <button id="flashBtn">Flash</button>
+      <button id="resetHint" class="alt" style="display:none">What do I do now?</button>
+      <pre id="log" style="display:none"></pre>
+    </div>
+
+    <div class="card">
+      <h2 class="muted">If Arduino IDE didn't produce a <code>.merged.bin</code></h2>
+      <div class="muted">Older Arduino-ESP32 core versions export three separate files instead
+        (<code>*.bootloader.bin</code>, <code>*.partitions.bin</code>, plain <code>*.bin</code>) —
+        this page only supports a single merged file today. Update the "esp32" board package in
+        Arduino IDE's Boards Manager to a recent version (it then exports the merged file
+        automatically), or ask for this page to be extended to support the three-file case.</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { ESPLoader, Transport } from '/vendor/esptool-js.bundle.js';
+
+const $ = (id) => document.getElementById(id);
+if (!('serial' in navigator)) {
+  $('unsupported').style.display = 'block';
+  $('main').style.display = 'none';
+}
+
+const fileInput = $('file'), flashBtn = $('flashBtn'), statusEl = $('status'), bar = $('bar'), log = $('log'), resetHint = $('resetHint');
+const term = {
+  clean() { log.textContent = ''; },
+  writeLine(s) { log.textContent += s + '\n'; log.scrollTop = log.scrollHeight; },
+  write(s) { log.textContent += s; log.scrollTop = log.scrollHeight; },
+};
+
+function setStatus(text, cls) { statusEl.className = 'status' + (cls ? ' ' + cls : ''); statusEl.textContent = text; }
+
+flashBtn.onclick = async () => {
+  const file = fileInput.files[0];
+  if (!file) { setStatus('Choose the .merged.bin file first.', 'err'); return; }
+  flashBtn.disabled = true; log.style.display = 'block'; resetHint.style.display = 'none';
+  bar.style.width = '0%';
+  try {
+    setStatus('Waiting for you to pick the USB device…');
+    const device = await navigator.serial.requestPort();
+    const transport = new Transport(device);
+    const loader = new ESPLoader({ transport, baudrate: 115200, terminal: term });
+    setStatus('Connecting to the board…');
+    await loader.main();
+    setStatus('Connected. Erasing and writing firmware… do not unplug the board.');
+    const buf = await file.arrayBuffer();
+    const binStr = loader.ui8ToBstr(new Uint8Array(buf));
+    await loader.writeFlash({
+      fileArray: [{ data: binStr, address: 0x0 }],
+      flashSize: 'keep', flashMode: 'keep', flashFreq: 'keep',
+      eraseAll: false, compress: true,
+      reportProgress: (_fileIndex, written, total) => { bar.style.width = Math.round((written / total) * 100) + '%'; },
+    });
+    await transport.disconnect();
+    setStatus('Done. Press the RESET button on the board (or unplug and replug the USB cable).', 'ok');
+    resetHint.style.display = 'inline-block';
+  } catch (e) {
+    setStatus('Could not flash: ' + (e && e.message ? e.message : e), 'err');
+  } finally {
+    flashBtn.disabled = false;
+  }
+};
+resetHint.onclick = () => alert('Press the small RESET button on the board (listed in Waveshare\'s own board diagram), or unplug the USB cable and plug it back in. The screen should then boot into the new firmware on its own.');
+</script>
+</body>
+</html>

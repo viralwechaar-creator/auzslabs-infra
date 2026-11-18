@@ -3291,16 +3291,27 @@ cashier; the display never decides what to charge or knows if anyone paid):
   it always fills as much of that canvas as it can, rather than a fixed 3px/module that left
   visible unused margin for most real bills (owner-reported, fixed by making `px` adaptive).
 - **Owner explicitly does not want Arduino/USB-reflashing as an ongoing dependency** for
-  anything beyond the one unavoidable first flash -- "no middle software." Firmware V2 adds
-  real OTA: optional WiFi (set once over the existing USB serial link via a `WIFI|ssid|pass\n`
-  command -- never through Arduino, and never used for billing itself, which always stays on
-  USB) lets the board check `site/ota/customer-display/latest.json` and self-update from
+  anything beyond the one unavoidable first *compile* -- "no middle software," pushed harder
+  a second time to mean not even the first *upload*. Firmware V2 adds real OTA: optional WiFi
+  (set once over the existing USB serial link via a `WIFI|ssid|pass\n` command -- never
+  through Arduino, and never used for billing itself, which always stays on USB) lets the
+  board check `site/ota/customer-display/latest.json` and self-update from
   `site/ota/customer-display/latest.bin` (plain static files under `site/`, reachable at
   `auzslab.in/ota/customer-display/*` -- **not** `app/public/`, since the bare root domain is
   served from `site/`, not `app/public/`; check the Caddyfile before assuming any new static
-  path is reachable from a given address). The one step that can never fully disappear:
-  compiling the `.ino` for this chip still needs Arduino IDE's "Export Compiled Binary" once
-  per firmware change -- see `firmware/customer-display/README.md`'s "Over-the-air updates"
-  section for the exact ship-an-update steps, and its own honest "not yet verified on real
-  hardware" note for the WiFi/OTA code specifically (nothing in this repo can compile/flash
-  an ESP32-S3 Arduino sketch to check it — written carefully, but unverified beyond that).
+  path is reachable from a given address). That OTA `.bin` **must be the plain app binary**
+  (`<sketch>.ino.bin`), never the merged bootloader+partitions+app image -- `Update.h` writes
+  straight into the existing app partition, and a merged image there would corrupt the device.
+- **`app/public/flash-display.html` + `app/public/vendor/esptool-js.bundle.js`**: a *first-time*
+  flash of a brand-new/blank board also needs no Arduino IDE *upload* step any more -- this
+  page uses Espressif's own official `esptool-js` (Apache-2.0, vendored as a single-file ESM
+  bundle, same `vendor/` convention as `qrcode.js`) over the Web Serial API to write a
+  `.merged.bin` (bootloader+partitions+app combined, exported via Arduino IDE's own "Export
+  Compiled Binary" -- a **different file** from the OTA app-only `.bin` above, do not confuse
+  them) directly from Chrome/Edge. The one step that can never fully disappear: compiling the
+  `.ino` for this chip still needs a real C++ toolchain (Arduino IDE, in practice) once per
+  firmware change -- see `firmware/customer-display/README.md`'s "Flashing a brand-new board"
+  and "Over-the-air updates" sections for the exact steps, and its own honest "not yet
+  verified on real hardware" notes for both the WiFi/OTA code and the browser-flasher page
+  (nothing in this repo can compile or flash an ESP32-S3 to check either — written carefully
+  against Espressif's own documented APIs, but unverified beyond that).
