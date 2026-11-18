@@ -44,6 +44,15 @@ function showLogin(msg) {
     btn.disabled = false;
     if (r.error) { m.style.color = 'var(--red)'; m.textContent = r.error.message; } else boot();
   };
+  // Demo one-tap sign-in: a marketing "Launch" button can link here with ?demo=1 so a
+  // prospect sees the real app with no typing or second tap. Gated on the query param and
+  // a once-per-load flag, so it never fires again if showLogin() is re-shown after an error
+  // (wrong tenant, session expired) -- the normal sign-in form above is completely unchanged.
+  if (!msg && !window.AUZ_DEMO_TRIED && new URLSearchParams(location.search).get('demo') === '1') {
+    window.AUZ_DEMO_TRIED = true;
+    e.value = 'demo@auzslab.in'; p.value = 'Auzslab@Demo';
+    setTimeout(() => btn.onclick({ preventDefault: () => {} }), 30);
+  }
   const googleHost = h('div');
   const social = h('div', { style: { display: CFG.googleClientId ? 'grid' : 'none', gap: '10px' } }, googleHost, h('div', { class: 'small muted', style: { textAlign: 'center' } }, 'or'));
   const form = h('form', { class: 'card', onsubmit: (ev) => ev.preventDefault() },
