@@ -245,3 +245,42 @@ dialog.a-dialog h2 { font-size: 22px; margin-bottom: 14px; }
   .a-edit-r { position: sticky; top: 12px; }
   .a-pv-frame { height: calc(100vh - 110px); }
 }
+
+/* ---- AUZslab design-system integration (admin console only) ----
+   Owner request: the salon admin console should feel as premium/consistent as the
+   other staff apps (POS, Payroll, Ledger) -- same accent colour. The PUBLIC salon
+   website (booking page, menu, invoices -- a real client's own storefront) is
+   untouched on purpose; it keeps Showoff Salon's own plum/cream/gold brand, since
+   that identity is the business's own, not AUZslab's. This file is only ever loaded
+   on admin pages, so none of this reaches the public pages that share assets/style.css. */
+/* `--plum` here is this app's BODY TEXT colour (`body{color:var(--plum)}` in
+   assets/style.css), not just an accent -- a first pass that pointed it straight at
+   --accent made every paragraph, label and page title wine, which is not how the
+   other apps actually use their accent (sparingly: buttons, the active nav item,
+   a few brand touches -- plain text stays near-black). So: --plum becomes a neutral
+   ink colour here, and the handful of elements that should carry the accent get it
+   explicitly below, the same split the other apps already use. */
+:root { --plum: #1c1c1e; }
+#sideNav button[aria-current="page"] { background: var(--accent, #800020) !important; border-color: var(--accent, #800020) !important; }
+.btn:not(.btn-alt):not(.btn-danger):not(.btn-gold):not([disabled]) { background: var(--accent, #800020); border-color: var(--accent, #800020); }
+.btn:not(.btn-danger):not(.btn-gold):hover { color: var(--accent, #800020); }
+.btn-alt:not(.btn-danger) { color: var(--accent, #800020); border-color: var(--accent, #800020); }
+.btn-alt:not(.btn-danger):hover { background: var(--accent, #800020); }
+.a-check input { accent-color: var(--accent, #800020) !important; }
+.a-period .seg button[aria-pressed="true"] { border-color: var(--accent, #800020) !important; color: var(--accent, #800020); }
+/* Bordered, rounded inputs (Apple HIG, matching the other staff apps) instead of the
+   public booking form's editorial underline style -- scoped to the console's own
+   content and its login screen, never the public .field forms elsewhere. */
+#login .field input, #login .field select,
+#view .field input, #view .field select, #view .field textarea,
+.a-item input[type=text], .a-item input[type=number], .a-item textarea,
+.a-thumb input[type=text], .a-thumb textarea {
+  border: 1px solid var(--sep, var(--line)) !important; border-radius: 10px !important;
+  padding: 10px 12px !important; background: #fff; font-size: 15px;
+}
+#login .field input:focus, #login .field select:focus,
+#view .field input:focus, #view .field select:focus, #view .field textarea:focus {
+  outline: 0; border-color: var(--accent, #800020) !important; margin-bottom: 0 !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #800020) 16%, transparent);
+}
+.a-card { box-shadow: var(--shadow-sm, 0 10px 20px -14px rgba(57,29,33,.35)); }
