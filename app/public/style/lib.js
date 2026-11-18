@@ -134,6 +134,29 @@ async function shareWa(sale, phone) {
   if (w) w.location.href = url; else window.open(url, '_blank', 'noopener');
 }
 
+// ---- customer-facing display: a second screen (USB/HDMI monitor, or a small USB display
+// unit) pointed at the customer, showing the UPI QR during payment instead of the cashier
+// turning their own screen around. It's just stycustomer.html opened in its own window --
+// drag that window onto the extra screen once and leave it open. Talk to it over
+// BroadcastChannel (same browser only, no server round trip, no new API endpoint). ----
+function custChanName() { return 'auz-sty-cust-' + ((S.dash && S.dash.tenant && S.dash.tenant.slug) || 'x'); }
+let _custChan = null;
+function custChan() {
+  if (!_custChan) {
+    try { _custChan = new BroadcastChannel(custChanName()); _custChan.onmessage = (e) => { if (e.data && e.data.type === 'hello') custSendIdle(); }; }
+    catch { _custChan = null; } // BroadcastChannel is unsupported on a handful of very old browsers; the display just stays on its own idle screen
+  }
+  return _custChan;
+}
+function custSend(msg) { const c = custChan(); if (c) c.postMessage(msg); }
+function custSendIdle() { custSend({ type: 'idle', store: (S.ctx.settings && S.ctx.settings.shopName) || (S.dash.tenant && S.dash.tenant.name) || '', logoUrl: (S.ctx.settings && S.ctx.settings.logoUrl) || '' }); }
+function openCustomerDisplay() {
+  custChan(); custSendIdle();
+  const w = window.open('/stycustomer.html?ch=' + encodeURIComponent(custChanName()), 'auzStyleCustomerDisplay', 'width=420,height=680');
+  if (!w) toast(t('Allow pop-ups, then try again'), { err: true });
+  else toast(t('Drag this window onto the customer-facing screen, then leave it open'));
+}
+
 // ---- backup, all in one Excel file (not a code/JSON dump) ----
 async function backupExcel() {
   const [styles, customers, sales] = await Promise.all([
