@@ -200,6 +200,7 @@ async function boot() {
   S.branch = brs.find((b) => b.id === saved) ? saved : (brs.find((b) => b.isMain) || brs[0] || {}).id || null;
   buildShell();
   shopIcon();
+  if (usbDisplaySupported()) usbDisplayAutoConnect();
   window.addEventListener('hashchange', route_);
   window.addEventListener('sty:q', updatePill); window.addEventListener('online', updatePill); window.addEventListener('offline', updatePill);
   window.addEventListener('sty:synced', () => { updatePill(); if (['sell', 'stock', 'home'].includes(route.id)) route_(); });
