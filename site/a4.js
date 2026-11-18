@@ -11,6 +11,7 @@
   // single-stroke line icons, 24x24 viewBox, scaled up by the caller -- matches the site's no-emoji icon convention
   var ICONS = {
     calendar: 'M4 5h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z M3 10h18 M8 2.5v5 M16 2.5v5 M8.5 14.5l1.8 1.8 3.2-3.6',
+    scissors: 'M6.3 8.2a2.3 2.3 0 1 0 0-3.2 2.3 2.3 0 0 0 0 3.2Z M6.3 19a2.3 2.3 0 1 0 0-3.2 2.3 2.3 0 0 0 0 3.2Z M8 6.8 19 17.5 M8 17.2 19 6.5 M11.3 12 9.6 10.3',
     clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z M12 7v5l3.2 2.4',
     book: 'M3 5.2C6 3.7 9 3.7 12 5.2v14.6c-3-1.5-6-1.5-9 0Z M21 5.2c-3-1.5-6-1.5-9 0v14.6c3-1.5 6-1.5 9 0Z',
     shirt: 'M9 3 5 6.2l2.2 3 1.8-.9V21h6V8.3l1.8.9 2.2-3L15 3l-2 2h-2Z',
@@ -23,7 +24,13 @@
     var d = ICONS[name] || ICONS.receipt;
     return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>';
   }
-  function img(d, size) { return '<div class="dm2-img" style="--ac:' + d.color + '"><div class="dm2-img-fade">' + icon(d.icon, size) + '</div></div>'; }
+  function img(d, size) {
+    var ghost = Math.round(size * 1.6), badge = Math.round(size * 0.46);
+    return '<div class="dm2-img" style="--ac:' + d.color + '">' +
+      '<div class="dm2-img-fade">' + icon(d.icon, ghost) + '</div>' +
+      '<div class="dm2-badge" style="width:' + badge + 'px;height:' + badge + 'px">' + icon(d.icon, Math.round(badge * 0.5)) + '</div>' +
+      '</div>';
+  }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
   function paintFeat(id) {
