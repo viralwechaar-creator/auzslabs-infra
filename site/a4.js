@@ -25,14 +25,8 @@
     return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>';
   }
   function img(d, size) {
-    var ghost = Math.round(size * 1.6), badge = Math.round(size * 0.46);
-    var art = d.photo
-      ? '<img class="dm2-photo" src="' + d.photo + '" alt="" loading="lazy">'
-      : '<div class="dm2-img-fade">' + icon(d.icon, ghost) + '</div>';
-    return '<div class="dm2-img' + (d.photo ? ' has-photo' : '') + '" style="--ac:' + d.color + '">' +
-      art +
-      '<div class="dm2-badge" style="width:' + badge + 'px;height:' + badge + 'px">' + icon(d.icon, Math.round(badge * 0.5)) + '</div>' +
-      '</div>';
+    if (d.photo) return '<div class="dm2-img has-photo"><img class="dm2-photo" src="' + d.photo + '" alt="" loading="lazy"></div>';
+    return '<div class="dm2-img" style="--ac:' + d.color + '"><div class="dm2-img-fade">' + icon(d.icon, size) + '</div></div>';
   }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
