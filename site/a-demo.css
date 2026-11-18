@@ -17,9 +17,9 @@ html body.a-demo main.content .ad-p{max-width:400px;font-size:11px;color:#5d5d59
 .ad .dm2-img-fade{display:flex;opacity:.85}
 .ad .dm2-feat{position:relative;display:grid;grid-template-columns:1fr;border-radius:22px;overflow:hidden;background:#fff;border:1px solid #e8e8e5;box-shadow:0 20px 44px rgba(0,0,0,.06);transition:opacity .2s,transform .3s}
 .ad .dm2-feat.sw{opacity:0;transform:translateY(10px)}
-@media(min-width:760px){.ad .dm2-feat{grid-template-columns:1fr 1.15fr}}
-.ad .dm2-feat>.dm2-img{min-height:220px}
-@media(min-width:760px){.ad .dm2-feat>.dm2-img{min-height:100%}}
+@media(min-width:760px){.ad .dm2-feat{grid-template-columns:1fr 1.65fr}}
+.ad .dm2-feat>.dm2-img{aspect-ratio:3/2}
+@media(min-width:760px){.ad .dm2-feat>.dm2-img{aspect-ratio:auto;min-height:100%}}
 .ad .dm2-feat-body{padding:26px 24px 24px;display:flex;flex-direction:column}
 .ad .dm2-feat-body .mk-eye{margin-bottom:10px}
 html body.a-demo main.content .ad .dm2-feat-body h2{font-size:clamp(24px,2.9vw,36px)!important;font-weight:500!important;letter-spacing:-.04em!important;color:#0a0a0a!important;margin:0 0 10px}
@@ -42,7 +42,7 @@ html body.a-demo main.content .ad .dm2-feat-body .mk-btn.solid,html body.a-demo 
 @media(min-width:960px){.ad .dm2-grid{grid-template-columns:repeat(3,1fr)}}
 .ad .dm2-card{position:relative;display:flex;flex-direction:column;text-align:left;border-radius:18px;overflow:hidden;background:#fff;border:1px solid #e8e8e5;transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
 .ad .dm2-card:hover{transform:translateY(-3px);box-shadow:0 16px 30px rgba(0,0,0,.08)}
-.ad .dm2-card>.dm2-img{height:120px}
+.ad .dm2-card>.dm2-img{aspect-ratio:3/2;height:auto}
 .ad .dm2-card>.dm2-img .dm2-img-fade svg{width:56px!important;height:56px!important}
 .ad .dm2-pill{position:absolute;top:10px;right:10px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.92);font:600 8px/1 "Space Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:#4a4a46}
 .ad .dm2-card b{margin:14px 16px 4px;font-size:13px;font-weight:600;color:#0a0a0a;letter-spacing:-.01em}
