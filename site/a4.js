@@ -29,6 +29,13 @@
     return '<div class="dm2-img" style="--ac:' + d.color + '"><div class="dm2-img-fade">' + icon(d.icon, size) + '</div></div>';
   }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function trunc(s, n) {
+    if (s.length <= n) return s;
+    var cut = s.slice(0, n);
+    var sp = cut.lastIndexOf(' ');
+    if (sp > 0) cut = cut.slice(0, sp);
+    return cut.replace(/[,.;:]+$/, '') + '…';
+  }
 
   function paintFeat(id) {
     var d = D[id];
@@ -61,7 +68,7 @@
     var shown = expanded ? ORDER : ORDER.filter(function (id) { return D[id].primary; });
     shown.filter(function (id) { return id !== featId; }).forEach(function (id) {
       var d = D[id];
-      var b = el('button', 'dm2-card', img(d, 56) + '<span class="dm2-pill">' + d.tag + '</span><b>' + d.name + '</b><p>' + d.text + '</p>');
+      var b = el('button', 'dm2-card', img(d, 56) + '<span class="dm2-pill">' + d.tag + '</span><b>' + d.name + '</b><p>' + trunc(d.text, 105) + '</p>');
       b.type = 'button'; b.setAttribute('data-id', id);
       b.addEventListener('click', function () { select(id); });
       grid.appendChild(b);
