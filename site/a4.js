@@ -26,8 +26,11 @@
   }
   function img(d, size) {
     var ghost = Math.round(size * 1.6), badge = Math.round(size * 0.46);
-    return '<div class="dm2-img" style="--ac:' + d.color + '">' +
-      '<div class="dm2-img-fade">' + icon(d.icon, ghost) + '</div>' +
+    var art = d.photo
+      ? '<img class="dm2-photo" src="' + d.photo + '" alt="" loading="lazy">'
+      : '<div class="dm2-img-fade">' + icon(d.icon, ghost) + '</div>';
+    return '<div class="dm2-img' + (d.photo ? ' has-photo' : '') + '" style="--ac:' + d.color + '">' +
+      art +
       '<div class="dm2-badge" style="width:' + badge + 'px;height:' + badge + 'px">' + icon(d.icon, Math.round(badge * 0.5)) + '</div>' +
       '</div>';
   }
