@@ -11,8 +11,11 @@ html body.a-demo main.content .ad-h .aw:first-child span{color:#8d8d8a!important
 html body.a-demo main.content .ad-p{max-width:400px;font-size:11px;color:#5d5d59!important;margin:0 auto}
 /* editorial cards (owner reference: one big blog-style card with a fading photo, a grid of smaller cards below) */
 .ad .dm2{--ac:#800020}
-.ad .dm2-img{position:relative;overflow:hidden;background:radial-gradient(130% 110% at 28% 18%,color-mix(in srgb,var(--ac) 15%,#fff),color-mix(in srgb,var(--ac) 3%,#fff) 60%,#fff 100%);display:flex;align-items:center;justify-content:center;color:var(--ac)}
-.ad .dm2-img-fade{-webkit-mask-image:radial-gradient(ellipse 62% 62% at 50% 46%,#000 35%,transparent 82%);mask-image:radial-gradient(ellipse 62% 62% at 50% 46%,#000 35%,transparent 82%);opacity:.8;display:flex}
+.ad .dm2-img{position:relative;overflow:hidden;background:radial-gradient(135% 115% at 24% 14%,color-mix(in srgb,var(--ac) 22%,#fff),color-mix(in srgb,var(--ac) 7%,#fff) 55%,#fff 100%);display:flex;align-items:center;justify-content:center;color:var(--ac)}
+.ad .dm2-img-fade{-webkit-mask-image:radial-gradient(ellipse 62% 62% at 50% 46%,#000 35%,transparent 82%);mask-image:radial-gradient(ellipse 62% 62% at 50% 46%,#000 35%,transparent 82%);opacity:.5;display:flex;transform:rotate(-5deg) translate(4%,2%);filter:drop-shadow(0 12px 18px color-mix(in srgb,var(--ac) 35%,transparent))}
+.ad .dm2-badge{position:absolute;right:12px;bottom:12px;display:flex;align-items:center;justify-content:center;border-radius:30%;background:linear-gradient(155deg,color-mix(in srgb,var(--ac) 24%,#fff),color-mix(in srgb,var(--ac) 6%,#fff));border:1px solid color-mix(in srgb,var(--ac) 30%,#fff);box-shadow:0 10px 22px -9px color-mix(in srgb,var(--ac) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.85);color:var(--ac);transform:rotate(-4deg);transition:transform .3s}
+.ad .dm2-card:hover .dm2-badge{transform:rotate(0)}
+.ad .dm2-feat .dm2-badge{right:22px;bottom:22px}
 .ad .dm2-feat{position:relative;display:grid;grid-template-columns:1fr;border-radius:22px;overflow:hidden;background:#fff;border:1px solid #e8e8e5;box-shadow:0 20px 44px rgba(0,0,0,.06);transition:opacity .2s,transform .3s}
 .ad .dm2-feat.sw{opacity:0;transform:translateY(10px)}
 @media(min-width:760px){.ad .dm2-feat{grid-template-columns:1fr 1.15fr}}
