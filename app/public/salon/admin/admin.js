@@ -450,7 +450,7 @@
           c.bookingId ? [h('br'), h('span', { class: 'muted', text: 'Matches an existing booking' })] : null),
         c.status === 'new' ? h('div', { class: 'a-row-actions', style: 'align-items:flex-start' },
           btn('Create bill', () => act(c, 'accepted'), 'btn-sm'),
-          btn('Decline', () => act(c, 'declined'), 'btn-sm btn-alt')) : h('span', { class: 'badge-s ' + c.status, text: c.status === 'accepted' ? 'Billed' : 'Declined' })));
+          btn('Decline', () => act(c, 'declined'), 'btn-sm btn-alt')) : h('span', { class: 'badge-s ' + c.status, style: 'align-self:flex-start', text: c.status === 'accepted' ? 'Billed' : 'Declined' })));
     view().replaceChildren(
       waiting.length ? waiting.map(row) : emptyNote('No one is waiting. Put the check-in QR code up at your counter (Settings) so clients can check themselves in.', 'wave'),
       handled.length ? h('div', { class: 'a-section', style: 'margin-top:28px' }, h('h2', { class: 'a-h2', text: 'Earlier today' }), handled.slice(0, 20).map(row)) : null);
