@@ -267,6 +267,7 @@ page('settings', {
             await usbDisplayConnect();
             btn.disabled = false; v.refresh();
           } }, icon('monitor', 16), usbDisplayConnected() ? t('Reconnect USB display') : t('Connect USB display')),
+          h('a', { class: 'btn', href: '/flash-display.html', target: '_blank', rel: 'noopener', style: { marginLeft: '8px' } }, t('Setting up a brand-new display?')),
           !usbDisplayConnected() ? null : (() => {
             const wSsid = input({ placeholder: t('WiFi name (SSID)') });
             const wPass = input({ type: 'password', placeholder: t('WiFi password') });
