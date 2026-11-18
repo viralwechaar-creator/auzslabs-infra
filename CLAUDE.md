@@ -3246,3 +3246,43 @@ An MCP server at `https://api.auzslab.in/mcp` (plain JSON-RPC over POST, hand-wr
 - **OAuth refresh tokens rotate and expire:** a new refresh token on every refresh, 30 days, and presenting an OLD one revokes the whole grant (replay signal). Access tokens last 1 hour. The consent page now accepts a two-step code.
 - Test: `node tests/run-local.mjs mcp` (10 checks: default read-only, tools hidden and refused, full key works and is audited, wrong key 401, registration allow-list incl. look-alike hosts, consent page script parses, grant scopes, rotation and replay, expiry, no approval without login). Deploy: `bash tools/migrate.sh apply` (db/324), `docker compose up -d --build api` (new RPC argument), `git pull`.
 - **Not done:** per-tool allow-lists (a "full" key can use every tool), scoping a key to certain apps, a notice to the owner when a new connection is approved, rate limits shared across several API copies.
+
+## AUZsStyle customer-facing display: a second screen pointed at the customer, two ways
+
+Owner request: show the UPI QR to the customer automatically while billing, instead of the
+cashier turning their own screen around. Two independent mechanisms ship side by side —
+a shop uses whichever matches what it actually has, both read from the exact same trigger
+points in `p-sell.js`'s `paySheet`/`openQr` (the same UPI payload already shown to the
+cashier; the display never decides what to charge or knows if anyone paid):
+
+1. **A second monitor on the same computer** (`app/public/style/lib.js`'s `custChan*`/
+   `openCustomerDisplay` functions + `app/public/stycustomer.html`, the receiver page).
+   Settings -> Customer-facing screen -> "Open customer display" opens that page in its own
+   window; drag it onto the extended display once and leave it there. Talks over
+   `BroadcastChannel` (same browser only, no server round trip) -- `{type:'qr'|'paid'|'idle', ...}`
+   messages; the receiver posts `{type:'hello'}` on load so a reconnect mid-bill resyncs. Needs
+   a real desktop/laptop till (or Android in a desktop-style mode) whose OS treats the second
+   screen as an extended display you can drag a window onto -- it cannot reach a phone's
+   external screen, and never reaches a *different physical device* (no network hop at all).
+2. **A real USB customer-display unit** (a Waveshare ESP32-S3-LCD-2.8, SKU 30223, running the
+   firmware in `firmware/customer-display/` -- see that folder's own README for flashing
+   instructions and the exact serial protocol). `app/public/style/usbdisplay.js` talks to it
+   straight from the browser over the **Web Serial API** (`navigator.serial`) -- Chrome/Edge
+   on desktop or Android only, never Safari/Firefox/iOS (the UI already hides the button and
+   shows a plain explanation on an unsupported browser, `usbDisplaySupported()`). Settings ->
+   Customer-facing screen -> "Connect USB display" is the one-time `requestPort()` prompt;
+   `usbDisplayAutoConnect()` (called from `shell.js`'s `boot()`) silently reattaches to an
+   already-approved port on every later page load, no new prompt. Protocol: `IDLE\n` or
+   `PAY|<amount>|<n>|<hex>\n`, `n`×`n` QR matrix packed 1 bit/module, row-major, MSB first, no
+   quiet zone (the firmware adds its own border) -- verified round-trip with a real QR decoder
+   (`jsQR`) against the exact packing `usbdisplay.js` does, not just a syntax check: encode
+   with the vendored `qrcode-generator`, pack, unpack the same way the firmware does, decode,
+   confirm the original UPI string comes back byte-for-byte. A payload long enough to need
+   more than QR version 7 (45x45) is rejected with a toast rather than silently sent broken.
+- **Both are entirely best-effort and non-blocking.** Every call site wraps the send in a
+  no-op catch; a serial hiccup, an unplugged cable, or a browser with neither feature never
+  touches the actual sale -- `ok.onclick`'s own `sty_sell` call doesn't know either of these
+  exist. If a future third output is ever added (e.g. a WiFi-polling variant for a till that's
+  a phone with no USB-OTG and a *separate* physical display device), wire it into the same
+  four spots (`openQr`, the "Payment received" button, `paintQr`'s `amt<=0` branch, and the
+  pay sheet's `onClose`) rather than inventing a new trigger path.
