@@ -87,7 +87,17 @@
   const sticky = (...els) => h('div', { class: 'a-sticky' }, ...els);
 
   /* ---------- login / boot ---------- */
-  function showLogin() { $('#app').hidden = true; $('#login').hidden = false; $('#pw').focus(); }
+  function showLogin() {
+    $('#app').hidden = true; $('#login').hidden = false; $('#pw').focus();
+    // Demo one-tap sign-in: a marketing "Launch" link can add ?demo=1 so a prospect sees
+    // the real console with no typing. Gated on the query param and a once-per-load flag;
+    // the normal owner/staff sign-in form above is completely unchanged.
+    if (!window.AUZ_DEMO_TRIED && new URLSearchParams(location.search).get('demo') === '1') {
+      window.AUZ_DEMO_TRIED = true;
+      $('#pw').value = 'Auzslab@Demo';
+      setTimeout(() => { $('#loginForm').requestSubmit ? $('#loginForm').requestSubmit() : $('#loginForm').dispatchEvent(new Event('submit', { cancelable: true })); }, 30);
+    }
+  }
   $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault(); $('#loginError').textContent = '';
     try {
