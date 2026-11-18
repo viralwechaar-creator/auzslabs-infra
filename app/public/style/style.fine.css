@@ -132,10 +132,14 @@
 .gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:2px}.gal img{height:210px;border-radius:14px;scroll-snap-align:start;flex:none;object-fit:cover}
 .cat-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:6px}.cat-h{font-weight:700;font-size:15px;padding:4px 0;text-align:left;color:var(--label)}.cat-h.on{color:var(--accent-text)}.fam-dots{display:inline-flex;gap:2px}
 
-/* ===== Minimal gallery theme: white and transparent, full-picture cards, text outside the card (owner reference: Bluorng) ===== */
-:root{--accent:#111!important;--accent-text:#111!important;--accent-soft:rgba(0,0,0,.07)!important;--accent-soft2:rgba(0,0,0,.1)!important;--accent-line:rgba(0,0,0,.28)!important;--on-accent:#fff!important;--tint:#111;--tint-text:#111;--tint-fg:#fff;--tint-soft:rgba(0,0,0,.07);--tint-line:rgba(0,0,0,.28);--bg:#f1f1f1;--bar:rgba(255,255,255,.62)}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--accent:#f2f2f2!important;--accent-text:#f2f2f2!important;--accent-soft:rgba(255,255,255,.12)!important;--accent-line:rgba(255,255,255,.35)!important;--on-accent:#111!important;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bar:rgba(30,30,32,.6)}}
-:root[data-theme=dark]{--accent:#f2f2f2!important;--accent-text:#f2f2f2!important;--accent-soft:rgba(255,255,255,.12)!important;--accent-line:rgba(255,255,255,.35)!important;--on-accent:#111!important;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bar:rgba(30,30,32,.6)}
+/* ===== Minimal gallery theme: white and transparent, full-picture cards, text outside the card (owner reference: Bluorng) =====
+   Scoped to .sellpage (the Sell screen's own view root, set in p-sell.js) -- this used to be set on :root with !important,
+   which overrode the shared --accent/dark-mode tokens for the WHOLE app (every page, every menu/sheet, in both light and
+   dark mode), not just this screen's photo-grid. That is what made the "More" sheet's icon tiles wash out to near-white
+   in dark mode (#f2f2f2 tile + #111 icon, instead of the brand-wine accent every other staff app uses). */
+.sellpage{--accent:#111;--accent-text:#111;--accent-soft:rgba(0,0,0,.07);--accent-soft2:rgba(0,0,0,.1);--accent-line:rgba(0,0,0,.28);--on-accent:#fff;--tint:#111;--tint-text:#111;--tint-fg:#fff;--tint-soft:rgba(0,0,0,.07);--tint-line:rgba(0,0,0,.28);--bg:#f1f1f1;--bar:rgba(255,255,255,.62)}
+@media (prefers-color-scheme:dark){html:not([data-theme=light]) .sellpage{--accent:#f2f2f2;--accent-text:#f2f2f2;--accent-soft:rgba(255,255,255,.12);--accent-line:rgba(255,255,255,.35);--on-accent:#111;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bar:rgba(30,30,32,.6)}}
+html[data-theme=dark] .sellpage{--accent:#f2f2f2;--accent-text:#f2f2f2;--accent-soft:rgba(255,255,255,.12);--accent-line:rgba(255,255,255,.35);--on-accent:#111;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bar:rgba(30,30,32,.6)}
 .chip{background:var(--card);box-shadow:none;font-weight:500}.chip[aria-pressed=true]{background:var(--label);color:var(--bg)}
 .btn.fill{background:var(--label);color:var(--bg)}
 .sgrid{gap:22px 10px}
