@@ -1,14 +1,26 @@
 /*
- * AUZSLAB Customer Display V1
+ * AUZSLAB Customer Display V2
  * Board: Waveshare ESP32-S3-LCD-2.8 (NON-TOUCH), SKU 30223.
  * LVGL 8.3.x, 240x320 ST7789.
  *
- * USB CDC protocol (115200 baud):
+ * USB CDC protocol (115200 baud) -- unchanged from V1, this is still how every bill's QR
+ * actually reaches the screen, over the till's own USB cable, never WiFi:
  *   IDLE\n
  *   PAY|850.00|29|<packed QR bits as hex>\n
+ *   WIFI|<ssid>|<password>\n   (new in V2 -- see below)
+ *   STATUS\n                   (new in V2 -- see below)
  *
  * QR bitmap comes from the host, never from an untrusted device amount.
  * No live payment status is inferred by this firmware.
+ *
+ * WiFi + OTA (new in V2): this is ONLY for pulling future firmware updates automatically,
+ * so the owner never has to open Arduino IDE and plug a USB cable into the board again --
+ * billing itself stays on the USB serial link above, completely unaffected by whether WiFi
+ * is connected or not. WiFi credentials are set once, either by typing them into
+ * Settings -> Customer-facing screen in the browser (sent over the same USB serial link as
+ * a `WIFI|ssid|password\n` command -- no Arduino involved) or, if that's never done, left
+ * unset and OTA simply never runs. See ota/README.md in this folder for how to ship an
+ * update once this is flashed.
  */
 #include "Display_ST7789.h"
 #include "Audio_PCM5101.h"
@@ -22,8 +34,23 @@
 #include "Wireless.h"
 #include "Simulated_Gesture.h"
 #include "AUZSLAB_Logo.h"
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <HTTPUpdate.h>
+#include <Preferences.h>
 
-static constexpr uint16_t QR_CANVAS = 176;
+// Bump this on every firmware change that gets shipped through ota/latest.json --
+// see ota/README.md. The device never downgrades (only updates when the server's
+// version is strictly greater than this).
+static constexpr uint16_t FW_VERSION = 2;
+static constexpr const char *OTA_VERSION_URL = "https://auzslab.in/ota/customer-display/latest.json";
+static constexpr unsigned long OTA_FIRST_CHECK_MS = 15000;       // give WiFi time to associate after boot
+static constexpr unsigned long OTA_RECHECK_MS = 6UL * 60 * 60 * 1000; // then every 6 hours
+static Preferences prefs;
+static unsigned long nextOtaCheckAt = OTA_FIRST_CHECK_MS;
+
+static constexpr uint16_t QR_CANVAS = 200;
 static lv_color_t qrPixels[QR_CANVAS * QR_CANVAS];
 static lv_obj_t *qrCanvas = nullptr;
 static lv_obj_t *amountLabel = nullptr;
@@ -64,23 +91,26 @@ static void showIdle() {
 
 static void showPaymentLayout(const char *amount) {
   lv_obj_t *scr = resetScreen();
-  showLogo(scr, 5, 128);
-  makeLabel(scr, "SCAN TO PAY", lv_color_hex(0x1C3859), 48);
+  // No logo here (unlike the idle screen) -- every pixel of vertical room on a 240x320
+  // panel goes to the QR itself, which is the only thing that matters on this screen.
+  makeLabel(scr, "SCAN TO PAY", lv_color_hex(0x1C3859), 8);
 
   qrCanvas = lv_canvas_create(scr);
   lv_canvas_set_buffer(qrCanvas, qrPixels, QR_CANVAS, QR_CANVAS,
                        LV_IMG_CF_TRUE_COLOR);
-  lv_obj_align(qrCanvas, LV_ALIGN_TOP_MID, 0, 75);
+  lv_obj_align(qrCanvas, LV_ALIGN_TOP_MID, 0, 34);
 
-  amountLabel = makeLabel(scr, "", lv_color_hex(0x10223D), 262);
+  amountLabel = makeLabel(scr, "", lv_color_hex(0x10223D), 244);
   // LVGL's compiled-in default fonts do not always include the rupee symbol.
   lv_label_set_text_fmt(amountLabel, "INR %s", amount);
-  lv_obj_align(amountLabel, LV_ALIGN_TOP_MID, 0, 262);
-  makeLabel(scr, "Powered by AUZSLAB", lv_color_hex(0x6A7A8C), 298);
+  lv_obj_align(amountLabel, LV_ALIGN_TOP_MID, 0, 244);
+  makeLabel(scr, "Powered by AUZSLAB", lv_color_hex(0x6A7A8C), 288);
 }
 
-// Input bitmap: row-major 1-bit data, high bit first, no quiet zone.
-// QR modules are drawn at 3x3 pixels, with four white modules on every side.
+// Input bitmap: row-major 1-bit data, high bit first, no quiet zone. The module size (px)
+// is not fixed -- it's worked out from how many modules this QR actually has (n), so a
+// shorter UPI string (fewer modules) still draws as large as a longer one: both fill the
+// same QR_CANVAS square, just with chunkier or finer squares.
 static bool showQRCode(const char *hex, unsigned n) {
   if (!qrCanvas || n < 21 || n > 45 || ((n - 21) % 4) != 0) return false;
   size_t bits = (size_t)n * n;
@@ -103,15 +133,17 @@ static bool showQRCode(const char *hex, unsigned n) {
   const lv_color_t black = lv_color_black();
   for (size_t i = 0; i < QR_CANVAS * QR_CANVAS; ++i) qrPixels[i] = white;
 
-  const unsigned px = 3;
-  const unsigned all = (n + 8) * px;
+  const unsigned quiet = 4;
+  unsigned px = QR_CANVAS / (n + quiet * 2);
+  if (px < 2) px = 2; // n=45 (the largest we accept) still gives px=3 on a 200px canvas; this floor only matters if QR_CANVAS is ever shrunk
+  const unsigned all = (n + quiet * 2) * px;
   const unsigned offset = (QR_CANVAS - all) / 2;
   for (unsigned y = 0; y < n; ++y) {
     for (unsigned x = 0; x < n; ++x) {
       size_t bitIndex = (size_t)y * n + x;
       bool dark = (bitsBuf[bitIndex / 8] & (0x80 >> (bitIndex % 8))) != 0;
       if (!dark) continue;
-      unsigned xp = offset + (x + 4) * px, yp = offset + (y + 4) * px;
+      unsigned xp = offset + (x + quiet) * px, yp = offset + (y + quiet) * px;
       for (unsigned dy = 0; dy < px; ++dy)
         for (unsigned dx = 0; dx < px; ++dx)
           qrPixels[(yp + dy) * QR_CANVAS + xp + dx] = black;
@@ -136,9 +168,73 @@ static bool validAmount(const String &s) {
   return decimals <= 2 && s[s.length() - 1] != '.';
 }
 
+// ---- WiFi (OTA only -- billing never touches this) ----
+static void wifiConnectSaved() {
+  String ssid = prefs.getString("ssid", ""), pass = prefs.getString("pass", "");
+  if (ssid.isEmpty()) return;
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid.c_str(), pass.c_str());
+}
+
+// Tiny hand-rolled reader for the one fixed-shape JSON object the server ever sends --
+// {"version":N,"bin":"/ota/customer-display/latest.bin"} -- avoids pulling in a whole JSON
+// library for two fields. Returns false if either field is missing/malformed.
+static bool parseOtaJson(const String &body, long &version, String &binPath) {
+  int vAt = body.indexOf("\"version\"");
+  int bAt = body.indexOf("\"bin\"");
+  if (vAt < 0 || bAt < 0) return false;
+  int vColon = body.indexOf(':', vAt); if (vColon < 0) return false;
+  version = body.substring(vColon + 1).toInt();
+  int bColon = body.indexOf(':', bAt); if (bColon < 0) return false;
+  int q1 = body.indexOf('"', bColon); if (q1 < 0) return false;
+  int q2 = body.indexOf('"', q1 + 1); if (q2 < 0) return false;
+  binPath = body.substring(q1 + 1, q2);
+  return binPath.length() > 0;
+}
+
+// Checked rarely (OTA_FIRST_CHECK_MS after boot, then every OTA_RECHECK_MS) and only while
+// WiFi is actually connected. A real update blocks for several seconds then reboots the
+// device on success -- that's expected and fine for something that happens a few times a
+// year, not something a cashier is staring at mid-bill. Status only ever goes to Serial
+// (prefixed OTA|, never OK|/ERR|) so it can never be mistaken for a billing response.
+static void checkOta() {
+  WiFiClientSecure client; client.setInsecure(); // see ota/README.md: no cert pinning in V1, integrity leans on this being our own domain + the owner controlling what gets built into latest.bin
+  HTTPClient http;
+  if (!http.begin(client, OTA_VERSION_URL)) { Serial.println("OTA|CHECK_FAILED"); return; }
+  int code = http.GET();
+  if (code != 200) { Serial.printf("OTA|CHECK_HTTP_%d\n", code); http.end(); return; }
+  String body = http.getString(); http.end();
+  long version; String binPath;
+  if (!parseOtaJson(body, version, binPath)) { Serial.println("OTA|CHECK_BAD_JSON"); return; }
+  if (version <= FW_VERSION) { Serial.println("OTA|UP_TO_DATE"); return; }
+  String url = String("https://auzslab.in") + binPath;
+  Serial.printf("OTA|UPDATING_TO_%ld\n", version);
+  t_httpUpdate_return r = httpUpdate.update(client, url);
+  switch (r) {
+    case HTTP_UPDATE_FAILED: Serial.printf("OTA|FAILED_%d\n", httpUpdate.getLastError()); break;
+    case HTTP_UPDATE_NO_UPDATES: Serial.println("OTA|NO_UPDATE"); break;
+    case HTTP_UPDATE_OK: Serial.println("OTA|OK"); break; // device reboots itself on success; this line may never actually be seen
+  }
+}
+
 static void handleCommand(const String &line) {
   if (line == "IDLE" || line == "CLEAR") {
     showIdle(); Serial.println("OK|IDLE"); return;
+  }
+  if (line == "STATUS") {
+    Serial.printf("OK|STATUS|%d|%s|%u\n", WiFi.status() == WL_CONNECTED ? 1 : 0,
+                  WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString().c_str() : "-", FW_VERSION);
+    return;
+  }
+  if (line.startsWith("WIFI|")) {
+    int sep = line.indexOf('|', 5);
+    if (sep < 0) { Serial.println("ERR|FORMAT"); return; }
+    String ssid = line.substring(5, sep), pass = line.substring(sep + 1);
+    if (ssid.isEmpty() || ssid.length() > 32 || pass.length() > 64) { Serial.println("ERR|WIFI_FORMAT"); return; }
+    prefs.putString("ssid", ssid); prefs.putString("pass", pass);
+    WiFi.disconnect(true); wifiConnectSaved();
+    nextOtaCheckAt = millis() + OTA_FIRST_CHECK_MS; // give the new creds a chance before the next check
+    Serial.println("OK|WIFI"); return;
   }
   if (!line.startsWith("PAY|")) {
     Serial.println("ERR|UNKNOWN_COMMAND"); return;
@@ -187,7 +283,9 @@ void setup() {
   buildAuzLogo();
   showIdle();
   usbLine.reserve(1200);
-  Serial.println("AUZSLAB|READY|V1");
+  prefs.begin("auz", false);
+  wifiConnectSaved(); // no-op if no SSID has ever been saved
+  Serial.printf("AUZSLAB|READY|V%u\n", FW_VERSION);
 }
 
 void loop() {
@@ -203,6 +301,10 @@ void loop() {
         Serial.println("ERR|LINE_TOO_LONG");
       } else usbLine += c;
     }
+  }
+  if (WiFi.status() == WL_CONNECTED && millis() >= nextOtaCheckAt) {
+    nextOtaCheckAt = millis() + OTA_RECHECK_MS;
+    checkOta(); // rare (hours apart) and only runs on an actual newer version -- see checkOta()'s own comment
   }
   Lvgl_Loop();
   delay(5);

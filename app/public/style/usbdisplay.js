@@ -13,11 +13,14 @@
    to block a sale -- the physical screen is a nice-to-have, never the path a bill depends on. */
 const usbDisplaySupported = () => 'serial' in navigator;
 let _usbPort = null, _usbWriter = null, _usbConnecting = null;
+let _usbStatus = null; // last {wifi, ip, fw} from a STATUS reply, or null if never asked
+let _usbStatusWaiters = [];
 
 async function _usbOpen(port) {
   await port.open({ baudRate: 115200 });
   _usbPort = port; _usbWriter = port.writable.getWriter();
-  // read loop: only ever used to toast an ERR| line back; never awaited by a caller
+  // read loop: toasts an ERR| line, records a STATUS reply for usbDisplayStatus(), and
+  // otherwise just drains the port -- never awaited by a caller, the till never blocks on it.
   (async () => {
     const reader = port.readable.getReader(); let buf = '';
     try {
@@ -29,6 +32,11 @@ async function _usbOpen(port) {
         while ((i = buf.indexOf('\n')) >= 0) {
           const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
           if (line.startsWith('ERR|')) toast(t('Customer display') + ': ' + line.slice(4), { err: true });
+          else if (line.startsWith('OK|STATUS|')) {
+            const [, , wifi, ip, fw] = line.split('|');
+            _usbStatus = { wifi: wifi === '1', ip, fw: Number(fw) || null };
+            _usbStatusWaiters.splice(0).forEach((fn) => fn(_usbStatus));
+          }
         }
       }
     } catch { /* port closed/unplugged -- next send just re-fails quietly */ }
@@ -75,4 +83,23 @@ function _qrBits(payload) {
 async function usbDisplaySendPay(amount, upiPayload) {
   let bits; try { bits = _qrBits(upiPayload); } catch (e) { toast(e.message, { err: true }); return; }
   await _usbWrite('PAY|' + Number(amount).toFixed(2) + '|' + bits.n + '|' + bits.hex + '\n');
+}
+// Sets the display's WiFi (for automatic future firmware updates only -- billing itself
+// stays on this USB link regardless of WiFi). The one serial command that replaces ever
+// having to open Arduino IDE again just to change WiFi.
+async function usbDisplaySetWifi(ssid, password) {
+  if (!usbDisplayConnected() || !ssid) return false;
+  await _usbWrite('WIFI|' + ssid + '|' + (password || '') + '\n');
+  return true;
+}
+// Asks the display for {wifi, ip, fw} and waits (briefly) for its reply; null if not
+// connected or it didn't answer in time -- never throws, Settings just shows "unknown".
+function usbDisplayStatus(timeoutMs = 2000) {
+  if (!usbDisplayConnected()) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => { _usbStatusWaiters = _usbStatusWaiters.filter((f) => f !== onStatus); resolve(null); }, timeoutMs);
+    const onStatus = (s) => { clearTimeout(timer); resolve(s); };
+    _usbStatusWaiters.push(onStatus);
+    _usbWrite('STATUS\n');
+  });
 }
