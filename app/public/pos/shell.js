@@ -269,6 +269,15 @@ function login(msg) {
   const phoneWrap = h('div', { style: 'display:none;gap:10px' }, phoneNum, sendCodeBtn, codeStep);
   const submitBtn = h('button', { class: 'btn fill lg wide' }, 'Sign in');
   submitBtn.onclick = go1;
+  // Demo one-tap sign-in: a marketing "Launch" button can link here with ?demo=1 so a
+  // prospect sees the real app with no typing or second tap. Gated on the query param and
+  // a once-per-load flag, so it never fires again if login() is re-shown after an error
+  // (wrong tenant, session expired) -- the normal sign-in form above is completely unchanged.
+  if (!msg && !window.AUZ_DEMO_TRIED && new URLSearchParams(location.search).get('demo') === '1') {
+    window.AUZ_DEMO_TRIED = true;
+    e.value = 'demo@auzslab.in'; p.value = 'Auzslab@Demo';
+    setTimeout(go1, 30);
+  }
   const emailWrap = h('div', { style: 'display:grid;gap:10px' }, e, pwWrap, forgotBtn, submitBtn);
   const methodEmailBtn = h('button', { type: 'button', class: 'on' }, 'Email');
   const methodPhoneBtn = h('button', { type: 'button' }, 'Phone');
