@@ -89,6 +89,7 @@ const ICONS = {
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.500 2"/>',
   bolt: '<path d="M13 3 5 13h6l-1 8 8-10h-6z"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  monitor: '<rect x="3" y="4" width="18" height="12.5" rx="2"/><path d="M8 20.5h8M12 16.5v4"/>',
 };
 // solid hand-cut glyphs for the main sections (drawn black-and-white style); thin strokes stay for small controls
 const ICONS_F = {
