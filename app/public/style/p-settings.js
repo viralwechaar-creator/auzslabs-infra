@@ -266,7 +266,27 @@ page('settings', {
             const btn = ev.currentTarget; btn.disabled = true;
             await usbDisplayConnect();
             btn.disabled = false; v.refresh();
-          } }, icon('monitor', 16), usbDisplayConnected() ? t('Reconnect USB display') : t('Connect USB display')))
+          } }, icon('monitor', 16), usbDisplayConnected() ? t('Reconnect USB display') : t('Connect USB display')),
+          !usbDisplayConnected() ? null : (() => {
+            const wSsid = input({ placeholder: t('WiFi name (SSID)') });
+            const wPass = input({ type: 'password', placeholder: t('WiFi password') });
+            return h('div', { class: 'grid', style: { marginTop: '8px', borderTop: '1px solid var(--sep2, rgba(0,0,0,.1))', paddingTop: '8px' } },
+              h('div', { class: 'muted small' }, t('So the screen can fetch its own future updates by itself -- this never touches billing, which always stays on this USB cable.')),
+              h('div', { class: 'two' }, field(t('WiFi name'), wSsid), field(t('WiFi password'), wPass)),
+              h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+                h('button', { class: 'btn', type: 'button', onclick: async (ev) => {
+                  const btn = ev.currentTarget; btn.disabled = true;
+                  const ok = await usbDisplaySetWifi(wSsid.value.trim(), wPass.value);
+                  btn.disabled = false;
+                  toast(ok ? t('Saved -- the screen will try to connect now') : t('Could not reach the display'), { err: !ok });
+                } }, t('Save WiFi')),
+                h('button', { class: 'btn', type: 'button', onclick: async (ev) => {
+                  const btn = ev.currentTarget; btn.disabled = true;
+                  const s = await usbDisplayStatus();
+                  btn.disabled = false;
+                  toast(!s ? t('No reply from the display') : (s.wifi ? t('Connected') + ' (' + s.ip + ')' : t('Not connected to WiFi')) + ' -- ' + t('firmware') + ' v' + (s.fw ?? '?'));
+                } }, t('Check status'))));
+          })())
           : h('div', { class: 'muted small' }, t('A plug-in USB customer-display unit needs Chrome or Edge, on a computer or Android phone -- not available in this browser.')))),
       section(t('Pictures'), h('div', { class: 'card grid' }, h('div', { class: 'mut small' }, t('New pictures are shrunk automatically. Press this once to shrink the old, heavy ones so they load fast on every phone.')), (() => { const out = h('div', { class: 'mut small' }); const b = h('button', { class: 'btn', type: 'button', onclick: async () => { b.disabled = true; try { const r = await lightenPictures((d, n) => { out.textContent = d + ' / ' + n; }); out.textContent = r.changed + ' ' + t('styles lightened') + ' · ' + r.savedKb + ' KB ' + t('saved') + (r.failed ? ' · ' + r.failed + ' ' + t('could not be read') : ''); } catch (e) { toast(e.message || t('Failed'), { err: true }); } b.disabled = false; } }, icon('camera', 16), t('Make old pictures lighter')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),
