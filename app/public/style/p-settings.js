@@ -258,7 +258,15 @@ page('settings', {
         h('button', { class: 'btn fill', type: 'button', onclick: openCustomerDisplay }, icon('monitor', 16), t('Open customer display')),
         usbDisplaySupported() ? h('div', { class: 'grid', style: { marginTop: '4px' } },
           h('div', { class: 'muted small' }, t('Or, a small USB customer-display unit (plugged into this computer) -- connect it once below; it then shows the QR automatically from now on, with no further setup.')),
-          h('button', { class: 'btn', type: 'button', onclick: async (ev) => { ev.currentTarget.disabled = true; await usbDisplayConnect(); ev.currentTarget.disabled = false; } }, icon('monitor', 16), usbDisplayConnected() ? t('Reconnect USB display') : t('Connect USB display')))
+          h('button', { class: 'btn', type: 'button', onclick: async (ev) => {
+            // ev.currentTarget is only valid for the synchronous part of event dispatch --
+            // the browser nulls it out once this handler yields at an await (real crash,
+            // caught by Sentry: "Cannot set properties of null" trying to re-enable it after
+            // the connect finished). Capture the element itself first, use that from here on.
+            const btn = ev.currentTarget; btn.disabled = true;
+            await usbDisplayConnect();
+            btn.disabled = false; v.refresh();
+          } }, icon('monitor', 16), usbDisplayConnected() ? t('Reconnect USB display') : t('Connect USB display')))
           : h('div', { class: 'muted small' }, t('A plug-in USB customer-display unit needs Chrome or Edge, on a computer or Android phone -- not available in this browser.')))),
       section(t('Pictures'), h('div', { class: 'card grid' }, h('div', { class: 'mut small' }, t('New pictures are shrunk automatically. Press this once to shrink the old, heavy ones so they load fast on every phone.')), (() => { const out = h('div', { class: 'mut small' }); const b = h('button', { class: 'btn', type: 'button', onclick: async () => { b.disabled = true; try { const r = await lightenPictures((d, n) => { out.textContent = d + ' / ' + n; }); out.textContent = r.changed + ' ' + t('styles lightened') + ' · ' + r.savedKb + ' KB ' + t('saved') + (r.failed ? ' · ' + r.failed + ' ' + t('could not be read') : ''); } catch (e) { toast(e.message || t('Failed'), { err: true }); } b.disabled = false; } }, icon('camera', 16), t('Make old pictures lighter')); return h('div', { class: 'grid' }, b, out); })())),
       section(t('Selling rules'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Staff can give discount up to') + ' %', F.maxDiscountPct), field(t('Returns allowed for (days)'), F.returnDays)),
