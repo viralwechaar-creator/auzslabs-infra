@@ -25,6 +25,7 @@ const IC = {
   menu: 'M4 8h16M4 16h16', bag: 'M6 8h12l-1 12H7L6 8Zm3 0V6a3 3 0 0 1 6 0v2', mark: 'M7 4h10v17l-5-4-5 4V4Z', pin: 'M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Zm0-8.8a2.7 2.7 0 1 0 0-5.4 2.7 2.7 0 0 0 0 5.4Z',
   dense: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', big: 'M4 5h16v14H4z',
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm9 3-4.2-4.2', x: 'M6 6l12 12M18 6 6 18', plus: 'M12 5v14M5 12h14', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6',
+  bell: 'M18 8a6 6 0 0 0-12 0c0 6-3 7-3 9h18c0-2-3-3-3-9m-8 12a2 2 0 0 0 4 0',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0',
   chat: 'M5 6h14v9H10l-5 4V6Z', home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z', compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3-12-2 5-5 2 2-5 5-2Z', filter: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4',
 };
@@ -133,18 +134,43 @@ function card(s, opt) {
 }
 function toggleWish(id) { try { TR.push('wish', null, { id }); } catch {} const i = wish.indexOf(id); if (i >= 0) wish.splice(i, 1); else wish.push(id); saveWish(); }
 function quickAdd(s) {
-  let colour = colours(s)[0] || '', size = '';
+  const minimal = cfg().template === 'minimal';
+  const first = s.variants.find((variant) => variant.left > 0);
+  let colour = minimal ? first?.colour || colours(s)[0] || '' : colours(s)[0] || '';
+  let size = minimal ? first?.size || '' : '';
   const body = E('div'); const cb = E('button', { class: 'btn wide' }, 'Add to bag');
+  const buy = minimal ? E('button', { class: 'btn out wide', type: 'button' }, 'Buy it now') : null;
+  const selection = () => s.variants.find((variant) => (!colour || variant.colour === colour) && variant.size === size && variant.left > 0);
   const paint = () => {
     clear(body);
     const vs = s.variants.filter((v) => !colour || v.colour === colour);
+    const selected = selection();
+    if (minimal) {
+      const photo = photosFor(s, colour)[0];
+      body.append(E('div', { class: 'minimal-quick-product' },
+        photo ? E('img', { src: photo, alt: s.name }) : placeholder(s.name),
+        E('div', null, E('strong', null, inr(selected?.price ?? s.price)),
+          E('a', { href: link('p/' + s.id), onclick: () => sh.close() }, 'Product details & size guide ↗'),
+          E('button', { type: 'button', 'aria-pressed': String(wish.includes(s.id)), onclick: () => { toggleWish(s.id); paint(); } },
+            wish.includes(s.id) ? 'Remove from wishlist' : 'Save to wishlist'))));
+    }
     if (colours(s).length > 1) body.append(E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Colour'), E('div', { class: 'fwrap' }, colours(s).map((c) => E('button', { class: 'chip' + (c === colour ? ' on' : ''), onclick: () => { colour = c; size = ''; paint(); } }, E('i', { class: 'sw', style: { background: hex(c) } }), c)))));
-    body.append(E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Size'), E('div', { class: 'fwrap' }, vs.map((v) => E('button', { class: 'sz' + (v.size === size ? ' on' : '') + (v.left < 1 ? ' off' : ''), onclick: () => { size = v.size; paint(); } }, v.size || 'One size')))));
-    cb.disabled = !vs.find((v) => v.size === size && v.left > 0) && !(vs.length === 1 && !vs[0].size && vs[0].left > 0);
+    body.append(E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Size'), E('div', { class: 'fwrap' }, vs.map((v) => E('button', { class: 'sz' + (v.size === size ? ' on' : '') + (v.left < 1 ? ' off' : ''), disabled: minimal && v.left < 1, 'aria-pressed': String(v.size === size), onclick: () => { size = v.size; paint(); } }, v.size || 'One size')))));
+    cb.disabled = !selected;
+    if (buy) buy.disabled = cb.disabled;
   };
+  const sh = sheet(s.name, body, buy ? E('div', { class: 'row2' }, cb, buy) : cb);
+  if (minimal) sh.el.classList.add('minimal-quick-add');
+  const finish = (checkout) => {
+    const variant = selection();
+    if (!variant || !addBag(variant.id, 1)) return;
+    sh.close();
+    if (checkout) go('checkout');
+    else if (minimal) openMinimalBag();
+  };
+  cb.onclick = () => finish(false);
+  if (buy) buy.onclick = () => finish(true);
   paint();
-  const sh = sheet(s.name, body, cb);
-  cb.onclick = () => { const v = s.variants.find((x) => (!colour || x.colour === colour) && x.size === size) || (s.variants.length === 1 ? s.variants[0] : null); if (!v || !addBag(v.id, 1)) return; sh.close(); if (cfg().template === 'minimal') openMinimalBag(); };
 }
 function addBag(vid, q) {
   const v = VAR[vid]; if (!v || !(v.left > 0)) return false;
@@ -218,6 +244,7 @@ function shell() {
       E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
+      minimal ? E('button', { class: 'ic', type: 'button', 'aria-label': 'Notifications', onclick: openMinimalNotifications }, icon('bell'), countBadge(() => minimalNotifications().filter((item) => !LS.get('notice.' + item.id, false)).length)) : null,
       E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')),
       minimal ? E('button', { class: 'ic', type: 'button', 'aria-label': 'Bag', onclick: openMinimalBag }, icon('bag'), countBadge(bagCount))
         : E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
@@ -246,6 +273,10 @@ function groups() {
   return out.filter((x) => x[1].length);
 }
 const slugOf = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+const publicStoreView = /^(?:shop|collections|about|stores|faq|contact|sitemap|careers|(?:blog|media)(?:\/[a-z0-9-]+)?|policy\/(?:shipping|returns|privacy|terms))$/;
+function storeViewUrl(view, filters = {}) {
+  return location.origin + location.pathname + '?' + new URLSearchParams({ view, ...filters });
+}
 const blogsOn = () => (cfg().blogs || []).some((x) => x && x.title);
 const mediaOn = () => (cfg().media || []).some((x) => x && (x.title || x.image));
 const jobsOn = () => (cfg().jobs || []).some((x) => x && x.title) || !!(cfg().hiring && (cfg().hiring.email || cfg().hiring.text));
@@ -268,6 +299,7 @@ function openMenu() {
   m.onclick = (e) => { if (e.target === m) close(); };
 }
 function openSearch() {
+  if (cfg().template === 'minimal') return openMinimalSearch();
   const s = $('#srch'); clear(s); s.classList.add('on');
   const close = () => s.classList.remove('on');
   const body = E('div', { style: { maxWidth: '1100px', margin: '0 auto' } });
@@ -289,6 +321,52 @@ function openSearch() {
     clear(body); body.append(E('div', { class: 'grid' }, hit.map((x) => { const c = card(x); c.addEventListener('click', (e) => { if (e.target.closest('a')) close(); }); return c; })));
   } });
   s.append(E('div', { class: 'bar' }, inp, E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), body); suggest(); inp.focus({ preventScroll: true });
+}
+
+function openMinimalSearch() {
+  const results = E('div', { class: 'minimal-search-results', 'aria-live': 'polite' });
+  const field = E('input', { type: 'search', 'aria-label': 'Search products', placeholder: 'Search products or collections', autocomplete: 'off', oninput: paint });
+  const panel = sheet('Search', E('div', { class: 'minimal-search-content' }, field, results));
+  panel.el.classList.add('minimal-bag-drawer');
+  panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
+  function paint() {
+    const query = field.value.trim().toLowerCase();
+    const collections = D.collections.filter((c) => c.styleIds.length && c.name.toLowerCase().includes(query)).slice(0, 6);
+    const matches = query ? STY.filter((s) => [s.name, s.category, s.code, ...colours(s)].join(' ').toLowerCase().includes(query)).slice(0, 10) : newest(4);
+    clear(results).append(
+      collections.length ? E('section', null, E('h3', null, 'Collections'), collections.map((c) =>
+        E('a', { class: 'minimal-search-link', href: link('shop?col=' + encodeURIComponent(c.id)), onclick: () => panel.close() }, c.name))) : null,
+      E('section', null, E('h3', null, query ? 'Products' : 'New arrivals'), matches.length ? matches.map((s) => {
+        const photo = pickPic(s, 'card');
+        return E('a', { class: 'minimal-search-link', href: link('p/' + s.id), onclick: () => panel.close() },
+          photo ? E('img', { src: photo, alt: '', loading: 'lazy' }) : null,
+          E('span', null, s.name), E('strong', null, inr(s.price)));
+      }) : E('p', null, 'No products found.')));
+  }
+  paint();
+  field.focus();
+}
+
+function minimalNotifications() {
+  const announcement = cfg().announce;
+  const newestItem = newest(1)[0];
+  const article = (cfg().blogs || []).find((item) => item?.title);
+  return [
+    announcement ? { id: 'announcement:' + announcement, text: announcement } : null,
+    newestItem ? { id: 'product:' + newestItem.id, text: 'Latest drop: ' + newestItem.name, href: 'shop?new=1' } : null,
+    article ? { id: 'article:' + slugOf(article.title), text: 'From the journal: ' + article.title, href: 'blog/' + slugOf(article.title) } : null,
+  ].filter(Boolean);
+}
+function openMinimalNotifications() {
+  const items = minimalNotifications();
+  const panel = sheet('Notifications', E('div', { class: 'minimal-search-results' }, items.length ? items.map((item) =>
+    E(item.href ? 'a' : 'p', { class: 'minimal-search-link', href: item.href ? link(item.href) : null, onclick: item.href ? () => panel.close() : null }, item.text))
+    : E('p', null, 'No notifications yet.')));
+  panel.el.classList.add('minimal-bag-drawer');
+  items.forEach((item) => LS.set('notice.' + item.id, true));
+  paintCounts();
+  panel.el.querySelector('button').focus();
+  panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
 }
 
 // ---------- views ----------
@@ -404,7 +482,8 @@ function minimalHome(v) {
   if (stories.length) v.append(E('section', { class: 'minimal-section' },
     heading('Shop the stories', link('collections'), 'All collections'),
     E('div', { class: 'minimal-stories' }, stories.map((story) =>
-      E('a', { href: story.href }, E('img', { src: story.photo, alt: '', loading: 'lazy' }), E('span', null, story.name))))));
+      E('button', { type: 'button', onclick: (event) => openMinimalStory(stories, stories.indexOf(story), event.currentTarget) },
+        E('img', { src: story.photo, alt: '', loading: 'lazy' }), E('span', null, story.name))))));
   if (featured.length) v.append(E('section', { class: 'minimal-section' },
     heading('Latest drop', link('shop?new=1'), 'View all'), gridOf(featured)));
   if (tiles.length) v.append(E('section', { class: 'minimal-section' },
@@ -422,6 +501,30 @@ function minimalHome(v) {
     heading('Discover more', link('shop'), 'Shop all'), gridOf(more.slice(0, 8))));
   if ((c.stores || []).length) v.append(E('section', { class: 'minimal-section' },
     heading('Visit us', link('stores'), 'All stores'), storeCards(c.stores)));
+}
+function openMinimalStory(stories, index, trigger) {
+  const dialog = E('dialog', { class: 'minimal-story-viewer', 'aria-label': 'Shop the stories' });
+  const frame = E('div', { class: 'minimal-story-frame' });
+  const dismiss = E('button', { class: 'ic', type: 'button', 'aria-label': 'Close story', onclick: () => dialog.close() }, icon('x'));
+  dialog.append(dismiss, frame);
+  const step = (direction) => { index = (index + direction + stories.length) % stories.length; paint(); };
+  function paint() {
+    const story = stories[index];
+    clear(frame).append(E('img', { src: story.photo, alt: '' }),
+      E('div', { class: 'minimal-story-caption' }, E('div', { 'aria-live': 'polite' }, (index + 1) + ' / ' + stories.length),
+        E('h2', null, story.name), E('a', { class: 'btn', href: story.href, onclick: () => dialog.close() }, 'Shop now')),
+      stories.length > 1 ? E('div', { class: 'minimal-story-controls' },
+        E('button', { class: 'ic', type: 'button', 'aria-label': 'Previous story', onclick: () => step(-1) }, icon('left')),
+        E('button', { class: 'ic', type: 'button', 'aria-label': 'Next story', onclick: () => step(1) }, icon('right'))) : null);
+  }
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); step(event.key === 'ArrowLeft' ? -1 : 1); }
+  });
+  dialog.addEventListener('close', () => { dialog.remove(); if (trigger.isConnected) trigger.focus(); }, { once: true });
+  document.body.append(dialog);
+  paint();
+  dialog.showModal();
+  dismiss.focus();
 }
 V.home = (v) => {
   if (cfg().template === 'minimal') {
@@ -580,11 +683,17 @@ V.wishlist = (v) => {
 V.p = (v, id) => {
   const s = BYID[id];
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
+  const minimal = cfg().template === 'minimal';
   let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
   let cur = 0;
   const paintGal = () => {
     const ims = photosFor(s, colour); clear(gal); gal.classList.toggle('solo', ims.length <= 1); gal.classList.remove('multi');
+    if (minimal) {
+      gal.append(E('div', { class: 'minimal-product-gallery' }, ims.length ? ims.map((url, index) =>
+        E('img', { src: url, alt: s.name + ' — image ' + (index + 1), loading: index ? 'lazy' : 'eager' })) : placeholder(s.name)));
+      return;
+    }
     if (!ims.length) { gal.append(E('div', { class: 'main' }, placeholder(s.name))); return; }
     const main = E('div', { class: 'main', style: { '--bgi': 'url("' + (ims[cur] || ims[0]) + '")' } }, E('img', { src: ims[cur] || ims[0], alt: s.name }), E('div', { class: 'ct' }, (cur + 1) + ' / ' + ims.length));
     const rail = E('div', { class: 'rail' }, ims.map((u, i) => E('button', { class: 'th' + (i === cur ? ' on' : ''), 'aria-label': 'Picture ' + (i + 1), onclick: () => { cur = i; paintGal(); } }, E('img', { src: u, alt: '', loading: 'lazy' }))));
@@ -628,7 +737,9 @@ V.p = (v, id) => {
       } }, 'Add to bag'), E('button', { class: 'btn', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
         if (need(chosen) && addBag(chosen.id, qty)) go('checkout');
       } }, 'Buy now')),
-      E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
+      minimal ? E('div', { class: 'minimal-product-details' }, [['d', 'Details & description'], ['w', 'Wash care'], ['s', 'Shipping & returns']].map(([key, label]) =>
+        E('details', { open: key === 'd' }, E('summary', null, label), dtl(key))))
+        : E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
       E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };
@@ -890,7 +1001,9 @@ V.blog = (v, which) => {
   if (which) {
     const i = list.findIndex((x, k) => slugOf(x.title) === which || String(k) === which); const b = list[i];
     if (!b) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Article not found'), E('a', { class: 'btn', href: link('blog') }, 'All articles'))); return; }
-    setMeta(b.title + ' · ' + D.shop.name, b.excerpt || String(b.body || '').slice(0, 150), b.image, location.origin + location.pathname + '#/blog/' + slugOf(b.title));
+    const articleView = 'blog/' + slugOf(b.title);
+    setMeta(b.title + ' · ' + D.shop.name, b.excerpt || String(b.body || '').slice(0, 150), b.image,
+      cfg().template === 'minimal' ? storeViewUrl(articleView) : location.origin + location.pathname + '#/' + articleView);
     const others = list.filter((x, k) => k !== i).slice(0, 2);
     v.append(E('div', { class: 'pg' }, E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: link('blog') }, 'Journal')),
       E('article', { class: 'card art' }, b.image ? E('img', { src: b.image, alt: '', class: 'artimg' }) : null, b.date ? E('div', { class: 'lbl' }, dateTxt(b.date)) : null, E('h1', null, b.title), para(b.body || b.excerpt)),
@@ -904,8 +1017,26 @@ function blogGrid(list) {
     E('div', { class: 'im' }, b.image ? E('img', { src: b.image, alt: '', loading: 'lazy' }) : placeholder(b.title)),
     E('div', { class: 'tx' }, E('h3', null, b.title), E('p', null, b.excerpt || String(b.body || '').slice(0, 130))))));
 }
-V.media = (v) => {
-  const list = (cfg().media || []).filter((x) => x && (x.title || x.image));
+V.media = (v, which) => {
+  const list = (cfg().media || []).filter((item) => item && (item.title || item.image));
+  if (cfg().template === 'minimal' && which) {
+    const item = list.find((entry) => slugOf(entry.title) === which);
+    if (!item) return v.append(E('div', { class: 'empty' }, E('h1', null, 'Feature not found'), E('a', { class: 'btn', href: link('media') }, 'All features')));
+    const target = item.link || '';
+    const external = /^https?:\/\//i.test(target);
+    const internal = /^#\/[^\s]+$/.test(target) ? target : publicStoreView.test(target.replace(/^\//, '')) ? link(target.replace(/^\//, '')) : '';
+    return v.append(E('article', { class: 'minimal-feature' }, E('a', { href: link('media') }, '← All features'),
+      E('h1', null, item.title || 'Feature'), item.date ? E('time', null, dateTxt(item.date)) : null,
+      item.image ? E('img', { src: item.image, alt: item.title || '' }) : null, item.place ? E('p', null, item.place) : null,
+      external || internal ? E('a', { class: 'btn', href: external ? target : internal, rel: external ? 'noopener' : null, target: external ? '_blank' : null }, item.cta || 'Explore') : null));
+  }
+  if (cfg().template === 'minimal') {
+    return v.append(E('section', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Collaborations & media')),
+      list.length ? E('div', { class: 'bgrid' }, list.map((item) => E('a', { class: 'bcard', href: link('media/' + slugOf(item.title)) },
+        E('div', { class: 'im' }, item.image ? E('img', { src: item.image, alt: '', loading: 'lazy' }) : placeholder(item.title)),
+        E('div', { class: 'tx' }, E('h3', null, item.title || 'Feature'), item.date ? E('time', null, dateTxt(item.date)) : null))))
+        : E('p', null, 'No features have been published yet.')));
+  }
   const open = (m) => { const u = m.link || ''; if (!u) return null; return /^https?:|^\/\//.test(u) ? E('a', { class: 'btn soft sm', href: u, target: '_blank', rel: 'noopener' }, m.cta || 'View') : E('a', { class: 'btn soft sm', href: /^#/.test(u) ? u : link(u.replace(/^\/+/, '')) }, m.cta || 'View'); };
   v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Media & gallery')), list.length ? E('div', { class: 'mgal' }, list.map((m) => E('div', { class: 'mcard' },
     E('div', { class: 'im' }, m.image ? E('img', { src: m.image, alt: m.title || '', loading: 'lazy' }) : placeholder(m.title)),
@@ -940,6 +1071,7 @@ V.sitemap = (v) => {
 };
 
 function footer() {
+  if (cfg().template === 'minimal') return minimalFooter();
   const c = cfg(), so = c.social || {}; const ph = String(D.shop.phone || '').replace(/\D/g, '');
   const ext = (t, u) => (u ? E('a', { href: /^https?:/.test(u) ? u : 'https://' + u, target: '_blank', rel: 'noopener' }, t) : null);
   const cats = [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 8);
@@ -966,6 +1098,31 @@ function footer() {
   tog.onclick = () => { const on = wrap.classList.toggle('open'); tog.setAttribute('aria-expanded', String(on)); tog.querySelector('.pl').textContent = on ? '\u2013' : '+'; };
   return wrap;
 }
+function minimalFooter() {
+  const c = cfg();
+  const socials = c.social || {};
+  const phone = String(c.phone || D.shop.phone || '').replace(/\D/g, '');
+  const dial = phone.length === 10 ? '91' + phone : phone;
+  const group = (title, items) => E('nav', { 'aria-label': title }, E('h2', null, title), items.map(([label, path]) => E('a', { href: link(path) }, label)));
+  const social = (label, url) => url ? E('a', { href: /^https?:\/\//i.test(url) ? url : 'https://' + url, rel: 'noopener', target: '_blank' }, label) : null;
+  return E('footer', { class: 'minimal-footer' },
+    E('div', { class: 'minimal-footer-links' },
+      group('Shop', [['New in', 'shop?new=1'], ['Collections', 'collections'], ['All products', 'shop'], ['Wishlist', 'wishlist']]),
+      group('Order support', [['Track your order', 'orders'], ['My account', 'me'], ['Returns & exchanges', 'policy/returns'],
+        ['Shipping', 'policy/shipping'], ['FAQs', 'faq']]),
+      group('About ' + D.shop.name, [['Our story', 'about'], ['Walk-in stores', 'stores'], ['Journal', 'blog'],
+        ['Collaborations & media', 'media'], ['Careers', 'careers'], ['Contact', 'contact']]),
+      E('nav', { 'aria-label': 'Connect' }, E('h2', null, 'Connect'),
+        dial ? E('a', { href: 'tel:+' + dial }, 'Call') : null,
+        dial ? E('a', { href: 'https://wa.me/' + dial, rel: 'noopener', target: '_blank' }, 'WhatsApp') : null,
+        c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null,
+        social('Instagram', socials.instagram), social('Facebook', socials.facebook),
+        E('a', { href: link('sitemap') }, 'Sitemap'))),
+    E('a', { class: 'minimal-footer-wordmark', href: link('') }, D.shop.name),
+    E('div', { class: 'minimal-footer-legal' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name),
+      E('a', { href: link('policy/privacy') }, 'Privacy'), E('a', { href: link('policy/terms') }, 'Terms'),
+      E('a', { href: 'https://auzslab.in', rel: 'noopener', target: '_blank' }, 'Store by AUZslab')));
+}
 
 // ---------- anonymous visitor analytics (no names, phones or addresses) ----------
 const TR = (() => {
@@ -991,11 +1148,16 @@ function route() {
   const id = parts[0] || 'home'; const view = $('#view'); if (!view) return; clear(view);
   const minimal = cfg().template === 'minimal';
   document.body.classList.toggle('minimal-store', minimal);
+  view.dataset.page = id;
   view.classList.toggle('minimal-home', id === 'home' && minimal);
-  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
+  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = Object.hasOwn(V, id) ? V[id] : V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
-  document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
-  if (id !== 'p') setMeta(document.title, cfg().tagline || ('Shop online at ' + D.shop.name), ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', location.origin + location.pathname);
+  const article = id === 'blog' && parts[1] ? (cfg().blogs || []).find((item) => item && slugOf(item.title) === parts[1]) : null;
+  document.title = (id === 'home' ? '' : (article?.title || cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id)) + ' · ') + D.shop.name;
+  const viewPath = parts.join('/');
+  const filters = id === 'shop' && q$().col ? { col: q$().col } : {};
+  const canonical = minimal && publicStoreView.test(viewPath) ? storeViewUrl(viewPath, filters) : location.origin + location.pathname;
+  if (id !== 'p' && !(id === 'blog' && parts[1])) setMeta(document.title, cfg().tagline || ('Shop online at ' + D.shop.name), ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', canonical);
   window.scrollTo(0, 0); document.body.classList.add('atop');
   TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
@@ -1017,7 +1179,13 @@ function ingest(d) {
 const toTemplate2 = () => location.replace('/store2.html' + location.search + location.hash);
 async function boot() {
   const app = $('#app');
-  try { const p = new URLSearchParams(location.search).get('p'); if (p && !location.hash) { history.replaceState(null, '', location.pathname); location.hash = '#/p/' + p; } } catch (e) { /* plain link */ }
+  if (!location.hash) {
+    const params = new URLSearchParams(location.search);
+    const p = params.get('p'), view = params.get('view'), collection = params.get('col');
+    if (p) history.replaceState(null, '', location.pathname + location.search + '#/p/' + encodeURIComponent(p));
+    else if (view && publicStoreView.test(view)) history.replaceState(null, '', location.pathname + location.search + '#/' + view +
+      (view === 'shop' && collection ? '?' + new URLSearchParams({ col: collection }) : ''));
+  }
   if (!SLUG) { app.append(E('div', { class: 'spin' })); clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Open this store from the shop address'), E('div', { class: 'mut' }, 'For example yourshop.auzslab.in/store.html'))); return; }
   // instant first paint from the last visit; the fresh catalogue is fetched right behind it
   let cached = null; try { cached = JSON.parse(localStorage.getItem('st.cat.' + SLUG) || 'null'); } catch (e) { cached = null; }
