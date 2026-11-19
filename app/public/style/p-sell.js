@@ -286,11 +286,12 @@ function paySheet(c, done) {
       upiGot ? h('button', { class: 'btn sm', type: 'button', onclick: () => { upiGot = false; upd(); } }, t('Undo')) : h('button', { class: 'btn sm fill', type: 'button', onclick: openQr }, t('Show QR')));
   };
   const note = input({ placeholder: t('Note (optional)') });
+  const dueDate = input({ type: 'date', value: '' });
   const ok = h('button', { class: 'btn fill', type: 'button' }, t('Complete sale') + ' · ' + inr(c.total));
   const sh = sheet({ title: t('Pay'), body: h('div', { class: 'grid' },
     h('div', { class: 'paytot' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(c.total))), redeemVal > 0 ? h('div', { class: 'muted small' }, t('Points used') + ': -' + inr(redeemVal)) : null,
     cust ? h('div', { class: 'muted small' }, cust.name + (cust.phone ? ' · ' + cust.phone : '')) : h('div', { class: 'muted small' }, t('Walk-in') + ' — ' + t('add a customer to leave a balance due')),
-    rows, qrBox, sum, field(t('Note'), note)), actions: [], onClose: () => { custSendIdle(); usbDisplaySendIdle().catch(() => {}); } });
+    rows, qrBox, sum, cust ? field(t('Due date (if a balance is left)'), dueDate) : null, field(t('Note'), note)), actions: [], onClose: () => { custSendIdle(); usbDisplaySendIdle().catch(() => {}); } });
   sh.el.querySelector('.sheet-f') || sh.el.append(h('div', { class: 'sheet-f' }));
   sh.el.querySelector('.sheet-f').append(ok);
   upd();
@@ -299,6 +300,7 @@ function paySheet(c, done) {
     ok.disabled = true;
     const payments = MODES.map(([m]) => ({ mode: m, amount: pay[m] })).filter((p) => p.amount > 0);
     const p = { id: uid(), branchId: S.branch, customerId: cust ? cust.id : null, note: note.value || undefined, redeemPoints: BILL.redeem || 0,
+      dueDate: (cust && dueDate.value) || undefined,
       billDiscPct: BILL.billDiscPct || undefined, billDiscAmt: BILL.billDiscAmt || undefined, coupon: BILL.coupon || undefined, holdId: BILL.holdId || undefined, payments,
       lines: BILL.lines.map((l) => ({ variantId: l.variantId, qty: l.qty, discPct: l.discPct || undefined, discAmt: l.discAmt || undefined, price: l.price })) };
     // a changed price is only sent when it differs from the catalogue (the server refuses it for non-managers)

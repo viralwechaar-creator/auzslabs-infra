@@ -56,6 +56,7 @@ const READS = new Set([
   'sty_coupons_list', 'sty_hold_list', 'sty_shift_current', 'sty_staff_list', 'sty_requests_list', 'sty_reviews_list', 'sty_web_orders_list', 'sty_web_returns_list',
   'sty_store_get', 'sty_store_analytics', 'sty_intel_overview', 'sty_intel_designs', 'sty_intel_design', 'sty_intel_reorder', 'sty_intel_capital', 'sty_intel_lost',
   'sty_intel_basket', 'sty_intel_assistant', 'sty_intel_settings', 'sty_integrity_check', 'wa_my_status',
+  'sty_gst_summary', 'sty_purchase_register', 'sty_dues_list', 'sty_purchase_detail',
 ]);
 
 // ---------- the queue ----------
