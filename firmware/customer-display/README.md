@@ -8,8 +8,9 @@ this USB link. WiFi (optional) is only so the device can fetch its *own future f
 updates* automatically — see "Over-the-air updates" below — so flashing it manually is a
 one-time thing, not something that recurs every time the screen's look or behavior changes.
 
-- `AUZLAB_Display_Test.ino` — the sketch. Listens on USB serial (115200 baud) for `IDLE\n` or
-  `PAY|<amount>|<n>|<hex bits>\n` and draws the idle/payment screen with LVGL.
+- `AUZLAB_Display_Test.ino` — the sketch. Listens on USB serial (115200 baud) for `IDLE\n`,
+  `PAY|<amount>|<n>|<hex bits>\n`, `PAID|<amount>\n` or `FAILED\n` and draws the idle, payment,
+  payment-received or payment-failed screen with LVGL.
 - `AUZSLAB_Logo.h` — the idle-screen logo (LVGL indexed bitmap).
 - `Display_ST7789.*`, `LVGL_Driver.*`, `I2C_Driver.*`, `Gyro_QMI8658.*`, `RTC_PCF85063.*`,
   `BAT_Driver.*`, `PWR_Key.*`, `Button_Driver.*`, `SD_Card.*`, `Audio_PCM5101.*`,
@@ -64,6 +65,10 @@ software outside a browser, ever again.
   matrix packed 1 bit per module, row-major, most-significant-bit first, **no quiet zone**
   (the firmware draws its own border; the per-module pixel size is worked out from `n` so the
   QR always fills as much of the 200x200 on-screen canvas as it can, not a fixed small scale).
+- `PAID|<amount>\n` → a green checkmark badge bounces in, plus the amount. Sent only on the
+  cashier's own explicit "Payment received" tap -- never inferred from anything.
+- `FAILED\n` → a red cross badge shakes. Sent only when the cashier backs out of the QR screen
+  (Change payment / closes it) without having confirmed Payment received.
 - `WIFI|<ssid>|<password>\n` → saves WiFi credentials to flash (NVS) and tries to connect.
   Only used for OTA updates below, never for billing. Settings -> Customer-facing screen in
   AUZsStyle sends this; there's no reason to ever type it into Arduino IDE.

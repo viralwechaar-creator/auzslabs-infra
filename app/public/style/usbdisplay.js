@@ -9,6 +9,11 @@
      IDLE\n                         -> full logo
      PAY|<amt>|<n>|<hex bits>\n     -> amount + an n x n QR matrix, packed 1 bit/module,
                                       row-major, MSB first, no quiet zone (firmware adds it)
+     PAID|<amt>\n                   -> green checkmark bounce-in + amount (manual: the
+                                      cashier's own "Payment received" tap, same as custSend's
+                                      {type:'paid'} on the window display -- never inferred)
+     FAILED\n                       -> red cross shake (manual: the cashier backed out of the
+                                      QR screen without confirming received)
    The firmware replies OK|... / ERR|... on its own line; we only use that for a toast, never
    to block a sale -- the physical screen is a nice-to-have, never the path a bill depends on. */
 const usbDisplaySupported = () => 'serial' in navigator;
@@ -84,6 +89,8 @@ async function usbDisplaySendPay(amount, upiPayload) {
   let bits; try { bits = _qrBits(upiPayload); } catch (e) { toast(e.message, { err: true }); return; }
   await _usbWrite('PAY|' + Number(amount).toFixed(2) + '|' + bits.n + '|' + bits.hex + '\n');
 }
+async function usbDisplaySendPaid(amount) { await _usbWrite('PAID|' + Number(amount).toFixed(2) + '\n'); }
+async function usbDisplaySendFailed() { await _usbWrite('FAILED\n'); }
 // Sets the display's WiFi (for automatic future firmware updates only -- billing itself
 // stays on this USB link regardless of WiFi). The one serial command that replaces ever
 // having to open Arduino IDE again just to change WiFi.
