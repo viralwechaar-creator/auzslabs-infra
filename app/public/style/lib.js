@@ -13,6 +13,38 @@ const COMMON_CATS = ['Shirts', 'T-shirts', 'Jeans', 'Trousers', 'Dresses', 'Kurt
 const sizeRank = (s) => { const o = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']; const i = o.indexOf(String(s).toUpperCase()); return i >= 0 ? i : (parseFloat(s) || 99) + 20; };
 const byRank = (a, b) => sizeRank(a.size) - sizeRank(b.size);
 
+// ---- cash denomination counter (note-by-note tally at the point of a cash sale, same idea as the Accounting
+// app's drawer count and the shift-close counter below) ----
+const DENOMS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
+const dnTotal = (n) => DENOMS.reduce((s, d) => s + d * (Number((n || {})[d]) || 0), 0);
+const dnClean = (n) => { const o = {}; DENOMS.forEach((d) => { const v = Math.floor(Number((n || {})[d]) || 0); if (v > 0) o[d] = v; }); return o; };
+const dnLabel = (d) => (d >= 10 ? '₹' + d : '₹' + d + ' ' + t('coin'));
+// Change for a given amount using the notes/coins listed (largest first) -- also used to suggest round-note quick amounts.
+function dnChange(amount) { const o = {}; let left = Math.round(amount); DENOMS.forEach((d) => { if (d <= left) { o[d] = Math.floor(left / d); left -= o[d] * d; } }); return o; }
+// A sheet to count cash note-by-note. target: the amount due (used for quick "Exact"/round-note buttons).
+// Resolves {tendered, denoms} or null if cancelled.
+function cashCountSheet(target) {
+  return new Promise((resolve) => {
+    const cnt = {}; const ins = {}, subs = {}; const totEl = h('b', { class: 'num' });
+    const upd = () => { DENOMS.forEach((d) => { ins[d].value = cnt[d] ? String(cnt[d]) : ''; subs[d].textContent = cnt[d] ? inr(cnt[d] * d) : ''; }); totEl.textContent = inr(dnTotal(cnt)); };
+    const quick = [...new Set([target, ...[10, 50, 100, 500].map((n) => Math.ceil(target / n) * n)])].filter((v) => v >= target).slice(0, 4);
+    const rows = DENOMS.map((d) => {
+      ins[d] = input({ type: 'number', mode: 'numeric', value: '', placeholder: '0', oninput: (e) => { cnt[d] = Math.max(0, Math.floor(N(e.target.value))); upd(); } });
+      ins[d].style.width = '64px';
+      subs[d] = h('span', { class: 'muted small num', style: { width: '70px', textAlign: 'right' } });
+      const step = (x) => h('button', { class: 'btn plain icon', type: 'button', onclick: () => { cnt[d] = Math.max(0, (cnt[d] || 0) + x); upd(); } }, x > 0 ? icon('plus', 14) : '−');
+      return h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } }, h('span', { style: { width: '56px' } }, dnLabel(d)), step(-1), ins[d], step(1), subs[d]);
+    });
+    const s = sheet({ title: t('Count cash'), body: h('div', { class: 'grid' },
+      quick.length ? h('div', { class: 'chips' }, quick.map((v) => h('button', { class: 'chip', type: 'button', onclick: () => { Object.assign(cnt, dnChange(v)); upd(); } }, inr(v)))) : null,
+      h('div', { class: 'grid', style: { gap: '4px' } }, rows),
+      h('div', { class: 'kv' }, h('span', null, t('Counted total')), totEl)),
+      onClose: (v) => { if (v === undefined) resolve(null); },
+      actions: [{ label: t('Use this count'), primary: true, onclick: (close) => { const total = dnTotal(cnt); resolve({ tendered: total, denoms: dnClean(cnt) }); close('ok'); } }] });
+    upd();
+  });
+}
+
 // ---- bill maths (mirror of sty_sell) ----
 // lines: [{unit, qty, discPct, discAmt, taxPct}]  opts: {billDiscPct, billDiscAmt, redeemPoints, customer}
 function taxRate(st, styleRate, unit) {
