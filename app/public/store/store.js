@@ -27,6 +27,7 @@ const IC = {
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm9 3-4.2-4.2', x: 'M6 6l12 12M18 6 6 18', plus: 'M12 5v14M5 12h14', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0',
   chat: 'M5 6h14v9H10l-5 4V6Z', home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z', compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3-12-2 5-5 2 2-5 5-2Z', filter: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4',
+  bell: 'M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Zm4 9a2 2 0 0 0 4 0',
 };
 // hand-cut solid glyphs (call, support, favourite, shipping, bag, tag, arrow, globe...) drawn in plain black; thin strokes are kept only for plain controls (x, plus, arrows, search)
 const FIL = {
@@ -175,7 +176,7 @@ function shell() {
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' }, E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
-    E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
+    E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Notifications', onclick: openBell }, icon('bell'), notifDot()), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
       E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
       E('button', { class: 'menu-pill deskonly', onclick: openMenu }, E('i'), 'Menu')));
   const c = cfg();
@@ -245,6 +246,63 @@ function openSearch() {
     clear(body); body.append(E('div', { class: 'grid' }, hit.map((x) => { const c = card(x); c.addEventListener('click', (e) => { if (e.target.closest('a')) close(); }); return c; })));
   } });
   s.append(E('div', { class: 'bar' }, inp, E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))), body); suggest(); inp.focus({ preventScroll: true });
+}
+
+// ---------- notifications (owner reference site had a bell popup; built here from what we already
+// have -- the store's announcement text and a "new pieces just dropped" line -- not a separate
+// backend list the owner can post into yet; flagged as a known limit, not a missing feature) ----------
+const seenKey = (id) => 'st.ntf.' + SLUG + '.' + id;
+function notifItems() {
+  const c = cfg(); const out = [];
+  if (c.announce) out.push({ id: 'a', text: c.announce });
+  const recent = STY.filter((s) => { const d = new Date(s.createdAt); return !isNaN(d) && Date.now() - d.getTime() < 14 * 86400000; });
+  if (recent.length) out.push({ id: 'n' + recent.length, text: recent.length + (recent.length === 1 ? ' new piece has' : ' new pieces have') + ' just dropped.', link: 'shop?new=1' });
+  return out;
+}
+function notifDot() {
+  const n = E('span', { class: 'n dot' });
+  const f = () => { const unseen = notifItems().some((x) => { try { return !localStorage.getItem(seenKey(x.id)); } catch (e) { return true; } }); n.style.display = unseen ? '' : 'none'; };
+  counts.push(f); f(); return n;
+}
+function openBell() {
+  const items = notifItems();
+  items.forEach((x) => { try { localStorage.setItem(seenKey(x.id), '1'); } catch (e) { /* storage full */ } });
+  paintCounts();
+  const list = E('div', { class: 'ntflist' });
+  if (!items.length) list.append(E('div', { class: 'mut', style: { padding: '20px 4px', textAlign: 'center' } }, 'No notifications right now.'));
+  else items.forEach((x) => list.append(E(x.link ? 'a' : 'div', { class: 'ntfi', href: x.link ? link(x.link) : null, onclick: x.link ? () => sh.close() : null }, E('span', { class: 'dot2' }), E('div', null, x.text))));
+  const sh = sheet('Notifications', list);
+}
+
+// ---------- stories (owner reference site had an Instagram-style stories bar; built here from each
+// category's own product photos -- a slideshow per category -- not a separate set of images the owner
+// uploads yet; flagged as a known limit, not a missing feature) ----------
+function storiesBar() {
+  const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))].slice(0, 10);
+  if (cats.length < 2) return null;
+  const row = E('div', { class: 'stories' });
+  cats.forEach((cat) => {
+    const items = STY.filter((s) => s.category === cat);
+    const img = items.map((s) => pickPic(s, 'card')).find(Boolean) || (items[0] && photos(items[0])[0]);
+    row.append(E('button', { class: 'story', onclick: () => openStory(cat, items) }, E('span', { class: 'ring' }, img ? E('img', { src: img, alt: '' }) : placeholder(cat)), E('span', { class: 'stn' }, cat)));
+  });
+  return E('div', { class: 'stories-wrap' }, row);
+}
+function openStory(title, items) {
+  const imgs = []; items.forEach((s) => { const p = pickPic(s, 'hero') || photos(s)[0]; if (p) imgs.push({ url: p, name: s.name, id: s.id }); });
+  if (!imgs.length) return;
+  let i = 0, timer;
+  const w = E('div', { class: 'storyview', role: 'dialog', 'aria-modal': 'true' });
+  const bars = imgs.map(() => E('i'));
+  const imgEl = E('img', { src: imgs[0].url, alt: '' });
+  const capEl = E('div', { class: 'scap' });
+  const close = () => { clearInterval(timer); w.remove(); };
+  const go = (n) => { i = ((n % imgs.length) + imgs.length) % imgs.length; imgEl.src = imgs[i].url; bars.forEach((b, k) => { b.className = k < i ? 'done' : k === i ? 'on' : ''; }); clear(capEl).append(imgs[i].name, E('a', { class: 'btn sm', href: link('p/' + imgs[i].id), onclick: close }, 'View item')); };
+  const start = () => { clearInterval(timer); timer = setInterval(() => go(i + 1), 3200); };
+  go(0); start();
+  w.append(E('div', { class: 'sbars' }, bars), E('div', { class: 'shd' }, E('b', null, title), E('button', { class: 'ic', style: { color: '#fff' }, 'aria-label': 'Close', onclick: close }, icon('x'))),
+    E('div', { class: 'simg' }, imgEl, E('button', { class: 'snav l', 'aria-label': 'Previous', onclick: () => { go(i - 1); start(); } }), E('button', { class: 'snav r', 'aria-label': 'Next', onclick: () => { go(i + 1); start(); } })), capEl);
+  document.body.append(w);
 }
 
 // ---------- views ----------
@@ -329,6 +387,10 @@ function gridOf(list, withBlanks) {
 V.home = (v) => {
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
   const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
+  // the transparent-header-over-the-hero-photo treatment only makes sense when there IS a photo behind it --
+  // without one (a brand-new catalogue, or no photos tagged for the hero) the header must stay solid, or its
+  // white text disappears against the plain white empty-hero background
+  document.body.classList.toggle('herophoto', fallback.length > 0);
   let hero;
   if (fallback.length) {
     let i = 0; const sls = fallback.map((u, k) => E('div', { class: 'sl' + (k === 0 ? ' on' : '') }, E('img', { src: u, alt: '', loading: k ? 'lazy' : 'eager' })));
@@ -336,7 +398,7 @@ V.home = (v) => {
     hero = E('section', { class: 'hero' }, ...sls, dots, E('div', { class: 'cap' }, E('div', { class: 't' }, c.heroTitle || D.shop.name), E('a', { class: 'btn', href: link('shop') }, c.heroCta || 'Shop now')));
     if (fallback.length > 1) { const t = setInterval(() => { if (!document.body.contains(hero)) return clearInterval(t); sls[i].classList.remove('on'); dots.children[i].classList.remove('on'); i = (i + 1) % sls.length; sls[i].classList.add('on'); dots.children[i].classList.add('on'); }, 5200); }
   } else hero = E('section', { class: 'hero empty' }, E('div', { class: 'big' }, D.shop.name), E('a', { class: 'btn', href: link('shop'), style: { position: 'absolute', bottom: '24px' } }, 'Shop now'));
-  v.append(hero);
+  v.append(storiesBar(), hero);
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
   const phone = matchMedia('(max-width:700px)').matches;
   // 1. latest products
