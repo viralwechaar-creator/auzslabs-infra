@@ -82,6 +82,10 @@ async function storeSitemap(req, res) {
   const features = (store.config.media || []).filter((entry) => contentSlug(entry?.title));
   if (articles.length) fixed.push('blog', ...articles.map((entry) => 'blog/' + contentSlug(entry.title)));
   if (features.length) fixed.push('media', ...features.map((entry) => 'media/' + contentSlug(entry.title)));
+  for (const entry of store.config.minimalPages || []) {
+    const route = contentSlug(entry?.slug || entry?.title);
+    if (entry?.title && route) fixed.push('page/' + route);
+  }
   if ((store.config.jobs || []).some((job) => job?.title && job.active !== false && job.status !== 'closed')) fixed.push('careers');
   const products = (store.styles || []).filter((product) => product.id && product.variants?.length);
   const ids = new Set(products.map((product) => product.id));

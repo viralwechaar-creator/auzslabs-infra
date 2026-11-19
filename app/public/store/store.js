@@ -273,7 +273,22 @@ function groups() {
   return out.filter((x) => x[1].length);
 }
 const slugOf = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
-const publicStoreView = /^(?:shop|collections|about|stores|faq|contact|sitemap|careers|(?:blog|media)(?:\/[a-z0-9-]+)?|policy\/(?:shipping|returns|privacy|terms))$/;
+const publicStoreView = /^(?:shop|collections|about|stores|faq|contact|sitemap|careers|(?:blog|media)(?:\/[a-z0-9-]+)?|page\/[a-z0-9-]+|policy\/(?:shipping|returns|privacy|terms))$/;
+function minimalDestination(value) {
+  const target = String(value || '').trim();
+  if (/^https?:\/\//i.test(target) || /^#\/[a-z0-9][^\s]*$/i.test(target)) return target;
+  const route = target.replace(/^\//, '');
+  return publicStoreView.test(route) ? link(route) : '';
+}
+function minimalPages() {
+  const seen = new Set();
+  return (cfg().minimalPages || []).flatMap((entry) => {
+    const slug = slugOf(entry?.slug || entry?.title);
+    if (!entry?.title || !slug || seen.has(slug)) return [];
+    seen.add(slug);
+    return [{ ...entry, slug }];
+  });
+}
 function storeViewUrl(view, filters = {}) {
   return location.origin + location.pathname + '?' + new URLSearchParams({ view, ...filters });
 }
@@ -281,6 +296,7 @@ const blogsOn = () => (cfg().blogs || []).some((x) => x && x.title);
 const mediaOn = () => (cfg().media || []).some((x) => x && (x.title || x.image));
 const jobsOn = () => (cfg().jobs || []).some((x) => x && x.title) || !!(cfg().hiring && (cfg().hiring.email || cfg().hiring.text));
 function openMenu() {
+  if (cfg().template === 'minimal') return openMinimalMenu();
   const m = $('#menu'); clear(m); m.classList.add('on');
   const close = () => { m.classList.remove('on'); document.body.classList.remove('menuopen'); };
   document.body.classList.add('menuopen');
@@ -297,6 +313,23 @@ function openMenu() {
     E('div', { class: 'mmore' }, more.map(([t, p]) => a(t, p))));
   m.append(panel);
   m.onclick = (e) => { if (e.target === m) close(); };
+}
+function openMinimalMenu() {
+  const items = [
+    ['Explore', [['New arrivals', 'shop?new=1'], ['All products', 'shop'], ['Collections', 'collections']]],
+    ...groups().map(([title, categories]) => [title, categories.map((category) => [category, 'shop?cat=' + encodeURIComponent(category)])]),
+    ['Shop by colour', FAM.filter(([name]) => STY.some((style) => colours(style).some((colour) => famOf(colour) === name)))
+      .map(([name]) => [name, 'shop?fam=' + encodeURIComponent(name)])],
+    ['Discover', [['Our story', 'about'], ['Journal', 'blog'], ['Collaborations', 'media'], ['Walk-in stores', 'stores'],
+      ...minimalPages().map((page) => [page.title, 'page/' + page.slug])]],
+    ['Help', [['My account', 'me'], ['Track your order', 'orders'], ['FAQs', 'faq'], ['Contact', 'contact'], ['Sitemap', 'sitemap']]],
+  ];
+  const panel = sheet('Menu', E('div', { class: 'minimal-menu-sections' }, items.filter((entry) => entry[1].length).map(([title, links]) =>
+    E('nav', { 'aria-label': title }, E('h3', null, title), links.map(([label, path]) =>
+      E('a', { href: link(path), onclick: () => panel.close() }, label))))));
+  panel.el.classList.add('minimal-bag-drawer', 'minimal-menu-drawer');
+  panel.el.querySelector('button').focus();
+  panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
 }
 function openSearch() {
   if (cfg().template === 'minimal') return openMinimalSearch();
@@ -351,16 +384,21 @@ function minimalNotifications() {
   const announcement = cfg().announce;
   const newestItem = newest(1)[0];
   const article = (cfg().blogs || []).find((item) => item?.title);
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const notices = (cfg().minimalNotices || []).filter((item) => item?.title && (!item.date || item.date <= today));
   return [
+    ...notices.map((item) => ({ id: JSON.stringify([item.title, item.body, item.date, item.link]), text: item.title,
+      body: item.body, href: minimalDestination(item.link) })),
     announcement ? { id: 'announcement:' + announcement, text: announcement } : null,
-    newestItem ? { id: 'product:' + newestItem.id, text: 'Latest drop: ' + newestItem.name, href: 'shop?new=1' } : null,
-    article ? { id: 'article:' + slugOf(article.title), text: 'From the journal: ' + article.title, href: 'blog/' + slugOf(article.title) } : null,
+    newestItem ? { id: 'product:' + newestItem.id, text: 'Latest drop: ' + newestItem.name, href: link('shop?new=1') } : null,
+    article ? { id: 'article:' + slugOf(article.title), text: 'From the journal: ' + article.title, href: link('blog/' + slugOf(article.title)) } : null,
   ].filter(Boolean);
 }
 function openMinimalNotifications() {
   const items = minimalNotifications();
   const panel = sheet('Notifications', E('div', { class: 'minimal-search-results' }, items.length ? items.map((item) =>
-    E(item.href ? 'a' : 'p', { class: 'minimal-search-link', href: item.href ? link(item.href) : null, onclick: item.href ? () => panel.close() : null }, item.text))
+    E(item.href ? 'a' : 'div', { class: 'minimal-search-link', href: item.href || null, onclick: item.href ? () => panel.close() : null },
+      E('div', null, E('strong', null, item.text), item.body ? E('p', null, item.body) : null)))
     : E('p', null, 'No notifications yet.')));
   panel.el.classList.add('minimal-bag-drawer');
   items.forEach((item) => LS.set('notice.' + item.id, true));
@@ -478,7 +516,10 @@ function minimalHome(v) {
     heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav' },
       E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')), counter,
       E('button', { type: 'button', 'aria-label': 'Next banner', onclick: () => step(1) }, icon('right'))) : null));
-  const stories = tiles.filter((tile) => tile.photo).slice(0, 8);
+  const configuredStories = (c.minimalStories || []).filter((story) => story?.title && story.image).map((story) => ({
+    name: story.title, photo: story.image, href: minimalDestination(story.link), cta: story.cta,
+  }));
+  const stories = (configuredStories.length ? configuredStories : tiles.filter((tile) => tile.photo)).slice(0, 12);
   if (stories.length) v.append(E('section', { class: 'minimal-section' },
     heading('Shop the stories', link('collections'), 'All collections'),
     E('div', { class: 'minimal-stories' }, stories.map((story) =>
@@ -512,7 +553,7 @@ function openMinimalStory(stories, index, trigger) {
     const story = stories[index];
     clear(frame).append(E('img', { src: story.photo, alt: '' }),
       E('div', { class: 'minimal-story-caption' }, E('div', { 'aria-live': 'polite' }, (index + 1) + ' / ' + stories.length),
-        E('h2', null, story.name), E('a', { class: 'btn', href: story.href, onclick: () => dialog.close() }, 'Shop now')),
+        E('h2', null, story.name), story.href ? E('a', { class: 'btn', href: story.href, onclick: () => dialog.close() }, story.cta || 'Shop now') : null),
       stories.length > 1 ? E('div', { class: 'minimal-story-controls' },
         E('button', { class: 'ic', type: 'button', 'aria-label': 'Previous story', onclick: () => step(-1) }, icon('left')),
         E('button', { class: 'ic', type: 'button', 'aria-label': 'Next story', onclick: () => step(1) }, icon('right'))) : null);
@@ -565,6 +606,12 @@ V.home = (v) => {
   if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores)));
 };
 
+function facetValues(value) {
+  try {
+    const values = JSON.parse(value || '[]');
+    return Array.isArray(values) ? values.filter((item) => typeof item === 'string') : [];
+  } catch { return []; }
+}
 function filterSet(q) {
   let list = STY.slice();
   if (q.cat) list = list.filter((s) => s.category === q.cat);
@@ -574,6 +621,12 @@ function filterSet(q) {
   if (q.size) list = list.filter((s) => s.variants.some((x) => x.size === q.size &&
     (!q.colour || cfg().template !== 'minimal' || x.colour === q.colour) &&
     (q.stock === 'sold-out' || x.left > 0)));
+  if (cfg().template === 'minimal') {
+    const sizes = facetValues(q.sizes), selectedColours = facetValues(q.colours);
+    if (sizes.length || selectedColours.length) list = list.filter((style) => style.variants.some((variant) =>
+      (!sizes.length || sizes.includes(variant.size)) && (!selectedColours.length || selectedColours.includes(variant.colour)) &&
+      (q.stock !== '1' || variant.left > 0)));
+  }
   if (q.gender) list = list.filter((s) => (s.gender || '').toLowerCase() === q.gender.toLowerCase());
   if (q.min) list = list.filter((s) => s.price >= +q.min);
   if (q.max) list = list.filter((s) => s.price <= +q.max);
@@ -590,19 +643,30 @@ function minimalFilters() {
   const control = (name, label, choices) => E('label', { class: 'minimal-filter-field' }, label,
     E('select', { name }, choices.map(([value, title]) =>
       E('option', { value, selected: (current[name] || '') === value }, title))));
-  const choices = (label, values) => [['', label], ...[...new Set(values)].map((value) => [value, value])];
+  const facets = (name, label, options, legacyValue) => {
+    const chosen = new Set(facetValues(current[name]));
+    if (legacyValue) chosen.add(legacyValue);
+    return E('fieldset', { class: 'minimal-facets' }, E('legend', null, label), [...new Set(options)].map((value) =>
+      E('label', null, E('input', { name, type: 'checkbox', value, checked: chosen.has(value) }), value)));
+  };
+  const price = (name, label) => E('label', { class: 'minimal-filter-field' }, label,
+    E('input', { name, type: 'number', min: 0, step: 1, value: current[name] || '' }));
   const form = E('form', { class: 'minimal-filter-form', onsubmit: (event) => {
     event.preventDefault();
-    setQ(Object.fromEntries(new FormData(form)));
+    const data = new FormData(form);
+    const selected = (name) => data.getAll(name).length ? JSON.stringify(data.getAll(name)) : '';
+    setQ({ size: '', colour: '', fam: '', sizes: selected('sizes'), colours: selected('colours'),
+      stock: data.get('stock'), sort: data.get('sort'), min: data.get('min'), max: data.get('max') });
     panel.close();
   } },
-  control('size', 'Size', choices('All sizes', STY.flatMap(sizesOf))),
+  facets('sizes', 'Size', STY.flatMap(sizesOf), current.size),
   control('stock', 'Availability', [['', 'All products'], ['1', 'In stock'], ['sold-out', 'Out of stock']]),
-  control('colour', 'Colour', choices('All colours', STY.flatMap(colours))),
+  facets('colours', 'Colour', STY.flatMap(colours), current.colour),
+  E('div', { class: 'row2' }, price('min', 'Minimum price'), price('max', 'Maximum price')),
   control('sort', 'Sort by', [['', 'Newest'], ['low', 'Price, low to high'], ['high', 'Price, high to low'], ['az', 'Alphabetically, A–Z']]),
   E('div', { class: 'row2' },
     E('button', { class: 'btn out', type: 'button', onclick: () => {
-      setQ({ size: '', stock: '', colour: '', fam: '', min: '', max: '', sort: '' });
+      setQ({ size: '', sizes: '', stock: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '' });
       panel.close();
     } }, 'Clear filters'),
     E('button', { class: 'btn', type: 'submit' }, 'Apply')));
@@ -649,6 +713,9 @@ V.shop = (v) => {
   for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? (q[k] === 'sold-out' ? 'Out of stock' : 'In stock') : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
   if (cfg().template === 'minimal') {
+    const selectedSizes = facetValues(q.sizes), selectedColours = facetValues(q.colours);
+    if (selectedSizes.length) act.push(['sizes', 'Size: ' + selectedSizes.join(', ')]);
+    if (selectedColours.length) act.push(['colours', 'Colour: ' + selectedColours.join(', ')]);
     const categories = [...new Set(STY.map((style) => style.category).filter(Boolean))];
     v.append(E('section', { class: 'minimal-catalog' },
       E('nav', { class: 'minimal-category-nav', 'aria-label': 'Product categories' },
@@ -672,6 +739,21 @@ V.shop = (v) => {
 };
 V.collections = (v) => {
   const cols = D.collections.filter((x) => x.styleIds.some((id) => BYID[id]));
+  if (cfg().template === 'minimal') {
+    const collectionTiles = cols.map((col) => ({
+      title: col.name, route: 'shop?col=' + encodeURIComponent(col.id),
+      photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((style) => pickPic(style, 'banner')).find(Boolean),
+    }));
+    const categories = [...new Set(STY.map((style) => style.category).filter(Boolean))].map((category) => ({
+      title: category, route: 'shop?cat=' + encodeURIComponent(category),
+      photo: STY.filter((style) => style.category === category).map((style) => pickPic(style, 'banner')).find(Boolean),
+    }));
+    return v.append(E('section', { class: 'minimal-catalog' },
+      E('div', { class: 'minimal-heading' }, E('h1', null, 'Collections'), E('a', { href: link('shop') }, 'View all products ↗')),
+      E('div', { class: 'minimal-collections' }, [...collectionTiles, ...categories].map((tile) =>
+        E('a', { class: 'minimal-collection', href: link(tile.route) },
+          tile.photo ? E('img', { src: tile.photo, alt: '', loading: 'lazy' }) : null, E('span', null, tile.title))))));
+  }
   v.append(E('div', { class: 'shophd' }, E('h1', null, 'Collections')), cols.length ? E('div', { class: 'deck', style: { flexWrap: 'wrap', overflow: 'visible' } }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); return E('a', { class: 'dk' + (pic ? '' : ' ph'), href: link('shop?col=' + x.id) }, pic ? E('img', { src: pic, alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); })) : E('div', { class: 'empty' }, E('div', { class: 'mut' }, 'No collections yet.'), E('a', { class: 'btn', href: link('shop') }, 'Shop all')));
 };
 V.wishlist = (v) => {
@@ -1055,13 +1137,23 @@ V.careers = (v) => {
 };
 const POL = { shipping: ['Shipping', () => (cfg().policies || {}).shipping || 'We ship across India. Orders are packed within 1 to 2 working days and usually arrive in 3 to 7 days. You will get an update on the phone number you gave us.'], returns: ['Returns & exchanges', () => (cfg().policies || {}).returns || 'You can return or exchange a piece within ' + (D.shop.returnDays || 30) + ' days of delivery if it is unworn, unwashed and the tags are intact. Contact the store to arrange it.'], terms: ['Terms', () => (cfg().policies || {}).terms || 'By placing an order you confirm that the details you gave are correct. Prices include taxes. An order is confirmed only after the store accepts it, and the store may cancel an order if an item cannot be supplied.'], privacy: ['Privacy', () => (cfg().policies || {}).privacy || 'We use your name, phone, email and address only to deliver your order and to contact you about it. We do not sell your details.'] };
 V.policy = (v, k) => { const p = POL[k] || POL.terms; v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, p[0])), E('div', { class: 'card' }, String(p[1]()).split(/\n+/).map((x) => E('p', null, x))))); };
+V.page = (v, slug) => {
+  const page = cfg().template === 'minimal' && minimalPages().find((item) => item.slug === slug);
+  if (!page) return v.append(E('div', { class: 'empty' }, E('h1', null, 'Page not found'), E('a', { class: 'btn', href: link('sitemap') }, 'Browse the sitemap')));
+  const href = minimalDestination(page.link);
+  v.append(E('article', { class: 'minimal-feature' },
+    E('a', { href: link('sitemap') }, '← Sitemap'), E('h1', null, page.title),
+    page.image ? E('img', { src: page.image, alt: '' }) : null,
+    E('div', { class: 'art' }, para(page.body)),
+    href ? E('a', { class: 'btn', href }, page.cta || 'Explore') : null));
+};
 V.sitemap = (v) => {
   const sections = [
     ['Shop', [['All products', 'shop'], ['New in', 'shop?new=1'], ['Collections', 'collections'],
       ...D.collections.filter((c) => c.styleIds.some((id) => BYID[id])).map((c) => [c.name, 'shop?col=' + encodeURIComponent(c.id)])]],
     ['About the store', [['Our story', 'about'], ['Walk-in stores', 'stores'],
       ...(blogsOn() ? [['Journal', 'blog']] : []), ...(mediaOn() ? [['Media & gallery', 'media']] : []),
-      ...(jobsOn() ? [['Careers', 'careers']] : [])]],
+      ...(jobsOn() ? [['Careers', 'careers']] : []), ...minimalPages().map((page) => [page.title, 'page/' + page.slug])]],
     ['Help', [['Contact', 'contact'], ['Track your order', 'orders'], ['FAQs', 'faq'],
       ['Shipping policy', 'policy/shipping'], ['Returns & exchanges', 'policy/returns'], ['Privacy', 'policy/privacy'], ['Terms', 'policy/terms']]],
   ];
@@ -1111,7 +1203,8 @@ function minimalFooter() {
       group('Order support', [['Track your order', 'orders'], ['My account', 'me'], ['Returns & exchanges', 'policy/returns'],
         ['Shipping', 'policy/shipping'], ['FAQs', 'faq']]),
       group('About ' + D.shop.name, [['Our story', 'about'], ['Walk-in stores', 'stores'], ['Journal', 'blog'],
-        ['Collaborations & media', 'media'], ['Careers', 'careers'], ['Contact', 'contact']]),
+        ['Collaborations & media', 'media'], ['Careers', 'careers'], ['Contact', 'contact'],
+        ...minimalPages().map((page) => [page.title, 'page/' + page.slug])]),
       E('nav', { 'aria-label': 'Connect' }, E('h2', null, 'Connect'),
         dial ? E('a', { href: 'tel:+' + dial }, 'Call') : null,
         dial ? E('a', { href: 'https://wa.me/' + dial, rel: 'noopener', target: '_blank' }, 'WhatsApp') : null,
@@ -1153,11 +1246,14 @@ function route() {
   document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = Object.hasOwn(V, id) ? V[id] : V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   const article = id === 'blog' && parts[1] ? (cfg().blogs || []).find((item) => item && slugOf(item.title) === parts[1]) : null;
-  document.title = (id === 'home' ? '' : (article?.title || cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id)) + ' · ') + D.shop.name;
+  const page = minimal && id === 'page' ? minimalPages().find((item) => item.slug === parts[1]) : null;
+  document.title = (id === 'home' ? '' : (article?.title || page?.title || cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id)) + ' · ') + D.shop.name;
   const viewPath = parts.join('/');
   const filters = id === 'shop' && q$().col ? { col: q$().col } : {};
   const canonical = minimal && publicStoreView.test(viewPath) ? storeViewUrl(viewPath, filters) : location.origin + location.pathname;
-  if (id !== 'p' && !(id === 'blog' && parts[1])) setMeta(document.title, cfg().tagline || ('Shop online at ' + D.shop.name), ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', canonical);
+  if (id !== 'p' && !(id === 'blog' && parts[1])) setMeta(document.title,
+    (page?.body || '').slice(0, 150) || cfg().tagline || ('Shop online at ' + D.shop.name),
+    page?.image || ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', canonical);
   window.scrollTo(0, 0); document.body.classList.add('atop');
   TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });

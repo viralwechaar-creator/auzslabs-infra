@@ -102,9 +102,13 @@ async function editor(host) {
       const num = (x) => (x === '' || x == null ? 0 : Number(x) || 0);
       sh.fee = num(sh.fee); sh.freeOver = num(sh.freeOver);
       const p = { on: !!C.on, tagline: C.tagline || '', announce: C.announce || '', heroImages: C.heroImages, heroTitle: C.heroTitle || '', heroCta: C.heroCta || '', about: a, founders: C.founders, stores: C.stores, faqs: C.faqs, policies: pol, shipping: sh, blogs: C.blogs, media: C.media, jobs: C.jobs, hiring: hire, sizeGuide: { note: sgNote.v, head: ['Size', 'Chest (in)', 'Waist (in)'], rows: sgRows.filter((x) => x.size).map((x) => [x.size, x.chest || '', x.waist || '']) }, waOrder: C.waOrder !== false, abandonWa: !!C.abandonWa, pay, social: soc, email: C.email || '', phone: C.phone || '', brandName: C.brandName || '', showSale: !!C.showSale, template: C.template };
+      if (storeTemplateOn('style_template_minimal')) Object.assign(p, { minimalStories, minimalNotices, minimalPages });
       C = await api('sty_store_save', { p }); toast(t('Saved'));
     } catch (e) { fail(e); } finally { b.disabled = false; }
   } }, t('Save store'));
+  const minimalStories = Array.isArray(C.minimalStories) ? C.minimalStories : [];
+  const minimalNotices = Array.isArray(C.minimalNotices) ? C.minimalNotices : [];
+  const minimalPages = Array.isArray(C.minimalPages) ? C.minimalPages : [];
   const reqState = C.payReq === 'live' ? banner('ok', 'check', t('Online card payments are switched on for your store.')) : C.payReq === 'requested' ? banner('', 'clock', t('You asked for online card payments. AUZslab will contact you.')) : null;
 
   const linkIn = h('input', { class: 'input grow', readonly: true, value: storeLink(C.slug, C.template), 'aria-label': t('Store link') });
@@ -127,6 +131,18 @@ async function editor(host) {
       h('div', { class: 'field' }, h('label', null, t('Store link')), h('div', { class: 'row', style: { gap: '8px' } }, linkIn, h('button', { class: 'btn sm', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(linkIn.value); toast(t('Copied')); } catch (e) { toast(linkIn.value); } } }, t('Copy')), linkA)),
       field(t('Top bar message (optional)'), tx(() => C.announce, (v) => { C.announce = v; }, { placeholder: t('Free shipping above ₹2,999') })))),
     section(t('Store template'), tplBody),
+    ...(storeTemplateOn('style_template_minimal') ? [
+      section(t('Minimal campaign stories'), listEditor(minimalStories,
+        [['title', t('Title')], ['image', t('Story image'), 'img'], ['link', t('Destination, e.g. #/shop')], ['cta', t('Button text')]],
+        t('Campaign story'), (row) => row.title)),
+      section(t('Minimal notifications'), listEditor(minimalNotices,
+        [['title', t('Title')], ['body', t('Message'), 'area'], ['link', t('Destination (optional)')], ['date', t('Publish date'), 'date']],
+        t('Notification'), (row) => row.title, (row) => row.date)),
+      section(t('Minimal website pages'), listEditor(minimalPages,
+        [['title', t('Page title')], ['slug', t('URL name (optional)')], ['image', t('Cover image'), 'img'], ['body', t('Page content'), 'area'],
+          ['link', t('Button destination (optional)')], ['cta', t('Button text')]],
+        t('Website page'), (row) => row.title, (row) => row.slug)),
+    ] : []),
     section(t('Home page'), h('div', { class: 'card grid' }, h('div', { class: 'cap' }, t('Big hero pictures (they change one by one)')), hero,
       h('div', { class: 'two' }, field(t('Hero text'), tx(() => C.heroTitle, (v) => { C.heroTitle = v; })), field(t('Hero button'), tx(() => C.heroCta, (v) => { C.heroCta = v; }, { placeholder: t('Shop now') }))))),
     section(t('Shipping and payment'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Shipping charge ₹'), tx(() => sh.fee, (v) => { sh.fee = v; }, { type: 'number', mode: 'decimal' })), field(t('Free shipping above ₹'), tx(() => sh.freeOver, (v) => { sh.freeOver = v; }, { type: 'number', mode: 'decimal' }))),

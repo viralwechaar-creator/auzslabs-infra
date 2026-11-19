@@ -2,7 +2,7 @@
 create or replace function sty_store_save_core(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
 declare tid uuid; cur jsonb; k text; required_feature text; ok_keys text[] := array['on', 'tagline', 'announce', 'heroImages', 'heroTitle', 'heroCta', 'about', 'founders',
     'stores', 'faqs', 'policies', 'shipping', 'pay', 'social', 'email', 'phone', 'brandName', 'showSale', 'sizeGuide', 'waOrder', 'abandonWa',
-    'blogs', 'media', 'jobs', 'hiring', 'template'];
+    'blogs', 'media', 'jobs', 'hiring', 'template', 'minimalStories', 'minimalNotices', 'minimalPages'];
 begin
   tid := sty_guard('sty_manage');
   if jsonb_typeof(p) <> 'object' then raise exception 'store settings must be an object' using errcode = 'ST002'; end if;
@@ -20,6 +20,11 @@ begin
   ) then
     cur := cur || jsonb_build_object('template', '1');
   end if;
+  foreach k in array array['minimalStories', 'minimalNotices', 'minimalPages'] loop
+    if cur ? k and jsonb_typeof(cur->k) is distinct from 'array' then
+      raise exception 'Minimal content must be a list' using errcode = 'ST002';
+    end if;
+  end loop;
   insert into sty_store (tenant_id, config) values (tid, cur)
     on conflict (tenant_id) do update set config = excluded.config, updated_at = now();
   perform sty_audit_log(tid, 'store.save', null, null);
