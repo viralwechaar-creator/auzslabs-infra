@@ -100,20 +100,34 @@ main{padding:6px var(--pad) 96px;max-width:1500px;margin:0 auto}
 .story .ring img,.story .ring>div{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #fff}
 .stn{font-size:9px;letter-spacing:.02em;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:66px;color:var(--ink)}
 
-/* ---- story viewer (fullscreen slideshow) ---- */
-.storyview{position:fixed;inset:0;z-index:95;background:#000;display:flex;flex-direction:column;animation:sfade .2s both}
-@keyframes sfade{from{opacity:0}to{opacity:1}}
-.sbars{display:flex;gap:4px;padding:10px 10px 0}
-.sbars i{flex:1;height:2px;border-radius:0;background:rgba(255,255,255,.3)}
-.sbars i.on{background:#fff;animation:sgrow 3.2s linear}
-.sbars i.done{background:#fff}
-@keyframes sgrow{from{opacity:.5}to{opacity:1}}
-.shd{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;color:#fff;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
-.simg{position:relative;flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.simg img{max-width:100%;max-height:100%;object-fit:contain}
-.snav{position:absolute;top:0;bottom:0;width:36%}
+/* ---- story viewer: matches the reference's own story-viewer CSS as closely as its real rules allow
+   (extracted from its page source -- a dimmed, not opaque, scrim; a centered floating 3:5 card on wide
+   screens, not edge-to-edge; a progress bar built from track+fill pairs, not class-swapped bars; a
+   mix-blend-mode close button so it stays visible over any photo; invisible left/right tap zones only
+   on narrow screens, visible round prev/next buttons on wide ones) ---- */
+.storyview{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;opacity:0;transition:background .35s ease,opacity .35s ease}
+.storyview.on{background:rgba(0,0,0,.9);opacity:1}
+.stvcard{position:relative;height:85svh;aspect-ratio:3/5;max-width:94vw;overflow:hidden;background:#000;isolation:isolate}
+@media(max-width:899px){.storyview{align-items:stretch;justify-content:stretch}.stvcard{height:100%;width:100%;aspect-ratio:auto;max-width:none}}
+.sbars{position:absolute;top:3.5vh;left:50%;transform:translateX(-50%);width:min(51vh,92%);display:flex;gap:4px;z-index:3;padding:0}
+@media(max-width:899px){.sbars{top:14px;width:calc(100% - 20px)}}
+.sbars i{flex:1;height:3px;border-radius:2px;background:rgba(180,180,180,.3);overflow:hidden;display:block}
+.sbars i span{display:block;height:100%;width:0%;background:#fff}
+.sbars i.done span{width:100%;transition:none}
+.sbars i.on span{width:100%;transition:width 3.2s linear}
+.shd{position:absolute;top:1.3vw;right:2vw;z-index:4;color:#fff;mix-blend-mode:difference}
+@media(max-width:899px){.shd{top:20px;right:14px}}
+.shd button{color:#fff}
+.stitle{position:absolute;top:1.3vw;left:2vw;z-index:4;color:#fff;mix-blend-mode:difference;text-transform:uppercase;font-size:11px;font-weight:700;letter-spacing:.06em}
+@media(max-width:899px){.stitle{top:20px;left:14px;font-size:12px}}
+.simg{position:relative;height:100%;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#111}
+.simg img{height:100%;width:100%;object-fit:cover}
+.snav{position:absolute;top:0;bottom:0;width:30%}
+.snav svg{display:none}
 .snav.l{left:0}.snav.r{right:0}
-.scap{color:#fff;padding:12px 16px calc(20px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px}
+@media(min-width:900px){.snav{top:50%;bottom:auto;transform:translateY(-50%);width:3vw;height:3vw;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;color:#000}.snav svg{display:block;width:16px;height:16px}.snav.l{left:1vw}.snav.r{right:1vw}}
+.scap{position:absolute;left:50%;bottom:4vw;transform:translateX(-50%);z-index:3;color:#fff;background:rgba(0,0,0,.4);backdrop-filter:blur(5px);border-radius:999px;padding:.5vw 1.1vw;display:flex;align-items:center;gap:10px;font-size:11px;white-space:nowrap}
+@media(max-width:899px){.scap{bottom:24px;padding:10px 16px}}
 .scap .btn{background:#fff;color:var(--ink);flex-shrink:0}
 
 /* ---- notifications popup ---- */

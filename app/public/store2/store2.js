@@ -295,16 +295,19 @@ function openStory(title, items) {
   if (!imgs.length) return;
   let i = 0, timer;
   const w = E('div', { class: 'storyview', role: 'dialog', 'aria-modal': 'true' });
-  const bars = imgs.map(() => E('i'));
+  const bars = imgs.map(() => E('i', null, E('span')));
   const imgEl = E('img', { src: imgs[0].url, alt: '' });
   const capEl = E('div', { class: 'scap' });
-  const close = () => { clearInterval(timer); w.remove(); };
+  const close = () => { clearInterval(timer); w.classList.remove('on'); setTimeout(() => w.remove(), 350); };
   const go = (n) => { i = ((n % imgs.length) + imgs.length) % imgs.length; imgEl.src = imgs[i].url; bars.forEach((b, k) => { b.className = k < i ? 'done' : k === i ? 'on' : ''; }); clear(capEl).append(imgs[i].name, E('a', { class: 'btn sm', href: link('p/' + imgs[i].id), onclick: close }, 'View item')); };
   const start = () => { clearInterval(timer); timer = setInterval(() => go(i + 1), 3200); };
   go(0); start();
-  w.append(E('div', { class: 'sbars' }, bars), E('div', { class: 'shd' }, E('b', null, title), E('button', { class: 'ic', style: { color: '#fff' }, 'aria-label': 'Close', onclick: close }, icon('x'))),
-    E('div', { class: 'simg' }, imgEl, E('button', { class: 'snav l', 'aria-label': 'Previous', onclick: () => { go(i - 1); start(); } }), E('button', { class: 'snav r', 'aria-label': 'Next', onclick: () => { go(i + 1); start(); } })), capEl);
+  const stvcard = E('div', { class: 'stvcard' }, E('div', { class: 'sbars' }, bars), E('div', { class: 'stitle' }, title), E('div', { class: 'shd' }, E('button', { class: 'ic', 'aria-label': 'Close', onclick: close }, icon('x'))),
+    E('div', { class: 'simg' }, imgEl, E('button', { class: 'snav l', 'aria-label': 'Previous', onclick: () => { go(i - 1); start(); } }, icon('left')), E('button', { class: 'snav r', 'aria-label': 'Next', onclick: () => { go(i + 1); start(); } }, icon('right'))), capEl);
+  w.append(stvcard);
+  w.onclick = (e) => { if (e.target === w) close(); };
   document.body.append(w);
+  requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('on')));
 }
 
 // ---------- views ----------
