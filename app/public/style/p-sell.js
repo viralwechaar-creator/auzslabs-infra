@@ -1,12 +1,12 @@
 /* AUZsStyle: Sell (the till). Left/top: styles grid with category chips + barcode/search. Right (desktop) or a bottom bar
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
-const BILL = { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 };
+const BILL = { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0, quoteId: null };
 const UI = { q: '', cat: 'All', col: null };
 // How the style cards look on the Sell screen: big picture cards, small picture cards, or a plain list with no pictures (remembered on this device).
 const SELL_VIEWS = ['photos', 'small', 'list'];
 const sellView = () => { try { const v = localStorage.getItem('sty.sellView'); return SELL_VIEWS.includes(v) ? v : 'photos'; } catch { return 'photos'; } };
-const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0 }); };
+const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0, quoteId: null }); };
 const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt, extraAmt: BILL.couponDiscount });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
 
@@ -130,7 +130,9 @@ page('sell', {
           trow(t('Subtotal'), inr(c.subtotal)), c.discount > 0 ? trow(t('Discount'), '-' + inr(c.discount), 'g') : null, trow(t('Tax') + ' (incl.)', inr(c.tax)), c.rounding ? trow(t('Round off'), inr(c.rounding)) : null,
           h('button', { class: 'btn wide sm', type: 'button', onclick: () => discountSheet(() => { paintCart(); inSheet && inSheet(); }) }, icon('tag', 16), t('Discount'))) : null,
         BILL.lines.length ? h('div', { class: 'payrow' }, h('div', { class: 'tot' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(c.total))),
-          h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn', type: 'button', onclick: () => holdBill(() => { paintCart(); inSheet && inSheet(true); }) }, t('Hold')), h('button', { class: 'btn fill grow', type: 'button', onclick: async () => { await resolveTypedCustomer(); inSheet && inSheet('close'); paySheet(billCalc(), () => { paintCart(); }); } }, t('Pay') + ' ' + inr(c.total)))) : null);
+          h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn', type: 'button', onclick: () => holdBill(() => { paintCart(); inSheet && inSheet(true); }) }, t('Hold')),
+            h('button', { class: 'btn', type: 'button', onclick: () => saveAsQuote(() => { paintCart(); inSheet && inSheet(true); }) }, t('Save as quote')),
+            h('button', { class: 'btn fill grow', type: 'button', onclick: async () => { await resolveTypedCustomer(); inSheet && inSheet('close'); paySheet(billCalc(), () => { paintCart(); }); } }, t('Pay') + ' ' + inr(c.total)))) : null);
     }
     // fills the free space under the lines with a few styles to add next
     function quickAdd() {
@@ -194,6 +196,25 @@ function discountSheet(done) {
     actions: [{ label: t('Apply'), primary: true, onclick: (close) => { BILL.billDiscPct = N(dp.value); BILL.billDiscAmt = BILL.billDiscPct ? 0 : N(da.value); BILL.redeem = pts ? Math.min(Math.floor(N(pts.value)), BILL.customer.points) : 0; close(); done(); } }] });
 }
 
+async function saveAsQuote(done) {
+  await resolveTypedCustomer();
+  const validUntil = await promptValidUntil();
+  if (validUntil === null) return;
+  try {
+    const p = { id: BILL.quoteId || undefined, customerId: BILL.customer ? BILL.customer.id : null, validUntil: validUntil || undefined,
+      lines: BILL.lines.map((l) => ({ variantId: l.variantId, qty: l.qty, price: l.price })) };
+    const q = await api('sty_quote_save', { p });
+    toast(t('Quotation saved') + ' · ' + q.number); newBill(); done();
+  } catch (e) { fail(e); }
+}
+function promptValidUntil() {
+  return new Promise((res) => {
+    const i = input({ type: 'date', value: '' });
+    sheet({ title: t('Save as quotation'), onClose: (v) => { if (v === undefined) res(null); },
+      body: h('div', { class: 'grid' }, h('p', { class: 'muted small' }, t('A price quote for the customer -- no stock or payment is affected. Convert it to a real bill later from Bills -> Quotations.')), field(t('Valid until') + ' (' + t('optional') + ')', i)),
+      actions: [{ label: t('Save'), primary: true, onclick: (close) => { res(i.value); close('ok'); } }] });
+  });
+}
 async function holdBill(done) {
   const label = await promptLabel();
   if (label === null) return;
@@ -321,7 +342,9 @@ function paySheet(c, done) {
     try {
       const r = await sendOrQueue('sty_sell', { p });
       const snapshot = r.done ? r.data : provisional(p, c);
+      const fromQuoteId = BILL.quoteId;
       sh.close(); newBill(); S.catAt = 0;
+      if (r.done && fromQuoteId) { try { await api('sty_quote_mark_converted', { p_id: fromQuoteId, p_sale_id: snapshot.id }); } catch { /* the sale is real either way; not fatal if this one call fails */ } }
       await loadCatalog(true).catch(() => {});
       done(); successSheet(snapshot, !r.done);
     } catch (e) { ok.disabled = false; fail(e); }

@@ -13,6 +13,7 @@ page('bills', {
       if (BU.src === 'web') return loadWeb();
       if (BU.src === 'requests') return loadRequests();
       if (BU.src === 'returns') return loadReturns();
+      if (BU.src === 'quotes') return loadQuotes();
       let rows = []; try { rows = await api('sty_list_sales', { p: { from: custId ? '' : BU.from, to: custId ? '' : BU.to, q: BU.q, status: BU.status, customerId: custId, limit: 200 } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
       const live = rows.filter((r) => r.status !== 'void'), tot = live.reduce((a, r) => a + r.total, 0);
       clear(kp).append(kpi(t('Sales'), inr(tot, 0), live.length + ' ' + t('Bills')), kpi(t('Due'), inr(live.reduce((a, r) => a + Math.max(r.total - r.paid, 0), 0), 0), '', null, ''));
@@ -20,6 +21,22 @@ page('bills', {
         sub: fmtDT(r.at) + ' · ' + r.units + ' ' + t('Units') + (r.staff ? ' · ' + r.staff : '') + (r.returned ? ' · ' + (r.exchanged ? t('Exchanged') : t('Returned')) + ' ' + inr(r.refunded, 0) : ''),
         value: inr(r.total), valueSub: r.status === 'void' ? t('Cancelled') : r.status === 'due' ? t('Due') + ' ' + inr(r.total - r.paid) : (r.returned ? (r.exchanged ? t('Exchanged') : t('Returned')) : ''),
         chevron: !r.waiting, onclick: () => (r.waiting ? toast(t('This bill is saved on this device and will be sent when the connection is back.')) : billSheet(r.id, load)) })) : [empty('tag', t('No bills'), t('Bills show here as you sell.'))]));
+    }
+    async function loadQuotes() {
+      let rows = []; try { rows = await api('sty_quote_list', { p: {} }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
+      const open = rows.filter((r) => r.status === 'open');
+      clear(kp).append(kpi(t('Open quotations'), open.length, inr(open.reduce((a, r) => a + r.total, 0), 0)), kpi(t('Converted'), String(rows.filter((r) => r.status === 'converted').length), '', null, ''));
+      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: 'tag', title: r.number + (r.customer ? ' · ' + r.customer : ''), sub: fmtDT(r.at) + ' · ' + r.units + ' ' + t('Units') + (r.validUntil ? ' · ' + t('Valid till') + ' ' + fmtDay(r.validUntil) : ''), value: inr(r.total), valueSub: r.status === 'converted' ? t('Converted') : r.status === 'void' ? t('Cancelled') : t('Open'), chevron: true, onclick: () => quoteSheet(r, load) })) : [empty('tag', t('No quotations yet'), t('Save a cart as a quote from the Sell page.'))]));
+    }
+    function quoteSheet(row, reload) {
+      sheet({ title: row.number, closeLabel: t('Done'), body: h('div', { class: 'grid' },
+        h('div', { class: 'kv' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(row.total))),
+        row.customer ? h('div', { class: 'muted small' }, row.customer) : null,
+        row.validUntil ? h('div', { class: 'muted small' }, t('Valid till') + ' ' + fmtDay(row.validUntil)) : null,
+        row.status !== 'open' ? h('div', { class: 'muted small' }, row.status === 'converted' ? t('Already converted to a bill') : t('Cancelled')) : null),
+        actions: row.status === 'open' ? [
+          { label: t('Cancel quotation'), onclick: async (close) => { if (!await confirmBox(t('Cancel this quotation?'), '', t('Cancel quotation'), true)) return false; try { await api('sty_quote_void', { p_id: row.id }); } catch (e) { return fail(e); } close(); toast(t('Quotation cancelled')); reload && reload(); } },
+          { label: t('Convert to bill'), primary: true, onclick: async (close) => { close(); await openQuoteInSell(row.id); } }] : [] });
     }
     async function loadReturns() {
       let rows = []; try { rows = await api('sty_list_returns', { p: { from: BU.from, to: BU.to } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
@@ -65,12 +82,30 @@ page('bills', {
             returnSheet(sale, reload, { requestId: req.id, mode: req.mode, reason: req.reason, lines: req.lines.map((l) => ({ saleLineId: l.saleLineId, qty: l.qty })) });
           } }] });
     }
-    const srcSeg = seg([['shop', t('Shop bills')], ['returns', t('Returns & exchanges')], ['web', t('Website orders')], ['requests', t('Return requests')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
-    v.root.append(h('div', { class: 'grid' }, srcSeg, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : (BU.src === 'web' || BU.src === 'requests' ? null : rangePicker(BU, load)),
-      BU.src === 'requests' || BU.src === 'returns' ? null : searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
+    const srcSeg = seg([['shop', t('Shop bills')], ['quotes', t('Quotations')], ['returns', t('Returns & exchanges')], ['web', t('Website orders')], ['requests', t('Return requests')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
+    v.root.append(h('div', { class: 'grid' }, srcSeg, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : (BU.src === 'web' || BU.src === 'requests' || BU.src === 'quotes' ? null : rangePicker(BU, load)),
+      BU.src === 'requests' || BU.src === 'returns' || BU.src === 'quotes' ? null : searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
     load();
   },
 });
+// Deliberately does not duplicate sty_sell's pricing/stock/tax logic: this just drops the quote's items into a
+// normal Sell cart and sends the cashier there -- the actual sale still goes through the one real sty_sell path.
+async function openQuoteInSell(quoteId) {
+  if (BILL.lines.length) { toast(t('Finish or clear the current bill first'), { err: true }); return; }
+  let q; try { q = await api('sty_quote_get', { p_id: quoteId }); } catch (e) { return fail(e); }
+  if (q.status !== 'open') { toast(t('This quotation is no longer open'), { err: true }); return; }
+  try { await loadCatalog(); } catch (e) { return fail(e); }
+  const missing = [];
+  const lines = (q.lines || []).map((l) => {
+    const vv = allVariants().find((x) => x.id === l.variantId);
+    if (!vv) { missing.push(l.name); return null; }
+    return { variantId: vv.id, styleId: vv.style.id, name: vv.style.name, colour: vv.colour, size: vv.size, barcode: vv.barcode, price: l.price, mrp: vv.style.mrp, taxPct: vv.style.taxPct, qty: l.qty, discPct: 0, discAmt: 0, stock: vv.stock };
+  }).filter(Boolean);
+  if (!lines.length) { toast(t('None of these items are available any more'), { err: true }); return; }
+  BILL.lines = lines; BILL.customer = q.customer || null; BILL.quoteId = q.id;
+  if (missing.length) toast(t('Not added (no longer available)') + ': ' + missing.join(', '), { err: true });
+  go('sell'); window.dispatchEvent(new Event('sty:cartchanged'));
+}
 async function billSheet(id, changed) {
   let sale; try { sale = await api('sty_get_sale', { p_id: id }); } catch (e) { return fail(e); }
   if (!sale) return;

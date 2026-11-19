@@ -48,6 +48,7 @@ const QUEUEABLE = new Set([
   'sty_save_customer', 'sty_collect_due', 'sty_void_sale', 'sty_collection_save', 'sty_collection_delete', 'sty_collection_members',
   'sty_coupon_save', 'sty_coupon_delete', 'sty_save_branch', 'sty_save_settings', 'sty_save_fy', 'sty_close_fy', 'sty_set_target', 'sty_hold_save', 'sty_shift_open', 'sty_shift_close',
   'sty_day_close', 'sty_request_save', 'sty_request_set', 'sty_intel_set_settings', 'sty_intel_set_policy',
+  'sty_expense_save', 'sty_expense_delete', 'sty_quote_save', 'sty_quote_void', 'sty_quote_mark_converted',
 ]);
 // Answers that are saved for offline use. Changes the shop makes are laid over them (OVERLAY).
 const READS = new Set([
@@ -57,6 +58,7 @@ const READS = new Set([
   'sty_store_get', 'sty_store_analytics', 'sty_intel_overview', 'sty_intel_designs', 'sty_intel_design', 'sty_intel_reorder', 'sty_intel_capital', 'sty_intel_lost',
   'sty_intel_basket', 'sty_intel_assistant', 'sty_intel_settings', 'sty_integrity_check', 'wa_my_status',
   'sty_gst_summary', 'sty_purchase_register', 'sty_dues_list', 'sty_purchase_detail',
+  'sty_audit_list', 'sty_list_expenses', 'sty_quote_list', 'sty_quote_get', 'sty_list_parties', 'sty_party_statement',
 ]);
 
 // ---------- the queue ----------
@@ -441,6 +443,7 @@ const FN_LABEL = {
   sty_bulk_edit: 'Many styles edited', sty_delete_styles: 'Styles deleted', sty_transfer: 'Stock transfer', sty_save_supplier: 'Supplier saved', sty_pay_supplier: 'Supplier payment',
   sty_save_customer: 'Customer saved', sty_collect_due: 'Due collected', sty_void_sale: 'Bill cancelled', sty_collection_save: 'Collection saved', sty_collection_members: 'Collection changed',
   sty_coupon_save: 'Coupon saved', sty_save_branch: 'Branch saved', sty_save_settings: 'Settings saved', sty_save_fy: 'Financial year saved', sty_close_fy: 'Financial year closed', sty_hold_save: 'Bill on hold', sty_shift_open: 'Shift opened', sty_shift_close: 'Shift closed',
+  sty_expense_save: 'Expense saved', sty_expense_delete: 'Expense deleted', sty_quote_save: 'Quotation saved', sty_quote_void: 'Quotation cancelled', sty_quote_mark_converted: 'Quotation converted',
   sty_day_close: 'Books closed', sty_request_save: 'Customer request', sty_set_target: 'Staff target',
 };
 function describeOp(e) {
