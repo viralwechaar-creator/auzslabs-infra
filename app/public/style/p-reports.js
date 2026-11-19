@@ -50,6 +50,46 @@ page('home', {
 });
 
 const AU = { tab: 'sells', k: '30', from: null, to: null };
+const GU = { sub: 'period', year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function periodGstTab(host) {
+  host.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
+  let sub = 'summary';
+  async function load() {
+    let p, c; try { [p, c] = await Promise.all([api('sty_gst_period_summary', { p: { year: GU.year, month: GU.month } }), api('sty_gst_period_checks', { p: { year: GU.year, month: GU.month } })]); } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message)); }
+    paint(p, c);
+  }
+  function paint(p, c) {
+    const filed = p.status === 'filed';
+    const monthSel = selectEl(MONTHS.map((m, i) => [i + 1, t(m)]), GU.month, { onchange: (e) => { GU.month = Number(e.target.value); load(); } });
+    const yearSel = selectEl([GU.year - 1, GU.year, GU.year + 1].map((y) => [y, String(y)]), GU.year, { onchange: (e) => { GU.year = Number(e.target.value); load(); } });
+    const netPayable = Math.max(r2(p.output.tax - p.input.tax), 0);
+    clear(host).append(h('div', { class: 'grid' },
+      h('div', { class: 'row', style: { gap: '8px' } }, monthSel, yearSel, h('span', { class: 'chip', style: { pointerEvents: 'none' } }, filed ? t('Filed') : t('Open'))),
+      h('p', { class: 'muted small' }, t('These are working papers built from your bills -- AUZsStyle does not file returns or call the GST portal. Have your accountant confirm figures and rates before filing.')),
+      seg([['summary', t('Summary')], ['checks', t('Checks')]], sub, (x) => { sub = x; paint(p, c); }),
+      sub === 'summary' ? h('div', { class: 'grid' },
+        h('div', { class: 'kpis' }, kpi(t('Output tax'), inr(p.output.tax, 0), t('On sales of') + ' ' + inr(p.output.taxable, 0)),
+          kpi(t('Input tax credit'), inr(p.input.tax, 0), t('Eligible purchases') + ' ' + inr(p.input.taxable, 0)),
+          kpi(t('Net payable'), inr(netPayable, 0), t('indicative'))),
+        section(t('By tax head'), h('div', { class: 'card' }, isDesk() ? dataView([
+            { label: t('Head'), render: (r) => r.head }, { label: t('Output'), r: true, render: (r) => inr(r.output, 0) },
+            { label: t('Credit available'), r: true, render: (r) => inr(r.credit, 0) }, { label: t('Payable'), r: true, render: (r) => inr(Math.max(r.output - r.credit, 0), 0) }],
+            [{ head: 'IGST', output: p.output.igst, credit: p.input.igst }, { head: 'CGST', output: p.output.cgst, credit: p.input.cgst }, { head: 'SGST', output: p.output.sgst, credit: p.input.sgst }])
+          : h('div', { class: 'list' }, ['igst', 'cgst', 'sgst'].map((k) => liRow({ title: k.toUpperCase(), sub: t('Credit available') + ' ' + inr(p.input[k], 0), value: inr(p.output[k], 0), valueSub: t('Output') }))))),
+        p.byRate.length ? section(t('Sales by rate'), h('div', { class: 'list' }, p.byRate.map((r) => liRow({ title: r.rate + '% GST', sub: t('Taxable') + ' ' + inr(r.taxable, 0), value: inr(r.tax, 0), valueSub: t('Tax') })))) : null,
+        h('div', { class: 'row', style: { gap: '8px' } }, filed
+          ? (can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: async () => { if (!await confirmBox(t('Reopen this month?'), t('Bills and purchases can be added or changed in it again.'), t('Reopen'), true)) return; await api('sty_gst_period_reopen', { p: { year: GU.year, month: GU.month } }); load(); } }, t('Reopen')) : null)
+          : (can('sty_manage') ? h('button', { class: 'btn fill', type: 'button', onclick: async () => { if (!await confirmBox(t('Mark this month as filed?'), t('Bills and purchases dated in') + ' ' + t(MONTHS[GU.month - 1]) + ' ' + GU.year + ' ' + t('can no longer be added or changed until you reopen it.'), t('Mark filed'), true)) return; await api('sty_gst_period_file', { p: { year: GU.year, month: GU.month } }); load(); } }, t('Mark this month as filed')) : null)))
+        : h('div', { class: 'grid' },
+          c.noShopGstin ? banner('warn', 'alert', t('No GSTIN set for your shop (Settings -> Shop).')) : null,
+          c.salesMissingHsn > 0 ? banner('warn', 'alert', c.salesMissingHsn + ' ' + t('taxed sale lines this month have no HSN code')) : null,
+          c.purchasesMissingHsn > 0 ? banner('warn', 'alert', c.purchasesMissingHsn + ' ' + t('taxed purchase lines this month have no HSN code')) : null,
+          c.salesNoGstinInterstate > 0 ? banner('warn', 'alert', c.salesNoGstinInterstate + ' ' + t('inter-state sales this month have no customer GSTIN on record')) : null,
+          (!c.noShopGstin && !c.salesMissingHsn && !c.purchasesMissingHsn && !c.salesNoGstinInterstate) ? banner('ok', 'check', t('Nothing needs attention')) : null)));
+  }
+  load();
+}
 page('analytics', {
   title: 'Analytics', perm: 'sty_reports',
   async render(v) {
@@ -120,14 +160,20 @@ page('analytics', {
           ins.overstock.length ? section(t('More than 4 months of stock'), h('div', { class: 'list' }, ins.overstock.map((x) => liRow({ title: x.name, sub: [x.colour, x.size].filter(Boolean).join(' · '), value: x.stock + ' ' + t('pcs'), valueSub: x.cover_days + ' ' + t('days of cover') })))) : null);
       } else if (AU.tab === 'gst') {
         if (!gst) return;
-        host.append(
-          h('div', { class: 'kpis' }, kpi(t('Taxable value'), inr(gst.totals.taxable, 0)), kpi('CGST', inr(gst.totals.cgst, 0)), kpi('SGST', inr(gst.totals.sgst, 0)), kpi('IGST', inr(gst.totals.igst, 0)), kpi(t('Total tax'), inr(gst.totals.tax, 0), gst.totals.bills + ' ' + t('Bills'))),
-          h('button', { class: 'btn', type: 'button', onclick: exportGstCsv }, icon('download', 18), t('Export CSV')),
-          gst.byRate.length ? section(t('By tax rate') + ' — ' + t('working papers for your accountant, not a GST-portal filing'), isDesk() ? dataView([
-            { label: t('Rate'), render: (r) => r.rate + '%' }, { label: t('Taxable'), r: true, value: true, render: (r) => inr(r.taxable, 0) },
-            { label: 'CGST', r: true, render: (r) => inr(r.cgst, 0) }, { label: 'SGST', r: true, render: (r) => inr(r.sgst, 0) }, { label: 'IGST', r: true, render: (r) => inr(r.igst, 0) },
-            { label: t('Total tax'), r: true, render: (r) => inr(r.tax, 0) }], gst.byRate)
-            : h('div', { class: 'list' }, gst.byRate.map((r) => liRow({ title: r.rate + '% GST', sub: t('Taxable') + ' ' + inr(r.taxable, 0) + ' · CGST ' + inr(r.cgst, 0) + ' · SGST ' + inr(r.sgst, 0) + (r.igst > 0 ? ' · IGST ' + inr(r.igst, 0) : ''), value: inr(r.tax, 0), valueSub: t('Total tax') })))) : empty('tag', t('No sales in this period')));
+        const gsub = h('div');
+        host.append(seg([['period', t('Return period')], ['range', t('Custom range')]], GU.sub, (x) => { GU.sub = x; paintGst(); }), gsub);
+        paintGst();
+        function paintGst() {
+          if (GU.sub === 'period') return periodGstTab(gsub);
+          clear(gsub).append(
+            h('div', { class: 'kpis' }, kpi(t('Taxable value'), inr(gst.totals.taxable, 0)), kpi('CGST', inr(gst.totals.cgst, 0)), kpi('SGST', inr(gst.totals.sgst, 0)), kpi('IGST', inr(gst.totals.igst, 0)), kpi(t('Total tax'), inr(gst.totals.tax, 0), gst.totals.bills + ' ' + t('Bills'))),
+            h('button', { class: 'btn', type: 'button', onclick: exportGstCsv }, icon('download', 18), t('Export CSV')),
+            gst.byRate.length ? section(t('By tax rate') + ' — ' + t('working papers for your accountant, not a GST-portal filing'), isDesk() ? dataView([
+              { label: t('Rate'), render: (r) => r.rate + '%' }, { label: t('Taxable'), r: true, value: true, render: (r) => inr(r.taxable, 0) },
+              { label: 'CGST', r: true, render: (r) => inr(r.cgst, 0) }, { label: 'SGST', r: true, render: (r) => inr(r.sgst, 0) }, { label: 'IGST', r: true, render: (r) => inr(r.igst, 0) },
+              { label: t('Total tax'), r: true, render: (r) => inr(r.tax, 0) }], gst.byRate)
+              : h('div', { class: 'list' }, gst.byRate.map((r) => liRow({ title: r.rate + '% GST', sub: t('Taxable') + ' ' + inr(r.taxable, 0) + ' · CGST ' + inr(r.cgst, 0) + ' · SGST ' + inr(r.sgst, 0) + (r.igst > 0 ? ' · IGST ' + inr(r.igst, 0) : ''), value: inr(r.tax, 0), valueSub: t('Total tax') })))) : empty('tag', t('No sales in this period')));
+        }
       } else {
         host.append(data.staff.length ? h('div', { class: 'list' }, data.staff.map((x) => liRow({ icon: 'user', title: x.name, sub: x.bills + ' ' + t('Bills') + ' · ' + x.units + ' ' + t('Units') + ' · ' + t('avg') + ' ' + inr(x.avg_bill, 0) + (x.target ? ' · ' + Math.round(x.revenue / x.target * 100) + '% ' + t('of target') : ''), value: inr(x.revenue, 0), valueSub: x.commission ? t('Commission') + ' ' + inr(x.commission) : S.ctx.canSeeCost ? t('profit') + ' ' + inr(x.profit, 0) : '' }))) : empty('users', t('No sales in this period')));
       }
