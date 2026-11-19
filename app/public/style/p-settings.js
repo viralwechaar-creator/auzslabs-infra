@@ -332,59 +332,9 @@ page('settings', {
       section(t('Licence'), licenceCard()),
       section(t('Install on this computer'), installCard()),
       section(t('WhatsApp messages'), waCard()),
-      section(t('Expenses'), expensesCard()),
-      section(t('Audit log'), auditLogCard()),
       section(t('Health check'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Checks that bill totals, stock and returns all agree.')), h('div', { id: 'hc' }),
         h('button', { class: 'btn', type: 'button', onclick: async () => { const r = await api('sty_integrity_check'); const el = $('#hc'); clear(el).append(r.ok ? banner('ok', 'check', t('Everything agrees')) : banner('warn', 'alert', r.problems.map((p) => p.check + ' (' + p.count + ')').join('; '))); } }, t('Run check')),
         h('button', { class: 'btn', type: 'button', onclick: async () => { await api('sty_load_sample'); S.catAt = 0; toast(t('Sample added')); } }, t('Add sample styles')))),
     ));
   },
 });
-// ---- Expenses: shop running costs not tied to a purchase (rent, salaries, bills), so profit reports can
-// show a real net figure, not just gross margin on stock. ----
-const EXU = {};
-function expenseForm(e, done) {
-  const cat = input({ value: e ? e.category : '', placeholder: t('Rent, Salaries, Electricity...') });
-  const amt = input({ type: 'number', mode: 'decimal', value: e ? e.amount : '', placeholder: '0' });
-  const mode = selectEl([['cash', t('Cash')], ['upi', 'UPI'], ['card', t('Card')], ['bank', t('Bank')]], e ? e.mode : 'cash');
-  const note = input({ value: e ? e.note || '' : '', placeholder: t('Optional') });
-  sheet({ title: e ? t('Edit expense') : t('New expense'), body: h('div', { class: 'grid' }, field(t('Category'), cat), field(t('Amount'), amt), field(t('Paid by'), mode), field(t('Note'), note)),
-    actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
-      if (!N(amt.value)) { toast(t('Enter an amount'), { err: true }); return false; }
-      try { await api('sty_expense_save', { p: { id: e && e.id, category: cat.value, amount: N(amt.value), mode: mode.value, note: note.value } }); } catch (ex) { fail(ex); return false; }
-      close(); toast(t('Saved')); done && done();
-    } }] });
-}
-function expensesCard() {
-  const host = h('div', { class: 'grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
-  Object.assign(EXU, { k: 'month', from: null, to: null });
-  async function load() {
-    let rows = []; try { rows = await api('sty_list_expenses', { p: { from: EXU.from, to: EXU.to } }) || []; } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message)); }
-    const tot = rows.reduce((a, r) => a + r.amount, 0);
-    clear(host).append(
-      rangePicker(EXU, load, ['month', '30', '90', 'custom']),
-      h('div', { class: 'kv' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(tot))),
-      h('button', { class: 'btn', type: 'button', onclick: () => expenseForm(null, load) }, icon('plus', 18), t('Add expense')),
-      h('div', { class: 'list' }, rows.length ? rows.map((r) => liRow({ icon: 'wallet', title: r.category, sub: fmtDT(r.at) + (r.note ? ' · ' + r.note : '') + (r.staff ? ' · ' + r.staff : ''), value: inr(r.amount), valueSub: String(r.mode).toUpperCase(), chevron: true, onclick: () => expenseForm(r, load) })) : [empty('wallet', t('No expenses in this period'))]));
-  }
-  Object.assign(EXU, rangeFor('month'));
-  load();
-  return host;
-}
-// ---- Audit log: a trail of who did what -- void, return, price/settings change, bulk edit. Sign-ins are a
-// separate system entirely (auth_users/profiles) and never appear here. ----
-const AUU = {};
-function auditLogCard() {
-  const host = h('div', { class: 'grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '12px auto' } }));
-  let q = '';
-  async function load() {
-    let rows = []; try { rows = await api('sty_audit_list', { p: { from: AUU.from, to: AUU.to, q } }) || []; } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message)); }
-    clear(host).append(
-      rangePicker(AUU, load, ['today', 'week', 'month', '30', 'custom']),
-      searchField(t('Action, reference, staff'), debounce((x) => { q = x; load(); }, 250), q),
-      h('div', { class: 'list' }, rows.length ? rows.map((r) => liRow({ icon: 'clock', title: String(r.action).replace(/[._]/g, ' '), sub: fmtDT(r.at) + (r.staff ? ' · ' + r.staff : '') + (r.ref ? ' · ' + r.ref : ''), value: '', chevron: false })) : [empty('clock', t('Nothing in this period'))]));
-  }
-  Object.assign(AUU, rangeFor('today'));
-  load();
-  return host;
-}

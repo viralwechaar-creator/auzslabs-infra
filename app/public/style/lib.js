@@ -36,14 +36,20 @@ function cashCountSheet(target) {
       totEl.textContent = inr(dnTotal(cnt)); chgTotEl.textContent = inr(dnTotal(chg));
     };
     const quick = [...new Set([target, ...[10, 50, 100, 500].map((n) => Math.ceil(target / n) * n)])].filter((v) => v >= target).slice(0, 4);
-    const grid = (counts, insMap, subMap, onStep) => h('div', { class: 'grid', style: { gap: '4px' } }, DENOMS.map((d) => {
-      insMap[d] = input({ type: 'number', mode: 'numeric', value: '', placeholder: '0', oninput: (e) => { counts[d] = Math.max(0, Math.floor(N(e.target.value))); upd(); } });
-      insMap[d].style.width = '64px';
-      subMap[d] = h('span', { class: 'muted small num', style: { width: '70px', textAlign: 'right' } });
-      const step = (x) => h('button', { class: 'btn plain icon', type: 'button', onclick: () => { onStep(d, x); upd(); } }, x > 0 ? icon('plus', 14) : '−');
-      return h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } }, h('span', { style: { width: '56px' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
-    }));
-    const s = sheet({ title: t('Count cash'), full: true, body: h('div', { class: 'grid' },
+    // Two columns side by side (₹2000|₹500, ₹200|₹100, ...), same pairing as the Accounting app's own denom
+    // grid -- a single tall column left the rest of a wide sheet blank.
+    const grid = (counts, insMap, subMap, onStep) => {
+      const row = (d) => {
+        insMap[d] = input({ type: 'number', mode: 'numeric', value: '', placeholder: '0', oninput: (e) => { counts[d] = Math.max(0, Math.floor(N(e.target.value))); upd(); } });
+        insMap[d].style.width = '64px';
+        subMap[d] = h('span', { class: 'muted small num', style: { width: '70px', textAlign: 'right' } });
+        const step = (x) => h('button', { class: 'btn plain icon', type: 'button', onclick: () => { onStep(d, x); upd(); } }, x > 0 ? icon('plus', 14) : '−');
+        return h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } }, h('span', { style: { width: '56px' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
+      };
+      const pairs = []; for (let i = 0; i < DENOMS.length; i += 2) pairs.push([DENOMS[i], DENOMS[i + 1]]);
+      return h('div', { class: 'grid', style: { gap: '4px' } }, pairs.map(([a, b]) => h('div', { class: 'two' }, row(a), b != null ? row(b) : null)));
+    };
+    const s = sheet({ title: t('Count cash'), wide: true, body: h('div', { class: 'grid' },
       h('div', { class: 'kv' }, h('span', null, t('Cash to receive')), h('b', { class: 'num' }, inr(target))),
       quick.length ? h('div', { class: 'chips' }, quick.map((v) => h('button', { class: 'chip', type: 'button', onclick: () => { Object.keys(cnt).forEach((k) => cnt[k] = 0); Object.assign(cnt, dnChange(v)); upd(); } }, inr(v)))) : null,
       h('div', { class: 'cap' }, t('Notes and coins received')), grid(cnt, ins, subs, (d, x) => { cnt[d] = Math.max(0, (cnt[d] || 0) + x); }),
