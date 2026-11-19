@@ -4,7 +4,10 @@
 const OST = { tab: 'orders', status: 'new' };
 const PAYL = { cod: 'Cash on delivery', upi: 'UPI', online: 'Card / online' };
 const ORD_STATUS = [['new', 'New'], ['confirmed', 'Confirmed'], ['packed', 'Packed'], ['shipped', 'Shipped'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']];
-const storeLink = (slug) => 'https://' + slug + '.auzslab.in/store.html';
+const storeLink = (slug, template) => 'https://' + slug + '.auzslab.in/' + (template === '2' ? 'store2.html' : 'store.html');
+// Template 2 (app/public/store2.html) is a paid add-on: entitled the same way every other add-on is
+// (tenant_settings.features, same featureOn()-style check shell.js already uses for the whole app gate).
+const template2On = () => { const f = (S.dash && S.dash.features) || {}, e = (S.dash && S.dash.enabled_features) || {}; return f.style_template_two === true && e.style_template_two !== false; };
 
 page('store', {
   title: 'Online store', perm: 'sty_sell',
@@ -66,8 +69,8 @@ async function editor(host) {
   let C; try { C = await api('sty_store_get'); } catch (e) { return host.append(empty('cloudOff', t('Could not load'), e.message)); }
   const a = C.about || (C.about = {}), sh = C.shipping || (C.shipping = {}), pay = C.pay || (C.pay = { cod: true, upi: true }), soc = C.social || (C.social = {}), pol = C.policies || (C.policies = {});
   C.blogs = C.blogs || []; C.media = C.media || []; C.jobs = C.jobs || []; const hire = C.hiring || (C.hiring = {}); C.heroImages = C.heroImages || []; C.stores = C.stores || []; C.founders = C.founders || []; C.faqs = C.faqs || [];
+  C.template = C.template === '2' && template2On() ? '2' : '1';
   const st = S.ctx.settings, feat = st.features || {};
-  const link = storeLink(C.slug);
   const pickImg = (cb) => { const i = h('input', { type: 'file', accept: 'image/*', class: 'hidden' }); document.body.append(i); i.onchange = async () => { const f = i.files[0]; i.remove(); if (!f) return; try { await cb(await uploadPhoto(f)); } catch (e) { fail(e); } }; i.click(); };
   const sw = (label, hint, get, set) => { const c = h('input', { type: 'checkbox', checked: !!get(), onchange: () => set(c.checked) }); return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, label), hint ? h('div', { class: 'muted small' }, hint) : null), c); };
   const tx = (get, set, o) => { const i = input(Object.assign({ value: get() || '' }, o || {})); i.oninput = () => set(i.value); return i; };
@@ -95,18 +98,31 @@ async function editor(host) {
     try {
       const num = (x) => (x === '' || x == null ? 0 : Number(x) || 0);
       sh.fee = num(sh.fee); sh.freeOver = num(sh.freeOver);
-      const p = { on: !!C.on, tagline: C.tagline || '', announce: C.announce || '', heroImages: C.heroImages, heroTitle: C.heroTitle || '', heroCta: C.heroCta || '', about: a, founders: C.founders, stores: C.stores, faqs: C.faqs, policies: pol, shipping: sh, blogs: C.blogs, media: C.media, jobs: C.jobs, hiring: hire, sizeGuide: { note: sgNote.v, head: ['Size', 'Chest (in)', 'Waist (in)'], rows: sgRows.filter((x) => x.size).map((x) => [x.size, x.chest || '', x.waist || '']) }, waOrder: C.waOrder !== false, abandonWa: !!C.abandonWa, pay, social: soc, email: C.email || '', phone: C.phone || '', brandName: C.brandName || '', showSale: !!C.showSale };
+      const p = { on: !!C.on, tagline: C.tagline || '', announce: C.announce || '', heroImages: C.heroImages, heroTitle: C.heroTitle || '', heroCta: C.heroCta || '', about: a, founders: C.founders, stores: C.stores, faqs: C.faqs, policies: pol, shipping: sh, blogs: C.blogs, media: C.media, jobs: C.jobs, hiring: hire, sizeGuide: { note: sgNote.v, head: ['Size', 'Chest (in)', 'Waist (in)'], rows: sgRows.filter((x) => x.size).map((x) => [x.size, x.chest || '', x.waist || '']) }, waOrder: C.waOrder !== false, abandonWa: !!C.abandonWa, pay, social: soc, email: C.email || '', phone: C.phone || '', brandName: C.brandName || '', showSale: !!C.showSale, template: C.template };
       C = await api('sty_store_save', { p }); toast(t('Saved'));
     } catch (e) { fail(e); } finally { b.disabled = false; }
   } }, t('Save store'));
   const reqState = C.payReq === 'live' ? banner('ok', 'check', t('Online card payments are switched on for your store.')) : C.payReq === 'requested' ? banner('', 'clock', t('You asked for online card payments. AUZslab will contact you.')) : null;
 
+  const linkIn = h('input', { class: 'input grow', readonly: true, value: storeLink(C.slug, C.template), 'aria-label': t('Store link') });
+  const linkA = h('a', { class: 'btn sm', href: storeLink(C.slug, C.template), target: '_blank', rel: 'noopener' }, t('Open'));
+  const repaintLink = () => { const l = storeLink(C.slug, C.template); linkIn.value = l; linkA.setAttribute('href', l); };
+  const tplBody = h('div', { class: 'card grid' });
+  const paintTpl = () => {
+    clear(tplBody);
+    if (!template2On()) { tplBody.append(h('div', { class: 'cap' }, t('A second, photo-forward black & white template is available as a paid add-on. Ask AUZslab to add it to your plan.'))); return; }
+    tplBody.append(seg([['1', t('Classic')], ['2', t('Template 2')]], C.template, (x) => { C.template = x; repaintLink(); paintTpl(); }, { full: true }),
+      C.template === '2' ? h('div', { class: 'cap' }, t('Your store link now opens the new black & white template. Switch back any time -- nothing in your catalogue changes.')) : null);
+  };
+  paintTpl();
+
   host.append(
     section(t('Your store'), h('div', { class: 'card grid' },
       sw(t('Open the online store'), t('When off, visitors see a "not open yet" page.'), () => C.on, (x) => { C.on = x; }),
       sw(t('Show discounts on the website'), t('Off: no sale price or % off is shown. Switch on only when you have approved a sale.'), () => C.showSale, (x) => { C.showSale = x; }),
-      h('div', { class: 'field' }, h('label', null, t('Store link')), h('div', { class: 'row', style: { gap: '8px' } }, h('input', { class: 'input grow', readonly: true, value: link, 'aria-label': t('Store link') }), h('button', { class: 'btn sm', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(link); toast(t('Copied')); } catch (e) { toast(link); } } }, t('Copy')), h('a', { class: 'btn sm', href: link, target: '_blank', rel: 'noopener' }, t('Open')))),
+      h('div', { class: 'field' }, h('label', null, t('Store link')), h('div', { class: 'row', style: { gap: '8px' } }, linkIn, h('button', { class: 'btn sm', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(linkIn.value); toast(t('Copied')); } catch (e) { toast(linkIn.value); } } }, t('Copy')), linkA)),
       field(t('Top bar message (optional)'), tx(() => C.announce, (v) => { C.announce = v; }, { placeholder: t('Free shipping above ₹2,999') })))),
+    section(t('Store template'), tplBody),
     section(t('Home page'), h('div', { class: 'card grid' }, h('div', { class: 'cap' }, t('Big hero pictures (they change one by one)')), hero,
       h('div', { class: 'two' }, field(t('Hero text'), tx(() => C.heroTitle, (v) => { C.heroTitle = v; })), field(t('Hero button'), tx(() => C.heroCta, (v) => { C.heroCta = v; }, { placeholder: t('Shop now') }))))),
     section(t('Shipping and payment'), h('div', { class: 'card grid' }, h('div', { class: 'two' }, field(t('Shipping charge ₹'), tx(() => sh.fee, (v) => { sh.fee = v; }, { type: 'number', mode: 'decimal' })), field(t('Free shipping above ₹'), tx(() => sh.freeOver, (v) => { sh.freeOver = v; }, { type: 'number', mode: 'decimal' }))),
