@@ -159,14 +159,15 @@ const bagTotal = () => bagLines().reduce((a, l) => a + l.vr.price * l.q, 0);
 const bagCount = () => bagLines().reduce((a, l) => a + l.q, 0);
 function openMinimalBag() {
   const items = bagLines();
-  const body = E('div', { class: 'minimal-bag-lines' }, items.map((line) =>
+  const body = E('div', { class: 'minimal-bag-lines' }, items.length ? items.map((line) =>
     E('div', { class: 'ln' }, E('a', { href: link('p/' + line.s.id), onclick: () => pop.close() }, line.s.name),
       E('span', { class: 'mut' }, [line.vr.colour, line.vr.size, '×' + line.q].filter(Boolean).join(' · ')),
-      E('span', null, inr(line.vr.price * line.q)))));
-  const foot = E('div', { class: 'minimal-bag-foot' },
+      E('span', null, inr(line.vr.price * line.q)))) : E('p', null, 'Your bag is empty.'));
+  const foot = items.length ? E('div', { class: 'minimal-bag-foot' },
     E('div', { class: 'minimal-heading' }, E('strong', null, 'Estimated total'), E('strong', null, inr(bagTotal()))),
     E('div', { class: 'row2' }, E('a', { class: 'btn out', href: link('bag'), onclick: () => pop.close() }, 'View bag'),
-      E('a', { class: 'btn', href: link('checkout'), onclick: () => pop.close() }, 'Checkout')));
+      E('a', { class: 'btn', href: link('checkout'), onclick: () => pop.close() }, 'Checkout')))
+    : E('a', { class: 'btn wide', href: link('shop'), onclick: () => pop.close() }, 'Shop now');
   const pop = sheet('Your bag', body, foot);
   pop.el.classList.add('minimal-bag-drawer');
   pop.el.querySelector('button').focus();
@@ -187,12 +188,16 @@ function toggleDense() {
 function shell() {
   counts = [];
   const name = D.shop.name;
+  const minimal = cfg().template === 'minimal';
   const brandEl = E('a', { class: 'brand', href: link('') }, name);
   const top = E('header', { class: 'top' },
-    E('div', { class: 'l' }, E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
+    E('div', { class: 'l' }, minimal ? E('button', { class: 'ic minimal-menu', 'aria-label': 'Menu', onclick: openMenu }, icon('menu')) : null,
+      E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
-      E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
+      E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')),
+      minimal ? E('button', { class: 'ic', type: 'button', 'aria-label': 'Bag', onclick: openMinimalBag }, icon('bag'), countBadge(bagCount))
+        : E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
       E('button', { class: 'menu-pill deskonly', onclick: openMenu }, E('i'), 'Menu')));
   const c = cfg();
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
@@ -349,26 +354,28 @@ function minimalHome(v) {
   const heroImages = configuredImages.length ? configuredImages : featured.map((s) => pickPic(s, 'hero')).filter(Boolean);
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
   const categories = [...new Set(STY.map((s) => s.category).filter(Boolean))];
-  const tiles = collections.length ? collections.map((col) => ({
+  const tiles = collections.map((col) => ({
     name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)),
     photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
-  })) : categories.map((category) => ({
+  })).concat(categories.map((category) => ({
     name: category, href: link('shop?cat=' + encodeURIComponent(category)),
     photo: STY.filter((s) => s.category === category).map((s) => pickPic(s, 'banner')).find(Boolean),
-  }));
+  })));
   const heading = (title, href, caption) => E('div', { class: 'minimal-heading' },
-    E('h2', null, title), E('a', { href }, caption));
+    E('h2', null, title), E('a', { href }, caption, ' ↗'));
   const heroImage = heroImages.length ? E('img', { src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
   let slide = 0;
+  const counter = E('span', { 'aria-live': 'polite' }, '01 / ' + String(heroImages.length).padStart(2, '0'));
   const step = (direction) => {
     slide = (slide + direction + heroImages.length) % heroImages.length;
     heroImage.src = heroImages[slide];
+    counter.textContent = String(slide + 1).padStart(2, '0') + ' / ' + String(heroImages.length).padStart(2, '0');
   };
   v.append(E('section', { class: 'minimal-hero' }, heroImage,
     E('div', { class: 'minimal-hero-copy' }, E('h1', null, c.heroTitle || D.shop.name),
       E('a', { href: link('shop') }, c.heroCta || 'Shop now')),
     heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav' },
-      E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')),
+      E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')), counter,
       E('button', { type: 'button', 'aria-label': 'Next banner', onclick: () => step(1) }, icon('right'))) : null));
   if (featured.length) v.append(E('section', { class: 'minimal-section' },
     heading('Latest drop', link('shop?new=1'), 'View all'), gridOf(featured)));
@@ -378,8 +385,13 @@ function minimalHome(v) {
       E('a', { class: 'minimal-collection', href: tile.href },
         tile.photo ? E('img', { src: tile.photo, alt: '', loading: 'lazy' }) : null,
         E('span', null, tile.name))))));
-  if (STY.length > featured.length) v.append(E('section', { class: 'minimal-section' },
-    heading('Shop the collection', link('shop'), 'Shop all'), gridOf(STY.slice(0, 8))));
+  const feature = tiles.find((tile) => tile.photo);
+  if (feature) v.append(E('section', { class: 'minimal-editorial' },
+    E('a', { href: feature.href, 'aria-label': feature.name }, E('img', { src: feature.photo, alt: '', loading: 'lazy' })),
+    E('div', null, E('h2', null, feature.name), E('a', { href: feature.href }, 'Shop collection ↗'))));
+  const more = STY.filter((style) => !featured.includes(style));
+  if (more.length) v.append(E('section', { class: 'minimal-section' },
+    heading('Discover more', link('shop'), 'Shop all'), gridOf(more.slice(0, 8))));
   if ((c.stores || []).length) v.append(E('section', { class: 'minimal-section' },
     heading('Visit us', link('stores'), 'All stores'), storeCards(c.stores)));
 }
@@ -902,7 +914,7 @@ function route() {
   TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
 }
-const heroEnd = () => { const h = document.querySelector('.hero'); return h ? h.offsetHeight - 70 : window.innerHeight * 0.9; };
+const heroEnd = () => { const h = document.querySelector('.hero,.minimal-hero'); return h ? h.offsetHeight - 70 : window.innerHeight * 0.9; };
 const navState = () => { document.body.classList.toggle('atop', window.scrollY < 40); document.body.classList.toggle('pasthero', window.scrollY > heroEnd()); const dp = Math.max(0, Math.min(1, (window.scrollY - (heroEnd() - 260)) / 220)); document.documentElement.style.setProperty('--dp', dp.toFixed(3)); document.body.classList.toggle('dockon', dp > 0.6); };
 window.addEventListener('scroll', navState, { passive: true }); window.addEventListener('hashchange', () => setTimeout(navState, 50));
 function ingest(d) {
