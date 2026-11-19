@@ -174,8 +174,13 @@
    dark mode), not just this screen's photo-grid. That is what made the "More" sheet's icon tiles wash out to near-white
    in dark mode (#f2f2f2 tile + #111 icon, instead of the brand-wine accent every other staff app uses). */
 .sellpage{--accent:#111;--accent-text:#111;--accent-soft:rgba(0,0,0,.07);--accent-soft2:rgba(0,0,0,.1);--accent-line:rgba(0,0,0,.28);--on-accent:#fff;--tint:#111;--tint-text:#111;--tint-fg:#fff;--tint-soft:rgba(0,0,0,.07);--tint-line:rgba(0,0,0,.28);--bg:#f1f1f1;--bar:rgba(255,255,255,.62)}
-@media (prefers-color-scheme:dark){html:not([data-theme=light]) .sellpage{--accent:#f2f2f2;--accent-text:#f2f2f2;--accent-soft:rgba(255,255,255,.12);--accent-line:rgba(255,255,255,.35);--on-accent:#111;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bar:rgba(30,30,32,.6)}}
-html[data-theme=dark] .sellpage{--accent:#f2f2f2;--accent-text:#f2f2f2;--accent-soft:rgba(255,255,255,.12);--accent-line:rgba(255,255,255,.35);--on-accent:#111;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bar:rgba(30,30,32,.6)}
+/* --bg here must also flip back for dark mode: .sellpage's own light-mode --bg:#f1f1f1 above (a light grey
+   distinct from white cards, for the light "gallery" look) otherwise leaks straight into dark mode untouched
+   -- since nothing redefines it, it stays a near-white #f1f1f1 and collides with .chip[aria-pressed=true]'s
+   background:var(--label) (#f5f5f5), making the selected category chip's text (color:var(--bg)) all but
+   invisible: white-on-white. Same bug class this file's own comment above already describes once. */
+@media (prefers-color-scheme:dark){html:not([data-theme=light]) .sellpage{--accent:#f2f2f2;--accent-text:#f2f2f2;--accent-soft:rgba(255,255,255,.12);--accent-line:rgba(255,255,255,.35);--on-accent:#111;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bg:#111;--bar:rgba(30,30,32,.6)}}
+html[data-theme=dark] .sellpage{--accent:#f2f2f2;--accent-text:#f2f2f2;--accent-soft:rgba(255,255,255,.12);--accent-line:rgba(255,255,255,.35);--on-accent:#111;--tint:#f2f2f2;--tint-text:#f2f2f2;--tint-fg:#111;--tint-soft:rgba(255,255,255,.12);--bg:#111;--bar:rgba(30,30,32,.6)}
 .chip{background:var(--card);box-shadow:none;font-weight:500}.chip[aria-pressed=true]{background:var(--label);color:var(--bg)}
 .btn.fill{background:var(--label);color:var(--bg)}
 .sgrid{gap:22px 10px}
