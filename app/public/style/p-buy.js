@@ -50,9 +50,14 @@ async function purchaseSheet(p0) {
     h('div', { class: 'kv' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(p.total))), h('div', { class: 'kv' }, h('span', null, t('Paid')), h('b', { class: 'num' }, inr(p.paid)))) });
 }
 function supplierForm(s, done) {
-  const f = { name: input({ value: s ? s.name : '' }), phone: input({ value: s ? s.phone || '' : '', mode: 'tel' }), gstin: input({ value: s ? s.gstin || '' : '' }), contact: input({ value: s ? s.contact || '' : '' }) };
-  sheet({ title: s ? t('Edit supplier') : t('New supplier'), body: h('div', { class: 'grid' }, field(t('Name'), f.name), field(t('Phone'), f.phone), field(t('Contact person'), f.contact), field('GSTIN', f.gstin), gstFetchRow(f.gstin, (d) => { if (!f.name.value.trim()) f.name.value = d.trade_name || d.legal_name || ''; })),
-    actions: [{ label: t('Save'), primary: true, onclick: async (close) => { if (!f.name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; } const r = await api('sty_save_supplier', { p: { id: s && s.id, newId: s ? undefined : uid(), name: f.name.value, phone: f.phone.value, gstin: f.gstin.value, contact: f.contact.value } }); close(); done && done(r); } }] });
+  const f = { name: input({ value: s ? s.name : '' }), phone: input({ value: s ? s.phone || '' : '', mode: 'tel' }), gstin: input({ value: s ? s.gstin || '' : '' }), contact: input({ value: s ? s.contact || '' : '' }),
+    address: input({ value: s ? s.address || '' : '', placeholder: t('Optional') }), email: input({ type: 'email', value: s ? s.email || '' : '', placeholder: t('Optional') }), pan: input({ value: s ? s.pan || '' : '', placeholder: t('Optional') }),
+    creditLimit: input({ type: 'number', mode: 'decimal', value: s && s.creditLimit ? s.creditLimit : '', placeholder: '0 = ' + t('no limit') }), creditDays: input({ type: 'number', mode: 'numeric', value: s && s.creditDays ? s.creditDays : '', placeholder: '0' }) };
+  sheet({ title: s ? t('Edit supplier') : t('New supplier'), body: h('div', { class: 'grid' }, field(t('Name'), f.name), field(t('Phone'), f.phone), field(t('Email'), f.email), field(t('Contact person'), f.contact), field('GSTIN', f.gstin), gstFetchRow(f.gstin, (d) => { if (!f.name.value.trim()) f.name.value = d.trade_name || d.legal_name || ''; if (d.address) f.address.value = d.address; }),
+    field(t('Address'), f.address), field('PAN', f.pan), h('div', { class: 'two' }, field(t('Credit limit') + ' ₹', f.creditLimit), field(t('Payment due in (days)'), f.creditDays))),
+    actions: [{ label: t('Save'), primary: true, onclick: async (close) => { if (!f.name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
+      const r = await api('sty_save_supplier', { p: { id: s && s.id, newId: s ? undefined : uid(), name: f.name.value, phone: f.phone.value, gstin: f.gstin.value, contact: f.contact.value, address: f.address.value, email: f.email.value, pan: f.pan.value.trim().toUpperCase(), creditLimit: N(f.creditLimit.value), creditDays: Math.round(N(f.creditDays.value)) } });
+      close(); done && done(r); } }] });
 }
 function supplierSheet(s, done) {
   const amt = input({ type: 'number', mode: 'decimal', value: s.due > 0 ? s.due : '', placeholder: '0' }), mode = selectEl([['cash', t('Cash')], ['upi', 'UPI'], ['bank', t('Bank')]], 'cash');
