@@ -7,7 +7,10 @@ const ORD_STATUS = [['new', 'New'], ['confirmed', 'Confirmed'], ['packed', 'Pack
 const storeLink = (slug, template) => 'https://' + slug + '.auzslab.in/' + (template === '2' ? 'store2.html' : 'store.html');
 // Template 2 (app/public/store2.html) is a paid add-on: entitled the same way every other add-on is
 // (tenant_settings.features, same featureOn()-style check shell.js already uses for the whole app gate).
-const template2On = () => { const f = (S.dash && S.dash.features) || {}, e = (S.dash && S.dash.enabled_features) || {}; return f.style_template_two === true && e.style_template_two !== false; };
+const storeTemplateOn = (feature) => S.dash?.features?.[feature] === true && S.dash?.enabled_features?.[feature] !== false;
+const storeTemplates = () => [['1', t('Classic')],
+  ...(storeTemplateOn('style_template_two') ? [['2', t('Template 2')]] : []),
+  ...(storeTemplateOn('style_template_minimal') ? [['minimal', t('Minimal')]] : [])];
 
 page('store', {
   title: 'Online store', perm: 'sty_sell',
@@ -69,7 +72,7 @@ async function editor(host) {
   let C; try { C = await api('sty_store_get'); } catch (e) { return host.append(empty('cloudOff', t('Could not load'), e.message)); }
   const a = C.about || (C.about = {}), sh = C.shipping || (C.shipping = {}), pay = C.pay || (C.pay = { cod: true, upi: true }), soc = C.social || (C.social = {}), pol = C.policies || (C.policies = {});
   C.blogs = C.blogs || []; C.media = C.media || []; C.jobs = C.jobs || []; const hire = C.hiring || (C.hiring = {}); C.heroImages = C.heroImages || []; C.stores = C.stores || []; C.founders = C.founders || []; C.faqs = C.faqs || [];
-  C.template = C.template === '2' && template2On() ? '2' : '1';
+  C.template = storeTemplates().some(([id]) => id === C.template) ? C.template : '1';
   const st = S.ctx.settings, feat = st.features || {};
   const pickImg = (cb) => { const i = h('input', { type: 'file', accept: 'image/*', class: 'hidden' }); document.body.append(i); i.onchange = async () => { const f = i.files[0]; i.remove(); if (!f) return; try { await cb(await uploadPhoto(f)); } catch (e) { fail(e); } }; i.click(); };
   const sw = (label, hint, get, set) => { const c = h('input', { type: 'checkbox', checked: !!get(), onchange: () => set(c.checked) }); return h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, label), hint ? h('div', { class: 'muted small' }, hint) : null), c); };
@@ -110,8 +113,9 @@ async function editor(host) {
   const tplBody = h('div', { class: 'card grid' });
   const paintTpl = () => {
     clear(tplBody);
-    if (!template2On()) { tplBody.append(h('div', { class: 'cap' }, t('A second, photo-forward black & white template is available as a paid add-on. Ask AUZslab to add it to your plan.'))); return; }
-    tplBody.append(seg([['1', t('Classic')], ['2', t('Template 2')]], C.template, (x) => { C.template = x; repaintLink(); paintTpl(); }, { full: true }),
+    const choices = storeTemplates();
+    if (choices.length === 1) { tplBody.append(h('div', { class: 'cap' }, t('Ask AUZslab to add more storefront templates to your plan.'))); return; }
+    tplBody.append(seg(choices, C.template, (x) => { C.template = x; repaintLink(); paintTpl(); }, { full: true }),
       C.template === '2' ? h('div', { class: 'cap' }, t('Your store link now opens the new black & white template. Switch back any time -- nothing in your catalogue changes.')) : null);
   };
   paintTpl();

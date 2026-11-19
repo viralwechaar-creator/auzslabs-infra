@@ -144,18 +144,34 @@ function quickAdd(s) {
   };
   paint();
   const sh = sheet(s.name, body, cb);
-  cb.onclick = () => { const v = s.variants.find((x) => (!colour || x.colour === colour) && x.size === size) || (s.variants.length === 1 ? s.variants[0] : null); if (!v) return; addBag(v.id, 1); sh.close(); };
+  cb.onclick = () => { const v = s.variants.find((x) => (!colour || x.colour === colour) && x.size === size) || (s.variants.length === 1 ? s.variants[0] : null); if (!v || !addBag(v.id, 1)) return; sh.close(); if (cfg().template === 'minimal') openMinimalBag(); };
 }
 function addBag(vid, q) {
-  const v = VAR[vid]; if (!v) return;
+  const v = VAR[vid]; if (!v || !(v.left > 0)) return false;
   const cur = bag.find((b) => b.v === vid); const nq = Math.min((cur ? cur.q : 0) + q, v.left >= 9 ? 20 : v.left);
   if (cur) cur.q = nq; else bag.push({ v: vid, q: Math.max(nq, 1) });
   try { TR.push('bag', null, { id: v.sid, name: (BYID[v.sid] || {}).name }); } catch {}
   saveBag(); toast('Added to your bag');
+  return true;
 }
 const bagLines = () => bag.map((b) => ({ ...b, vr: VAR[b.v] })).filter((b) => b.vr).map((b) => ({ ...b, s: BYID[b.vr.sid] }));
 const bagTotal = () => bagLines().reduce((a, l) => a + l.vr.price * l.q, 0);
 const bagCount = () => bagLines().reduce((a, l) => a + l.q, 0);
+function openMinimalBag() {
+  const items = bagLines();
+  const body = E('div', { class: 'minimal-bag-lines' }, items.map((line) =>
+    E('div', { class: 'ln' }, E('a', { href: link('p/' + line.s.id), onclick: () => pop.close() }, line.s.name),
+      E('span', { class: 'mut' }, [line.vr.colour, line.vr.size, '×' + line.q].filter(Boolean).join(' · ')),
+      E('span', null, inr(line.vr.price * line.q)))));
+  const foot = E('div', { class: 'minimal-bag-foot' },
+    E('div', { class: 'minimal-heading' }, E('strong', null, 'Estimated total'), E('strong', null, inr(bagTotal()))),
+    E('div', { class: 'row2' }, E('a', { class: 'btn out', href: link('bag'), onclick: () => pop.close() }, 'View bag'),
+      E('a', { class: 'btn', href: link('checkout'), onclick: () => pop.close() }, 'Checkout')));
+  const pop = sheet('Your bag', body, foot);
+  pop.el.classList.add('minimal-bag-drawer');
+  pop.el.querySelector('button').focus();
+  pop.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') pop.close(); });
+}
 
 // ---------- shell ----------
 let counts = [];
@@ -326,7 +342,51 @@ function gridOf(list, withBlanks) {
   list.forEach((s, i) => { g.append(card(s)); if (withBlanks && (i + 1) % 7 === 0 && i + 1 < list.length) g.append(E('div', { class: 'blank' + (((i + 1) / 7) % 2 ? '' : ' ghost') + ' d', 'aria-hidden': 'true' })); });
   return g;
 }
+function minimalHome(v) {
+  const c = cfg();
+  const featured = newest(4);
+  const configuredImages = (c.heroImages || []).filter(Boolean);
+  const heroImages = configuredImages.length ? configuredImages : featured.map((s) => pickPic(s, 'hero')).filter(Boolean);
+  const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
+  const categories = [...new Set(STY.map((s) => s.category).filter(Boolean))];
+  const tiles = collections.length ? collections.map((col) => ({
+    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)),
+    photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
+  })) : categories.map((category) => ({
+    name: category, href: link('shop?cat=' + encodeURIComponent(category)),
+    photo: STY.filter((s) => s.category === category).map((s) => pickPic(s, 'banner')).find(Boolean),
+  }));
+  const heading = (title, href, caption) => E('div', { class: 'minimal-heading' },
+    E('h2', null, title), E('a', { href }, caption));
+  const heroImage = heroImages.length ? E('img', { src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
+  let slide = 0;
+  const step = (direction) => {
+    slide = (slide + direction + heroImages.length) % heroImages.length;
+    heroImage.src = heroImages[slide];
+  };
+  v.append(E('section', { class: 'minimal-hero' }, heroImage,
+    E('div', { class: 'minimal-hero-copy' }, E('h1', null, c.heroTitle || D.shop.name),
+      E('a', { href: link('shop') }, c.heroCta || 'Shop now')),
+    heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav' },
+      E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')),
+      E('button', { type: 'button', 'aria-label': 'Next banner', onclick: () => step(1) }, icon('right'))) : null));
+  if (featured.length) v.append(E('section', { class: 'minimal-section' },
+    heading('Latest drop', link('shop?new=1'), 'View all'), gridOf(featured)));
+  if (tiles.length) v.append(E('section', { class: 'minimal-section' },
+    heading('Collections', link('collections'), 'Explore'),
+    E('div', { class: 'minimal-collections' }, tiles.slice(0, 3).map((tile) =>
+      E('a', { class: 'minimal-collection', href: tile.href },
+        tile.photo ? E('img', { src: tile.photo, alt: '', loading: 'lazy' }) : null,
+        E('span', null, tile.name))))));
+  if (STY.length > featured.length) v.append(E('section', { class: 'minimal-section' },
+    heading('Shop the collection', link('shop'), 'Shop all'), gridOf(STY.slice(0, 8))));
+  if ((c.stores || []).length) v.append(E('section', { class: 'minimal-section' },
+    heading('Visit us', link('stores'), 'All stores'), storeCards(c.stores)));
+}
 V.home = (v) => {
+  if (cfg().template === 'minimal') {
+    return minimalHome(v);
+  }
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
   const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
   let hero;
@@ -479,7 +539,11 @@ V.p = (v, id) => {
         E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; paintInfo(); } }, x.size)))) : null,
       chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
       gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
-      E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone, onclick: () => need(chosen) && (addBag(chosen.id, qty)) }, 'Add to bag'), E('button', { class: 'btn', disabled: gone, onclick: () => { if (!need(chosen)) return; addBag(chosen.id, qty); go('checkout'); } }, 'Buy now')),
+      E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
+        if (need(chosen) && addBag(chosen.id, qty) && cfg().template === 'minimal') openMinimalBag();
+      } }, 'Add to bag'), E('button', { class: 'btn', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
+        if (need(chosen) && addBag(chosen.id, qty)) go('checkout');
+      } }, 'Buy now')),
       E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
       E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
@@ -524,7 +588,7 @@ V.p = (v, id) => {
   setMeta(s.name + ' · ' + D.shop.name, (s.description || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
   // on a wide screen the details card folds up by itself when you scroll down to the other products, so it never covers them
   const bands = [...v.querySelectorAll('.band')];
-  if (bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
+  if (cfg().template !== 'minimal' && bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
     const io = new IntersectionObserver((es) => { const on = es.some((e) => e.isIntersecting); if (on && !pinned) { folded = true; info.classList.add('fold'); } else if (!on) { pinned = false; folded = false; info.classList.remove('fold'); } }, { threshold: 0.12 });
     bands.forEach((b) => io.observe(b));
   }
@@ -827,6 +891,9 @@ const TR = (() => {
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
   const id = parts[0] || 'home'; const view = $('#view'); if (!view) return; clear(view);
+  const minimal = cfg().template === 'minimal';
+  document.body.classList.toggle('minimal-store', minimal);
+  view.classList.toggle('minimal-home', id === 'home' && minimal);
   document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = V[id] || V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
