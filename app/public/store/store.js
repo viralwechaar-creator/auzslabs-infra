@@ -387,6 +387,10 @@ function gridOf(list, withBlanks) {
 V.home = (v) => {
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
   const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
+  // the transparent-header-over-the-hero-photo treatment only makes sense when there IS a photo behind it --
+  // without one (a brand-new catalogue, or no photos tagged for the hero) the header must stay solid, or its
+  // white text disappears against the plain white empty-hero background
+  document.body.classList.toggle('herophoto', fallback.length > 0);
   let hero;
   if (fallback.length) {
     let i = 0; const sls = fallback.map((u, k) => E('div', { class: 'sl' + (k === 0 ? ' on' : '') }, E('img', { src: u, alt: '', loading: k ? 'lazy' : 'eager' })));
