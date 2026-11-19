@@ -272,12 +272,15 @@ html[data-theme=dark] .sellpage{--accent:#f2f2f2;--accent-text:#f2f2f2;--accent-
 @media (min-width:900px){.sheet:has(.vp-h){width:min(460px,92vw)}}
 .vp-h .ph{width:84px;height:84px}
 
-/* No zoom; clear contrast for the selected tab */
+/* No zoom; clear contrast for the selected tab. Neutral ink highlight, not the AUZslab wine
+   accent -- the owner asked to drop the "classic theme red" on the active nav item. --label/
+   --bg already invert correctly between light and dark mode (ink-on-paper, then paper-on-ink),
+   same pattern style.fine.css's own .chip[aria-pressed=true] already uses a few lines up. */
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
-.side [aria-current=page],.side .nav-i[aria-current=page]{background:var(--accent)!important;color:#fff!important;font-weight:700}
-.side [aria-current=page] svg{color:#fff!important;stroke:currentColor}
-.tabbar button[aria-current=page]{background:var(--accent)!important;color:#fff!important;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.tabbar button[aria-current=page] svg{color:#fff!important}
+.side [aria-current=page],.side .nav-i[aria-current=page]{background:var(--label)!important;color:var(--bg)!important;font-weight:700}
+.side [aria-current=page] svg{color:var(--bg)!important;stroke:currentColor}
+.tabbar button[aria-current=page]{background:var(--label)!important;color:var(--bg)!important;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tabbar button[aria-current=page] svg{color:var(--bg)!important}
 
 /* Stock sheet + style editor: sized to their content, two columns, a little contrast */
 .sheet:has(.stk),.sheet:has(.edgrid){height:auto}
