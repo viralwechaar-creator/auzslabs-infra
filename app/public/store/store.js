@@ -158,17 +158,40 @@ const bagLines = () => bag.map((b) => ({ ...b, vr: VAR[b.v] })).filter((b) => b.
 const bagTotal = () => bagLines().reduce((a, l) => a + l.vr.price * l.q, 0);
 const bagCount = () => bagLines().reduce((a, l) => a + l.q, 0);
 function openMinimalBag() {
-  const items = bagLines();
-  const body = E('div', { class: 'minimal-bag-lines' }, items.length ? items.map((line) =>
-    E('div', { class: 'ln' }, E('a', { href: link('p/' + line.s.id), onclick: () => pop.close() }, line.s.name),
-      E('span', { class: 'mut' }, [line.vr.colour, line.vr.size, '×' + line.q].filter(Boolean).join(' · ')),
-      E('span', null, inr(line.vr.price * line.q)))) : E('p', null, 'Your bag is empty.'));
-  const foot = items.length ? E('div', { class: 'minimal-bag-foot' },
-    E('div', { class: 'minimal-heading' }, E('strong', null, 'Estimated total'), E('strong', null, inr(bagTotal()))),
-    E('div', { class: 'row2' }, E('a', { class: 'btn out', href: link('bag'), onclick: () => pop.close() }, 'View bag'),
-      E('a', { class: 'btn', href: link('checkout'), onclick: () => pop.close() }, 'Checkout')))
-    : E('a', { class: 'btn wide', href: link('shop'), onclick: () => pop.close() }, 'Shop now');
+  const body = E('div', { class: 'minimal-bag-lines' });
+  const foot = E('div', { class: 'minimal-bag-foot' });
   const pop = sheet('Your bag', body, foot);
+  const change = (line, qty) => {
+    if (qty === 0) bag = bag.filter((item) => item.v !== line.v);
+    else bag.find((item) => item.v === line.v).q = qty;
+    saveBag();
+    if (location.hash === '#/bag') route();
+    paint();
+  };
+  function paint() {
+    const items = bagLines();
+    clear(body).append(items.length ? E('div', null, items.map((line) => {
+      const image = photosFor(line.s, line.vr.colour)[0];
+      const max = line.vr.left >= 9 ? 20 : line.vr.left;
+      return E('div', { class: 'minimal-bag-item' },
+        E('a', { href: link('p/' + line.s.id), onclick: () => pop.close() },
+          image ? E('img', { src: image, alt: line.s.name }) : placeholder(line.s.name)),
+        E('div', null, E('a', { href: link('p/' + line.s.id), onclick: () => pop.close() }, line.s.name),
+          E('div', { class: 'mut' }, [line.vr.colour, line.vr.size].filter(Boolean).join(' · ')),
+          E('div', { class: 'qty' },
+            E('button', { type: 'button', 'aria-label': 'Decrease quantity', disabled: line.q <= 1, onclick: () => change(line, line.q - 1) }, '−'),
+            E('span', { 'aria-live': 'polite' }, line.q),
+            E('button', { type: 'button', 'aria-label': 'Increase quantity', disabled: line.q >= max, onclick: () => change(line, line.q + 1) }, '+')),
+          E('button', { type: 'button', class: 'minimal-remove', onclick: () => change(line, 0) }, 'Remove')),
+        E('strong', null, inr(line.vr.price * line.q)));
+    })) : E('p', null, 'Your bag is empty.'));
+    clear(foot).append(items.length ? E('div', null,
+      E('div', { class: 'minimal-heading', 'aria-live': 'polite' }, E('strong', null, 'Estimated total'), E('strong', null, inr(bagTotal()))),
+      E('div', { class: 'row2' }, E('a', { class: 'btn out', href: link('bag'), onclick: () => pop.close() }, 'View bag'),
+        E('a', { class: 'btn', href: link('checkout'), onclick: () => pop.close() }, 'Checkout')))
+      : E('a', { class: 'btn wide', href: link('shop'), onclick: () => pop.close() }, 'Shop now'));
+  }
+  paint();
   pop.el.classList.add('minimal-bag-drawer');
   pop.el.querySelector('button').focus();
   pop.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') pop.close(); });
@@ -377,6 +400,11 @@ function minimalHome(v) {
     heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav' },
       E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')), counter,
       E('button', { type: 'button', 'aria-label': 'Next banner', onclick: () => step(1) }, icon('right'))) : null));
+  const stories = tiles.filter((tile) => tile.photo).slice(0, 8);
+  if (stories.length) v.append(E('section', { class: 'minimal-section' },
+    heading('Shop the stories', link('collections'), 'All collections'),
+    E('div', { class: 'minimal-stories' }, stories.map((story) =>
+      E('a', { href: story.href }, E('img', { src: story.photo, alt: '', loading: 'lazy' }), E('span', null, story.name))))));
   if (featured.length) v.append(E('section', { class: 'minimal-section' },
     heading('Latest drop', link('shop?new=1'), 'View all'), gridOf(featured)));
   if (tiles.length) v.append(E('section', { class: 'minimal-section' },
@@ -440,17 +468,46 @@ function filterSet(q) {
   if (q.col) { const cl = D.collections.find((x) => x.id === q.col); list = cl ? list.filter((s) => cl.styleIds.includes(s.id)) : []; }
   if (q.colour) list = list.filter((s) => colours(s).includes(q.colour));
   if (q.fam) list = list.filter((s) => colours(s).some((c) => famOf(c) === q.fam));
-  if (q.size) list = list.filter((s) => s.variants.some((x) => x.size === q.size && x.left > 0));
+  if (q.size) list = list.filter((s) => s.variants.some((x) => x.size === q.size &&
+    (!q.colour || cfg().template !== 'minimal' || x.colour === q.colour) &&
+    (q.stock === 'sold-out' || x.left > 0)));
   if (q.gender) list = list.filter((s) => (s.gender || '').toLowerCase() === q.gender.toLowerCase());
   if (q.min) list = list.filter((s) => s.price >= +q.min);
   if (q.max) list = list.filter((s) => s.price <= +q.max);
-  if (q.stock) list = list.filter((s) => !isGone(s));
+  if (q.stock === 'sold-out') list = list.filter(isGone);
+  else if (q.stock) list = list.filter((s) => !isGone(s));
   if (q.new) { const ids = new Set(newest(Math.max(12, Math.ceil(STY.length / 3))).map((s) => s.id)); list = list.filter((s) => ids.has(s.id)); }
   const so = q.sort || 'new';
   if (so === 'low') list.sort((a, b) => a.price - b.price); else if (so === 'high') list.sort((a, b) => b.price - a.price); else if (so === 'az') list.sort((a, b) => a.name.localeCompare(b.name)); else list.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   return list;
 }
 function setQ(patch) { const q = { ...q$(), ...patch }; for (const k in q) if (q[k] == null || q[k] === '') delete q[k]; const qs = new URLSearchParams(q).toString(); location.hash = '#/shop' + (qs ? '?' + qs : ''); }
+function minimalFilters() {
+  const current = q$();
+  const control = (name, label, choices) => E('label', { class: 'minimal-filter-field' }, label,
+    E('select', { name }, choices.map(([value, title]) =>
+      E('option', { value, selected: (current[name] || '') === value }, title))));
+  const choices = (label, values) => [['', label], ...[...new Set(values)].map((value) => [value, value])];
+  const form = E('form', { class: 'minimal-filter-form', onsubmit: (event) => {
+    event.preventDefault();
+    setQ(Object.fromEntries(new FormData(form)));
+    panel.close();
+  } },
+  control('size', 'Size', choices('All sizes', STY.flatMap(sizesOf))),
+  control('stock', 'Availability', [['', 'All products'], ['1', 'In stock'], ['sold-out', 'Out of stock']]),
+  control('colour', 'Colour', choices('All colours', STY.flatMap(colours))),
+  control('sort', 'Sort by', [['', 'Newest'], ['low', 'Price, low to high'], ['high', 'Price, high to low'], ['az', 'Alphabetically, A–Z']]),
+  E('div', { class: 'row2' },
+    E('button', { class: 'btn out', type: 'button', onclick: () => {
+      setQ({ size: '', stock: '', colour: '', fam: '', min: '', max: '', sort: '' });
+      panel.close();
+    } }, 'Clear filters'),
+    E('button', { class: 'btn', type: 'submit' }, 'Apply')));
+  const panel = sheet('Filter', form);
+  panel.el.classList.add('minimal-bag-drawer');
+  form.querySelector('select').focus();
+  panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
+}
 function refine(anchor) {
   const base = q$(); const draft = { ...base };
   const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1) / 100) * 100;
@@ -474,9 +531,9 @@ function refine(anchor) {
   if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), hd = document.querySelector('header, .nav, .hdr'), hb = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 56, W = Math.min(740, innerWidth - 32), left = Math.max(16, Math.min(r.right + 24 - W, innerWidth - W - 16)), top = Math.min(r.top - 10, hb + 12), card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + Math.max(hb + 6, top) + 'px;width:' + W + 'px;max-height:' + Math.max(300, innerHeight - hb - 24) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px ' + (r.top + r.height / 2 - Math.max(hb + 6, top)) + 'px'; }
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
-function pagedGrid(list) {
+function pagedGrid(list, withBlanks = true) {
   let n = 24; const host = E('div');
-  const paint = () => { clear(host).append(gridOf(list.slice(0, n), true), n < list.length ? E('div', { style: { textAlign: 'center', padding: '18px' } }, E('button', { class: 'btn out', onclick: () => { n += 24; paint(); } }, 'Show more · ' + (list.length - n) + ' left')) : null); };
+  const paint = () => { clear(host).append(gridOf(list.slice(0, n), withBlanks), n < list.length ? E('div', { style: { textAlign: 'center', padding: '18px' } }, E('button', { class: 'btn out', onclick: () => { n += 24; paint(); } }, 'Show more · ' + (list.length - n) + ' left')) : null); };
   paint(); return host;
 }
 V.shop = (v) => {
@@ -486,8 +543,23 @@ V.shop = (v) => {
   const gw = E('div', { class: 'gw' + (dens ? ' dense' : '') });
   const colName = q.col ? (cols.find((x) => x.id === q.col) || {}).name : '';
   const title = colName || q.cat || (q.new ? 'New arrivals' : 'All products');
-  for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? 'In stock' : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
+  for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? (q[k] === 'sold-out' ? 'Out of stock' : 'In stock') : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
+  if (cfg().template === 'minimal') {
+    const categories = [...new Set(STY.map((style) => style.category).filter(Boolean))];
+    v.append(E('section', { class: 'minimal-catalog' },
+      E('nav', { class: 'minimal-category-nav', 'aria-label': 'Product categories' },
+        E('a', { href: link('shop'), 'aria-current': !q.cat && !q.col && !q.new ? 'page' : null }, 'View all'),
+        categories.map((category) => E('a', { href: link('shop?cat=' + encodeURIComponent(category)),
+          'aria-current': q.cat === category ? 'page' : null }, category))),
+      E('div', { class: 'minimal-heading' }, E('div', null, E('h1', null, title), E('span', { class: 'mut' }, list.length + (list.length === 1 ? ' product' : ' products'))),
+        E('button', { class: 'btn out', type: 'button', onclick: minimalFilters }, icon('filter'), 'Advanced filters')),
+      act.length ? E('div', { class: 'chips' }, act.map(([key, label]) => E('button', {
+        class: 'chip on', type: 'button', onclick: () => setQ({ [key]: '' }),
+      }, label, ' ×'))) : null,
+      list.length ? pagedGrid(list, false) : E('div', { class: 'empty' }, E('h2', null, 'No products match'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters'))));
+    return;
+  }
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
     E('div', { class: 'shophd' }, E('div', null, E('h1', null, title), E('div', { class: 'mut tiny' }, list.length + (list.length === 1 ? ' piece' : ' pieces'))), E('div', { class: 'shact' }, E('button', { class: 'btn soft icb', 'aria-label': 'Picture view', title: 'Picture view', onclick: (e) => { const on = !gw.classList.contains('dense'); gw.classList.toggle('dense', on); gw.classList.add('flip'); setTimeout(() => gw.classList.remove('flip'), 320); try { localStorage.setItem('st.dens', on ? '1' : '0'); } catch (x) {} e.currentTarget.replaceChildren(icon(on ? 'big' : 'dense')); } }, icon(dens ? 'big' : 'dense')), E('button', { class: 'btn soft', onclick: (e) => refine(e.currentTarget) }, icon('filter'), 'Refine'))),
     act.length ? E('div', { class: 'chips' }, act.map(([k, l]) => E('button', { class: 'chip on', onclick: () => setQ({ [k]: '' }) }, l, E('span', { class: 'x' }, '×')))) : null,
@@ -852,6 +924,20 @@ V.careers = (v) => {
 };
 const POL = { shipping: ['Shipping', () => (cfg().policies || {}).shipping || 'We ship across India. Orders are packed within 1 to 2 working days and usually arrive in 3 to 7 days. You will get an update on the phone number you gave us.'], returns: ['Returns & exchanges', () => (cfg().policies || {}).returns || 'You can return or exchange a piece within ' + (D.shop.returnDays || 30) + ' days of delivery if it is unworn, unwashed and the tags are intact. Contact the store to arrange it.'], terms: ['Terms', () => (cfg().policies || {}).terms || 'By placing an order you confirm that the details you gave are correct. Prices include taxes. An order is confirmed only after the store accepts it, and the store may cancel an order if an item cannot be supplied.'], privacy: ['Privacy', () => (cfg().policies || {}).privacy || 'We use your name, phone, email and address only to deliver your order and to contact you about it. We do not sell your details.'] };
 V.policy = (v, k) => { const p = POL[k] || POL.terms; v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, p[0])), E('div', { class: 'card' }, String(p[1]()).split(/\n+/).map((x) => E('p', null, x))))); };
+V.sitemap = (v) => {
+  const sections = [
+    ['Shop', [['All products', 'shop'], ['New in', 'shop?new=1'], ['Collections', 'collections'],
+      ...D.collections.filter((c) => c.styleIds.some((id) => BYID[id])).map((c) => [c.name, 'shop?col=' + encodeURIComponent(c.id)])]],
+    ['About the store', [['Our story', 'about'], ['Walk-in stores', 'stores'],
+      ...(blogsOn() ? [['Journal', 'blog']] : []), ...(mediaOn() ? [['Media & gallery', 'media']] : []),
+      ...(jobsOn() ? [['Careers', 'careers']] : [])]],
+    ['Help', [['Contact', 'contact'], ['Track your order', 'orders'], ['FAQs', 'faq'],
+      ['Shipping policy', 'policy/shipping'], ['Returns & exchanges', 'policy/returns'], ['Privacy', 'policy/privacy'], ['Terms', 'policy/terms']]],
+  ];
+  v.append(E('section', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Sitemap')),
+    E('div', { class: 'minimal-site-map' }, sections.map(([title, entries]) => E('nav', { 'aria-label': title },
+      E('h2', null, title), entries.map(([name, route]) => E('a', { href: link(route) }, name)))))));
+};
 
 function footer() {
   const c = cfg(), so = c.social || {}; const ph = String(D.shop.phone || '').replace(/\D/g, '');
@@ -876,7 +962,7 @@ function footer() {
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), blogsOn() ? E('a', { href: link('blog') }, 'Journal') : null, mediaOn() ? E('a', { href: link('media') }, 'Media & gallery') : null, jobsOn() ? E('a', { href: link('careers') }, 'Careers') : null, E('a', { href: link('contact') }, 'Contact')),
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
-    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
+    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), cfg().template === 'minimal' ? E('a', { href: link('sitemap') }, 'Sitemap') : null, E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
   tog.onclick = () => { const on = wrap.classList.toggle('open'); tog.setAttribute('aria-expanded', String(on)); tog.querySelector('.pl').textContent = on ? '\u2013' : '+'; };
   return wrap;
 }

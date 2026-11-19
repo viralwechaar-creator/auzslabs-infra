@@ -21,9 +21,19 @@
 .minimal-bag-drawer .sheet{position:absolute;inset:0 0 0 auto;width:min(100%,420px);height:100%;max-height:none;transform:none;border-radius:0;padding:20px;display:flex;flex-direction:column}
 .minimal-bag-drawer .grab{display:none}
 .minimal-bag-lines{flex:1;min-height:0;overflow:auto}
-.minimal-bag-lines .ln{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
-.minimal-bag-lines .ln .mut{grid-row:2;grid-column:1/-1}
+.minimal-bag-item{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.minimal-bag-item img{width:100%;aspect-ratio:3/4;object-fit:cover}
+.minimal-bag-item .qty{margin:8px 0 4px}
+.minimal-remove{text-decoration:underline}
 .minimal-bag-foot{padding-top:14px;border-top:1px solid var(--line)}
+.minimal-catalog{max-width:1600px;margin:auto;padding:12px clamp(12px,3vw,42px) 48px}
+.minimal-catalog h1{font-size:clamp(26px,4vw,50px);font-weight:750}
+.minimal-catalog .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.minimal-category-nav{display:flex;gap:24px;overflow:auto;white-space:nowrap;padding:10px 0 16px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.minimal-category-nav a[aria-current]{text-decoration:underline;text-underline-offset:6px}
+.minimal-filter-form{display:grid;gap:16px;overflow:auto}
+.minimal-filter-field{display:grid;gap:8px;font-weight:650}
+.minimal-filter-field select{min-height:42px;padding:8px;background:#fff;border:1px solid var(--line)}
 .minimal-hero{position:relative;isolation:isolate;display:grid;place-items:end center;min-height:100vh;min-height:100svh;overflow:hidden;background:#202020;color:#fff;text-align:center}
 .minimal-hero>img,.minimal-hero::after{position:absolute;inset:0;width:100%;height:100%}
 .minimal-hero>img{object-fit:cover;object-position:center;z-index:-2}
@@ -37,6 +47,12 @@
 .minimal-hero-nav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
 .minimal-section{padding:32px clamp(14px,4vw,72px)}
 .minimal-section+.minimal-section{border-top:1px solid #ededed}
+.minimal-stories{display:grid;grid-auto-flow:column;grid-auto-columns:clamp(100px,16vw,200px);gap:12px;overflow-x:auto;scroll-snap-type:x proximity}
+.minimal-stories a{display:grid;gap:8px;scroll-snap-align:start;font-weight:650}
+.minimal-stories img{width:100%;aspect-ratio:3/4;object-fit:cover;background:#f6f6f6}
+.minimal-site-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:24px}
+.minimal-site-map nav{display:grid;align-content:start;gap:10px;padding:18px;border:1px solid var(--line)}
+.minimal-site-map h2{font-weight:700}
 .minimal-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
 .minimal-heading h2{font-size:clamp(19px,2.6vw,36px);font-weight:650;letter-spacing:-.02em}
 .minimal-heading a{text-decoration:underline;text-underline-offset:4px;font-size:12px}
@@ -54,6 +70,7 @@
 .minimal-editorial>div>a{display:inline-block;margin-top:20px;text-decoration:underline;text-underline-offset:5px}
 @media(max-width:700px){
   .minimal-home .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .minimal-catalog .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .minimal-section{padding-block:22px}
   .minimal-collections{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px}
   .minimal-collection{min-height:145px}
