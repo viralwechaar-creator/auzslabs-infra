@@ -23,24 +23,37 @@ const dnLabel = (d) => (d >= 10 ? '₹' + d : '₹' + d + ' ' + t('coin'));
 function dnChange(amount) { const o = {}; let left = Math.round(amount); DENOMS.forEach((d) => { if (d <= left) { o[d] = Math.floor(left / d); left -= o[d] * d; } }); return o; }
 // A sheet to count cash note-by-note. target: the amount due (used for quick "Exact"/round-note buttons).
 // Resolves {tendered, denoms} or null if cancelled.
+// A two-sided cash counter: notes/coins received from the customer, and (if they paid more than the bill) the
+// notes/coins handed back as change -- same shape as the Accounting app's "Count the cash" sheet. Resolves
+// {tendered, denoms, change, changeDenoms} or null if cancelled.
 function cashCountSheet(target) {
   return new Promise((resolve) => {
-    const cnt = {}; const ins = {}, subs = {}; const totEl = h('b', { class: 'num' });
-    const upd = () => { DENOMS.forEach((d) => { ins[d].value = cnt[d] ? String(cnt[d]) : ''; subs[d].textContent = cnt[d] ? inr(cnt[d] * d) : ''; }); totEl.textContent = inr(dnTotal(cnt)); };
+    const cnt = {}, chg = {}; const ins = {}, subs = {}, chgIns = {}, chgSubs = {};
+    const totEl = h('b', { class: 'num' }), chgTotEl = h('b', { class: 'num' });
+    const upd = () => {
+      DENOMS.forEach((d) => { ins[d].value = cnt[d] ? String(cnt[d]) : ''; subs[d].textContent = cnt[d] ? inr(cnt[d] * d) : ''; });
+      DENOMS.forEach((d) => { chgIns[d].value = chg[d] ? String(chg[d]) : ''; chgSubs[d].textContent = chg[d] ? inr(chg[d] * d) : ''; });
+      totEl.textContent = inr(dnTotal(cnt)); chgTotEl.textContent = inr(dnTotal(chg));
+    };
     const quick = [...new Set([target, ...[10, 50, 100, 500].map((n) => Math.ceil(target / n) * n)])].filter((v) => v >= target).slice(0, 4);
-    const rows = DENOMS.map((d) => {
-      ins[d] = input({ type: 'number', mode: 'numeric', value: '', placeholder: '0', oninput: (e) => { cnt[d] = Math.max(0, Math.floor(N(e.target.value))); upd(); } });
-      ins[d].style.width = '64px';
-      subs[d] = h('span', { class: 'muted small num', style: { width: '70px', textAlign: 'right' } });
-      const step = (x) => h('button', { class: 'btn plain icon', type: 'button', onclick: () => { cnt[d] = Math.max(0, (cnt[d] || 0) + x); upd(); } }, x > 0 ? icon('plus', 14) : '−');
-      return h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } }, h('span', { style: { width: '56px' } }, dnLabel(d)), step(-1), ins[d], step(1), subs[d]);
-    });
-    const s = sheet({ title: t('Count cash'), body: h('div', { class: 'grid' },
-      quick.length ? h('div', { class: 'chips' }, quick.map((v) => h('button', { class: 'chip', type: 'button', onclick: () => { Object.assign(cnt, dnChange(v)); upd(); } }, inr(v)))) : null,
-      h('div', { class: 'grid', style: { gap: '4px' } }, rows),
-      h('div', { class: 'kv' }, h('span', null, t('Counted total')), totEl)),
+    const grid = (counts, insMap, subMap, onStep) => h('div', { class: 'grid', style: { gap: '4px' } }, DENOMS.map((d) => {
+      insMap[d] = input({ type: 'number', mode: 'numeric', value: '', placeholder: '0', oninput: (e) => { counts[d] = Math.max(0, Math.floor(N(e.target.value))); upd(); } });
+      insMap[d].style.width = '64px';
+      subMap[d] = h('span', { class: 'muted small num', style: { width: '70px', textAlign: 'right' } });
+      const step = (x) => h('button', { class: 'btn plain icon', type: 'button', onclick: () => { onStep(d, x); upd(); } }, x > 0 ? icon('plus', 14) : '−');
+      return h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } }, h('span', { style: { width: '56px' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
+    }));
+    const s = sheet({ title: t('Count cash'), full: true, body: h('div', { class: 'grid' },
+      h('div', { class: 'kv' }, h('span', null, t('Cash to receive')), h('b', { class: 'num' }, inr(target))),
+      quick.length ? h('div', { class: 'chips' }, quick.map((v) => h('button', { class: 'chip', type: 'button', onclick: () => { Object.keys(cnt).forEach((k) => cnt[k] = 0); Object.assign(cnt, dnChange(v)); upd(); } }, inr(v)))) : null,
+      h('div', { class: 'cap' }, t('Notes and coins received')), grid(cnt, ins, subs, (d, x) => { cnt[d] = Math.max(0, (cnt[d] || 0) + x); }),
+      h('div', { class: 'kv' }, h('span', null, t('Received from the customer')), totEl),
+      h('div', { class: 'row', style: { gap: '8px', alignItems: 'center', justifyContent: 'space-between' } }, h('div', { class: 'cap' }, t('Change given back')),
+        h('button', { class: 'btn sm', type: 'button', onclick: () => { const left = Math.max(0, r2(dnTotal(cnt) - target)); Object.keys(chg).forEach((k) => chg[k] = 0); Object.assign(chg, dnChange(left)); upd(); } }, t('Fill the change for me'))),
+      grid(chg, chgIns, chgSubs, (d, x) => { chg[d] = Math.max(0, (chg[d] || 0) + x); }),
+      h('div', { class: 'kv' }, h('span', null, t('Change total')), chgTotEl)),
       onClose: (v) => { if (v === undefined) resolve(null); },
-      actions: [{ label: t('Use this count'), primary: true, onclick: (close) => { const total = dnTotal(cnt); resolve({ tendered: total, denoms: dnClean(cnt) }); close('ok'); } }] });
+      actions: [{ label: t('Save count'), primary: true, onclick: (close) => { resolve({ tendered: dnTotal(cnt), denoms: dnClean(cnt), change: dnTotal(chg), changeDenoms: dnClean(chg) }); close('ok'); } }] });
     upd();
   });
 }
@@ -251,12 +264,17 @@ function customerForm(c, onSaved) {
   const wa = h('input', { type: 'checkbox', checked: c ? c.waOptin !== false : true });
   const notes = h('textarea', { class: 'textarea', rows: 2 }, c ? c.notes || '' : '');
   const gstin = input({ value: c ? c.gstin || '' : '', placeholder: t('Optional') }), addr = input({ value: c ? c.address || '' : '', placeholder: t('Optional') });
+  const email = input({ type: 'email', value: c ? c.email || '' : '', placeholder: t('Optional') }), pan = input({ value: c ? c.pan || '' : '', placeholder: t('Optional') });
+  const creditLimit = input({ type: 'number', mode: 'decimal', value: c && c.creditLimit ? c.creditLimit : '', placeholder: '0 = ' + t('no limit') });
+  const creditDays = input({ type: 'number', mode: 'numeric', value: c && c.creditDays ? c.creditDays : '', placeholder: '0' });
   const gstRow = gstFetchRow(gstin, (d) => { if (!name.value.trim()) name.value = d.trade_name || d.legal_name || ''; if (d.address) addr.value = d.address; if (d.city && !city.value.trim()) city.value = d.city; });
-  sheet({ title: c ? t('Edit customer') : t('New customer'), body: h('div', { class: 'grid' }, field(t('Name'), name), field(t('Phone'), ph), field('GSTIN', gstin), gstRow, field(t('Address'), addr), h('div', { class: 'two' }, field(t('Usual size'), size), field(t('Gender'), gender)), h('div', { class: 'two' }, field(t('Birthday'), bday), field(t('Anniversary'), anni)), field(t('City'), city), field(t('Notes'), notes),
+  sheet({ title: c ? t('Edit customer') : t('New customer'), body: h('div', { class: 'grid' }, field(t('Name'), name), field(t('Phone'), ph), field(t('Email'), email), field('GSTIN', gstin), gstRow, field(t('Address'), addr), field('PAN', pan),
+    h('div', { class: 'two' }, field(t('Credit limit') + ' ₹', creditLimit), field(t('Payment due in (days)'), creditDays)),
+    h('div', { class: 'two' }, field(t('Usual size'), size), field(t('Gender'), gender)), h('div', { class: 'two' }, field(t('Birthday'), bday), field(t('Anniversary'), anni)), field(t('City'), city), field(t('Notes'), notes),
     h('label', { class: 'swrow' }, h('div', { class: 'grow' }, h('div', null, t('Send WhatsApp messages')), h('div', { class: 'muted small' }, t('Bill link, birthday wishes and offers'))), wa)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
       if (!name.value.trim()) { toast(t('Enter a name'), { err: true }); return false; }
-      const r = await api('sty_save_customer', { p: { id: c && c.id, newId: c ? undefined : uid(), name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, anniversary: anni.value || null, gender: gender.value, city: city.value, gstin: gstin.value.trim().toUpperCase(), address: addr.value, waOptin: wa.checked, notes: notes.value } });
+      const r = await api('sty_save_customer', { p: { id: c && c.id, newId: c ? undefined : uid(), name: name.value, phone: ph.value, usualSize: size.value, birthday: bday.value || null, anniversary: anni.value || null, gender: gender.value, city: city.value, gstin: gstin.value.trim().toUpperCase(), address: addr.value, email: email.value, pan: pan.value.trim().toUpperCase(), creditLimit: N(creditLimit.value), creditDays: Math.round(N(creditDays.value)), waOptin: wa.checked, notes: notes.value } });
       close(); onSaved && onSaved(r);
     } }] });
 }
