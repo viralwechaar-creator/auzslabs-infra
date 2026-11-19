@@ -7,11 +7,15 @@
  * actually reaches the screen, over the till's own USB cable, never WiFi:
  *   IDLE\n
  *   PAY|850.00|29|<packed QR bits as hex>\n
+ *   PAID|850.00\n              (new in V3 -- green checkmark, bounces in)
+ *   FAILED\n                   (new in V3 -- red cross, shakes)
  *   WIFI|<ssid>|<password>\n   (new in V2 -- see below)
  *   STATUS\n                   (new in V2 -- see below)
  *
  * QR bitmap comes from the host, never from an untrusted device amount.
- * No live payment status is inferred by this firmware.
+ * PAID/FAILED are exactly as manual as the rest of this protocol: the app sends them only on
+ * the cashier's own explicit tap (Payment received, or backing out of the QR screen) -- this
+ * firmware still never infers a payment's outcome on its own.
  *
  * WiFi + OTA (new in V2): this is ONLY for pulling future firmware updates automatically,
  * so the owner never has to open Arduino IDE and plug a USB cable into the board again --
@@ -43,7 +47,7 @@
 // Bump this on every firmware change that gets shipped through ota/latest.json --
 // see ota/README.md. The device never downgrades (only updates when the server's
 // version is strictly greater than this).
-static constexpr uint16_t FW_VERSION = 2;
+static constexpr uint16_t FW_VERSION = 3;
 static constexpr const char *OTA_VERSION_URL = "https://auzslab.in/ota/customer-display/latest.json";
 static constexpr unsigned long OTA_FIRST_CHECK_MS = 15000;       // give WiFi time to associate after boot
 static constexpr unsigned long OTA_RECHECK_MS = 6UL * 60 * 60 * 1000; // then every 6 hours
@@ -104,6 +108,75 @@ static void showPaymentLayout(const char *amount) {
   // LVGL's compiled-in default fonts do not always include the rupee symbol.
   lv_label_set_text_fmt(amountLabel, "INR %s", amount);
   lv_obj_align(amountLabel, LV_ALIGN_TOP_MID, 0, 244);
+  makeLabel(scr, "Powered by AUZSLAB", lv_color_hex(0x6A7A8C), 288);
+}
+
+// ---- Payment result screens (PAID / FAILED) -- a coloured badge that animates in, a short
+// label, then nothing further happens here: the device just sits on this screen until the
+// host's next command (usually IDLE once the cashier moves on). No auto-timeout on the
+// device side, matching the rest of this firmware's "host drives every transition" design.
+static void animExecY(void *obj, int32_t v) { lv_obj_set_y((lv_obj_t *)obj, v); }
+static void animExecX(void *obj, int32_t v) { lv_obj_set_x((lv_obj_t *)obj, v); }
+
+static lv_obj_t *makeBadge(lv_obj_t *parent, lv_color_t color, int y) {
+  lv_obj_t *badge = lv_obj_create(parent);
+  lv_obj_remove_style_all(badge);
+  lv_obj_set_size(badge, 72, 72);
+  lv_obj_set_style_radius(badge, LV_RADIUS_CIRCLE, 0);
+  lv_obj_set_style_bg_color(badge, color, 0);
+  lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, 0);
+  lv_obj_clear_flag(badge, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_align(badge, LV_ALIGN_TOP_MID, 0, y);
+  return badge;
+}
+static lv_obj_t *badgeLine(lv_obj_t *badge, lv_point_t *pts, uint16_t n) {
+  lv_obj_t *line = lv_line_create(badge);
+  lv_line_set_points(line, pts, n);
+  lv_obj_set_style_line_width(line, 6, 0);
+  lv_obj_set_style_line_color(line, lv_color_white(), 0);
+  lv_obj_set_style_line_rounded(line, true, 0);
+  return line;
+}
+
+static void showPaid(const char *amount) {
+  lv_obj_t *scr = resetScreen();
+  static lv_point_t checkPts[3] = { { 16, 38 }, { 30, 52 }, { 56, 20 } };
+  lv_obj_t *badge = makeBadge(scr, lv_color_hex(0x1F8A3D), 70);
+  badgeLine(badge, checkPts, 3);
+  lv_coord_t targetY = lv_obj_get_y(badge);
+  lv_anim_t a; lv_anim_init(&a);
+  lv_anim_set_var(&a, badge);
+  lv_anim_set_exec_cb(&a, animExecY);
+  lv_anim_set_values(&a, targetY - 50, targetY);
+  lv_anim_set_time(&a, 420);
+  lv_anim_set_path_cb(&a, lv_anim_path_overshoot);
+  lv_anim_start(&a);
+  makeLabel(scr, "PAYMENT RECEIVED", lv_color_hex(0x1F8A3D), 170);
+  lv_obj_t *amt = makeLabel(scr, "", lv_color_hex(0x10223D), 202);
+  lv_label_set_text_fmt(amt, "INR %s", amount);
+  lv_obj_align(amt, LV_ALIGN_TOP_MID, 0, 202);
+  makeLabel(scr, "Powered by AUZSLAB", lv_color_hex(0x6A7A8C), 288);
+}
+
+static void showFailed() {
+  lv_obj_t *scr = resetScreen();
+  static lv_point_t p1[2] = { { 20, 20 }, { 52, 52 } };
+  static lv_point_t p2[2] = { { 52, 20 }, { 20, 52 } };
+  lv_obj_t *badge = makeBadge(scr, lv_color_hex(0xD70015), 70);
+  badgeLine(badge, p1, 2);
+  badgeLine(badge, p2, 2);
+  lv_coord_t baseX = lv_obj_get_x(badge);
+  lv_anim_t a; lv_anim_init(&a);
+  lv_anim_set_var(&a, badge);
+  lv_anim_set_exec_cb(&a, animExecX);
+  lv_anim_set_values(&a, baseX - 14, baseX + 14);
+  lv_anim_set_time(&a, 90);
+  lv_anim_set_playback_time(&a, 90);
+  lv_anim_set_repeat_count(&a, 5);
+  lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
+  lv_anim_start(&a);
+  makeLabel(scr, "PAYMENT FAILED", lv_color_hex(0xD70015), 170);
+  makeLabel(scr, "Please try again", lv_color_hex(0x3D536D), 202);
   makeLabel(scr, "Powered by AUZSLAB", lv_color_hex(0x6A7A8C), 288);
 }
 
@@ -225,6 +298,14 @@ static void handleCommand(const String &line) {
     Serial.printf("OK|STATUS|%d|%s|%u\n", WiFi.status() == WL_CONNECTED ? 1 : 0,
                   WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString().c_str() : "-", FW_VERSION);
     return;
+  }
+  if (line == "FAILED") {
+    showFailed(); Serial.println("OK|FAILED"); return;
+  }
+  if (line.startsWith("PAID|")) {
+    String amount = line.substring(5);
+    if (!validAmount(amount)) { Serial.println("ERR|AMOUNT"); return; }
+    showPaid(amount.c_str()); Serial.println("OK|PAID"); return;
   }
   if (line.startsWith("WIFI|")) {
     int sep = line.indexOf('|', 5);

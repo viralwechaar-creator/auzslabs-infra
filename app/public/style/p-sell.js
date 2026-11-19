@@ -271,7 +271,8 @@ function paySheet(c, done) {
       img ? h('img', { src: img, alt: 'UPI QR', class: 'upiq-i' }) : h('div', { class: 'muted small' }, t('QR could not be drawn')),
       h('div', { class: 'upiq-amt num' }, inr(amt)),
       h('div', { class: 'upiq-rows' }, row(t('Store'), st.shopName || '-'), row(t('Shows to the customer as'), upiName || '-'), row(t('UPI id'), upiId)));
-    const q = sheet({ title: t('Scan to pay'), closeLabel: t('Change payment'), body: h('div', { class: 'grid' }, body, h('button', { class: 'btn fill', type: 'button', onclick: () => { upiGot = true; custSend({ type: 'paid', amount: amt }); usbDisplaySendIdle().catch(() => {}); q.close(); upd(); } }, t('Payment received')))});
+    const q = sheet({ title: t('Scan to pay'), closeLabel: t('Change payment'), body: h('div', { class: 'grid' }, body, h('button', { class: 'btn fill', type: 'button', onclick: () => { upiGot = true; custSend({ type: 'paid', amount: amt }); usbDisplaySendPaid(amt).catch(() => {}); q.close(); upd(); } }, t('Payment received'))),
+      onClose: () => { if (!upiGot) usbDisplaySendFailed().catch(() => {}); } });
   };
   const paintQr = () => {
     const amt = r2(pay.upi || 0); clear(qrBox);
