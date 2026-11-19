@@ -8,8 +8,13 @@
 
 -- Let the store config hold which storefront template the tenant's real store.html link uses
 -- ('1' = default, the only existing behaviour; '2' = the new paid Template 2, app/public/store2.html).
--- Only the allow-list changes (adds 'template') from db/235's sty_store_save; same body otherwise.
-create or replace function sty_store_save(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+-- Targets sty_store_save_core, NOT sty_store_save itself: db/257_plan_caps.sql renamed the real
+-- implementation to _core and put a thin tenant_cap('online_store') plan-check wrapper in its place
+-- named sty_store_save -- replacing that wrapper directly (an earlier draft of this migration's own
+-- mistake, caught before shipping by re-reading db/257 instead of just db/235) would have silently
+-- deleted the plan-cap check. The wrapper is untouched here and keeps delegating to _core as before.
+-- Only the allow-list changes (adds 'template') from db/235's original body; otherwise identical.
+create or replace function sty_store_save_core(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
 declare tid uuid; cur jsonb; k text; ok_keys text[] := array['on', 'tagline', 'announce', 'heroImages', 'heroTitle', 'heroCta', 'about', 'founders',
     'stores', 'faqs', 'policies', 'shipping', 'pay', 'social', 'email', 'phone', 'brandName', 'showSale', 'sizeGuide', 'waOrder', 'abandonWa',
     'blogs', 'media', 'jobs', 'hiring', 'template'];
