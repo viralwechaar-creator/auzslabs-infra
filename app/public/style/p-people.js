@@ -6,10 +6,11 @@ page('people', {
     const tab = v.q.get('tab') || 'customers';
     v.header({ title: t('People'), actions: [{ label: t('New customer'), icon: 'plus', primary: true, run: () => customerForm(null, () => v.refresh()) }] });
     const root = v.root;
-    root.append(seg([['customers', t('Customers')], ['followups', t('Follow-ups')]].concat(can('sty_reports') ? [['staff', t('Staff')]] : []), tab, (x) => go('people?tab=' + x), { full: true }));
+    root.append(seg([['customers', t('Customers')], ['dues', t('Dues')], ['followups', t('Follow-ups')]].concat(can('sty_reports') ? [['staff', t('Staff')]] : []), tab, (x) => go('people?tab=' + x), { full: true }));
     const host = h('div'); root.append(host); host.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '24px auto' } }));
     if (tab === 'staff' && can('sty_reports')) return staffTab(host, v);
     if (tab === 'followups') return followTab(host, v);
+    if (tab === 'dues') return duesTab(host, v);
     let q = '', segm = 'all'; const list = h('div', { class: 'list' }), chipRow = h('div', { class: 'chips' });
     let ov = {}; try { ov = await api('sty_crm_overview') || {}; } catch (e) { return fail(e); }
     const SEGS = [['all', t('All'), ov.total], ['new', t('New'), ov.newCount], ['regular', t('Regular'), ov.regular], ['lapsed', t('Lapsed'), ov.lapsed], ['gold', t('Gold'), ov.gold], ['silver', t('Silver'), ov.silver], ['credit', t('Store credit')], ['points', t('Points')]];
@@ -33,6 +34,12 @@ async function followTab(host, v) {
     h('div', { class: 'cap' }, t('Birthdays and anniversaries · next 30 days')), h('div', { class: 'list' }, up.length ? up : [empty('tag', t('Nothing coming up'), t('Add birthdays on the customer to see them here.'))]),
     h('div', { class: 'cap' }, t('Lapsed customers · not back in 60 days')), h('div', { class: 'list' }, lp.length ? lp : [empty('users', t('Nobody has lapsed'), '')])));
 }
+async function duesTab(host, v) {
+  let rows = []; try { rows = await api('sty_dues_list') || []; } catch (e) { return fail(e); }
+  const tot = rows.reduce((a, r) => a + r.balance, 0), overdue = rows.filter((r) => r.overdue);
+  clear(host).append(h('div', { class: 'grid' }, h('div', { class: 'kpis' }, kpi(t('Customers owe you'), inr(tot, 0), rows.length + ' ' + t('Bills'), null, tot > 0 ? 'neg' : ''), kpi(t('Overdue'), overdue.length, inr(overdue.reduce((a, r) => a + r.balance, 0), 0), null, overdue.length ? 'neg' : '')),
+    h('div', { class: 'list' }, rows.length ? rows.map((r) => liRow({ icon: 'wallet', tone: r.overdue ? 'red' : 'gray', title: r.name, sub: [r.number, r.phone, r.dueDate ? (r.overdue ? t('Overdue since') : t('Due')) + ' ' + fmtDay(r.dueDate) : ''].filter(Boolean).join(' · '), value: inr(r.balance), chevron: true, onclick: () => go('bills?customer=' + r.customerId) })) : [empty('check', t('No pending dues'), t('Every credit sale has been collected.'))])));
+}
 async function customerSheet(c0, done) {
   let c = c0, det = null;
   try { det = await api('sty_customer_detail', { p_id: c0.id }); } catch (e) { /* show what we have */ }
@@ -41,7 +48,7 @@ async function customerSheet(c0, done) {
   const body = h('div', { class: 'grid' }, h('div', { class: 'kpis' }, kpi(t('Spent'), inr(c.spent, 0), c.visits + ' ' + t('visits')), kpi(t('Points'), c.points || 0), kpi(t('Store credit'), inr(c.credit, 0))),
     h('div', { class: 'muted' }, [c.tier, c.status === 'lapsed' ? t('Lapsed') : '', c.phone, c.city, c.usualSize ? t('Usual size') + ' ' + c.usualSize : '', c.birthday ? t('Birthday') + ' ' + fmtDay(c.birthday) : '', c.anniversary ? t('Anniversary') + ' ' + fmtDay(c.anniversary) : '', c.notes].filter(Boolean).join(' · ')),
     det && det.visits ? h('div', { class: 'muted small' }, [t('Average bill') + ' ' + inr(det.avgBill, 0), det.due > 0 ? t('Due') + ' ' + inr(det.due, 0) : '', det.sizes && det.sizes.length ? t('Sizes') + ': ' + names(det.sizes) : '', det.colours && det.colours.length ? t('Colours') + ': ' + names(det.colours) : '', det.likes && det.likes.length ? t('Buys') + ': ' + names(det.likes) : ''].filter(Boolean).join(' · ')) : null,
-    det && det.bills && det.bills.length ? h('div', { class: 'list' }, det.bills.slice(0, 5).map((b) => liRow({ icon: 'tag', title: b.number, sub: fmtDay(b.at) + (b.status === 'due' ? ' · ' + t('Due') : ''), value: inr(b.total, 0), chevron: true, onclick: () => { s.close(); go('bills?customer=' + c.id); } }))) : null,
+    det && det.bills && det.bills.length ? h('div', { class: 'list' }, det.bills.slice(0, 5).map((b) => liRow({ icon: 'tag', title: b.number, sub: fmtDay(b.at) + (b.status === 'due' ? ' · ' + t('Balance') + ' ' + inr(b.balance, 0) + (b.dueDate ? ' · ' + t('Due') + ' ' + fmtDay(b.dueDate) : '') : ''), value: inr(b.total, 0), chevron: true, onclick: () => { s.close(); go('bills?customer=' + c.id); } }))) : null,
     det && det.messages && det.messages.length ? h('div', { class: 'muted small' }, t('Messages') + ': ' + det.messages.map((m) => m.template.replace(/_/g, ' ') + ' (' + m.status + ')').join(', ')) : null,
     h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn', type: 'button', onclick: () => { s.close(); customerForm(c, done); } }, icon('edit', 18), t('Edit')),
       c.phone ? h('button', { class: 'btn', type: 'button', onclick: () => window.open(waLink(c), '_blank', 'noopener') }, icon('share', 18), 'WhatsApp') : null,

@@ -113,7 +113,7 @@
 .rc-pwr{text-align:center;margin-top:8px;font-size:10px;opacity:.6}.rc-pwr a{color:inherit;text-decoration:underline}
 /* Formal tax-invoice template: item-wise grid + a signatory line, bigger box than a thermal receipt */
 .rc-formal{max-width:420px;font-size:12px}.rc-tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut,#888);margin-top:3px}
-.rc-thead,.rc-tr{display:grid;grid-template-columns:1fr 32px 60px 50px 64px;gap:6px;align-items:baseline}
+.rc-thead,.rc-tr{display:grid;grid-template-columns:1fr 40px 32px 60px 50px 64px;gap:6px;align-items:baseline}
 .rc-thead{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#888);padding-bottom:3px;border-bottom:1px solid var(--sep,#ddd)}
 .rc-tr{padding:2px 0}.rc-tr .num{text-align:right}
 .rc-sig{margin-top:14px;text-align:right;font-size:11px}

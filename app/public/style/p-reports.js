@@ -56,14 +56,18 @@ page('analytics', {
     AU.tab = v.q.get('tab') || AU.tab; if (!v.q.get('tab')) AU.tab = AU.tab || 'sells';
     if (!AU.from) Object.assign(AU, rangeFor('30'));
     v.header({ title: t('Analytics'), actions: [{ label: 'CSV', icon: 'download', run: () => exportCsv() }] });
-    let data = null, ins = null, grp = null;
+    let data = null, ins = null, grp = null, gst = null;
     const host = h('div', { class: 'grid' });
     v.root.append(rangePicker(AU, load, ['week', 'month', '30', 'custom']),
-      seg([['sells', t('What sells')], ['sizes', t('Sizes & colours')], ['groups', t('Fabric & collection')], ['variants', t('Fast & slow')], ['next', t('What to buy')], ['staff', t('Staff')]], AU.tab, (x) => { AU.tab = x; paint(); }), host);
+      seg([['sells', t('What sells')], ['sizes', t('Sizes & colours')], ['groups', t('Fabric & collection')], ['variants', t('Fast & slow')], ['next', t('What to buy')], ['staff', t('Staff')], ['gst', t('GST')]], AU.tab, (x) => { AU.tab = x; paint(); }), host);
     async function load() {
       clear(host).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '24px auto' } }));
-      try { [data, ins, grp] = await Promise.all([api('sty_analytics', { p: { from: AU.from, to: AU.to, branchId: S.branch } }), api('sty_insights', { p: { branchId: S.branch } }), api('sty_analytics_groups', { p: { from: AU.from, to: AU.to, branchId: S.branch } })]); } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message, h('button', { class: 'btn fill', onclick: load }, t('Try again')))); }
+      try { [data, ins, grp, gst] = await Promise.all([api('sty_analytics', { p: { from: AU.from, to: AU.to, branchId: S.branch } }), api('sty_insights', { p: { branchId: S.branch } }), api('sty_analytics_groups', { p: { from: AU.from, to: AU.to, branchId: S.branch } }), api('sty_gst_summary', { p: { from: AU.from, to: AU.to } })]); } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message, h('button', { class: 'btn fill', onclick: load }, t('Try again')))); }
       paint();
+    }
+    function exportGstCsv() {
+      if (!gst) return;
+      csvDownload('gst-summary-' + AU.from + '-' + AU.to + '.csv', [['Rate %', 'Taxable', 'CGST', 'SGST', 'IGST', 'Total tax']].concat(gst.byRate.map((x) => [x.rate, x.taxable, x.cgst, x.sgst, x.igst, x.tax])));
     }
     function exportCsv() {
       if (!data) return;
@@ -114,6 +118,16 @@ page('analytics', {
           ins.sizeCurve.length ? section(t('Size mix: selling vs holding'), h('div', { class: 'card' }, sizeCurveNode(ins.sizeCurve))) : null,
           section(t('Slow stock'), ins.slow.length ? h('div', { class: 'list' }, ins.slow.map((x) => liRow({ icon: 'clock', title: x.name, sub: [x.colour, x.size].filter(Boolean).join(' · ') + ' · ' + x.stock + ' ' + t('pcs') + ' · ' + x.days_idle + ' ' + t('days idle'), value: inr(x.value, 0), valueSub: t('tied up') }))) : empty('check', t('No slow stock'))),
           ins.overstock.length ? section(t('More than 4 months of stock'), h('div', { class: 'list' }, ins.overstock.map((x) => liRow({ title: x.name, sub: [x.colour, x.size].filter(Boolean).join(' · '), value: x.stock + ' ' + t('pcs'), valueSub: x.cover_days + ' ' + t('days of cover') })))) : null);
+      } else if (AU.tab === 'gst') {
+        if (!gst) return;
+        host.append(
+          h('div', { class: 'kpis' }, kpi(t('Taxable value'), inr(gst.totals.taxable, 0)), kpi('CGST', inr(gst.totals.cgst, 0)), kpi('SGST', inr(gst.totals.sgst, 0)), kpi('IGST', inr(gst.totals.igst, 0)), kpi(t('Total tax'), inr(gst.totals.tax, 0), gst.totals.bills + ' ' + t('Bills'))),
+          h('button', { class: 'btn', type: 'button', onclick: exportGstCsv }, icon('download', 18), t('Export CSV')),
+          gst.byRate.length ? section(t('By tax rate') + ' — ' + t('working papers for your accountant, not a GST-portal filing'), isDesk() ? dataView([
+            { label: t('Rate'), render: (r) => r.rate + '%' }, { label: t('Taxable'), r: true, value: true, render: (r) => inr(r.taxable, 0) },
+            { label: 'CGST', r: true, render: (r) => inr(r.cgst, 0) }, { label: 'SGST', r: true, render: (r) => inr(r.sgst, 0) }, { label: 'IGST', r: true, render: (r) => inr(r.igst, 0) },
+            { label: t('Total tax'), r: true, render: (r) => inr(r.tax, 0) }], gst.byRate)
+            : h('div', { class: 'list' }, gst.byRate.map((r) => liRow({ title: r.rate + '% GST', sub: t('Taxable') + ' ' + inr(r.taxable, 0) + ' · CGST ' + inr(r.cgst, 0) + ' · SGST ' + inr(r.sgst, 0) + (r.igst > 0 ? ' · IGST ' + inr(r.igst, 0) : ''), value: inr(r.tax, 0), valueSub: t('Total tax') })))) : empty('tag', t('No sales in this period')));
       } else {
         host.append(data.staff.length ? h('div', { class: 'list' }, data.staff.map((x) => liRow({ icon: 'user', title: x.name, sub: x.bills + ' ' + t('Bills') + ' · ' + x.units + ' ' + t('Units') + ' · ' + t('avg') + ' ' + inr(x.avg_bill, 0) + (x.target ? ' · ' + Math.round(x.revenue / x.target * 100) + '% ' + t('of target') : ''), value: inr(x.revenue, 0), valueSub: x.commission ? t('Commission') + ' ' + inr(x.commission) : S.ctx.canSeeCost ? t('profit') + ' ' + inr(x.profit, 0) : '' }))) : empty('users', t('No sales in this period')));
       }
