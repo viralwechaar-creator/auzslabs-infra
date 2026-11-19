@@ -237,13 +237,32 @@ page('settings', {
       sheet({ title: b ? t('Edit branch') : t('New branch'), body: h('div', { class: 'grid' }, field(t('Name'), nm), field(t('Type'), kd), field(t('Address'), ad)), actions: [{ label: t('Save'), primary: true, onclick: async (close) => { S.ctx = await api('sty_save_branch', { p: { id: b && b.id, newId: b ? undefined : uid(), name: nm.value, kind: kd.value, address: ad.value } }); close(); location.reload(); } }] });
     }
     paintBr();
+    const fyMonth = selectEl([[1, t('January')], [4, t('April')], [7, t('July')], [10, t('October')]], st.fyStartMonth || 4);
+    const fyHost = h('div', { class: 'list' });
+    async function closeYear(f) {
+      if (!await confirmBox(t('Close this financial year?'), t('Bills dated inside') + ' ' + f.label + ' ' + t('cannot be added after this.'), t('Close year'), true)) return;
+      try { S.ctx = await api('sty_close_fy', { p_fy: f.id }); toast(t('Financial year closed')); paintFy(); } catch (e) { fail(e); }
+    }
+    function fyForm() {
+      const last = (S.ctx.fys || [])[0];
+      const start = input({ type: 'date', value: last ? new Date(new Date(last.endDate).getTime() + 86400000).toISOString().slice(0, 10) : '' });
+      const end = input({ type: 'date', value: '' });
+      sheet({ title: t('Add financial year'), body: h('div', { class: 'grid' }, field(t('Starts'), start), field(t('Ends'), end)),
+        actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
+          if (!start.value || !end.value) { toast(t('Enter both dates'), { err: true }); return false; }
+          try { S.ctx = await api('sty_save_fy', { p: { startDate: start.value, endDate: end.value } }); } catch (e) { fail(e); return false; }
+          close(); toast(t('Saved')); paintFy();
+        } }] });
+    }
+    const paintFy = () => clear(fyHost).append(...(S.ctx.fys || []).length ? S.ctx.fys.map((f) => liRow({ icon: 'calendar', title: f.label, sub: fmtDay(f.startDate) + ' – ' + fmtDay(f.endDate), value: f.status === 'open' ? t('Open') : t('Closed'), chevron: f.status === 'open', onclick: f.status === 'open' ? () => closeYear(f) : null })) : [empty('calendar', t('No financial years yet'), t('One is created automatically the first time you bill.'))]);
+    paintFy();
     const dc = input({ type: 'date', value: st.dayCloseDate ? String(st.dayCloseDate).slice(0, 10) : '' });
     const save = h('button', { class: 'btn fill wide', type: 'button', onclick: async (ev) => {
       ev.currentTarget.disabled = true;
       try {
         const sl = []; if (N(s1.value) && N(r1.value) >= 0) sl.push({ upto: N(s1.value), rate: N(r1.value) }); if (r2_.value !== '') sl.push({ rate: N(r2_.value) });
         const activeAcc = upiAccounts.find((a) => a.id === activeUpiId) || upiAccounts[0];
-        const p = { features: Object.assign({}, feat, { upiAccounts, activeUpiAccountId: activeAcc ? activeAcc.id : null, upiId: activeAcc ? activeAcc.upiId : '', upiName: activeAcc ? activeAcc.upiName : '', appIcon, receiptTemplate: billTplSel.value }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
+        const p = { features: Object.assign({}, feat, { upiAccounts, activeUpiAccountId: activeAcc ? activeAcc.id : null, upiId: activeAcc ? activeAcc.upiId : '', upiName: activeAcc ? activeAcc.upiName : '', appIcon, receiptTemplate: billTplSel.value }), logoUrl, shopName: F.shopName.value, address: F.address.value, phone: F.phone.value, gstin: F.gstin.value, billFooter: F.billFooter.value, billPrefix: F.billPrefix.value, fyStartMonth: N(fyMonth.value), maxDiscountPct: N(F.maxDiscountPct.value), returnDays: Math.round(N(F.returnDays.value)),
           defaultTaxPct: N(F.defaultTaxPct.value), loyaltyEarnPct: N(F.loyaltyEarnPct.value), loyaltyPointValue: N(F.loyaltyPointValue.value), leadDays: Math.round(N(F.leadDays.value)), coverDays: Math.round(N(F.coverDays.value)), slowDays: Math.round(N(F.slowDays.value)),
           allowNegativeStock: st.allowNegativeStock, roundOff: st.roundOff, requireCustomerPhone: st.requireCustomerPhone, staffSeeCost: st.staffSeeCost, allowReturnRequests: st.allowReturnRequests, priceIncludesTax: st.priceIncludesTax, taxSlabs: sl };
         S.ctx = await api('sty_save_settings', { p }); S.perms = S.ctx.perms; toast(t('Saved')); setTimeout(() => location.reload(), 350);
@@ -301,6 +320,10 @@ page('settings', {
       section(t('Branches and warehouses'), brHost, h('button', { class: 'btn', type: 'button', onclick: () => branchForm(null) }, icon('plus', 18), t('New branch'))),
       section(t('Day close'), h('div', { class: 'card grid' }, h('p', { class: 'muted small' }, t('Closing a day stops anyone adding or changing bills on or before that date.')), field(t('Closed up to'), dc),
         h('button', { class: 'btn', type: 'button', onclick: async () => { if (!dc.value) return; if (!await confirmBox(t('Close the books?'), t('Bills on or before') + ' ' + dc.value + ' ' + t('cannot be changed after this.'), t('Close day'), true)) return; S.ctx = await api('sty_day_close', { p_date: dc.value }); toast(t('Day closed')); } }, t('Close day')))),
+      section(t('Financial years'), h('div', { class: 'card grid' },
+        h('p', { class: 'muted small' }, t('Bill numbers restart each financial year, like') + ' PREFIX/2026-27/00001. ' + t('A new one is created automatically the first time you bill into it; close one here once it is fully done.')),
+        field(t('Financial year starts in'), fyMonth)),
+        fyHost, h('button', { class: 'btn', type: 'button', onclick: fyForm }, icon('plus', 18), t('Add financial year'))),
       section(t('Backup'), h('div', { class: 'card grid' },
         h('p', { class: 'muted small' }, t('Download everything -- your inventory, customers and bills -- as one Excel file you can open directly in Excel or Google Sheets. It is a real spreadsheet, not a code file; keep a copy somewhere safe (a pendrive, email, cloud drive).')),
         (() => { const out = h('div', { class: 'muted small' }); const b = h('button', { class: 'btn fill', type: 'button', onclick: async () => { b.disabled = true; out.textContent = t('Preparing…'); try { await backupExcel(); out.textContent = t('Downloaded'); } catch (e) { out.textContent = ''; fail(e); } b.disabled = false; } }, icon('download', 18), t('Download Excel backup')); return h('div', { class: 'grid' }, b, out); })())),

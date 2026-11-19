@@ -231,6 +231,7 @@ function paySheet(c, done) {
   // explicitly choose a method (type an amount or tap Exact) for every sale, Cash included.
   const pay = {}; MODES.forEach(([m]) => pay[m] = 0);
   if (BILL.exchange > 0) { pay.exchange = Math.min(BILL.exchange, due0); }
+  let cashDenoms = null, cashTendered = null;
   const rows = h('div', { class: 'grid' }), sum = h('div', { class: 'tot2' });
   const inputs = {};
   const sumNow = () => MODES.reduce((a, [m]) => a + (pay[m] || 0), 0);
@@ -243,9 +244,19 @@ function paySheet(c, done) {
     // Now that nothing defaults, require at least one method to actually be chosen for a walk-in.
     ok.disabled = !!(upiAccounts.length && pay.upi > 0 && !upiGot) || (!cust && s <= 0.005);
   };
+  const cashNote = h('div', { class: 'muted small' });
   MODES.forEach(([m, l]) => {
-    const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); upd(); } }); inputs[m] = i;
-    rows.append(h('div', { class: 'payl' }, h('label', null, l), i, h('button', { class: 'btn sm', type: 'button', onclick: () => { MODES.forEach(([x]) => { pay[x] = 0; inputs[x].value = ''; }); pay[m] = m === 'credit' ? Math.min(due0, cust.credit) : due0; inputs[m].value = pay[m]; upd(); } }, t('Exact'))));
+    const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); if (m === 'cash') { cashDenoms = null; cashTendered = null; cashNote.textContent = ''; } upd(); } }); inputs[m] = i;
+    rows.append(h('div', { class: 'payl' }, h('label', null, l), i,
+      m === 'cash' ? h('button', { class: 'btn sm', type: 'button', onclick: async () => {
+        const target = r2(due0 - sumNow() + (pay.cash || 0));
+        const r = await cashCountSheet(target); if (!r) return;
+        pay.cash = Math.min(r.tendered, target); cashDenoms = r.denoms; cashTendered = r.tendered; inputs.cash.value = pay.cash;
+        cashNote.textContent = r.tendered > pay.cash ? t('Counted') + ' ' + inr(r.tendered) + ' · ' + t('Change') + ' ' + inr(r2(r.tendered - pay.cash)) : '';
+        upd();
+      } }, icon('tag', 16), t('Count cash')) : null,
+      h('button', { class: 'btn sm', type: 'button', onclick: () => { MODES.forEach(([x]) => { pay[x] = 0; inputs[x].value = ''; }); if (m === 'cash') { cashDenoms = null; cashTendered = null; cashNote.textContent = ''; } pay[m] = m === 'credit' ? Math.min(due0, cust.credit) : due0; inputs[m].value = pay[m]; upd(); } }, t('Exact'))));
+    if (m === 'cash') rows.append(cashNote);
   });
   // One or more saved UPI accounts (Settings -> Pay by UPI); fall back to the single legacy upiId/upiName so a
   // shop that never added more than one account keeps working unchanged. The cashier can switch which account
@@ -298,7 +309,7 @@ function paySheet(c, done) {
   ok.onclick = async () => {
     if (ok.disabled || !BILL.lines.length) return; // a second tap (or Enter) after the bill was sent must not send an empty one
     ok.disabled = true;
-    const payments = MODES.map(([m]) => ({ mode: m, amount: pay[m] })).filter((p) => p.amount > 0);
+    const payments = MODES.map(([m]) => ({ mode: m, amount: pay[m], denoms: m === 'cash' ? cashDenoms || undefined : undefined, tendered: m === 'cash' ? cashTendered || undefined : undefined })).filter((p) => p.amount > 0);
     const p = { id: uid(), branchId: S.branch, customerId: cust ? cust.id : null, note: note.value || undefined, redeemPoints: BILL.redeem || 0,
       dueDate: (cust && dueDate.value) || undefined,
       billDiscPct: BILL.billDiscPct || undefined, billDiscAmt: BILL.billDiscAmt || undefined, coupon: BILL.coupon || undefined, holdId: BILL.holdId || undefined, payments,
@@ -337,8 +348,10 @@ function provisional(p, c) {
     subtotal: c.subtotal, discount: c.discount, tax: c.tax, rounding: c.rounding, total: c.total, payments: p.payments, balance: Math.max(0, c.total - p.payments.reduce((a, x) => a + x.amount, 0)) };
 }
 function successSheet(sale, queued) {
+  const cashPay = (sale.payments || []).find((x) => x.mode === 'cash' && x.denoms);
   const s = sheet({ title: queued ? t('Saved on this device') : t('Sale complete'), closeLabel: t('New bill'), body: h('div', { class: 'grid' },
     queued ? banner('warn', 'cloudOff', t('No connection. This bill is saved here and will be sent automatically.')) : h('div', { class: 'okmark' }, icon('check', 34), h('div', null, sale.number), h('b', { class: 'num' }, inr(sale.total))),
+    cashPay && cashPay.tendered > cashPay.amount ? h('div', { class: 'muted small' }, t('Cash counted') + ' ' + inr(cashPay.tendered) + ' · ' + t('Change given') + ' ' + inr(r2(cashPay.tendered - cashPay.amount))) : null,
     receiptNode(sale),
     h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } },
       h('button', { class: 'btn', type: 'button', onclick: () => printReceipt(sale) }, icon('print', 18), t('Print')),
@@ -357,7 +370,7 @@ async function shiftSheet() {
     const moveList = moves.length ? h('div', { class: 'grid', style: { gap: '2px' } }, moves.map((m) => h('div', { class: 'kv small' },
       h('span', null, (m.kind === 'in' ? '+ ' : '- ') + (m.reason || t(m.kind === 'in' ? 'Cash in' : 'Cash out')) + ' · ' + (m.staff || '')),
       h('b', { class: 'num' }, inr(m.amount))))) : null;
-    const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+    const DENOMS = [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1];
     const qty = {}; const totalEl = h('b', { class: 'num' }, inr(0));
     const recalcTotal = () => { const n = DENOMS.reduce((a, d) => a + d * (qty[d] || 0), 0); totalEl.textContent = inr(n); return n; };
     recalcTotal();

@@ -46,7 +46,7 @@ const QUEUEABLE = new Set([
   'sty_sell', 'sty_return', 'sty_receive', 'sty_adjust', 'sty_save_style', 'sty_set_variant', 'sty_set_badge', 'sty_set_colour_photos', 'sty_set_photo_use',
   'sty_bulk_edit', 'sty_delete_styles', 'sty_transfer', 'sty_receive_transfer', 'sty_cancel_transfer', 'sty_save_supplier', 'sty_pay_supplier',
   'sty_save_customer', 'sty_collect_due', 'sty_void_sale', 'sty_collection_save', 'sty_collection_delete', 'sty_collection_members',
-  'sty_coupon_save', 'sty_coupon_delete', 'sty_save_branch', 'sty_save_settings', 'sty_set_target', 'sty_hold_save', 'sty_shift_open', 'sty_shift_close',
+  'sty_coupon_save', 'sty_coupon_delete', 'sty_save_branch', 'sty_save_settings', 'sty_save_fy', 'sty_close_fy', 'sty_set_target', 'sty_hold_save', 'sty_shift_open', 'sty_shift_close',
   'sty_day_close', 'sty_request_save', 'sty_request_set', 'sty_intel_set_settings', 'sty_intel_set_policy',
 ]);
 // Answers that are saved for offline use. Changes the shop makes are laid over them (OVERLAY).
@@ -440,7 +440,7 @@ const FN_LABEL = {
   sty_sell: 'Bill', sty_return: 'Return', sty_receive: 'Stock bought', sty_adjust: 'Stock change', sty_save_style: 'Style saved', sty_set_variant: 'Size/colour edited', sty_set_badge: 'Label changed',
   sty_bulk_edit: 'Many styles edited', sty_delete_styles: 'Styles deleted', sty_transfer: 'Stock transfer', sty_save_supplier: 'Supplier saved', sty_pay_supplier: 'Supplier payment',
   sty_save_customer: 'Customer saved', sty_collect_due: 'Due collected', sty_void_sale: 'Bill cancelled', sty_collection_save: 'Collection saved', sty_collection_members: 'Collection changed',
-  sty_coupon_save: 'Coupon saved', sty_save_branch: 'Branch saved', sty_save_settings: 'Settings saved', sty_hold_save: 'Bill on hold', sty_shift_open: 'Shift opened', sty_shift_close: 'Shift closed',
+  sty_coupon_save: 'Coupon saved', sty_save_branch: 'Branch saved', sty_save_settings: 'Settings saved', sty_save_fy: 'Financial year saved', sty_close_fy: 'Financial year closed', sty_hold_save: 'Bill on hold', sty_shift_open: 'Shift opened', sty_shift_close: 'Shift closed',
   sty_day_close: 'Books closed', sty_request_save: 'Customer request', sty_set_target: 'Staff target',
 };
 function describeOp(e) {

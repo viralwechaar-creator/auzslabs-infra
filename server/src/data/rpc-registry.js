@@ -443,6 +443,8 @@ export const RPC = {
   // sty_guard()/sty_tenant() in SQL which re-checks the 'style' entitlement and the caller's permission.
   sty_context: { params: [], auth: true },
   sty_save_settings: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_save_fy: { params: ['p'], jsonb: ['p'], auth: true },
+  sty_close_fy: { params: ['p_fy'], auth: true },
   sty_save_branch: { params: ['p'], jsonb: ['p'], auth: true },
   admin_list_licences: { params: [], auth: true },
   sty_reserve_barcodes: { params: ['p_n'], defaults: { p_n: 200 }, auth: true },
