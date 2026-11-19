@@ -12,10 +12,20 @@ page('bills', {
       clear(list).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
       if (BU.src === 'web') return loadWeb();
       if (BU.src === 'requests') return loadRequests();
+      if (BU.src === 'returns') return loadReturns();
       let rows = []; try { rows = await api('sty_list_sales', { p: { from: custId ? '' : BU.from, to: custId ? '' : BU.to, q: BU.q, status: BU.status, customerId: custId, limit: 200 } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
       const live = rows.filter((r) => r.status !== 'void'), tot = live.reduce((a, r) => a + r.total, 0);
       clear(kp).append(kpi(t('Sales'), inr(tot, 0), live.length + ' ' + t('Bills')), kpi(t('Due'), inr(live.reduce((a, r) => a + Math.max(r.total - r.paid, 0), 0), 0), '', null, ''));
-      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: r.status === 'void' ? 'x' : 'tag', title: r.number + (r.customer ? ' · ' + r.customer : ''), sub: fmtDT(r.at) + ' · ' + r.units + ' ' + t('Units') + (r.staff ? ' · ' + r.staff : ''), value: inr(r.total), valueSub: r.status === 'void' ? t('Cancelled') : r.status === 'due' ? t('Due') + ' ' + inr(r.total - r.paid) : '', chevron: !r.waiting, onclick: () => (r.waiting ? toast(t('This bill is saved on this device and will be sent when the connection is back.')) : billSheet(r.id, load)) })) : [empty('tag', t('No bills'), t('Bills show here as you sell.'))]));
+      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: r.status === 'void' ? 'x' : 'tag', title: r.number + (r.customer ? ' · ' + r.customer : ''),
+        sub: fmtDT(r.at) + ' · ' + r.units + ' ' + t('Units') + (r.staff ? ' · ' + r.staff : '') + (r.returned ? ' · ' + (r.exchanged ? t('Exchanged') : t('Returned')) + ' ' + inr(r.refunded, 0) : ''),
+        value: inr(r.total), valueSub: r.status === 'void' ? t('Cancelled') : r.status === 'due' ? t('Due') + ' ' + inr(r.total - r.paid) : (r.returned ? (r.exchanged ? t('Exchanged') : t('Returned')) : ''),
+        chevron: !r.waiting, onclick: () => (r.waiting ? toast(t('This bill is saved on this device and will be sent when the connection is back.')) : billSheet(r.id, load)) })) : [empty('tag', t('No bills'), t('Bills show here as you sell.'))]));
+    }
+    async function loadReturns() {
+      let rows = []; try { rows = await api('sty_list_returns', { p: { from: BU.from, to: BU.to } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
+      const exch = rows.filter((r) => r.mode === 'exchange');
+      clear(kp).append(kpi(t('Refunded'), inr(rows.reduce((a, r) => a + r.refund, 0), 0), rows.length + ' ' + t('Returns')), kpi(t('Exchanges'), String(exch.length), '', null, ''));
+      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: 'swap', title: r.saleNumber + (r.customer ? ' · ' + r.customer : ''), sub: fmtDT(r.at) + ' · ' + r.units + ' ' + t('Units') + (r.reason ? ' · ' + r.reason : '') + (r.staff ? ' · ' + r.staff : ''), value: inr(r.refund), valueSub: r.mode === 'exchange' ? t('Exchange') : t('Refund'), chevron: true, onclick: () => billSheet(r.saleId, load) })) : [empty('swap', t('No returns or exchanges in this period'))]));
     }
     const WST = { new: 'New', confirmed: 'Confirmed', packed: 'Packed', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled' };
     async function loadWeb() {
@@ -55,9 +65,9 @@ page('bills', {
             returnSheet(sale, reload, { requestId: req.id, mode: req.mode, reason: req.reason, lines: req.lines.map((l) => ({ saleLineId: l.saleLineId, qty: l.qty })) });
           } }] });
     }
-    const srcSeg = seg([['shop', t('Shop bills')], ['web', t('Website orders')], ['requests', t('Return requests')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
+    const srcSeg = seg([['shop', t('Shop bills')], ['returns', t('Returns & exchanges')], ['web', t('Website orders')], ['requests', t('Return requests')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
     v.root.append(h('div', { class: 'grid' }, srcSeg, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : (BU.src === 'web' || BU.src === 'requests' ? null : rangePicker(BU, load)),
-      BU.src === 'requests' ? null : searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
+      BU.src === 'requests' || BU.src === 'returns' ? null : searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
     load();
   },
 });
@@ -66,6 +76,7 @@ async function billSheet(id, changed) {
   if (!sale) return;
   const open = sale.status !== 'void';
   const s = sheet({ title: sale.number, closeLabel: t('Done'), body: h('div', { class: 'grid' }, sale.status === 'void' ? banner('warn', 'alert', t('Cancelled') + (sale.voidReason ? ': ' + sale.voidReason : '')) : null,
+    sale.returns && sale.returns.length ? banner('warn', 'swap', (sale.returns.some((r) => r.mode === 'exchange') ? t('This bill has an exchange') : t('This bill has a return')) + ' · ' + t('Refunded') + ' ' + inr(sale.returns.reduce((a, r) => a + r.refund, 0))) : null,
     receiptNode(sale),
     sale.returns && sale.returns.length ? section(t('Returns'), h('div', { class: 'list' }, sale.returns.map((r) => liRow({ icon: 'swap', title: inr(r.refund), sub: fmtDT(r.at) + ' · ' + r.mode + (r.reason ? ' · ' + r.reason : '') })))) : null,
     h('div', { class: 'row', style: { gap: '8px', flexWrap: 'wrap' } },

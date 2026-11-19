@@ -530,6 +530,7 @@ export const RPC = {
   sty_get_sale: { params: ['p_id'], auth: true },
   sty_find_sale: { params: ['p_number'], auth: true },
   sty_list_sales: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
+  sty_list_returns: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   sty_void_sale: { params: ['p_id', 'p_reason', 'p_restock'], defaults: { p_reason: null, p_restock: true }, auth: true },
   sty_edit_sale: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sty_delete_sale: { params: ['p_id'], auth: true },
