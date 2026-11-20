@@ -158,15 +158,45 @@ function styleForm(s, done) {
   const colWrap = h('div', { class: 'field' }, h('label', null, t('Pictures per colour')), h('div', { class: 'hint' }, t('Optional. When a colour is picked on the till, its pictures show instead.')), colHost);
   cols.onChange = paintColPics; paintColPics();
   // where each picture shows on the online store: product card, home hero, collection banner
-  const use = Object.assign({}, (s && s.photoUse) || {}); const useHost = h('div', { class: 'grid' });
-  const allPics = () => { const out = []; const add = (u) => { if (u && !out.includes(u)) out.push(u); }; const g = pics.get(); add(g.main); g.extra.forEach(add); cols.peek().forEach((c) => { const x = colPics[c] && colPics[c].get(); if (x) { add(x.main); x.extra.forEach(add); } }); return out; };
-  const paintUse = () => {
-    const all = allPics(); const roles = [['card', t('Product card'), t('Shop grids and the card stack')], ['hero', t('Home hero'), t('The big picture at the top of the shop')], ['banner', t('Collection banner'), t('Wide collection pictures')]];
-    Object.keys(use).forEach((k) => { if (!all.includes(use[k])) delete use[k]; });
-    clear(useHost).append(...roles.map(([k, label, hint]) => h('div', null, h('div', { class: 'cap' }, label + ' · ' + hint),
-      h('div', { class: 'pe-grid' }, all.length ? all.map((u, i) => h('button', { class: 'pe-t' + ((use[k] || all[0]) === u ? ' on' : ''), type: 'button', style: { outline: (use[k] || all[0]) === u ? '2px solid var(--accent, #800020)' : '' }, title: i === 0 && !use[k] ? t('Default') : '', onclick: () => { if (i === 0) delete use[k]; else use[k] = u; paintUse(); } }, h('img', { src: u, alt: '' }))) : h('div', { class: 'hint' }, t('Add pictures first')) ))));
+  const use = { ...((s && s.photoUse) || {}) };
+  const cardPictures = h('div', { class: 'pe-grid', role: 'group', 'aria-label': t('Website card image') });
+  const heroPictures = h('div', { class: 'pe-grid', role: 'group', 'aria-label': t('Home hero') });
+  const bannerPictures = h('div', { class: 'pe-grid', role: 'group', 'aria-label': t('Collection banner') });
+  const allPics = () => {
+    const general = pics.get();
+    const urls = [general.main, ...general.extra];
+    cols.peek().forEach((colour) => {
+      const selection = colPics[colour]?.get();
+      if (selection) urls.push(selection.main, ...selection.extra);
+    });
+    return [...new Set(urls.filter(Boolean))];
   };
-  const useWrap = h('div', { class: 'field' }, h('label', null, t('Where each picture shows')), h('div', { class: 'hint' }, t('Optional. By default the main picture is used everywhere. Tap a picture to use it for that place.')), useHost);
+  const paintUse = () => {
+    const images = allPics();
+    for (const [role, host] of [['card', cardPictures], ['hero', heroPictures], ['banner', bannerPictures]]) {
+      if (!images.includes(use[role])) delete use[role];
+      const current = use[role] || images[0];
+      clear(host).append(...(images.length ? images.map((url, index) => h('button', {
+        class: 'pe-t' + (url === current ? ' on' : ''), type: 'button',
+        'aria-label': t('Picture') + ' ' + (index + 1),
+        'aria-pressed': String(url === current),
+        style: { outline: url === current ? '2px solid var(--accent, #800020)' : '' },
+        onclick: () => {
+          if (index === 0) delete use[role];
+          else use[role] = url;
+          paintUse();
+          host.children[index]?.focus();
+        },
+      }, h('img', { src: url, alt: '' }))) : [h('div', { class: 'hint' }, t('Add pictures first'))]));
+    }
+  };
+  const useWrap = h('div', { class: 'field' },
+    h('label', null, t('Website card image')),
+    h('div', { class: 'hint' }, t('Choose the first image customers see on this product’s card. You can also choose a picture from a colour variant.')),
+    cardPictures,
+    h('details', { class: 'more' }, h('summary', null, t('Other website images')),
+      h('div', { class: 'grid' }, h('div', { class: 'cap' }, t('Home hero')), heroPictures,
+        h('div', { class: 'cap' }, t('Collection banner')), bannerPictures)));
   pics.onChange = paintUse; paintUse();
   // show on the till as: normal / limited stock (exclusivity, display only) / sold out (cannot be added to a bill)
   let badge = (s && s.badge) || '';
