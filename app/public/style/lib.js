@@ -51,7 +51,13 @@ function cashCountSheet(target) {
       // throws all the sheet's leftover width into one gap down the middle (the actual cause of the dead
       // centre space a wide sheet kept showing). Together with dropping the sheet's own extra width (below),
       // the whole card is now only as wide as two note rows need, like the Accounting app's own counter.
-      return h('div', { class: 'grid', style: { gap: '6px' } }, pairs.map(([a, b]) => h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, max-content)', justifyContent: 'center', gap: '8px 24px' } }, row(a), b != null ? row(b) : h('span'))));
+      // repeat(2, ...) forced exactly two columns even when a phone's width can't fit both -- each row then
+      // overflowed and the LEFT column's label got clipped off-screen (only its +/- buttons and input stayed
+      // visible). auto-fit with a real minimum lets the grid fall back to one column on a narrow phone and
+      // keep two on anything wider, with no media query needed.
+      // 260px matches the row's real rendered width (50px label + two 40px step buttons + 52px input + 66px
+      // subtotal, plus their gaps) so auto-fit's "do two columns actually fit" check is exact, not a guess.
+      return h('div', { class: 'grid', style: { gap: '6px' } }, pairs.map(([a, b]) => h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, max-content))', justifyContent: 'center', gap: '8px 24px' } }, row(a), b != null ? row(b) : h('span'))));
     };
     const s = sheet({ title: t('Count cash'), body: h('div', { class: 'grid' },
       h('div', { class: 'kv' }, h('span', null, t('Cash to receive')), h('b', { class: 'num' }, inr(target))),
