@@ -347,7 +347,11 @@ async function uploadBlob(blob) {
   if (error) throw new Error(error.message || t('Upload failed'));
   return sb.storage.from('site').getPublicUrl(name).data.publicUrl;
 }
-async function uploadPhoto(file) { return uploadBlob(await shrinkImage(file)); }
+async function uploadPhoto(file, max, q) { return uploadBlob(await shrinkImage(file, max, q)); }
+// hero/banner photos are shown huge and full-bleed, so they keep far more resolution and
+// quality than a product/profile picture upload -- still re-encoded (never skipped) so a
+// multi-MB camera original doesn't ship to every visitor as-is.
+async function uploadHeroPhoto(file) { return uploadPhoto(file, 2560, .92); }
 // pictures uploaded before compression existed can be several MB: iPhone Safari then paints only part of them. This shrinks every big one once.
 async function lightenPictures(onProgress) {
   const list = (await loadCatalog(true)).filter((s) => s.photoUrl || (s.photos || []).length);
