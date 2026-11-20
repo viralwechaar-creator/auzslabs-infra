@@ -265,9 +265,9 @@
 .minimal-home .minimal-latest{background:#fff;margin:0;padding:5px clamp(10px,1.5vw,24px) 8px}
 .minimal-latest .minimal-heading{margin-bottom:5px}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc{background:transparent}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in{padding:5px 4px 2px}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .nm{font-size:10px;font-weight:500}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:9px}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in{display:flex;min-height:38px;padding:6px 5px 3px;color:#121212}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .nm{font-size:11px;font-weight:600}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:10px;color:#444}
 .minimal-home .minimal-home-products .pc :is(.ph,.sc){border-radius:9px}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .add{min-height:22px;height:22px}
 .minimal-home :is(.minimal-latest,.minimal-bags) .pc .ph{aspect-ratio:2/3!important}
@@ -373,7 +373,7 @@
 .minimal-detail-body{padding:12px 16px 16px;font-size:12px;line-height:1.5}
 .minimal-category-tile{display:none}
 .minimal-store [data-page="shop"] .minimal-catalog.minimal-compact .grid{grid-template-columns:repeat(12,minmax(0,1fr))}
-.minimal-compact .pc :is(.in,.bm,.tag,.dt){display:none}
+.minimal-catalog.minimal-compact .pc :is(.in,.bm,.tag,.dt){display:none}
 .minimal-compact .minimal-category-tile{display:flex;align-content:center;justify-content:center;align-items:center;flex-wrap:wrap;gap:5px;aspect-ratio:303/409;padding:4px;text-align:center;font-size:10px}
 .minimal-category-tile a+a::before{content:"/";margin-right:5px}
 

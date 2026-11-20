@@ -547,10 +547,26 @@ function minimalGroupProducts(group, products = STY) {
   const { pattern } = minimalCategoryGroups[group];
   return products.filter((product) => pattern.test(product.category || ''));
 }
+const demoCollectionBanners = new Map([
+  ['1792645668510-of3a2.jpg', 'ecrivoire-wide.jpg'],
+  ['gx-denim-cover.jpg', 'denim-wide.jpg'],
+  ['gx-field-cover.jpg', 'field-wide.jpg'],
+  ['gx-street-cover.jpg', 'street-wide.jpg'],
+  ['gx-small-essentials-mono.jpg', 'essentials-wide.jpg'],
+  ['gx-urban-black.jpg', 'urban-wide.jpg'],
+]);
+function collectionBanner(col) {
+  if (col.bannerImage) return col.bannerImage;
+  if (location.hostname !== 'demo.auzslab.in' || SLUG !== 'demo') return '';
+  const prefix = 'https://api.auzslab.in/uploads/site/demo/style/';
+  const cover = String(col.image || '').split(/[?#]/, 1)[0];
+  const asset = cover.startsWith(prefix) && demoCollectionBanners.get(cover.slice(prefix.length));
+  return asset ? '/store/demo-banners/' + asset : '';
+}
 function minimalCollectionTiles() {
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
   return collections.map((col) => ({
-    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: col.bannerImage,
+    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: collectionBanner(col),
     photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
   }));
 }
