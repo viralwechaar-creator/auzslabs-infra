@@ -123,9 +123,10 @@ function card(s, opt) {
   opt = opt || {};
   const ims = withFirst(photos(s), pickPic(s, 'card')), gone = isGone(s), on = wish.includes(s.id);
   const sc = E('div', { class: 'sc' });
+  const cardZoom = cfg().template === 'minimal' && Number(s.cardZoom);
   const dt = E('div', { class: 'dt' });
   const list = ims.length ? ims.slice(0, 6) : [null];
-  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: thumb(u, 480), 'data-orig': u, alt: s.name, loading: i === 0 ? 'eager' : 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
+  list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: thumb(u, 480), 'data-orig': u, style: cardZoom > 1 && cardZoom <= 1.4 ? { '--card-zoom': cardZoom } : null, alt: s.name, loading: i === 0 ? 'eager' : 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
   sc.addEventListener('scroll', () => { const i = Math.round(sc.scrollLeft / Math.max(sc.clientWidth, 1)); [...dt.children].forEach((d, j) => d.classList.toggle('on', i === j)); }, { passive: true });
   const step = (d) => (e) => { e.preventDefault(); sc.scrollBy({ left: d * sc.clientWidth, behavior: 'smooth' }); };
   const bm = E('button', { class: 'bm' + (on ? ' on' : ''), 'aria-label': 'Save', onclick: (e) => { e.preventDefault(); toggleWish(s.id); bm.classList.toggle('on', wish.includes(s.id)); } }, icon('mark'));
@@ -243,7 +244,7 @@ function shell() {
   counts = [];
   const name = D.shop.name;
   const minimal = cfg().template === 'minimal';
-  const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name }, name);
+  const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name }, E('span', null, name));
   const stories = minimal ? minimalStories() : [];
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
@@ -264,7 +265,7 @@ function shell() {
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
   const waUrl = phoneNo ? 'https://wa.me/' + (phoneNo.length === 10 ? '91' + phoneNo : phoneNo) : '';
   const mk = minimal ? name : D.shop.logoUrl ? E('img', { src: D.shop.logoUrl, alt: '' }) : String(name || 'S').trim().charAt(0).toUpperCase();
-  const toContact = () => { const w = $('#chatwel'); if (w) w.remove(); go('contact'); };
+  const toContact = () => { const w = $('#chatwel'); if (w) w.remove(); if (minimal && waUrl) window.open(waUrl, '_blank', 'noopener'); else go('contact'); };
   const dock = E('div', { class: 'dock phoneonly' },
     E('button', { class: 'mark', 'aria-label': name, onclick: () => go('') }, mk),
     E('div', { class: 'pill' }, E('button', { 'aria-label': 'Explore', onclick: openMenu }, icon('compass')), E('button', { 'aria-label': 'Shop', onclick: () => go('shop') }, icon('home')),
@@ -274,8 +275,9 @@ function shell() {
   root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, E('button', { class: 'zfab zdesk dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('button', { class: 'chatfab', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')),
     E('div', { class: 'menu', id: 'menu' }), E('div', { class: 'srch', id: 'srch' }));
 
-  try { if (!sessionStorage.getItem('st.wel.' + SLUG)) { sessionStorage.setItem('st.wel.' + SLUG, '1');
-    setTimeout(() => { const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, (D.shop.logoUrl ? E('img', { class: 'wl', src: D.shop.logoUrl, alt: '' }) : E('i', { class: 'wl' }, String(name || 'S').trim().charAt(0).toUpperCase())), E('div', { class: 'wt' }, E('b', null, name), E('span', null, c.welcome || 'Welcome to ' + name + '!')), E('u', { 'aria-label': 'Close', onclick: (ev) => { ev.stopPropagation(); b.remove(); } }, '×')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
+  try { if (!sessionStorage.getItem('st.wel.' + SLUG)) {
+    setTimeout(() => { if (minimal && !document.body.classList.contains('homehero')) return;
+      sessionStorage.setItem('st.wel.' + SLUG, '1'); const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, (D.shop.logoUrl ? E('img', { class: 'wl', src: D.shop.logoUrl, alt: '' }) : E('i', { class: 'wl' }, String(name || 'S').trim().charAt(0).toUpperCase())), E('div', { class: 'wt' }, E('b', null, name), E('span', null, c.welcome || 'Welcome to ' + name + '!')), E('u', { 'aria-label': 'Close', onclick: (ev) => { ev.stopPropagation(); b.remove(); } }, '×')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
 function groups() {
   const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const G = [['Top', /shirt|tee|polo|sweat|hood|jacket|top|kurta|blazer|coat|knit|vest/i], ['Bottom', /jean|pant|trouser|short|cargo|skirt|jogger|chino|denim|legging/i], ['Footwear', /shoe|sneaker|sandal|slipper|boot|loafer|footwear|heel/i], ['Accessories', /bag|cap|hat|belt|wallet|sock|scarf|watch|case|glass|jewel|tie/i]];
@@ -794,9 +796,11 @@ function refine(anchor) {
   if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), hd = document.querySelector('header, .nav, .hdr'), hb = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 56, W = Math.min(740, innerWidth - 32), left = Math.max(16, Math.min(r.right + 24 - W, innerWidth - W - 16)), top = Math.min(r.top - 10, hb + 12), card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + Math.max(hb + 6, top) + 'px;width:' + W + 'px;max-height:' + Math.max(300, innerHeight - hb - 24) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px ' + (r.top + r.height / 2 - Math.max(hb + 6, top)) + 'px'; }
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
-function pagedGrid(list, withBlanks = true) {
+function pagedGrid(list, withBlanks = true, categoryTile = null) {
   let n = 24; const host = E('div');
-  const paint = () => { clear(host).append(gridOf(list.slice(0, n), withBlanks), n < list.length ? E('div', { style: { textAlign: 'center', padding: '18px' } }, E('button', { class: 'btn out', onclick: () => { n += 24; paint(); } }, 'Show more · ' + (list.length - n) + ' left')) : null); };
+  const paint = () => { const grid = gridOf(list.slice(0, n), withBlanks);
+    if (categoryTile) grid.insertBefore(categoryTile, grid.children[3] || null);
+    clear(host).append(grid, n < list.length ? E('div', { style: { textAlign: 'center', padding: '18px' } }, E('button', { class: 'btn out', onclick: () => { n += 24; paint(); } }, 'Show more · ' + (list.length - n) + ' left')) : null); };
   paint(); return host;
 }
 V.shop = (v) => {
@@ -836,8 +840,14 @@ V.shop = (v) => {
       act.length ? E('div', { class: 'chips' }, act.map(([key, label]) => E('button', {
         class: 'chip on', type: 'button', onclick: () => setQ({ [key]: '' }),
       }, label, ' ×'))) : null,
-      list.length ? pagedGrid(list, false) : E('div', { class: 'empty' }, E('h2', null, 'No products match'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
-    v.append(catalog);
+      list.length ? pagedGrid(list, false, list.length > 3 && categories.length ? E('div', { class: 'minimal-category-tile' },
+        [...new Set(list.map((item) => item.category).filter(Boolean))].slice(0, 2).map((category) =>
+          E('a', { href: link('shop?cat=' + encodeURIComponent(category)) }, category))) : null) : E('div', { class: 'empty' }, E('h2', null, 'No products match'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
+    const viewed = recent().map((id) => BYID[id]).filter(Boolean);
+    const seenIds = new Set(viewed.map((item) => item.id));
+    const suggested = [...newest(STY.length).filter((item) => !seenIds.has(item.id)), ...viewed].slice(0, 4);
+    v.append(catalog, suggested.length ? minimalRecommendations('You may also like', suggested) : null,
+      viewed.length ? minimalRecommendations('Recently visited', viewed) : null);
     return;
   }
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
@@ -906,9 +916,16 @@ V.p = (v, id) => {
     return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, s.description)) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
       !bullets.length && !s.description && !rows.length ? E('div', { class: 'mut' }, 'More details coming soon.') : null);
   };
-  const details = minimal ? E('section', { class: 'minimal-product-details', 'aria-label': 'Product information' },
-    [['d', 'Details & description'], ['w', 'Product care'], ['s', 'Shipping & returns']].map(([key, label]) =>
-      E('details', { open: key === 'd' }, E('summary', null, label), dtl(key)))) : null;
+  const details = minimal ? E('section', { class: 'minimal-product-details', 'aria-label': 'Product information' }) : null;
+  if (details) {
+    const body = E('div', { class: 'minimal-detail-body', 'aria-live': 'polite' }, dtl('d'));
+    const tabs = [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([key, label]) =>
+      E('button', { type: 'button', 'aria-pressed': String(key === 'd'), onclick: (event) => {
+        tabs.forEach((button) => button.setAttribute('aria-pressed', String(button === event.currentTarget)));
+        clear(body).append(dtl(key));
+      } }, label));
+    details.append(E('div', { class: 'minimal-detail-tabs', role: 'group', 'aria-label': 'Product detail sections' }, tabs), body);
+  }
   const paintInfo = () => {
     clear(info);
     const vs = s.variants.filter((x) => !colour || x.colour === colour); const gone = isGone(s);
@@ -976,14 +993,6 @@ V.p = (v, id) => {
   v.append(minimal ? null : E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: destination }, s.category), ' / ', s.name),
     product, related,
     minimal ? (viewed.length ? minimalRecommendations('Recently viewed', viewed) : null) : recentBand(s.id));
-  if (minimal && related && 'IntersectionObserver' in window) {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting || !matchMedia('(min-width:900px)').matches) return;
-      details.querySelectorAll('details[open]').forEach((section) => { section.open = false; });
-    }, { threshold: .1 });
-    observer.observe(related);
-    v._disconnectProduct = () => observer.disconnect();
-  }
   rpc('public_sty_reviews', { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
     const box = E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Reviews'), E('span', { class: 'mut tiny' }, stars(rv.avg) + ' ' + rv.avg + ' · ' + rv.count + (rv.count === 1 ? ' review' : ' reviews'))), E('div', { class: 'frm' }, (rv.items || []).slice(0, 8).map((r) => E('div', { class: 'card' }, E('div', null, E('b', null, stars(r.rating)), r.title ? ' ' + r.title : ''), r.body ? E('div', { class: 'mut' }, r.body) : null, E('div', { class: 'tiny mut' }, (r.name || 'Customer') + ' · verified buyer')))));
     if (related?.isConnected) v.insertBefore(box, related); else if (info.isConnected) v.append(box); }).catch(() => {});
