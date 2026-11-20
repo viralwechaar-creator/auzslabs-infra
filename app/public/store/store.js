@@ -583,20 +583,16 @@ function minimalHome(v) {
   const configuredImages = (c.heroImages || []).filter(Boolean);
   const heroImages = configuredImages.length ? configuredImages : featured.map((s) => pickPic(s, 'hero')).filter(Boolean);
   const tiles = minimalCollectionTiles();
-  // the real photo is never cropped (object-fit:contain); a blurred, scaled-up copy of the same
-  // photo fills the space on either side instead of leaving it empty, so nothing is ever cut off.
-  const heroImageBg = heroImages.length ? E('img', { class: 'minimal-hero-bg', src: heroImages[0], alt: '', 'aria-hidden': 'true' }) : null;
-  const heroImage = heroImages.length ? E('img', { class: 'minimal-hero-fg', src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
+  const heroImage = heroImages.length ? E('img', { src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
   let slide = 0;
   const dots = heroImages.map((_, index) => E('button', { type: 'button', 'aria-label': 'Show banner ' + (index + 1),
     'aria-pressed': String(index === 0), onclick: () => showBanner(index) }));
   function showBanner(index) {
     slide = index;
     heroImage.src = heroImages[slide];
-    heroImageBg.src = heroImages[slide];
     dots.forEach((dot, i) => dot.setAttribute('aria-pressed', String(i === slide)));
   }
-  v.append(E('section', { class: 'minimal-hero' + (heroImage ? ' has-image' : '') }, heroImageBg, heroImage,
+  v.append(E('section', { class: 'minimal-hero' + (heroImage ? ' has-image' : '') }, heroImage,
     E('div', { class: 'minimal-hero-copy' }, E('h1', null, c.heroTitle || D.shop.name),
       E('a', { href: link('shop') }, c.heroCta || 'Shop now')),
     heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav', 'aria-label': 'Hero images' }, dots) : null));
