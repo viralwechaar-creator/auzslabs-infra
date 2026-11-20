@@ -1,12 +1,22 @@
 /* AUZsStyle: People. Customers (points, store credit, usual size, last purchase) and the shop's staff with targets. */
 'use strict';
 page('people', {
-  title: 'People', perm: 'sty_view',
+  title: 'People', perm: () => can('sty_view') || allowed(PAGES.requests),
   async render(v) {
-    const tab = v.q.get('tab') || 'customers';
-    v.header({ title: t(tab === 'customers' ? 'Customers' : 'People'), actions: [{ label: t('New customer'), icon: 'plus', primary: true, run: () => customerForm(null, () => v.refresh()) }, { label: t('Reminders'), icon: 'share', run: () => go('people?tab=followups') }] });
+    const tabs = [
+      ...(can('sty_view') ? [['customers', t('Customers')], ['dues', t('Dues')], ['followups', t('Follow-ups')]] : []),
+      ...(allowed(PAGES.requests) ? [['requests', t('Requests')]] : []),
+      ...(can('sty_view') && can('sty_reports') ? [['staff', t('Staff')]] : []),
+    ];
+    const requested = v.q.get('tab');
+    const tab = tabs.some(([id]) => id === requested) ? requested : tabs[0][0];
     const root = v.root;
-    root.append(seg([['customers', t('Customers')], ['dues', t('Dues')], ['followups', t('Follow-ups')]].concat(can('sty_reports') ? [['staff', t('Staff')]] : []), tab, (x) => go('people?tab=' + x), { full: true }));
+    root.append(seg(tabs, tab, (id) => go('people?tab=' + id), { full: true }));
+    if (tab === 'requests') return PAGES.requests.render(v);
+    v.header({ title: t(tab === 'customers' ? 'Customers' : 'People'), actions: [
+      { label: t('New customer'), icon: 'plus', primary: true, run: () => customerForm(null, () => v.refresh()) },
+      { label: t('Reminders'), icon: 'share', run: () => go('people?tab=followups') },
+    ] });
     const host = h('div'); root.append(host); host.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '24px auto' } }));
     if (tab === 'staff' && can('sty_reports')) return staffTab(host, v);
     if (tab === 'followups') return followTab(host, v);

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AUZLab Account Preview</title>
+<style>
+* { box-sizing:border-box }
+:root { font:14px/1.45 "Segoe UI",system-ui,sans-serif; color:#1b2028; background:#eff0f2; --line:#dfe2e7; --muted:#555e6b; --paper:#fff }
+body { margin:0 }
+button { font:inherit; cursor:pointer }
+button:focus-visible { outline:2px solid #697fd2; outline-offset:2px }
+header { display:flex; align-items:center; justify-content:space-between; min-height:53px; padding:0 22px; background:#171a20; color:#fff; border-bottom:1px solid #353943 }
+header strong { font-size:20px; letter-spacing:-.045em }
+header span { color:#c3c9d3; font-size:12px }
+.layout { display:grid; grid-template-columns:207px minmax(0,1fr); min-height:calc(100vh - 53px) }
+aside { background:#20242c; color:#fff; padding:15px 10px }
+.business { padding:10px 11px; background:#2a303a; border:1px solid #3a424f; border-radius:10px; margin-bottom:14px; font-weight:650 }
+.business small { display:block; color:#c4cad4; font-weight:400 }
+nav { display:grid; gap:3px }
+nav button { border:0; background:transparent; text-align:left; border-radius:8px; padding:9px 11px; color:#e1e4eb }
+nav button:hover { background:#2e3542 }
+nav button[aria-current] { background:#e9edf7; color:#202c48; font-weight:650 }
+main { width:100%; max-width:1450px; min-width:0; padding:22px clamp(14px,2.8vw,36px); margin-inline:auto }
+h1 { font-size:clamp(24px,3vw,34px); margin:0 0 3px; letter-spacing:-.05em }
+h2 { font-size:15px; margin:17px 0 8px }
+p { margin:0; color:var(--muted) }
+.metrics,.cards { display:grid; gap:8px; grid-template-columns:repeat(3,minmax(0,1fr)) }
+.metrics { margin-top:15px }
+.card,.metric { background:var(--paper); border:1px solid var(--line); border-radius:11px; padding:11px 13px }
+.metric b { display:block; font-size:25px; line-height:1.15; margin-top:4px; letter-spacing:-.045em }
+.metric span,.card span { color:var(--muted); font-size:12px }
+.card { text-align:left; display:grid; gap:3px; color:inherit; width:100% }
+button.card:hover { border-color:#8193c1; background:#f9faff }
+.card strong { font-size:14px }
+.queue { border:1px solid var(--line); border-radius:11px; overflow:hidden; background:var(--paper) }
+.queue button { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; width:100%; border:0; border-bottom:1px solid var(--line); background:transparent; padding:9px 13px; text-align:left; color:inherit }
+.queue button:last-child { border-bottom:0 }
+.queue button:hover { background:#f6f7fa }
+.queue small { color:var(--muted); display:block }
+.queue span { border-radius:999px; background:#e8edf8; color:#33466d; padding:3px 8px; font-size:11px }
+dialog { max-width:min(430px,calc(100% - 32px)); border:1px solid var(--line); border-radius:13px; padding:19px; color:inherit }
+dialog::backdrop { background:#191d285e }
+dialog button { margin-top:12px; border:0; background:#e8edf8; padding:7px 13px; border-radius:7px }
+@media(max-width:760px) {
+  header { padding:0 14px }
+  .layout { display:block }
+  aside { padding:6px 9px }
+  .business { display:none }
+  nav { display:flex; overflow:auto; white-space:nowrap }
+  nav button { padding:7px 9px }
+  main { padding-top:14px }
+  .metrics,.cards { grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+</style>
+<header><strong>AUZLab</strong><span>GenX Cloths · Preview</span></header>
+<div class="layout"><aside><div class="business">GenX Cloths<small>Business account</small></div><nav aria-label="Account sections" id="nav"></nav></aside><main id="view"></main></div>
+<dialog id="detail"><strong id="detail-title"></strong><p id="detail-body"></p><form method="dialog"><button>Close</button></form></dialog>
+<script>
+const sections = {
+  Overview: ['Your business at a glance.', [
+    ['Website', 'Customize your site and manage orders.'], ['Products', 'Publish products and organize collections.'],
+    ['Analytics', 'See traffic, leads, and paid orders.']]],
+  Website: ['Manage how customers find and shop your business online.', [
+    ['Customize website', 'Edit sections, styles, navigation, and pages.'], ['Domains', 'Connect or manage your website address.'],
+    ['Templates', 'Preview Classic, Minimal, Kiln, and Salon.']]],
+  Products: ['Manage listings and collections for your online store.', [
+    ['Publish app products', 'Select which existing products are available online.'], ['Website-only products', 'Create and manage listings in this account.'],
+    ['Collections', 'Choose what appears in storefront sections.']]],
+  'Orders & shipping': ['Track online orders from payment through delivery.', [
+    ['Order queue', 'Review payment and fulfillment status.'], ['Returns', 'Review and resolve website return requests.'],
+    ['Shipping', 'Manage rates and delivery options.']]],
+  Analytics: ['Track traffic, qualified leads, and paid outcomes by source.', [
+    ['Website performance', 'Sessions, landing pages, and conversion.'], ['Source comparison', 'Compare search, social, ads, and direct traffic.'],
+    ['Sales funnel', 'Follow visits through paid orders.']]],
+  Marketing: ['Plan campaigns and see which ones bring customers.', [
+    ['Tracked links', 'Create links that identify the campaign and source.'], ['Campaigns', 'Organize upcoming and active campaigns.'],
+    ['Ad accounts', 'View connected channels and reporting.']]],
+  'Apps & plans': ['Manage subscriptions and launch your operational apps.', [
+    ['AUZsStyle', 'Retail checkout and stock.'], ['AUZsLedger', 'Billing, purchases, and accounting.'],
+    ['Explore apps', 'Browse apps and plans available for your business.']]],
+  'Business & team': ['Manage locations and who can access your tools.', [
+    ['Business profile', 'Manage your business details.'], ['Locations', 'View and manage your branches.'],
+    ['Staff', 'Manage staff sign-ins, activation, and branch assignments.'],
+    ['Roles & access', 'Set what each role can open or change.']]],
+  'Account settings': ['Manage your AUZLab account and preferences.', [
+    ['Billing & plan', 'View plan, renewals, and AUZLab invoices.'],
+    ['Notifications', 'Read service and account updates.'],
+    ['Security', 'Manage your password and account security.'],
+    ['Privacy & data', 'Review consent and data requests.'],
+    ['AI connectors', 'Manage authorized connections.'],
+    ['Help & support', 'Get help with your AUZLab account.']]]
+};
+const nav = document.querySelector('#nav');
+const view = document.querySelector('#view');
+const dialog = document.querySelector('#detail');
+const slug = (name) => name.toLowerCase().replaceAll(' & ', '-').replaceAll(' ', '-');
+const buttons = Object.keys(sections).map((name) => {
+  const element = document.createElement('button');
+  element.textContent = name;
+  element.onclick = () => { location.hash = slug(name); };
+  nav.append(element);
+  return [name, element];
+});
+function render() {
+  const active = Object.keys(sections).find((name) => slug(name) === location.hash.slice(1)) || 'Overview';
+  buttons.forEach(([name, button]) => {
+    if (active === name) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  const [description, cards] = sections[active];
+  view.innerHTML = '<h1>' + active + '</h1><p>' + description + '</p>';
+  if (active === 'Overview') {
+    view.insertAdjacentHTML('beforeend', '<div class="metrics"><div class="metric"><span>Online sales · last 7 days</span><b>₹24,850</b></div><div class="metric"><span>Website orders to ship</span><b>8</b></div><div class="metric"><span>Website sessions · last 7 days</span><b>1,284</b></div></div><h2>Workspaces</h2>');
+  } else view.insertAdjacentHTML('beforeend', '<h2>Manage</h2>');
+  const grid = document.createElement('div');
+  grid.className = 'cards';
+  cards.forEach(([name, copy]) => {
+    const card = document.createElement('button');
+    card.className = 'card';
+    card.innerHTML = '<strong>' + name + '</strong><span>' + copy + '</span>';
+    card.onclick = () => {
+      if (active === 'Overview' && sections[name]) { location.hash = slug(name); return; }
+      document.querySelector('#detail-title').textContent = name;
+      document.querySelector('#detail-body').textContent = copy + ' This is a design preview with sample data.';
+      dialog.showModal();
+    };
+    grid.append(card);
+  });
+  view.append(grid);
+  if (active === 'Overview') {
+    const title = document.createElement('h2');
+    title.textContent = 'Needs attention';
+    const queue = document.createElement('div');
+    queue.className = 'queue';
+    for (const [label, note, status, destination] of [
+      ['Ship open website orders', 'Review orders that are ready for fulfillment', '8 orders', 'Orders & shipping'],
+      ['Review website product drafts', 'Complete listings before publishing', '3 drafts', 'Products'],
+      ['Check campaign performance', 'Compare traffic and paid orders by source', 'Analytics', 'Analytics'],
+    ]) {
+      const button = document.createElement('button');
+      button.innerHTML = '<div><strong>' + label + '</strong><small>' + note + '</small></div><span>' + status + '</span>';
+      button.onclick = () => { location.hash = slug(destination); };
+      queue.append(button);
+    }
+    view.append(title, queue);
+  }
+}
+addEventListener('hashchange', render);
+render();
+</script>
+</html>

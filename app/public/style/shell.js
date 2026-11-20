@@ -9,11 +9,16 @@ function parseHash() {
   const raw = (location.hash || '').replace(/^#\/?/, '');
   const [path, qs] = raw.split('?');
   const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
-  return { id: parts[0] || 'sell', args: parts.slice(1), q: new URLSearchParams(qs || '') };
+  const q = new URLSearchParams(qs || '');
+  let id = parts[0] || 'sell';
+  if (id === 'requests') { id = 'people'; q.set('tab', 'requests'); }
+  if (id === 'parties') { id = 'buy'; q.set('tab', 'parties'); }
+  if (id === 'analytics') { id = 'home'; q.set('view', 'analytics'); }
+  return { id, args: parts.slice(1), q };
 }
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
-const allowed = (def) => !!def && (!def.perm || can(def.perm));
-const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['analytics', 'Analytics', 'chart'], ['gst', 'GST', 'tag'], ['intel', 'Buying intelligence', 'bolt'], ['requests', 'Requests', 'users'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'cash'], ['parties', 'Parties', 'wallet'], ['expenses', 'Expenses', 'book'], ['store', 'Online store', 'globe'], ['ai', 'AI connector', 'swap'], ['settings', 'Settings', 'gear']];
+const allowed = (def) => !!def && (!def.perm || (typeof def.perm === 'function' ? def.perm() : can(def.perm)));
+const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['gst', 'GST', 'tag'], ['intel', 'Buying intelligence', 'bolt'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'cash'], ['drawer', 'Cash drawer', 'cash'], ['expenses', 'Expenses', 'book'], ['store', 'Online store', 'globe'], ['ai', 'AI connector', 'swap'], ['settings', 'Settings', 'gear']];
 const capOff = (k) => !!(S.ctx && S.ctx.caps && S.ctx.caps[k] === false);
 const navList = () => NAV.filter(([id]) => allowed(PAGES[id]) && !(id === 'store' && capOff('online_store')));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
@@ -260,7 +265,7 @@ function moreSheet() {
   const body = h('div', { class: 'grid' },
     h('div', { class: 'list' },
       liRow({ icon: 'plus', title: t('Customer request'), chevron: true, onclick: () => { s.close(); requestSheet({}); } }),
-      liRow({ icon: 'cash', title: t('Shift'), chevron: true, onclick: () => { s.close(); shiftSheet(); } }),
+       liRow({ icon: 'cash', title: t('Shift'), chevron: true, onclick: () => { s.close(); shiftSheet(); } }),
       capOff('online_store') ? null : liRow({ icon: 'globe', title: t('Open my website'), chevron: true, onclick: () => { s.close(); window.open(billOrigin() + '/store.html', '_blank', 'noopener'); } })),
     rest.length ? section(t('More'), h('div', { class: 'list' }, rest.map(([id, l, ic]) => liRow({ icon: ic, title: t(l), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
     h('div', { class: 'list' },
@@ -350,6 +355,7 @@ function header(o, root) {
     acts.push({ label: t('More'), icon: 'more', run: () => { const sh = sheet({ title: o.title || t('More'), closeLabel: t('Done'), body: h('div', { class: 'list' }, extra.map((a) => liRow({ icon: a.icon, title: a.label, chevron: true, onclick: () => { sh.close(); a.run(); } }))) }); } });
   }
   acts.forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
+  if (route.id !== 'drawer' && allowed(PAGES.drawer)) r.append(h('button', { class: 'btn plain icon', type: 'button', 'aria-label': t('Cash drawer'), title: t('Cash drawer'), onclick: () => go('drawer') }, icon('cash', 20)));
   r.append(bellBtn());
   r.append(capOff('online_store') || !desk ? null : h('a', { class: 'btn plain icon', href: 'https://' + ((S.dash.tenant && S.dash.tenant.slug) || '') + '.auzslab.in/store.html', target: '_blank', rel: 'noopener', 'aria-label': 'Open my online store', title: 'Open my online store' }, icon('globe', 20)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }

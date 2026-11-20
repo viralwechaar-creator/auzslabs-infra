@@ -22,6 +22,10 @@ const delta = (a, b) => { const d = pct(a, b); return h('span', { class: 'dl ' +
 page('home', {
   title: 'Overview', perm: 'sty_reports',
   async render(v) {
+    const sectionId = v.q.get('view') === 'analytics' ? 'analytics' : 'overview';
+    v.root.append(seg([['overview', t('Overview')], ['analytics', t('Analytics')]], sectionId,
+      (id) => go(id === 'analytics' ? 'home?view=analytics' : 'home'), { full: true }));
+    if (sectionId === 'analytics') return PAGES.analytics.render(v);
     v.header({ title: t('Overview') });
     Object.assign(RU, rangeFor(RU.k, RU.from ? { from: RU.from, to: RU.to } : null));
     const host = h('div', { class: 'grid' });
