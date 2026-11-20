@@ -154,9 +154,8 @@
 .minimal-section-actions,.minimal-rail-controls{display:flex;align-items:center;gap:7px}
 .minimal-rail-controls button,.minimal-view-toggle{display:grid;place-items:center;width:32px;height:30px;border-radius:999px;background:#fff;color:#272727}
 .minimal-rail-controls svg,.minimal-view-toggle svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5}
-.minimal-discover,.minimal-filter-button{border-radius:999px;padding:5px 15px;font-size:11px}
-.minimal-discover{background:#111;color:#fff;text-decoration:none!important}
-.minimal-filter-button{background:#fff;color:#111}
+.minimal-filter-button{border-radius:999px;padding:5px 15px;font-size:11px;background:#fff;color:#111}
+.minimal-discover{border-radius:12px;padding:8px 18px;font-size:12px;font-weight:600;background:#111;color:#fff;text-decoration:none!important}
 .minimal-rail{display:grid;grid-auto-flow:column;grid-auto-columns:26%;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding-bottom:5px}
 .minimal-rail>*{min-width:0;scroll-snap-align:start}
 .minimal-home .minimal-product-section .pc{background:transparent}
@@ -263,8 +262,9 @@
 .minimal-home .minimal-latest .pc :is(.ph,.sc){border-radius:16px}
 .minimal-home .minimal-home-products .pc .ph{aspect-ratio:3/4!important}
 .minimal-home .minimal-bags .pc .ph{aspect-ratio:4/5!important}
-.minimal-home .minimal-bags .pc :is(.ph,.sc){border-radius:16px}
+.minimal-home .minimal-bags .pc :is(.ph,.sc){border-radius:20px}
 .minimal-home .minimal-bags .minimal-heading{margin-bottom:8px}
+.minimal-home .minimal-bags .minimal-heading h2{font-size:16px;font-weight:700}
 .minimal-store .top .r{gap:6px}
 @media(min-width:701px){
   .minimal-store .top .r .ic{width:33px;height:38px}
@@ -329,8 +329,8 @@
   .minimal-store .top .r .minimal-menu{height:25px}
   .minimal-hero{min-height:100svh}
   .minimal-home :is(.minimal-latest,.minimal-home-products) .pc .ph{aspect-ratio:3/4!important}
-  .minimal-home .minimal-bags .minimal-rail{grid-auto-columns:48%}
-  .minimal-home .minimal-bags .pc .ph{aspect-ratio:1!important}
+  .minimal-home .minimal-bags .minimal-rail{grid-auto-columns:42%}
+  .minimal-home .minimal-bags .pc .ph{aspect-ratio:4/5!important}
   .minimal-home .minimal-bags .pc .in{display:none}
   .minimal-home .minimal-accessories .minimal-rail{grid-auto-columns:56%}
   .minimal-home .minimal-home-stores .minimal-rail{grid-auto-columns:76%}
