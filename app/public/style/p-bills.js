@@ -4,7 +4,7 @@ const BU = { k: 'today', from: null, to: null, q: '', status: '', src: 'shop' };
 page('bills', {
   title: 'Bills', perm: 'sty_view',
   async render(v) {
-    v.header({ title: t('Bills') });
+    v.header({ title: t('Bills'), actions: can('sty_sell') ? [{ label: t('New invoice'), icon: 'plus', primary: true, run: () => go('invoice') }] : [] });
     Object.assign(BU, rangeFor(BU.k, BU.from ? { from: BU.from, to: BU.to } : null));
     const custId = v.q.get('customer') || '';
     const list = h('div', { class: 'list' }), kp = h('div', { class: 'kpis' });
