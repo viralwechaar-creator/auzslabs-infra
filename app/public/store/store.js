@@ -245,15 +245,12 @@ function shell() {
   const name = D.shop.name;
   const minimal = cfg().template === 'minimal';
   const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name }, E('span', null, name));
-  const stories = minimal ? minimalStories() : [];
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' },
       E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')),
-      stories.length ? E('button', { class: 'ic minimal-header-stories', type: 'button', 'aria-label': 'Stories',
-        onclick: (e) => openMinimalStory(stories, 0, e.currentTarget) }, E('span', null, name.trim().charAt(0).toUpperCase())) : null,
       E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
       minimal ? E('button', { class: 'ic', type: 'button', 'aria-label': 'Notifications', onclick: openMinimalNotifications }, icon('bell'), countBadge(() => minimalNotifications().filter((item) => !LS.get('notice.' + item.id, false)).length)) : null,
       !minimal ? saved : null, E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), minimal ? saved : null,
@@ -547,10 +544,26 @@ function minimalGroupProducts(group, products = STY) {
   const { pattern } = minimalCategoryGroups[group];
   return products.filter((product) => pattern.test(product.category || ''));
 }
+const demoCollectionBanners = new Map([
+  ['1792645668510-of3a2.jpg', 'ecrivoire-wide.jpg'],
+  ['gx-denim-cover.jpg', 'denim-wide.jpg'],
+  ['gx-field-cover.jpg', 'field-wide.jpg'],
+  ['gx-street-cover.jpg', 'street-wide.jpg'],
+  ['gx-small-essentials-mono.jpg', 'essentials-wide.jpg'],
+  ['gx-urban-black.jpg', 'urban-wide.jpg'],
+]);
+function collectionBanner(col) {
+  if (col.bannerImage) return col.bannerImage;
+  if (location.hostname !== 'demo.auzslab.in' || SLUG !== 'demo') return '';
+  const prefix = 'https://api.auzslab.in/uploads/site/demo/style/';
+  const cover = String(col.image || '').split(/[?#]/, 1)[0];
+  const asset = cover.startsWith(prefix) && demoCollectionBanners.get(cover.slice(prefix.length));
+  return asset ? '/store/demo-banners/' + asset : '';
+}
 function minimalCollectionTiles() {
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
   return collections.map((col) => ({
-    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: col.bannerImage,
+    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: collectionBanner(col),
     photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
   }));
 }
@@ -601,19 +614,23 @@ function minimalHome(v) {
 }
 function minimalCollectionCarousel(banners, stories) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const track = E('div', { class: 'minimal-collection-track', tabindex: '0', 'aria-label': 'Collection banners' },
+  const track = E('div', { class: 'minimal-collection-track' + (banners.length > 1 ? ' has-multiple' : ''), tabindex: '0', 'aria-label': 'Collection banners' },
     banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href, 'aria-label': banner.name },
-      E('picture', null, banner.widePhoto ? E('source', { media: '(min-width: 701px)', srcset: banner.widePhoto }) : null,
-        E('img', { class: 'minimal-collection-art', src: banner.photo, alt: '', loading: 'lazy' })))));
+      E('picture', {}, banner.photo && banner.widePhoto ? E('source', { media: '(max-width:700px)', srcset: banner.photo }) : null,
+        E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' })),
+      E('span', { class: 'minimal-collection-name', 'aria-hidden': 'true' }, banner.name))));
   let paused = reducedMotion.matches;
   const pause = E('button', { type: 'button', onclick: () => {
     paused = !paused;
     pause.textContent = paused ? 'Play' : 'Pause';
   } }, paused ? 'Play' : 'Pause');
   const step = (direction) => {
-    const current = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    const first = track.children[0].offsetLeft;
+    const stride = track.children[1].offsetLeft - first;
+    if (stride <= 0) return;
+    const current = Math.round(track.scrollLeft / stride);
     const next = (current + direction + banners.length) % banners.length;
-    track.scrollTo({ left: next * track.clientWidth, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+    track.scrollTo({ left: track.children[next].offsetLeft - first, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
   };
   const section = E('section', { class: 'minimal-collection-carousel', 'aria-label': 'Discover collections' }, track,
     E('div', { class: 'minimal-collection-controls' },
@@ -677,7 +694,6 @@ function minimalHomeStores(stores) {
   const { track, controls } = minimalRail(cards, 'Store locations');
   return E('section', { class: 'minimal-section minimal-home-stores', 'aria-labelledby': 'minimal-stores-heading' },
     E('div', { class: 'minimal-store-stage' },
-      E('div', { class: 'minimal-globe', 'aria-hidden': 'true' }),
       E('div', { class: 'minimal-heading' },
         E('h2', { id: 'minimal-stores-heading' }, 'Stores across India'),
         E('div', { class: 'minimal-section-actions' }, controls, E('a', { class: 'minimal-discover', href: link('stores') }, 'All stores')))),
@@ -755,43 +771,6 @@ function filterSet(q) {
   return list;
 }
 function setQ(patch) { const q = { ...q$(), ...patch }; for (const k in q) if (q[k] == null || q[k] === '') delete q[k]; const qs = new URLSearchParams(q).toString(); location.hash = '#/shop' + (qs ? '?' + qs : ''); }
-function minimalFilters() {
-  const current = q$();
-  const control = (name, label, choices) => E('label', { class: 'minimal-filter-field' }, label,
-    E('select', { name }, choices.map(([value, title]) =>
-      E('option', { value, selected: (current[name] || '') === value }, title))));
-  const facets = (name, label, options, legacyValue) => {
-    const chosen = new Set(facetValues(current[name]));
-    if (legacyValue) chosen.add(legacyValue);
-    return E('fieldset', { class: 'minimal-facets' }, E('legend', null, label), [...new Set(options)].map((value) =>
-      E('label', null, E('input', { name, type: 'checkbox', value, checked: chosen.has(value) }), value)));
-  };
-  const price = (name, label) => E('label', { class: 'minimal-filter-field' }, label,
-    E('input', { name, type: 'number', min: 0, step: 1, value: current[name] || '' }));
-  const form = E('form', { class: 'minimal-filter-form', onsubmit: (event) => {
-    event.preventDefault();
-    const data = new FormData(form);
-    const selected = (name) => data.getAll(name).length ? JSON.stringify(data.getAll(name)) : '';
-    setQ({ size: '', colour: '', fam: '', sizes: selected('sizes'), colours: selected('colours'),
-      stock: data.get('stock'), sort: data.get('sort'), min: data.get('min'), max: data.get('max') });
-    panel.close();
-  } },
-  facets('sizes', 'Size', STY.flatMap(sizesOf), current.size),
-  control('stock', 'Availability', [['', 'All products'], ['1', 'In stock'], ['sold-out', 'Out of stock']]),
-  facets('colours', 'Colour', STY.flatMap(colours), current.colour),
-  E('div', { class: 'row2' }, price('min', 'Minimum price'), price('max', 'Maximum price')),
-  control('sort', 'Sort by', [['', 'Newest'], ['low', 'Price, low to high'], ['high', 'Price, high to low'], ['az', 'Alphabetically, A–Z']]),
-  E('div', { class: 'row2' },
-    E('button', { class: 'btn out', type: 'button', onclick: () => {
-      setQ({ size: '', sizes: '', stock: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '' });
-      panel.close();
-    } }, 'Clear filters'),
-    E('button', { class: 'btn', type: 'submit' }, 'Apply')));
-  const panel = sheet('Filter', form);
-  panel.el.classList.add('minimal-bag-drawer');
-  form.querySelector('select').focus();
-  panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
-}
 function refine(anchor) {
   const base = q$(); const draft = { ...base };
   const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1) / 100) * 100;
@@ -799,19 +778,21 @@ function refine(anchor) {
   const allSizes = [...new Set(STY.flatMap(sizesOf))]; const allCols = [...new Set(STY.flatMap(colours))]; const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const paint = () => {
     clear(body);
-    const pick = (key, val) => { draft[key] = draft[key] === val ? '' : val; paint(); };
+    const pick = (key, val) => { draft[key] = draft[key] === val ? '' : val; if (key === 'size') delete draft.sizes; if (key === 'colour') { delete draft.colours; delete draft.fam; } paint(); };
     body.append(
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Sort'), E('div', { class: 'fwrap' }, [['new', 'Newest'], ['low', 'Price low'], ['high', 'Price high'], ['az', 'A to Z']].map(([k, l]) => E('button', { class: 'sz' + ((draft.sort || 'new') === k ? ' on' : ''), onclick: () => { draft.sort = k; paint(); } }, l)))),
       cats.length > 1 ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Type'), E('div', { class: 'fwrap' }, cats.map((c) => E('button', { class: 'sz' + (draft.cat === c ? ' on' : ''), onclick: () => pick('cat', c) }, c)))) : null,
       allSizes.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Size'), E('div', { class: 'fwrap' }, allSizes.map((z) => E('button', { class: 'sz' + (draft.size === z ? ' on' : ''), onclick: () => pick('size', z) }, z)))) : null,
       allCols.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Colour'), E('div', { class: 'fwrap' }, allCols.map((c) => E('button', { class: 'sz cl' + (draft.colour === c ? ' on' : ''), onclick: () => pick('colour', c) }, E('span', { class: 'c', style: { background: hex(c) } }), c)))) : null,
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Budget'), (() => { const mn = E('input', { type: 'range', min: lo, max: hi, value: draft.min || lo, step: 100 }), mx = E('input', { type: 'range', min: lo, max: hi, value: draft.max || hi, step: 100 }); const rv = E('div', { class: 'rv' }); const up = () => { if (+mn.value > +mx.value) mn.value = mx.value; draft.min = +mn.value > lo ? mn.value : ''; draft.max = +mx.value < hi ? mx.value : ''; rv.textContent = ''; add(rv, [E('span', null, inr(mn.value)), E('span', null, inr(mx.value))]); live(); }; mn.oninput = up; mx.oninput = up; up(); return E('div', { class: 'range' }, rv, mn, mx); })()),
-      E('button', { class: 'tgl' + (draft.stock ? ' on' : ''), style: { width: '100%' }, onclick: () => { draft.stock = draft.stock ? '' : '1'; paint(); } }, E('span', null, 'Only what is in stock'), E('i')));
+      E('button', { class: 'tgl' + (draft.stock === '1' ? ' on' : ''), style: { width: '100%' }, onclick: () => { draft.stock = draft.stock === '1' ? '' : '1'; paint(); } }, E('span', null, 'Only what is in stock'), E('i')));
     live();
   };
   paint();
-  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); location.hash = '#/shop'; } }, 'Clear all'));
+  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); if (cfg().template === 'minimal') setQ({ cat: '', size: '', sizes: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', stock: '', gender: '' }); else location.hash = '#/shop'; } }, 'Clear all'));
   const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
+  sh.el.setAttribute('aria-label', 'Filter products');
+  sh.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') { sh.close(); anchor?.focus(); } });
   if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), hd = document.querySelector('header, .nav, .hdr'), hb = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 56, W = Math.min(740, innerWidth - 32), left = Math.max(16, Math.min(r.right + 24 - W, innerWidth - W - 16)), top = Math.min(r.top - 10, hb + 12), card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + Math.max(hb + 6, top) + 'px;width:' + W + 'px;max-height:' + Math.max(300, innerHeight - hb - 24) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px ' + (r.top + r.height / 2 - Math.max(hb + 6, top)) + 'px'; }
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
@@ -851,7 +832,7 @@ V.shop = (v) => {
     catalog.append(
       E('div', { class: 'minimal-heading' }, E('div', null, E('h1', null, title), E('span', { class: 'mut' }, list.length + (list.length === 1 ? ' product' : ' products'))),
         E('div', { class: 'minimal-section-actions' }, compact,
-          E('button', { class: 'minimal-filter-button', type: 'button', onclick: minimalFilters }, 'Advanced filters'))),
+          E('button', { class: 'minimal-filter-button', type: 'button', onclick: (event) => refine(event.currentTarget) }, 'Advanced filters'))),
       E('nav', { class: 'minimal-category-nav', 'aria-label': 'Product categories' },
         E('a', { href: link('shop'), 'aria-current': !q.cat && !q.col && !q.new && !groupName ? 'page' : null }, 'View all'),
         categories.map((category) => E('a', { href: link('shop?cat=' + encodeURIComponent(category)),

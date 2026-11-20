@@ -129,7 +129,7 @@ catalog.config.minimalStories = [
 catalog.config.minimalNotices = [{ title: 'Welcome to the GenX preview', body: 'Browse the demo catalog and try the new storefront tools.', link: '#/shop' }];
 catalog.config.minimalPages = [{ slug: 'campaign-preview', title: 'Campaign preview', image: previewImage,
   body: 'This sample page demonstrates what a store owner can publish from AUZsStyle.', link: '#/collections', cta: 'Explore collections' }];
-const files = new Set(['/store/store.js','/store/store.css','/store/minimal.css','/store/fx.js','/store/fx.css','/vendor/qrcode.js']);
+const files = new Set(['/store/store.js','/store/store.css','/store/minimal.css','/store/fx.js','/store/fx.css','/store/store-architecture.jpg','/vendor/qrcode.js']);
 const imageFiles = new Set([
   'ecrivoire-wide.png',
   ...sampleProducts.flatMap((sample) => sample.options.map(([, file]) => neutralPhoto(file))),
@@ -151,7 +151,7 @@ http.createServer((req, res) => {
     return fs.createReadStream(path.join(__dirname, 'minimal-preview-assets', file)).pipe(res);
   }
   if (!files.has(url.pathname)) return res.writeHead(404).end();
-  const type = url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript';
-  res.writeHead(200, {'Content-Type':type+'; charset=utf-8', 'Cache-Control':'no-store'});
+  const type = url.pathname.endsWith('.jpg') ? 'image/jpeg' : url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript';
+  res.writeHead(200, {'Content-Type': type === 'image/jpeg' ? type : type + '; charset=utf-8', 'Cache-Control':'no-store'});
   fs.createReadStream(path.join(root, url.pathname.slice(1))).pipe(res);
 }).listen(Number(process.env.MINIMAL_PREVIEW_PORT || 4197), '127.0.0.1');
