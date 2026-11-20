@@ -143,3 +143,14 @@ html.ui-fine .side a{color:var(--label)}
 
 /* the search icon sits inside the box: keep the typed text and placeholder clear of it (the New look's input padding was winning) */
 .search .input,html.ui-fine .search .input,html.ui-modern .search .input{padding-left:40px!important;padding-right:38px!important}
+
+/* Record cards give names and balances separate rows, including selectable cards. */
+html.ui-fine .list.cards{grid-template-columns:repeat(auto-fill,minmax(min(100%,265px),1fr))}
+html.ui-fine .list.cards .li{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,auto) auto;align-items:start;gap:6px 8px;min-width:0;min-height:0;padding:9px 12px}
+html.ui-fine .list.cards .li>input{grid-column:1;grid-row:1;margin-top:4px}
+html.ui-fine .list.cards .li>.grow{grid-column:2;grid-row:1;min-width:0}
+html.ui-fine .list.cards .li>.grow :is(.t,.s){overflow:visible;white-space:normal;overflow-wrap:anywhere}
+html.ui-fine .list.cards .li>.v{grid-column:3;grid-row:1;display:grid;justify-items:end;gap:2px;text-align:right;min-width:0;overflow-wrap:anywhere}
+html.ui-fine .list.cards .li>.v:empty{display:none}
+html.ui-fine .list.cards .li>.chev{grid-column:4;grid-row:1}
+@media(max-width:599px){html.ui-fine .list.cards{grid-template-columns:1fr}}

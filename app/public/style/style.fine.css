@@ -14,7 +14,7 @@
 :root{
   --accent:#111;--on-accent:#fff;--accent-text:#111;
   --accent-soft:rgba(0,0,0,.06);--accent-soft2:rgba(0,0,0,.1);--accent-line:rgba(0,0,0,.3);
-  --bg:#fff;--bg2:#f5f5f5;--card2:#fafafa;--bar:rgba(255,255,255,.92);
+  --bg:#f3f3f4;--bg2:#e8e8ea;--card:#fff;--elev:#fff;--card2:#f8f8f9;--bar:rgba(250,250,251,.96);
   --label:#111;--label2:rgba(17,17,17,.64);--label3:rgba(17,17,17,.4);
   --fill:rgba(120,120,120,.12);--fill2:rgba(120,120,120,.08);--fill3:rgba(120,120,120,.045);
   --sep:rgba(40,40,40,.18);--sep2:rgba(40,40,40,.3);
@@ -22,7 +22,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){
   --accent:#f2f2f2;--on-accent:#111;--accent-text:#f2f2f2;
   --accent-soft:rgba(255,255,255,.1);--accent-soft2:rgba(255,255,255,.16);--accent-line:rgba(255,255,255,.32);
-  --bg:#111;--bg2:#1a1a1a;--card:#1d1d1d;--elev:#232323;--card2:#202020;--bar:rgba(20,20,20,.92);
+  --bg:#18181a;--bg2:#232325;--card:#242426;--elev:#2b2b2e;--card2:#29292c;--bar:rgba(30,30,32,.96);
   --label:#f5f5f5;--label2:rgba(245,245,245,.64);--label3:rgba(245,245,245,.36);
   --fill:rgba(140,140,140,.22);--fill2:rgba(140,140,140,.15);--fill3:rgba(140,140,140,.08);
   --sep:rgba(150,150,150,.3);--sep2:rgba(150,150,150,.42);
@@ -30,7 +30,7 @@
 :root[data-theme=dark]{
   --accent:#f2f2f2;--on-accent:#111;--accent-text:#f2f2f2;
   --accent-soft:rgba(255,255,255,.1);--accent-soft2:rgba(255,255,255,.16);--accent-line:rgba(255,255,255,.32);
-  --bg:#111;--bg2:#1a1a1a;--card:#1d1d1d;--elev:#232323;--card2:#202020;--bar:rgba(20,20,20,.92);
+  --bg:#18181a;--bg2:#232325;--card:#242426;--elev:#2b2b2e;--card2:#29292c;--bar:rgba(30,30,32,.96);
   --label:#f5f5f5;--label2:rgba(245,245,245,.64);--label3:rgba(245,245,245,.36);
   --fill:rgba(140,140,140,.22);--fill2:rgba(140,140,140,.15);--fill3:rgba(140,140,140,.08);
   --sep:rgba(150,150,150,.3);--sep2:rgba(150,150,150,.42);
@@ -522,3 +522,78 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 
 /* the printable part of a label can be shorter than 25 mm: tag height is adjustable (Compact scales its text with it) */
 .tags-2up .tag-l,.tags-2up .tag-g,.tags-2up .tag-m,.tags-2up .tag-d,.tags-2up .tag-c,.tags-2up .tagpage>*{height:var(--tagh,25mm)}
+
+/* Customers workspace */
+.people-total{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 17px;border-radius:14px;background:#15181e;color:#fff}
+.people-total b{font-size:clamp(24px,4vw,36px);letter-spacing:-.045em}
+.people-total small,.people-card small{display:block;font-size:11px}
+.people-total small{color:#d0d4dc}
+.people-cards{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr))}
+.people-card{display:flex;align-items:flex-start;gap:8px;min-width:0;padding:0 12px;border:1px solid var(--line,#d8dbe0);border-radius:14px;background:var(--card,#fff)}
+.people-open{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto) auto;align-items:start;gap:7px;min-width:0;flex:1;padding:8px 0;color:inherit;text-align:left}
+.people-identity{flex:1;min-width:0}
+.people-identity strong,.people-identity small{display:block;white-space:normal;overflow-wrap:anywhere}.people-identity{grid-column:1;grid-row:1}.people-card>input{margin-top:11px}
+.people-card small{opacity:.75}
+.people-balance{grid-column:2;grid-row:1;display:grid;justify-items:end;gap:2px;text-align:right;min-width:0}.people-balance strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.people-open svg{grid-column:3;grid-row:1;opacity:.55;margin-top:3px}
+.people-actions:empty{display:none}
+.receipt-heading,.receipt-customer{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.receipt-customer{padding:9px 14px}
+.receipt-amount{display:grid;justify-items:end;gap:3px;white-space:nowrap}
+
+
+.people-balance .people-status{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:999px;opacity:1}
+.people-status::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.people-status.is-settled{background:#dbefe4;color:#196036}
+.people-status.is-due{background:#f9e0e4;color:#9d243a}
+.people-status.is-open{background:#f6e9d4;color:#754711}
+
+.style-party-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:1px;margin:0;border:1px solid var(--sep);border-radius:12px;overflow:hidden;background:var(--sep)}
+.style-party-fields>div{min-width:0;padding:10px 12px;background:var(--card)}
+.style-party-fields dt{font-size:12px;color:var(--label2)}
+.style-party-fields dd{margin:3px 0 0;font-weight:600;overflow-wrap:anywhere;white-space:pre-wrap}
+.style-party-detail .kpi,.style-buy .kpi{background:var(--card)}
+
+.bill-walkin small{display:block;color:var(--label2);font-size:11px}
+.bill-gst{padding:8px 10px;background:var(--card2);border-radius:10px}
+.cartpane .bempty{flex:0;padding:16px 0}
+
+.drawer-moves{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr));gap:8px}
+.drawer-moves .btn{justify-content:center;border-radius:999px}
+
+.bill-card{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--sep);border-radius:14px;background:var(--card)}
+.bill-card .tot{border-top:1px solid var(--sep);padding-top:8px}
+.bill-payment>.row{flex-wrap:wrap}
+@media (min-width:900px){
+  .cartpane{height:calc(100dvh - 82px);max-height:none;padding:0 1px 1px;background:transparent;border-radius:0;box-shadow:none;overflow:auto}
+  .cartpane>.bill{display:grid;grid-template-rows:auto minmax(min-content,1fr) auto}
+  .cartpane .bill-items{display:flex;flex-direction:column}
+  .cartpane .bill-items .bempty{flex:1;min-height:72px}
+  .cartpane .bill-items .blines{min-height:90px}
+  .cartpane .bill-items .tot{margin-top:auto}
+}
+
+.bill-card{
+  --bill-border:#c9ccd1;
+  --bill-control:#e5e7eb;
+  --bill-payment-surface:#eef0f3;
+  --bill-muted:#565d68;
+  --bill-selected:#353a44;
+  --bill-selected-text:#fff;
+  border-color:var(--bill-border)
+}
+.bill-customer .cust,.bill-customer .cin,.bill-payment [role=tablist]{background:var(--bill-control)}
+.bill-customer .cin::placeholder,.bill-walkin small,.bill-card .bempty,.bill-h .muted{color:var(--bill-muted);opacity:1}
+.bill-payment{background:var(--bill-payment-surface)}
+.bill-payment [role=tab][aria-selected=true]{background:var(--bill-selected);color:var(--bill-selected-text)}
+.bill-card .tot{border-color:var(--bill-border)}
+:root[data-theme=dark] .bill-card{
+  --bill-border:#50545c;--bill-control:#373b43;--bill-payment-surface:#292d34;
+  --bill-muted:#bbc1cc;--bill-selected:#dce1e9;--bill-selected-text:#20242b
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]) .bill-card{
+    --bill-border:#50545c;--bill-control:#373b43;--bill-payment-surface:#292d34;
+    --bill-muted:#bbc1cc;--bill-selected:#dce1e9;--bill-selected-text:#20242b
+  }
+}

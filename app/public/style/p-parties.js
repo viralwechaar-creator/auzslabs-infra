@@ -5,34 +5,113 @@
 'use strict';
 page('parties', {
   title: 'Parties', perm: 'sty_view',
-  async render(v) {
-    v.header({ title: t('Parties') });
-    let q = '', type = '';
-    const list = h('div', { class: 'list' }), kp = h('div', { class: 'kpis' });
-    const chipRow = h('div', { class: 'chips' }, [['', t('All')], ['customer', t('Customers')], ['supplier', t('Suppliers')]].map(([k, l]) =>
-      h('button', { class: 'chip', type: 'button', 'aria-pressed': String(type === k), onclick: () => { type = k; load(); } }, l)));
-    const load = debounce(async () => {
+  async render(v, { embedded = false } = {}) {
+    if (!embedded) v.header({ title: t('Parties') });
+    let q = '', type = '', request = 0, gstOnly = false;
+    const list = h('div', { class: 'people-cards' }), kp = h('div', { class: 'kpis' });
+    const count = h('div', { class: 'muted small', 'aria-live': 'polite' });
+    const refresh = () => load(++request);
+    const filters = seg([['', t('All')], ['customer', t('Customers')], ['supplier', t('Suppliers')]], type,
+      (value) => { type = value; refresh(); }, { label: t('Party type') });
+    const gstFilter = h('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', onclick: () => {
+      gstOnly = !gstOnly;
+      gstFilter.setAttribute('aria-pressed', String(gstOnly));
+      refresh();
+    } }, t('With GST number'));
+    const load = debounce(async (version) => {
       clear(list).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
-      let rows = []; try { rows = await api('sty_list_parties', { p: { q, type } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
-      const owedToYou = rows.reduce((a, r) => a + (r.theyOweYou || 0), 0), owedByYou = rows.reduce((a, r) => a + (r.youOweThem || 0), 0);
-      clear(kp).append(kpi(t('Owed to you'), inr(owedToYou, 0), '', null, owedToYou > 0 ? 'neg' : ''), kpi(t('You owe'), inr(owedByYou, 0), '', null, owedByYou > 0 ? 'neg' : ''));
-      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: r.type === 'customer' ? 'user' : 'truck', title: r.name, sub: [r.phone, r.type === 'customer' ? t('Customer') : t('Supplier'), r.lastAt ? t('Last') + ' ' + fmtDay(r.lastAt) : ''].filter(Boolean).join(' · '),
-        value: r.theyOweYou > 0 ? inr(r.theyOweYou) : r.youOweThem > 0 ? '-' + inr(r.youOweThem) : inr(0), valueSub: r.theyOweYou > 0 ? t('Owes you') : r.youOweThem > 0 ? t('You owe') : t('Settled'),
-        chevron: true, onclick: () => partySheet(r) })) : [empty('wallet', t('No parties yet'), t('Customers and suppliers show here once added.'))]));
+      let rows;
+      try { rows = await api('sty_list_parties', { p: { q, type, gstOnly } }) || []; }
+      catch (error) {
+        if (version === request) clear(list).append(empty('cloudOff', t('Could not load'), error.message,
+          h('button', { class: 'btn', type: 'button', onclick: refresh }, t('Try again'))));
+        return;
+      }
+      if (version !== request) return;
+      const owedToYou = rows.reduce((sum, row) => sum + (Number(row.theyOweYou) || 0), 0);
+      const owedByYou = rows.reduce((sum, row) => sum + (Number(row.youOweThem) || 0), 0);
+      clear(kp).append(kpi(t('Owed to you'), inr(owedToYou, 0)), kpi(t('You owe'), inr(owedByYou, 0)));
+      count.textContent = rows.length + ' ' + t('parties');
+      clear(list).append(...(rows.length ? rows.map((party) => {
+        const receivable = party.theyOweYou > 0;
+        const payable = party.youOweThem > 0;
+        return peopleRecordCard({
+          name: party.name,
+          detail: [party.type === 'customer' ? t('Customer') : t('Supplier'), party.phone, party.gstin,
+            party.lastAt ? t('Last') + ' ' + fmtDay(party.lastAt) : ''].filter(Boolean).join(' · '),
+          amount: inr(receivable ? party.theyOweYou : payable ? party.youOweThem : 0),
+          status: t(receivable ? 'Owes you' : payable ? 'You owe' : 'Settled'),
+          tone: receivable ? 'open' : payable ? 'due' : 'settled',
+          open: () => party.type === 'supplier' && can('sty_purchase')
+            ? go('supplier/' + encodeURIComponent(party.id) + '?from=parties') : partySheet(party, refresh),
+        });
+      }) : [empty('wallet', t(q || type || gstOnly ? 'No matching parties' : 'No parties yet'),
+        t(q || type || gstOnly ? 'Try another search or filter.' : 'Customers and suppliers show here once added.'))]));
     }, 200);
-    v.root.append(h('div', { class: 'grid' }, kp, searchField(t('Name or phone'), (x) => { q = x; load(); }), chipRow, list));
-    load();
+    v.root.append(h('div', { class: 'grid' }, kp, searchField(t('Name, phone or GSTIN'), (value) => { q = value; refresh(); }), h('div', { class: 'row wrap', style: { gap: '8px' } }, filters, gstFilter), count, list));
+    refresh();
+
   },
 });
-function partySheet(p0) {
-  const s = sheet({ title: p0.name, closeLabel: t('Done'), body: h('div', { class: 'grid' }, h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } })) });
-  (async () => {
-    let st; try { st = await api('sty_party_statement', { p_type: p0.type, p_id: p0.id }); } catch (e) { s.close(); return fail(e); }
-    const KIND = { bill: t('Bill'), payment: t('Payment'), return: t('Return'), purchase: t('Purchase') };
-    const rows = (st.entries || []).slice().reverse();
-    const bal = rows.length ? rows[0].balance : 0;
-    clear(s.body).append(h('div', { class: 'grid' },
-      h('div', { class: 'kv' }, h('span', null, p0.type === 'customer' ? t('Owes you') : t('You owe')), h('b', { class: 'num' }, inr(Math.max(bal, 0)))),
-      h('div', { class: 'list' }, rows.length ? rows.map((r) => liRow({ icon: r.debit > 0 ? 'tag' : 'cash', title: t(KIND[r.kind] || r.kind) + (r.ref ? ' · ' + r.ref : ''), sub: fmtDT(r.at), value: inr(r.debit > 0 ? r.debit : r.credit), valueSub: r.debit > 0 ? t('Debit') : t('Credit'), chevron: false })) : [empty('wallet', t('No activity yet'))])));
-  })();
+
+function partySheet(party, done) {
+  const customer = party.type === 'customer';
+  const panel = h('div', { class: 'grid' });
+  const actions = h('div', { class: 'row wrap', style: { gap: '8px' } });
+  const view = sheet({ title: party.name, closeLabel: t('Done'), wide: true,
+    body: h('div', { class: 'grid style-party-detail' },
+      h('div', { class: 'kpis' }, customer ? kpi(t('Owed to you'), inr(party.theyOweYou || 0)) : null,
+        kpi(t(customer ? 'Store credit' : 'You owe'), inr(Math.max(0, party.youOweThem || 0)))),
+      actions, seg([['details', t('Details')], ['statement', t('Statement')]], 'details', select, { full: true }), panel) });
+  let profile = party, tab = 'details', statement, request = 0;
+  function details() {
+    const fields = [
+      ['Type', t(customer ? 'Customer' : 'Supplier')], ['Contact person', profile.contact],
+      ['Phone', profile.phone], ['Email', profile.email], ['Address', profile.address], ['City', profile.city],
+      ['GSTIN', profile.gstin], ['PAN', profile.pan], ['Category', profile.category],
+      ['Credit limit', profile.creditLimit == null ? null : inr(profile.creditLimit)],
+      ['Payment due in (days)', profile.creditDays], ['Notes', profile.notes],
+    ];
+    clear(panel).append(h('dl', { class: 'style-party-fields' }, fields
+      .filter(([, value]) => value != null && value !== '')
+      .map(([label, value]) => h('div', null, h('dt', null, t(label)), h('dd', null, String(value))))));
+  }
+  async function select(next) {
+    tab = next;
+    const current = ++request;
+    if (next === 'details') return details();
+    clear(panel).append(h('div', { class: 'spin' }));
+    try {
+      statement ||= await api('sty_party_statement', { p_type: party.type, p_id: party.id });
+      if (current !== request) return;
+      const kinds = { bill: 'Bill', payment: 'Payment', return: 'Return', purchase: 'Purchase' };
+      const entries = (statement.entries || []).slice().reverse();
+      clear(panel).append(h('div', { class: 'list' }, entries.length ? entries.map((entry) => liRow({
+        icon: entry.debit > 0 ? 'tag' : 'cash',
+        title: [t(kinds[entry.kind] || entry.kind), entry.ref].filter(Boolean).join(' · '),
+        sub: fmtDT(entry.at) + ' · ' + t(entry.debit > 0 ? 'Debit' : 'Credit') + ' ' + inr(entry.debit || entry.credit),
+        value: inr(entry.balance), valueSub: t('Running balance'),
+      })) : [empty('wallet', t('No activity yet'))]));
+    } catch (error) {
+      if (current === request) clear(panel).append(empty('cloudOff', t('Could not load statement'), error.message,
+        h('button', { class: 'btn', type: 'button', onclick: () => select('statement') }, t('Try again'))));
+    }
+  }
+  details();
+  const lookup = customer ? api('sty_customer_detail', { p_id: party.id })
+    : party.due != null ? Promise.resolve(party)
+      : api('sty_list_suppliers').then((rows) => (rows || []).find((row) => row.id === party.id));
+  lookup.then((record) => {
+    if (!record) throw new Error(t('Party details unavailable'));
+    profile = { ...party, ...record };
+    if (tab === 'details') details();
+    const action = (label, symbol, run) => h('button', { class: 'btn', type: 'button', onclick: () => { view.close(); run(); } }, icon(symbol, 18), t(label));
+    if (customer) {
+      actions.append(action('Customer history', 'user', () => customerSheet(profile, done)));
+      if (can('sty_sell')) actions.append(action('Edit customer', 'edit', () => customerForm(profile, done)));
+    } else if (can('sty_purchase')) {
+      actions.append(action('Edit supplier', 'edit', () => supplierForm(profile, done)));
+      if (profile.due > 0) actions.append(action('Pay supplier', 'cash', () => supplierSheet(profile, done)));
+    }
+  }).catch((error) => actions.append(h('p', { class: 'muted small', role: 'status' }, t('Could not load full details') + ' · ' + error.message)));
 }

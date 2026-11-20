@@ -1,28 +1,124 @@
 /* AUZsStyle: People. Customers (points, store credit, usual size, last purchase) and the shop's staff with targets. */
 'use strict';
 page('people', {
-  title: 'People', perm: 'sty_view',
+  title: 'People', perm: () => can('sty_view') || allowed(PAGES.requests),
   async render(v) {
-    const tab = v.q.get('tab') || 'customers';
-    v.header({ title: t('People'), actions: [{ label: t('New customer'), icon: 'plus', primary: true, run: () => customerForm(null, () => v.refresh()) }] });
+    const tabs = [
+      ...(can('sty_view') ? [['customers', t('Customers')], ['dues', t('Dues')], ['followups', t('Follow-ups')]] : []),
+      ...(allowed(PAGES.requests) ? [['requests', t('Requests')]] : []),
+      ...(can('sty_view') && can('sty_reports') ? [['staff', t('Staff')]] : []),
+    ];
+    const requested = v.q.get('tab');
+    const tab = tabs.some(([id]) => id === requested) ? requested : tabs[0][0];
     const root = v.root;
-    root.append(seg([['customers', t('Customers')], ['dues', t('Dues')], ['followups', t('Follow-ups')]].concat(can('sty_reports') ? [['staff', t('Staff')]] : []), tab, (x) => go('people?tab=' + x), { full: true }));
+    root.append(seg(tabs, tab, (id) => go('people?tab=' + id), { full: true }));
+    if (tab === 'requests') return PAGES.requests.render(v);
+    v.header({ title: t(tab === 'customers' ? 'Customers' : 'People'), actions: [
+      { label: t('New customer'), icon: 'plus', primary: true, run: () => customerForm(null, () => v.refresh()) },
+      { label: t('Reminders'), icon: 'share', run: () => go('people?tab=followups') },
+    ] });
     const host = h('div'); root.append(host); host.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '24px auto' } }));
     if (tab === 'staff' && can('sty_reports')) return staffTab(host, v);
     if (tab === 'followups') return followTab(host, v);
     if (tab === 'dues') return duesTab(host, v);
-    let q = '', segm = 'all'; const list = h('div', { class: 'list' }), chipRow = h('div', { class: 'chips' });
-    let ov = {}; try { ov = await api('sty_crm_overview') || {}; } catch (e) { return fail(e); }
-    const SEGS = [['all', t('All'), ov.total], ['new', t('New'), ov.newCount], ['regular', t('Regular'), ov.regular], ['lapsed', t('Lapsed'), ov.lapsed], ['gold', t('Gold'), ov.gold], ['silver', t('Silver'), ov.silver], ['credit', t('Store credit')], ['points', t('Points')]];
-    const paintChips = () => clear(chipRow).append(...SEGS.map(([k, l, n]) => h('button', { class: 'chip', 'aria-pressed': segm === k ? 'true' : 'false', type: 'button', onclick: () => { segm = k; paintChips(); load(); } }, l + (n != null ? ' ' + n : ''))));
-    const load = debounce(async () => {
-      let rows = []; try { rows = await api('sty_crm_list', { p: { q, segment: segm, limit: 300 } }) || []; } catch (e) { return fail(e); }
-      clear(list).append(...(rows.length ? rows.map((c) => liRow({ icon: 'user', title: c.name, sub: [c.tier !== 'Member' ? c.tier : '', c.status === 'lapsed' ? t('Lapsed') : '', c.phone, c.lastAt ? t('Last') + ' ' + fmtDay(c.lastAt) : ''].filter(Boolean).join(' · '), value: inr(c.spent, 0), valueSub: c.visits + ' ' + t('visits'), chevron: true, onclick: () => customerSheet(c, () => v.refresh()) })) : [empty('users', t('No customers here'), t('They are added when you bill them, or add one here.'))]));
-    }, 200);
-    paintChips();
-    clear(host).append(h('div', { class: 'grid' }, h('div', { class: 'kpis' }, kpi(t('Customers'), ov.total || 0, (ov.withPhone || 0) + ' ' + t('with phone')), kpi(t('Lapsed'), ov.lapsed || 0, t('not back in 60 days')), kpi(t('Points out'), ov.points || 0, t('Store credit') + ' ' + inr(ov.credit || 0, 0))), searchField(t('Name or phone'), (x) => { q = x; load(); }), chipRow, list)); load();
+    return customersTab(host, v);
   },
 });
+function peopleRecordCard({ name, detail, amount, status, tone, pick, open }) {
+  return h('article', { class: 'people-card' }, pick,
+    h('button', { type: 'button', class: 'people-open', onclick: open },
+      h('span', { class: 'people-identity' }, h('strong', null, name), h('small', null, detail)),
+      h('span', { class: 'people-balance' }, h('strong', null, amount),
+        h('small', { class: 'people-status is-' + tone }, status)), icon('right', 15)));
+}
+async function customersTab(host, v) {
+  const limit = 1000;
+  let overview, customers, dues;
+  try {
+    [overview, customers, dues] = await Promise.all([
+      api('sty_crm_overview'),
+      api('sty_crm_list', { p: { limit } }),
+      api('sty_dues_list'),
+    ]);
+  } catch (error) {
+    clear(host).append(empty('users', t('Could not load customers'), error.message,
+      h('button', { class: 'btn', type: 'button', onclick: () => v.refresh() }, t('Try again'))));
+    return;
+  }
+  overview = overview || {};
+  customers = customers || [];
+  const balances = new Map();
+  for (const bill of dues || []) {
+    const amount = Number(bill.balance) || 0;
+    if (amount <= 0) continue;
+    const balance = balances.get(bill.customerId) || { due: 0, overdue: 0 };
+    balance.due += amount;
+    if (bill.overdue) balance.overdue += amount;
+    balances.set(bill.customerId, balance);
+  }
+  const totals = [...balances.values()].reduce((sum, entry) => ({
+    due: sum.due + entry.due, overdue: sum.overdue + entry.overdue,
+  }), { due: 0, overdue: 0 });
+  const modes = [['all', 'All'], ['owing', 'Owing'], ['overdue', 'Overdue'], ['lapsed', 'Lapsed'], ['new', 'New'], ['regular', 'Regular'], ['gold', 'Gold'], ['silver', 'Silver'], ['credit', 'Store credit'], ['points', 'Points']];
+  const selected = new Set();
+  const cards = h('div', { class: 'people-cards' });
+  const tools = h('div', { class: 'row people-actions' });
+  const more = h('div');
+  let filter = 'all', search = '', visible = 12;
+  const matches = () => customers.filter((customer) => {
+    const balance = balances.get(customer.id);
+    const eligible = filter === 'all' || (filter === 'owing' && balance?.due > 0)
+      || (filter === 'overdue' && balance?.overdue > 0) || customer.status === filter || String(customer.tier || '').toLowerCase() === filter
+      || (filter === 'credit' && customer.credit > 0) || (filter === 'points' && customer.points > 0);
+    return eligible && [customer.name, customer.phone, customer.gstin, customer.email].some((value) => String(value || '').toLowerCase().includes(search));
+  });
+  function exportRows() {
+    const rows = matches().filter((customer) => !selected.size || selected.has(customer.id));
+    exportCSV('style-customers', ['Name', 'Phone', 'GSTIN', 'Email', 'Outstanding', 'Overdue'],
+      rows.map((customer) => [customer.name, customer.phone, customer.gstin, customer.email,
+        balances.get(customer.id)?.due || 0, balances.get(customer.id)?.overdue || 0]));
+  }
+  function paintActions() {
+    clear(tools).append(can('sty_manage') ? h('button', { class: 'btn sm', type: 'button', onclick: exportRows },
+      icon('download', 16), selected.size ? t('Export selected') + ' (' + selected.size + ')' : t('Export')) : null);
+  }
+  function paint() {
+    const rows = matches();
+    clear(cards).append(...rows.slice(0, visible).map((customer) => {
+      const balance = balances.get(customer.id);
+      const pick = can('sty_manage') ? h('input', { type: 'checkbox', checked: selected.has(customer.id),
+        'aria-label': t('Select') + ' ' + customer.name, onchange: (event) => {
+          if (event.target.checked) selected.add(customer.id);
+          else selected.delete(customer.id);
+          paintActions();
+        } }) : null;
+      return peopleRecordCard({
+        name: customer.name, detail: customer.phone || customer.gstin || customer.email || customer.tier || '',
+        amount: balance ? inr(balance.due) : inr(0),
+        status: balance ? (balance.overdue > 0 ? t('Overdue') : t('To collect')) : t('Settled'),
+        tone: balance ? (balance.overdue > 0 ? 'due' : 'open') : 'settled',
+        pick, open: () => customerSheet(customer, () => v.refresh()),
+      });
+    }));
+    if (!rows.length) cards.append(empty('users', t('No customers here'), t('Try another search or filter.')));
+    clear(more).append(rows.length > visible ? h('button', { class: 'btn sm wide', type: 'button', onclick: () => {
+      visible += 12;
+      paint();
+    } }, t('Show more') + ' · ' + (rows.length - visible)) : null);
+    paintActions();
+  }
+  const change = () => { selected.clear(); visible = 12; paint(); };
+  clear(host).append(h('div', { class: 'grid people-workspace' },
+    h('div', { class: 'people-total' }, h('div', null, h('strong', null, t('Owed to you')),
+      h('small', null, balances.size + ' ' + t('customers'))), h('b', null, inr(totals.due, 0))),
+    h('div', { class: 'kpis' }, kpi(t('Overdue'), inr(totals.overdue, 0), t('Past due date')),
+      kpi(t('Customers'), overview.total || customers.length, (overview.lapsed || 0) + ' ' + t('lapsed'))),
+    searchField(t('Search customers'), (value) => { search = value.trim().toLowerCase(); change(); }),
+    seg(modes.map(([key, label]) => [key, t(label)]), filter, (value) => { filter = value; change(); }),
+    tools, cards, more,
+    customers.length >= limit ? h('p', { class: 'muted small' }, t('This view shows the first 1,000 customers.')) : null));
+  paint();
+}
 function waLink(c, text) { const ph = String(c.phone || '').replace(/\D/g, '').slice(-10); return ph ? 'https://wa.me/91' + ph + (text ? '?text=' + encodeURIComponent(text) : '') : null; }
 async function followTab(host, v) {
   let ov; try { ov = await api('sty_crm_overview') || {}; } catch (e) { return fail(e); }
@@ -46,7 +142,7 @@ async function customerSheet(c0, done) {
   c = Object.assign({}, c0, det || {});
   const names = (a) => (a || []).map((x) => x.name + ' ×' + x.qty).join(', ');
   const body = h('div', { class: 'grid' }, h('div', { class: 'kpis' }, kpi(t('Spent'), inr(c.spent, 0), c.visits + ' ' + t('visits')), kpi(t('Points'), c.points || 0), kpi(t('Store credit'), inr(c.credit, 0))),
-    h('div', { class: 'muted' }, [c.tier, c.status === 'lapsed' ? t('Lapsed') : '', c.phone, c.city, c.usualSize ? t('Usual size') + ' ' + c.usualSize : '', c.birthday ? t('Birthday') + ' ' + fmtDay(c.birthday) : '', c.anniversary ? t('Anniversary') + ' ' + fmtDay(c.anniversary) : '', c.notes].filter(Boolean).join(' · ')),
+    h('div', { class: 'muted' }, [c.tier, c.status === 'lapsed' ? t('Lapsed') : '', c.phone, c.email, c.gstin, c.address, c.city, c.usualSize ? t('Usual size') + ' ' + c.usualSize : '', c.birthday ? t('Birthday') + ' ' + fmtDay(c.birthday) : '', c.anniversary ? t('Anniversary') + ' ' + fmtDay(c.anniversary) : '', c.notes].filter(Boolean).join(' · ')),
     det && det.visits ? h('div', { class: 'muted small' }, [t('Average bill') + ' ' + inr(det.avgBill, 0), det.due > 0 ? t('Due') + ' ' + inr(det.due, 0) : '', det.sizes && det.sizes.length ? t('Sizes') + ': ' + names(det.sizes) : '', det.colours && det.colours.length ? t('Colours') + ': ' + names(det.colours) : '', det.likes && det.likes.length ? t('Buys') + ': ' + names(det.likes) : ''].filter(Boolean).join(' · ')) : null,
     det && det.bills && det.bills.length ? h('div', { class: 'list' }, det.bills.slice(0, 5).map((b) => liRow({ icon: 'tag', title: b.number, sub: fmtDay(b.at) + (b.status === 'due' ? ' · ' + t('Balance') + ' ' + inr(b.balance, 0) + (b.dueDate ? ' · ' + t('Due') + ' ' + fmtDay(b.dueDate) : '') : ''), value: inr(b.total, 0), chevron: true, onclick: () => { s.close(); go('bills?customer=' + c.id); } }))) : null,
     det && det.messages && det.messages.length ? h('div', { class: 'muted small' }, t('Messages') + ': ' + det.messages.map((m) => m.template.replace(/_/g, ' ') + ' (' + m.status + ')').join(', ')) : null,

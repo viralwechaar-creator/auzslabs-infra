@@ -52,14 +52,14 @@ page('invoice', {
     function paint() { clear(root).append(body()); }
     function custSection() {
       return section(t('Customer'), BILL.customer
-        ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paint(); }) },
+        ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { selectBillCustomer(cu); paint(); }) },
             icon('user', 18), h('span', { class: 'grow' }, BILL.customer.name + (BILL.customer.phone ? ' · ' + BILL.customer.phone : '')), h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')),
             h('span', { class: 'cust-x', role: 'button', 'aria-label': t('Clear'), onclick: (e) => { e.stopPropagation(); BILL.customer = null; BILL.exchange = 0; paint(); } }, icon('x', 14)))
         : h('div', { class: 'grid', style: { gap: '8px' } },
             h('div', { class: 'custrow' },
               h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
               h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
-              h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { BILL.customer = cu; paint(); }) }, icon('search', 16))),
+              h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { selectBillCustomer(cu); paint(); }) }, icon('search', 16))),
             canGstLookup() ? (BILL.showGstin ? gstBillRow(paint, null) : h('button', { class: 'btn plain sm', type: 'button', style: { alignSelf: 'flex-start' }, onclick: () => { BILL.showGstin = true; paint(); } }, icon('plus', 14), t('Bill to a GST number'))) : null,
             h('div', { class: 'muted small' }, t('Walk-in') + ' — ' + t('add a customer to leave a balance due'))));
     }
@@ -103,7 +103,7 @@ page('invoice', {
         BILL.lines.length ? h('div', { class: 'row', style: { gap: '8px' } },
           // saveAsQuote/paySheet already call newBill() themselves on success -- just repaint.
           h('button', { class: 'btn', type: 'button', onclick: () => saveAsQuote(() => paint()) }, t('Save draft')),
-          h('button', { class: 'btn fill grow', type: 'button', onclick: async () => { await resolveTypedCustomer(); paySheet(billCalc(), () => paint()); } }, t('Charge') + ' ' + inr(c.total))) : null);
+          h('button', { class: 'btn fill grow', type: 'button', onclick: async () => { if (!await resolveTypedCustomer()) return; paySheet(billCalc(), () => paint()); } }, t('Charge') + ' ' + inr(c.total))) : null);
     }
   },
 });
