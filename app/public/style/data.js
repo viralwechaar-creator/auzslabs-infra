@@ -21,8 +21,21 @@ function findStyleCode(code) { code = String(code).trim().toLowerCase(); return 
 function findBarcode(code) {
   code = String(code).trim(); if (!code) return null;
   const lc = code.toLowerCase();
-  for (const s of S.cat) for (const v of s.variants) if (v.barcode === code || (v.sku && v.sku.toLowerCase() === lc) || v.barcode.toLowerCase() === lc) return { style: s, variant: v };
-  return null;
+  for (const style of S.cat) for (const variant of style.variants) {
+    if (String(variant.barcode || '').toLowerCase() === lc || (variant.sku && variant.sku.toLowerCase() === lc)) return { style, variant };
+  }
+
+  // Some scanners drop the leading zero when reading a UPC-A encoded as EAN-13.
+  // Exact style codes still take precedence over the alternate barcode spelling.
+  const alternate = window.auzScanner?.variants(code)[1];
+  if (!alternate || findStyleCode(code)) return null;
+  let match = null;
+  for (const style of S.cat) for (const variant of style.variants) {
+    if (style.active === false || variant.active === false || String(variant.barcode || '').trim() !== alternate) continue;
+    if (match) return null;
+    match = { style, variant };
+  }
+  return match;
 }
 const styleStock = (s) => s.variants.reduce((a, v) => a + (v.active === false ? 0 : v.stock), 0);
 
