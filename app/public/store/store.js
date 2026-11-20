@@ -873,13 +873,19 @@ V.p = (v, id) => {
   const hasSizeGuide = !minimal || sizesOf(s).some((size) => /^(?:X{0,3}[SL]|M|[2-5]XL)$/i.test(size));
   let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
+  const pinnedPhoto = minimal ? E('div', { class: 'minimal-pinned-photo' }) : null;
   let cur = 0;
   const paintGal = () => {
     const ims = minimal ? minimalPhotosFor(s, colour) : photosFor(s, colour);
     clear(gal); gal.classList.toggle('solo', ims.length <= 1); gal.classList.remove('multi');
     if (minimal) {
+      const primary = ims[0];
+      clear(pinnedPhoto).append(ims.length > 1 ? E('img', { src: primary, alt: s.name + ' — main image', loading: 'eager' }) : null);
+      pinnedPhoto.hidden = ims.length < 2;
+      gal.parentElement?.classList.toggle('minimal-single-photo', ims.length < 2);
       gal.append(E('div', { class: 'minimal-product-gallery' }, ims.length ? ims.map((url, index) =>
-        E('img', { src: url, alt: s.name + ' — image ' + (index + 1), loading: index ? 'lazy' : 'eager' })) : placeholder(s.name)));
+        E('img', { class: !index && ims.length > 1 ? 'minimal-mobile-primary' : null,
+          src: url, alt: s.name + ' — image ' + (index + 1), loading: index > 1 ? 'lazy' : 'eager' })) : placeholder(s.name)));
       return;
     }
     if (!ims.length) { gal.append(E('div', { class: 'main' }, placeholder(s.name))); return; }
@@ -908,7 +914,7 @@ V.p = (v, id) => {
     return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, s.description)) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
       !bullets.length && !s.description && !rows.length ? E('div', { class: 'mut' }, 'More details coming soon.') : null);
   };
-  const details = minimal ? E('aside', { class: 'minimal-product-details', 'aria-label': 'Product information' },
+  const details = minimal ? E('section', { class: 'minimal-product-details', 'aria-label': 'Product information' },
     [['d', 'Details & description'], ['w', 'Product care'], ['s', 'Shipping & returns']].map(([key, label]) =>
       E('details', { open: key === 'd' }, E('summary', null, label), dtl(key)))) : null;
   const paintInfo = () => {
@@ -964,17 +970,28 @@ V.p = (v, id) => {
   }
   paintGal(); paintInfo();
   try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: s.description || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
-  let more = STY.filter((x) => x.id !== s.id && (x.category === s.category || (s.collection && x.collection === s.collection))).slice(0, 8);
-  if (more.length < 4) { const have = new Set(more.map((x) => x.id)); more = more.concat(newest(STY.length).filter((x) => x.id !== s.id && !have.has(x.id))).slice(0, Math.max(4, more.length)); } // always suggest at least 4 (2 when the shop has fewer)
+  let more = minimal ? minimalRelatedProducts(s)
+    : STY.filter((x) => x.id !== s.id && (x.category === s.category || (s.collection && x.collection === s.collection))).slice(0, 8);
+  if (!minimal && more.length < 4) { const have = new Set(more.map((x) => x.id)); more = more.concat(newest(STY.length).filter((x) => x.id !== s.id && !have.has(x.id))).slice(0, Math.max(4, more.length)); }
   const destination = link('shop?cat=' + encodeURIComponent(s.category));
   const related = more.length ? minimal
     ? minimalRecommendations('You may also like', more, destination)
     : E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Products you may like'), E('a', { class: 'btn sm', href: destination }, 'Discover more')), E('div', { class: 'row' }, more.map((x) => card(x))))
     : null;
   const viewed = minimal ? recent().filter((id) => id !== s.id).map((id) => BYID[id]).filter(Boolean) : [];
+  const product = E('div', { class: minimal ? 'pd minimal-pd' + (pinnedPhoto.hidden ? ' minimal-single-photo' : '') : 'pd' },
+    pinnedPhoto, gal, minimal ? E('aside', { class: 'minimal-purchase-panel', 'aria-label': 'Product details and purchase' }, details, info) : info);
   v.append(minimal ? null : E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: destination }, s.category), ' / ', s.name),
-    E('div', { class: 'pd' + (minimal ? ' minimal-pd' : '') }, gal, info, details), related,
+    product, related,
     minimal ? (viewed.length ? minimalRecommendations('Recently viewed', viewed) : null) : recentBand(s.id));
+  if (minimal && related && 'IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || !matchMedia('(min-width:900px)').matches) return;
+      details.querySelectorAll('details[open]').forEach((section) => { section.open = false; });
+    }, { threshold: .1 });
+    observer.observe(related);
+    v._disconnectProduct = () => observer.disconnect();
+  }
   rpc('public_sty_reviews', { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
     const box = E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Reviews'), E('span', { class: 'mut tiny' }, stars(rv.avg) + ' ' + rv.avg + ' · ' + rv.count + (rv.count === 1 ? ' review' : ' reviews'))), E('div', { class: 'frm' }, (rv.items || []).slice(0, 8).map((r) => E('div', { class: 'card' }, E('div', null, E('b', null, stars(r.rating)), r.title ? ' ' + r.title : ''), r.body ? E('div', { class: 'mut' }, r.body) : null, E('div', { class: 'tiny mut' }, (r.name || 'Customer') + ' · verified buyer')))));
     if (related?.isConnected) v.insertBefore(box, related); else if (info.isConnected) v.append(box); }).catch(() => {});
@@ -994,6 +1011,17 @@ V.p = (v, id) => {
     window.addEventListener('hashchange', () => bar.remove(), { once: true });
   }
 };
+function minimalRelatedProducts(product) {
+  const normalize = (category) => String(category || '').trim().toLowerCase().replace(/s$/, '');
+  const category = normalize(product.category);
+  const candidates = newest(STY.length).filter((candidate) => candidate.id !== product.id);
+  const sameCategory = candidates.filter((candidate) => normalize(candidate.category) === category);
+  const otherCategories = candidates.filter((candidate) => normalize(candidate.category) !== category);
+  const complement = otherCategories.find((candidate) => !isGone(candidate) && product.collection && candidate.collection === product.collection)
+    || otherCategories.find((candidate) => !isGone(candidate)) || otherCategories[0];
+  if (!complement) return sameCategory.slice(0, 4);
+  return [...sameCategory.slice(0, 3), complement];
+}
 function minimalRecommendations(title, products, destination) {
   return E('section', { class: 'minimal-recommendations' },
     E('div', { class: 'minimal-heading' }, E('h2', null, title),
@@ -1360,7 +1388,10 @@ const TR = (() => {
 // ---------- router ----------
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
-  const id = parts[0] || 'home'; const view = $('#view'); if (!view) return; clear(view);
+  const id = parts[0] || 'home'; const view = $('#view'); if (!view) return;
+  view._disconnectProduct?.();
+  view._disconnectProduct = null;
+  clear(view);
   const minimal = cfg().template === 'minimal';
   document.body.classList.toggle('minimal-store', minimal);
   view.dataset.page = id;
