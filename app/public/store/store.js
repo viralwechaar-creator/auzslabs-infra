@@ -559,10 +559,18 @@ function minimalHome(v) {
     E('a', { href: feature.href, 'aria-label': feature.name }, E('img', { src: feature.photo, alt: '', loading: 'lazy' })),
     E('div', null, E('h2', null, feature.name), E('a', { href: feature.href }, 'Shop collection ↗'))));
   const more = STY.filter((style) => !featured.includes(style));
-  if (more.length) v.append(E('section', { class: 'minimal-section' },
+  if (more.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
     heading('Discover more', link('shop'), 'Shop all'), gridOf(more.slice(0, 8))));
-  if ((c.stores || []).length) v.append(E('section', { class: 'minimal-section' },
-    heading('Visit us', link('stores'), 'All stores'), storeCards(c.stores)));
+  for (const collection of collections.slice(0, 3)) {
+    const products = collection.styleIds.map((id) => BYID[id]).filter(Boolean);
+    if (products.length > 1) v.append(minimalProductRail(collection.name, products, link('shop?col=' + encodeURIComponent(collection.id))));
+  }
+  for (const category of categories.filter((name) => STY.filter((product) => product.category === name).length > 1).slice(0, 4)) {
+    const products = STY.filter((product) => product.category === category);
+    v.append(minimalProductRail(category, products, link('shop?cat=' + encodeURIComponent(category))));
+  }
+  const locations = storeList();
+  if (locations.length) v.append(minimalHomeStores(locations));
 }
 function openMinimalStory(stories, index, trigger) {
   const dialog = E('dialog', { class: 'minimal-story-viewer', 'aria-label': 'Shop the stories' });
@@ -587,6 +595,33 @@ function openMinimalStory(stories, index, trigger) {
   paint();
   dialog.showModal();
   dismiss.focus();
+}
+function minimalRail(content, label) {
+  const track = E('div', { class: 'minimal-rail', tabindex: '0', role: 'region', 'aria-label': label }, content);
+  const move = (direction) => () => track.scrollBy({ left: direction * track.clientWidth * .8, behavior: 'smooth' });
+  return {
+    track,
+    controls: E('div', { class: 'minimal-rail-controls' },
+      E('button', { type: 'button', 'aria-label': 'Scroll ' + label + ' left', onclick: move(-1) }, icon('left')),
+      E('button', { type: 'button', 'aria-label': 'Scroll ' + label + ' right', onclick: move(1) }, icon('right'))),
+  };
+}
+function minimalProductRail(title, products, destination) {
+  const { track, controls } = minimalRail(products.map((product) => card(product)), title);
+  return E('section', { class: 'minimal-section minimal-product-section' },
+    E('div', { class: 'minimal-heading' }, E('h2', null, title), E('div', { class: 'minimal-section-actions' },
+      controls, E('a', { class: 'minimal-discover', href: destination }, 'Discover more'))), track);
+}
+function minimalHomeStores(stores) {
+  const cards = storeCards(stores, true);
+  const { track, controls } = minimalRail(cards, 'Store locations');
+  return E('section', { class: 'minimal-section minimal-home-stores', 'aria-labelledby': 'minimal-stores-heading' },
+    E('div', { class: 'minimal-store-stage' },
+      E('div', { class: 'minimal-globe', 'aria-hidden': 'true' }),
+      E('div', { class: 'minimal-heading' },
+        E('h2', { id: 'minimal-stores-heading' }, 'Stores across India'),
+        E('div', { class: 'minimal-section-actions' }, controls, E('a', { class: 'minimal-discover', href: link('stores') }, 'All stores')))),
+    track);
 }
 V.home = (v) => {
   if (cfg().template === 'minimal') {
@@ -738,17 +773,29 @@ V.shop = (v) => {
     if (selectedSizes.length) act.push(['sizes', 'Size: ' + selectedSizes.join(', ')]);
     if (selectedColours.length) act.push(['colours', 'Colour: ' + selectedColours.join(', ')]);
     const categories = [...new Set(STY.map((style) => style.category).filter(Boolean))];
-    v.append(E('section', { class: 'minimal-catalog' },
+    const catalog = E('section', { class: 'minimal-catalog' });
+    const compact = E('button', { class: 'minimal-view-toggle', type: 'button', 'aria-label': 'Compact product grid',
+      title: 'Compact product grid', onclick: () => applyDensity(!catalog.classList.contains('minimal-compact')) });
+    function applyDensity(on) {
+      catalog.classList.toggle('minimal-compact', on);
+      compact.setAttribute('aria-pressed', String(on));
+      compact.replaceChildren(icon(on ? 'big' : 'dense'));
+      LS.set('compact-products', on);
+    }
+    applyDensity(LS.get('compact-products', false) === true);
+    catalog.append(
       E('nav', { class: 'minimal-category-nav', 'aria-label': 'Product categories' },
         E('a', { href: link('shop'), 'aria-current': !q.cat && !q.col && !q.new ? 'page' : null }, 'View all'),
         categories.map((category) => E('a', { href: link('shop?cat=' + encodeURIComponent(category)),
           'aria-current': q.cat === category ? 'page' : null }, category))),
       E('div', { class: 'minimal-heading' }, E('div', null, E('h1', null, title), E('span', { class: 'mut' }, list.length + (list.length === 1 ? ' product' : ' products'))),
-        E('button', { class: 'btn out', type: 'button', onclick: minimalFilters }, icon('filter'), 'Advanced filters')),
+        E('div', { class: 'minimal-section-actions' }, compact,
+          E('button', { class: 'minimal-filter-button', type: 'button', onclick: minimalFilters }, 'Advanced filters'))),
       act.length ? E('div', { class: 'chips' }, act.map(([key, label]) => E('button', {
         class: 'chip on', type: 'button', onclick: () => setQ({ [key]: '' }),
       }, label, ' ×'))) : null,
-      list.length ? pagedGrid(list, false) : E('div', { class: 'empty' }, E('h2', null, 'No products match'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters'))));
+      list.length ? pagedGrid(list, false) : E('div', { class: 'empty' }, E('h2', null, 'No products match'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
+    v.append(catalog);
     return;
   }
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
@@ -1039,13 +1086,13 @@ V.order = async (v, tok) => {
 
 function mapUrl(st) { return st.mapUrl || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([st.name, st.address].filter(Boolean).join(' ')); }
 function storeList() { const st = (cfg().stores || []).filter((x) => x && (x.name || x.address)); if (st.length) return st; return D.shop.address ? [{ name: D.shop.name, address: D.shop.address, phone: D.shop.phone }] : []; }
-function storeCards(list) {
-  const row = E('div', { class: 'swc' }, list.map((st) => E('div', { class: 'swcard' },
+function storeCards(list, asCards = false) {
+  const cards = list.map((st) => E('div', { class: 'swcard' },
     E('div', { class: 'im' }, st.photo ? E('img', { src: st.photo, alt: st.name || '', loading: 'lazy' }) : null),
     E('div', { class: 'tx' }, E('h3', null, st.name || 'Store'), E('div', { class: 'ad' }, st.address || '', st.hours ? E('div', { class: 'mut' }, st.hours) : null),
       E('a', { class: 'gd', href: mapUrl(st), target: '_blank', rel: 'noopener' }, 'Get Direction \u2197'),
-      st.phone ? E('a', { class: 'ph2', href: 'tel:' + String(st.phone).replace(/[^\d+]/g, '') }, st.phone) : E('span')))));
-  return row;
+      st.phone ? E('a', { class: 'ph2', href: 'tel:' + String(st.phone).replace(/[^\d+]/g, '') }, st.phone) : E('span'))));
+  return asCards ? cards : E('div', { class: 'swc' }, cards);
 }
 V.stores = (v) => { const l = storeList(); v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Our stores')), l.length ? storeCards(l) : E('div', { class: 'card mut' }, 'Store details are coming soon.'))); };
 V.about = (v) => {
