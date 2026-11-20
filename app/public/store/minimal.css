@@ -158,7 +158,7 @@
 .minimal-filter-button{background:#fff;color:#111}
 .minimal-rail{display:grid;grid-auto-flow:column;grid-auto-columns:26%;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding-bottom:5px}
 .minimal-rail>*{min-width:0;scroll-snap-align:start}
-.minimal-home .minimal-product-section .pc{background:#fff;border-radius:24px}
+.minimal-home .minimal-product-section .pc{background:transparent}
 .minimal-home .minimal-product-section .pc .ph{aspect-ratio:5/6!important;background:#e8ebef}
 .minimal-home .minimal-product-section .pc .ph,.minimal-home .minimal-product-section .pc .sc{border-radius:24px}
 .minimal-home .minimal-home-stores{position:relative;margin-top:14px;padding-block:16px 24px;background:#ededed;border:0;border-radius:28px}
@@ -180,7 +180,7 @@
 .minimal-store [data-page="shop"] .minimal-catalog .grid{gap:5px!important}
 .minimal-store [data-page="shop"] .minimal-catalog{background:#efefef;border-radius:26px 26px 0 0}
 .minimal-store [data-page="shop"] .minimal-catalog.minimal-compact .grid{grid-template-columns:repeat(6,minmax(0,1fr))}
-.minimal-store [data-page="shop"] .pc{background:#fff;border-radius:9px}
+.minimal-store [data-page="shop"] .pc{background:transparent;border-radius:9px}
 .minimal-store [data-page="shop"] .pc .ph,.minimal-store [data-page="shop"] .pc .sc{border-radius:9px}
 .minimal-store [data-page="shop"] .minimal-category-nav a{background:#fff;border-radius:999px;padding:6px 12px;font-size:11px}
 .minimal-store [data-page="shop"] .minimal-view-toggle[aria-pressed="true"]{background:#111;color:#fff}
@@ -250,7 +250,8 @@
 .minimal-home .minimal-product-section .minimal-rail{grid-auto-columns:calc((100% - 30px)/4);gap:10px;padding-bottom:0;scrollbar-width:none}
 .minimal-home .minimal-latest{background:#eee;margin:0;padding:5px clamp(10px,1.5vw,24px) 8px}
 .minimal-latest .minimal-heading{margin-bottom:5px}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc{background:#fff}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc{background:transparent}
+.minimal-home :is(.minimal-bags,.minimal-accessories) .pc{background:#fff}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in{display:flex;min-height:46px;padding:8px 6px 4px;color:#121212}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .nm{font-size:11px;font-weight:480}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:10px;font-weight:400;color:#555}
