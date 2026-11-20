@@ -908,6 +908,9 @@ V.p = (v, id) => {
     return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, s.description)) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
       !bullets.length && !s.description && !rows.length ? E('div', { class: 'mut' }, 'More details coming soon.') : null);
   };
+  const details = minimal ? E('aside', { class: 'minimal-product-details', 'aria-label': 'Product information' },
+    [['d', 'Details & description'], ['w', 'Product care'], ['s', 'Shipping & returns']].map(([key, label]) =>
+      E('details', { open: key === 'd' }, E('summary', null, label), dtl(key)))) : null;
   const paintInfo = () => {
     clear(info);
     const vs = s.variants.filter((x) => !colour || x.colour === colour); const gone = isGone(s);
@@ -927,9 +930,7 @@ V.p = (v, id) => {
       } }, 'Add to bag'), E('button', { class: 'btn', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
         if (need(chosen) && addBag(chosen.id, qty)) go('checkout');
       } }, 'Buy now')),
-      minimal ? E('div', { class: 'minimal-product-details' }, [['d', 'Details & description'], ['w', 'Product care'], ['s', 'Shipping & returns']].map(([key, label]) =>
-        E('details', { open: key === 'd' }, E('summary', null, label), dtl(key))))
-        : E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
+      minimal ? null : E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
       E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };
@@ -965,11 +966,18 @@ V.p = (v, id) => {
   try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: s.description || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
   let more = STY.filter((x) => x.id !== s.id && (x.category === s.category || (s.collection && x.collection === s.collection))).slice(0, 8);
   if (more.length < 4) { const have = new Set(more.map((x) => x.id)); more = more.concat(newest(STY.length).filter((x) => x.id !== s.id && !have.has(x.id))).slice(0, Math.max(4, more.length)); } // always suggest at least 4 (2 when the shop has fewer)
-  v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: link('shop?cat=' + encodeURIComponent(s.category)) }, s.category), ' / ', s.name), E('div', { class: 'pd' }, gal, info),
-    more.length ? E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Products you may like'), E('a', { class: 'btn sm', href: link('shop?cat=' + encodeURIComponent(s.category)) }, 'Discover more')), E('div', { class: 'row' }, more.map((x) => card(x)))) : null, recentBand(s.id));
+  const destination = link('shop?cat=' + encodeURIComponent(s.category));
+  const related = more.length ? minimal
+    ? minimalRecommendations('You may also like', more, destination)
+    : E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Products you may like'), E('a', { class: 'btn sm', href: destination }, 'Discover more')), E('div', { class: 'row' }, more.map((x) => card(x))))
+    : null;
+  const viewed = minimal ? recent().filter((id) => id !== s.id).map((id) => BYID[id]).filter(Boolean) : [];
+  v.append(minimal ? null : E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: destination }, s.category), ' / ', s.name),
+    E('div', { class: 'pd' + (minimal ? ' minimal-pd' : '') }, gal, info, details), related,
+    minimal ? (viewed.length ? minimalRecommendations('Recently viewed', viewed) : null) : recentBand(s.id));
   rpc('public_sty_reviews', { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
     const box = E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Reviews'), E('span', { class: 'mut tiny' }, stars(rv.avg) + ' ' + rv.avg + ' · ' + rv.count + (rv.count === 1 ? ' review' : ' reviews'))), E('div', { class: 'frm' }, (rv.items || []).slice(0, 8).map((r) => E('div', { class: 'card' }, E('div', null, E('b', null, stars(r.rating)), r.title ? ' ' + r.title : ''), r.body ? E('div', { class: 'mut' }, r.body) : null, E('div', { class: 'tiny mut' }, (r.name || 'Customer') + ' · verified buyer')))));
-    const first = v.querySelector('.band'); first ? v.insertBefore(box, first) : v.append(box); }).catch(() => {});
+    if (related?.isConnected) v.insertBefore(box, related); else if (info.isConnected) v.append(box); }).catch(() => {});
   setMeta(s.name + ' · ' + D.shop.name, (s.description || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
   // on a wide screen the details card folds up by itself when you scroll down to the other products, so it never covers them
   const bands = [...v.querySelectorAll('.band')];
@@ -986,6 +994,12 @@ V.p = (v, id) => {
     window.addEventListener('hashchange', () => bar.remove(), { once: true });
   }
 };
+function minimalRecommendations(title, products, destination) {
+  return E('section', { class: 'minimal-recommendations' },
+    E('div', { class: 'minimal-heading' }, E('h2', null, title),
+      destination ? E('a', { class: 'minimal-discover', href: destination }, 'Discover more') : null),
+    gridOf(products.slice(0, 4)));
+}
 
 V.bag = (v) => {
   const ls = bagLines();
