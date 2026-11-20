@@ -259,6 +259,7 @@
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .add{min-height:22px;height:22px}
 .minimal-home :is(.minimal-latest,.minimal-bags) .pc .ph{aspect-ratio:2/3!important}
 .minimal-home .minimal-latest .pc :is(.ph,.sc){border-radius:9px}
+.minimal-home .minimal-bags .pc :is(.in,.bm,.tag,.dt){display:none}
 .minimal-home .minimal-accessories .pc .ph{aspect-ratio:318/421!important}
 .minimal-collection-carousel{position:relative;margin:14px clamp(10px,1.5vw,24px)}
 .minimal-collection-track{display:grid;width:100%;grid-auto-flow:column;grid-auto-columns:100%;grid-template-rows:minmax(0,1fr);aspect-ratio:12/5;max-height:min(90svh,760px);overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;border-radius:25px}
@@ -312,6 +313,7 @@
   .minimal-home .minimal-accessories .minimal-rail{grid-auto-columns:56%}
   .minimal-home .minimal-home-stores .minimal-rail{grid-auto-columns:76%}
   .minimal-collection-track{aspect-ratio:16/9;border-radius:16px}
+  .minimal-collection-track.is-panoramic{aspect-ratio:12/5}
   .minimal-collection-controls{inset:6px 6px auto auto;gap:3px}
   .minimal-collection-controls button{min-width:28px;height:28px}
 }

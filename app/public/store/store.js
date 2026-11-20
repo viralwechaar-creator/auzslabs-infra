@@ -617,10 +617,9 @@ function minimalHome(v) {
 }
 function minimalCollectionCarousel(banners, stories) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const track = E('div', { class: 'minimal-collection-track', tabindex: '0', 'aria-label': 'Collection banners' },
+  const track = E('div', { class: 'minimal-collection-track' + (banners.every((banner) => banner.widePhoto) ? ' is-panoramic' : ''), tabindex: '0', 'aria-label': 'Collection banners' },
     banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href, 'aria-label': banner.name },
-      E('picture', null, banner.widePhoto ? E('source', { media: '(min-width: 701px)', srcset: banner.widePhoto }) : null,
-        E('img', { class: 'minimal-collection-art', src: banner.photo, alt: '', loading: 'lazy' })))));
+      E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' }))));
   let paused = reducedMotion.matches;
   const pause = E('button', { type: 'button', onclick: () => {
     paused = !paused;
