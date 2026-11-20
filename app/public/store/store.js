@@ -275,9 +275,28 @@ function shell() {
   root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, E('button', { class: 'zfab zdesk dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('button', { class: 'chatfab', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')),
     E('div', { class: 'menu', id: 'menu' }), E('div', { class: 'srch', id: 'srch' }));
 
-  try { if (!sessionStorage.getItem('st.wel.' + SLUG)) {
-    setTimeout(() => { if (minimal && !document.body.classList.contains('homehero')) return;
-      sessionStorage.setItem('st.wel.' + SLUG, '1'); const b = E('button', { class: 'chatwel', id: 'chatwel', onclick: toContact }, (D.shop.logoUrl ? E('img', { class: 'wl', src: D.shop.logoUrl, alt: '' }) : E('i', { class: 'wl' }, String(name || 'S').trim().charAt(0).toUpperCase())), E('div', { class: 'wt' }, E('b', null, name), E('span', null, c.welcome || 'Welcome to ' + name + '!')), E('u', { 'aria-label': 'Close', onclick: (ev) => { ev.stopPropagation(); b.remove(); } }, '×')); document.body.append(b); setTimeout(() => b.classList.add('out'), 6500); setTimeout(() => b.remove(), 7100); }, 1200); } } catch (e) { /* no storage */ }}
+  if (!minimal) scheduleWelcome(toContact);
+}
+let welcomeTimer;
+function scheduleWelcome(toContact) {
+  clearTimeout(welcomeTimer);
+  const key = 'st.wel.' + SLUG;
+  try { if (sessionStorage.getItem(key)) return; } catch {}
+  welcomeTimer = setTimeout(() => {
+    const minimal = cfg().template === 'minimal';
+    if (minimal && !document.body.classList.contains('homehero')) return;
+    try { sessionStorage.setItem(key, '1'); } catch {}
+    const name = D.shop.name;
+    const badge = !minimal && D.shop.logoUrl ? E('img', { class: 'wl', src: D.shop.logoUrl, alt: '' })
+      : E('i', { class: 'wl', 'aria-hidden': 'true' }, name.trim().charAt(0).toUpperCase());
+    const close = E('button', { type: 'button', class: 'welcome-close', 'aria-label': 'Dismiss welcome message', onclick: () => message.remove() }, '×');
+    const text = E('button', { type: 'button', class: 'wt', onclick: toContact }, E('b', null, name), E('span', null, cfg().welcome || 'Welcome to ' + name + '!'));
+    const message = E('div', { class: 'chatwel', id: 'chatwel' }, badge, text, close);
+    document.body.append(message);
+    setTimeout(() => message.classList.add('out'), 6500);
+    setTimeout(() => message.remove(), 7100);
+  }, 1200);
+}
 function groups() {
   const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const G = [['Top', /shirt|tee|polo|sweat|hood|jacket|top|kurta|blazer|coat|knit|vest/i], ['Bottom', /jean|pant|trouser|short|cargo|skirt|jogger|chino|denim|legging/i], ['Footwear', /shoe|sneaker|sandal|slipper|boot|loafer|footwear|heel/i], ['Accessories', /bag|cap|hat|belt|wallet|sock|scarf|watch|case|glass|jewel|tie/i]];
@@ -843,11 +862,7 @@ V.shop = (v) => {
       list.length ? pagedGrid(list, false, list.length > 3 && categories.length ? E('div', { class: 'minimal-category-tile' },
         [...new Set(list.map((item) => item.category).filter(Boolean))].slice(0, 2).map((category) =>
           E('a', { href: link('shop?cat=' + encodeURIComponent(category)) }, category))) : null) : E('div', { class: 'empty' }, E('h2', null, 'No products match'), E('a', { class: 'btn', href: link('shop') }, 'Clear filters')));
-    const viewed = recent().map((id) => BYID[id]).filter(Boolean);
-    const seenIds = new Set(viewed.map((item) => item.id));
-    const suggested = [...newest(STY.length).filter((item) => !seenIds.has(item.id)), ...viewed].slice(0, 4);
-    v.append(catalog, suggested.length ? minimalRecommendations('You may also like', suggested) : null,
-      viewed.length ? minimalRecommendations('Recently visited', viewed) : null);
+    v.append(catalog);
     return;
   }
   v.append(E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', title),
@@ -1370,6 +1385,8 @@ function route() {
   view.dataset.page = id;
   view.classList.toggle('minimal-home', id === 'home' && minimal);
   document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = Object.hasOwn(V, id) ? V[id] : V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
+  if (minimal && id === 'home') scheduleWelcome(() => $('#app .chatfab').click());
+  else if (minimal) $('#chatwel')?.remove();
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   const article = id === 'blog' && parts[1] ? (cfg().blogs || []).find((item) => item && slugOf(item.title) === parts[1]) : null;
   const page = minimal && id === 'page' ? minimalPages().find((item) => item.slug === parts[1]) : null;

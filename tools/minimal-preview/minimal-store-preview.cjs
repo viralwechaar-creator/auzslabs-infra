@@ -11,6 +11,8 @@ const photoUrl = (file) => '/preview-assets/' + neutralPhoto(file);
 const collectionCover = (file) => '/preview-assets/' + file;
 const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, 'genx-minimal-preview.json'), 'utf8'));
 catalog.config.template = 'minimal';
+const ecrivoire = catalog.collections.find((collection) => collection.id === '70751f21-7f7d-46e1-9ae0-30dc4c4a8379');
+if (ecrivoire) ecrivoire.bannerImage = collectionCover('ecrivoire-wide.png');
 const sampleProducts = [
   {
     slug: 'orbit-graphic-tee', editorial: 'tee-editorial.png', detailPhoto: 'tee-detail.png', name: 'Orbit Graphic Tee', category: 'T-Shirts', price: 1499, sizes: ['S', 'M', 'L', 'XL'],
@@ -90,7 +92,8 @@ const sampleProducts = [
     washcare: 'Remove the phone before cleaning. Wipe with a damp microfibre cloth and dry before refitting.',
   },
 ];
-const originalStyles = [...catalog.styles];
+const originalStyles = catalog.styles.map((style) =>
+  /^(Blue Slim Shirt|Sweet shirt)$/i.test(style.name) ? { ...style, cardZoom: 1.14 } : style);
 const addedStyles = sampleProducts.map((sample) => ({
     id: sample.slug, name: sample.name, category: sample.category, price: sample.price, mrp: sample.price,
     brand: 'GenX Cloths', code: sample.slug.toUpperCase(), collection: sample.collection, fabric: sample.fabric,
@@ -128,6 +131,7 @@ catalog.config.minimalPages = [{ slug: 'campaign-preview', title: 'Campaign prev
   body: 'This sample page demonstrates what a store owner can publish from AUZsStyle.', link: '#/collections', cta: 'Explore collections' }];
 const files = new Set(['/store/store.js','/store/store.css','/store/minimal.css','/store/fx.js','/store/fx.css','/vendor/qrcode.js']);
 const imageFiles = new Set([
+  'ecrivoire-wide.png',
   ...sampleProducts.flatMap((sample) => sample.options.map(([, file]) => neutralPhoto(file))),
   ...sampleProducts.flatMap((sample) => [sample.editorial, sample.detailPhoto]).filter(Boolean),
   ...sampleCollections.flatMap(({ file, banner }) => [file, banner]),
