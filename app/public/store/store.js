@@ -84,6 +84,10 @@ const photos = (s) => { const out = []; const push = (u) => { if (u && !out.incl
 const pickPic = (s, role) => { const u = (s.photoUse || {})[role]; return u && photos(s).includes(u) ? u : photos(s)[0]; };
 const withFirst = (list, u) => (u && list.includes(u) ? [u, ...list.filter((x) => x !== u)] : list);
 const photosFor = (s, colour) => { const cp = (s.colourPhotos || {})[colour] || []; const rest = photos(s).filter((u) => !cp.includes(u)); return [...cp, ...rest]; };
+const minimalPhotosFor = (style, colour) => {
+  const variantPhotos = (style.colourPhotos?.[colour] || []).filter(Boolean);
+  return variantPhotos.length ? variantPhotos : photosFor(style, colour);
+};
 const leftOf = (s) => s.variants.reduce((a, v) => a + v.left, 0);
 const isGone = (s) => s.badge === 'soldout' || leftOf(s) === 0;
 const colours = (s) => [...new Set(s.variants.map((v) => v.colour).filter(Boolean))];
@@ -135,6 +139,7 @@ function card(s, opt) {
 function toggleWish(id) { try { TR.push('wish', null, { id }); } catch {} const i = wish.indexOf(id); if (i >= 0) wish.splice(i, 1); else wish.push(id); saveWish(); }
 function quickAdd(s) {
   const minimal = cfg().template === 'minimal';
+  const modelOptions = minimal && /phone case/i.test(s.category || '');
   const first = s.variants.find((variant) => variant.left > 0);
   let colour = minimal ? first?.colour || colours(s)[0] || '' : colours(s)[0] || '';
   let size = minimal ? first?.size || '' : '';
@@ -146,7 +151,7 @@ function quickAdd(s) {
     const vs = s.variants.filter((v) => !colour || v.colour === colour);
     const selected = selection();
     if (minimal) {
-      const photo = photosFor(s, colour)[0];
+      const photo = minimalPhotosFor(s, colour)[0];
       body.append(E('div', { class: 'minimal-quick-product' },
         photo ? E('img', { src: photo, alt: s.name }) : placeholder(s.name),
         E('div', null, E('strong', null, inr(selected?.price ?? s.price)),
@@ -155,7 +160,7 @@ function quickAdd(s) {
             wish.includes(s.id) ? 'Remove from wishlist' : 'Save to wishlist'))));
     }
     if (colours(s).length > 1) body.append(E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Colour'), E('div', { class: 'fwrap' }, colours(s).map((c) => E('button', { class: 'chip' + (c === colour ? ' on' : ''), onclick: () => { colour = c; size = ''; paint(); } }, E('i', { class: 'sw', style: { background: hex(c) } }), c)))));
-    body.append(E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Size'), E('div', { class: 'fwrap' }, vs.map((v) => E('button', { class: 'sz' + (v.size === size ? ' on' : '') + (v.left < 1 ? ' off' : ''), disabled: minimal && v.left < 1, 'aria-pressed': String(v.size === size), onclick: () => { size = v.size; paint(); } }, v.size || 'One size')))));
+    body.append(E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, modelOptions ? 'Model' : 'Size'), E('div', { class: 'fwrap' }, vs.map((v) => E('button', { class: 'sz' + (v.size === size ? ' on' : '') + (v.left < 1 ? ' off' : ''), disabled: minimal && v.left < 1, 'aria-pressed': String(v.size === size), onclick: () => { size = v.size; paint(); } }, v.size || 'One size')))));
     cb.disabled = !selected;
     if (buy) buy.disabled = cb.disabled;
   };
@@ -197,7 +202,7 @@ function openMinimalBag() {
   function paint() {
     const items = bagLines();
     clear(body).append(items.length ? E('div', null, items.map((line) => {
-      const image = photosFor(line.s, line.vr.colour)[0];
+      const image = minimalPhotosFor(line.s, line.vr.colour)[0];
       const max = line.vr.left >= 9 ? 20 : line.vr.left;
       return E('div', { class: 'minimal-bag-item' },
         E('a', { href: link('p/' + line.s.id), onclick: () => pop.close() },
@@ -864,11 +869,14 @@ V.p = (v, id) => {
   const s = BYID[id];
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
   const minimal = cfg().template === 'minimal';
+  const modelOptions = minimal && /phone case/i.test(s.category || '');
+  const hasSizeGuide = !minimal || sizesOf(s).some((size) => /^(?:X{0,3}[SL]|M|[2-5]XL)$/i.test(size));
   let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
   let cur = 0;
   const paintGal = () => {
-    const ims = photosFor(s, colour); clear(gal); gal.classList.toggle('solo', ims.length <= 1); gal.classList.remove('multi');
+    const ims = minimal ? minimalPhotosFor(s, colour) : photosFor(s, colour);
+    clear(gal); gal.classList.toggle('solo', ims.length <= 1); gal.classList.remove('multi');
     if (minimal) {
       gal.append(E('div', { class: 'minimal-product-gallery' }, ims.length ? ims.map((url, index) =>
         E('img', { src: url, alt: s.name + ' — image ' + (index + 1), loading: index ? 'lazy' : 'eager' })) : placeholder(s.name)));
@@ -904,11 +912,13 @@ V.p = (v, id) => {
     clear(info);
     const vs = s.variants.filter((x) => !colour || x.colour === colour); const gone = isGone(s);
     const chosen = s.variants.find((x) => (!colour || x.colour === colour) && x.size === size) || (!sizesOf(s).length ? vs[0] : null);
+    const displayedPrice = minimal ? chosen?.price ?? vs[0]?.price ?? s.price : s.price;
+    const discount = discPct({ ...s, price: displayedPrice });
     info.append(
       E('div', null, E('div', { class: 'nm' }, E('span', null, s.name), E('button', { class: 'ic', 'aria-label': 'Save', onclick: () => { toggleWish(s.id); paintInfo(); } }, E('span', { style: { display: 'contents' } }, icon('mark')))),
-        E('div', { class: 'pr' }, inr(s.price), discPct(s) > 0 ? [E('s', null, inr(s.mrp)), E('b', null, discPct(s) + '% off')] : null)),
+        E('div', { class: 'pr' }, inr(displayedPrice), discount > 0 ? [E('s', null, inr(s.mrp)), E('b', null, discount + '% off')] : null)),
       colours(s).length ? E('div', { class: 'fx' }, E('span', { class: 'lbl' }, 'Colour · ' + colour), E('div', { class: 'dots2', style: { marginTop: '8px' } }, colours(s).map((c) => E('button', { class: c === colour ? 'on' : '', 'aria-label': c, onclick: () => { colour = c; size = ''; cur = 0; paintGal(); paintInfo(); } }, E('span', { class: 'c', style: { background: hex(c) } }))))) : null,
-      sizesOf(s).length ? E('div', { class: 'fx' }, E('div', { style: { display: 'flex', justifyContent: 'space-between' } }, E('span', { class: 'lbl' }, 'Size'), E('button', { class: 'tiny', style: { textDecoration: 'underline', color: 'var(--mut)' }, onclick: sizeGuide }, 'Size guide')),
+      sizesOf(s).length ? E('div', { class: 'fx' }, E('div', { style: { display: 'flex', justifyContent: 'space-between' } }, E('span', { class: 'lbl' }, modelOptions ? 'Model' : 'Size'), hasSizeGuide ? E('button', { class: 'tiny', style: { textDecoration: 'underline', color: 'var(--mut)' }, onclick: sizeGuide }, 'Size guide') : null),
         E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; paintInfo(); } }, x.size)))) : null,
       chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
       gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
@@ -917,13 +927,13 @@ V.p = (v, id) => {
       } }, 'Add to bag'), E('button', { class: 'btn', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
         if (need(chosen) && addBag(chosen.id, qty)) go('checkout');
       } }, 'Buy now')),
-      minimal ? E('div', { class: 'minimal-product-details' }, [['d', 'Details & description'], ['w', 'Wash care'], ['s', 'Shipping & returns']].map(([key, label]) =>
+      minimal ? E('div', { class: 'minimal-product-details' }, [['d', 'Details & description'], ['w', 'Product care'], ['s', 'Shipping & returns']].map(([key, label]) =>
         E('details', { open: key === 'd' }, E('summary', null, label), dtl(key))))
         : E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
       E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };
-  const need = (c) => { if (!c) { toast('Please choose a size'); return false; } return true; };
+  const need = (c) => { if (!c) { toast(modelOptions ? 'Please choose a phone model' : 'Please choose a size'); return false; } return true; };
   function sizeGuide() {
     const g = cfg().sizeGuide || {}; const head = (g.head && g.head.length ? g.head : ['Size', 'Chest (in)', 'Waist (in)']); const rows = g.rows && g.rows.length ? g.rows : [['S', '34-36', '28-30'], ['M', '38-40', '32-34'], ['L', '42-44', '36-38'], ['XL', '46-48', '40-42']];
     const fit = String(s.details || '').split(/\n+/).map((x) => x.trim()).find((x) => /^fit\b/i.test(x));
