@@ -95,8 +95,31 @@ async function receiveForm(o, done) {
   };
   const res = h('div', { class: 'list' });
   const q = searchField(t('Add item: name or barcode'), () => paintRes());
-  const scanBtn = h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => { const f = findBarcode(c); if (f) { addVar({ ...f.variant, style: f.style }, 1); paintHost(); } else { const sc = findStyleCode(c); if (sc) { sc.variants.filter((x) => x.active !== false).forEach((x) => addVar({ ...x, style: sc })); paintHost(); } else toast(t('No item with that code'), { err: true }); } }) }, icon('camera', 18));
-  q.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const f = findBarcode(q.input.value); if (f) { addVar({ ...f.variant, style: f.style }, 1); q.input.value = ''; clear(res); paintHost(); } } });
+  const scanVariant = (code) => {
+    const match = findBarcode(code);
+    if (!match || match.style.active === false || match.variant.active === false) return null;
+    const existing = lines.find((line) => line.variantId === match.variant.id);
+    if (existing) existing.qty += 1;
+    else addVar({ ...match.variant, style: match.style }, 1);
+    paintHost();
+    const line = lines.find((entry) => entry.variantId === match.variant.id);
+    return { text: match.style.name + ' · ' + t('Qty') + ': ' + line.qty };
+  };
+  const scanBtn = h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((code) => {
+    const result = scanVariant(code);
+    if (result) return result;
+    const style = findStyleCode(code);
+    if (!style || style.active === false) return { text: t('No item with that code'), bad: true };
+    style.variants.filter((variant) => variant.active !== false).forEach((variant) => addVar({ ...variant, style }));
+    paintHost();
+    return { text: style.name };
+  }) }, icon('camera', 18));
+  q.input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || !scanVariant(q.input.value)) return;
+    event.preventDefault();
+    q.input.value = '';
+    clear(res);
+  });
   const addAllOf = (st) => { st.variants.filter((x) => x.active !== false).sort((a, b) => a.colour.localeCompare(b.colour) || byRank(a, b)).forEach((x) => addVar({ ...x, style: st })); q.input.value = ''; paintRes(); paintHost(); };
   const newItem = () => { const before = new Set(S.cat.map((x) => x.id)); styleForm(null, async () => { try { await loadCatalog(true); } catch { /* offline */ } const fresh = S.cat.filter((x) => !before.has(x.id)); fresh.forEach(addAllOf); if (fresh.length) toast(t('Added to this stock entry. Enter the quantities.')); }); };
   const newBtn = can('sty_manage') || can('sty_stock') ? h('button', { class: 'btn', type: 'button', onclick: newItem }, icon('plus', 18), t('New item')) : null;
