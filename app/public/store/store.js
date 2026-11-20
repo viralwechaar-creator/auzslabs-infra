@@ -243,8 +243,7 @@ function shell() {
   counts = [];
   const name = D.shop.name;
   const minimal = cfg().template === 'minimal';
-  const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name },
-    minimal && D.shop.logoUrl ? E('img', { src: D.shop.logoUrl, alt: '' }) : name);
+  const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name }, name);
   const stories = minimal ? minimalStories() : [];
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
@@ -530,7 +529,7 @@ function minimalGroupProducts(group, products = STY) {
 function minimalCollectionTiles() {
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
   return collections.map((col) => ({
-    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)),
+    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: col.bannerImage,
     photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
   }));
 }
@@ -584,8 +583,8 @@ function minimalCollectionCarousel(banners, stories) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const track = E('div', { class: 'minimal-collection-track', tabindex: '0', 'aria-label': 'Collection banners' },
     banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href, 'aria-label': banner.name },
-      E('img', { class: 'minimal-collection-backdrop', src: banner.photo, alt: '', loading: 'lazy' }),
-      E('img', { class: 'minimal-collection-art', src: banner.photo, alt: '', loading: 'lazy' }))));
+      E('picture', null, banner.widePhoto ? E('source', { media: '(min-width: 701px)', srcset: banner.widePhoto }) : null,
+        E('img', { class: 'minimal-collection-art', src: banner.photo, alt: '', loading: 'lazy' })))));
   let paused = reducedMotion.matches;
   const pause = E('button', { type: 'button', onclick: () => {
     paused = !paused;
@@ -1046,7 +1045,7 @@ V.checkout = (v) => {
   const f = (key, label, o) => { o = o || {}; const el = o.select ? E('select', { 'aria-label': label }, o.select.map((x) => E('option', { value: x, selected: (saved[key] || o.def) === x }, x))) : o.area ? E('textarea', { placeholder: label, 'aria-label': label }) : E('input', { placeholder: label + (o.opt ? ' (optional)' : ''), 'aria-label': label, type: o.type || 'text', autocomplete: o.ac || 'on', inputmode: o.mode, value: saved[key] || '', maxlength: o.max }); F[key] = el; return E('label', { class: 'fld' }, el); };
   const methods = []; if (D.cod) methods.push(['cod', 'Cash on delivery', 'Pay when the order reaches you']); if (D.upi) methods.push(['upi', 'Pay by UPI', 'Scan a QR with any UPI app after you place the order']); if (cfg().payOnline) methods.push(['online', 'Card, UPI or net banking', 'Pay securely now']);
   let pay = methods[0] ? methods[0][0] : '';
-  const payBox = E('div', { class: 'frm' }); const payPaint = () => { clear(payBox); if (!methods.length) { payBox.append(E('div', { class: 'note' }, 'This store is not taking online orders right now. Please contact the store.')); return; } methods.forEach(([k, l, d]) => payBox.append(E('div', { class: 'opt' + (pay === k ? ' on' : ''), role: 'radio', 'aria-checked': pay === k, tabindex: 0, onclick: () => { pay = k; payPaint(); } }, E('i', { class: 'r' }), E('div', null, E('div', null, l), E('div', { class: 'mut tiny' }, d))))); };
+  const payBox = E('div', { class: 'frm checkout-payment', role: 'radiogroup', 'aria-label': 'Payment method' }); const payPaint = () => { clear(payBox); if (!methods.length) { payBox.append(E('div', { class: 'note' }, 'This store is not taking online orders right now. Please contact the store.')); return; } methods.forEach(([k, l, d]) => payBox.append(E('div', { class: 'opt' + (pay === k ? ' on' : ''), role: 'radio', 'aria-checked': pay === k, tabindex: 0, onclick: () => { pay = k; payPaint(); }, onkeydown: (e) => { if (e.key !== ' ' && e.key !== 'Enter') return; e.preventDefault(); pay = k; payPaint(); payBox.querySelector('.on')?.focus(); } }, E('i', { class: 'r' }), E('div', null, E('div', null, l), E('div', { class: 'mut tiny' }, d))))); };
   payPaint();
   const t = bagTotal(), sh = shipFee(t); const save = E('input', { type: 'checkbox', checked: !!saved.name });
   let coupon = null; // { code, discount, msg }
@@ -1087,7 +1086,7 @@ V.checkout = (v) => {
       E('div', { class: 'f2' }, f('city', 'City'), f('state', 'State', { select: STATES, def: 'Rajasthan' })), f('country', 'Country', { select: ['India'], def: 'India' }), f('note', 'Notes for the store (optional)', { area: true }),
       E('label', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, save, 'Save this information for next time'),
       E('h2', null, 'Shipping method'), E('div', { class: 'note' }, shipLine(t)), E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
-    E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't' }, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
+    E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't checkout-line' }, cfg().template === 'minimal' ? E('div', { class: 'checkout-line-thumb' }, pickPic(l.s) ? E('img', { src: pickPic(l.s), alt: '' }) : placeholder(l.s.name)) : null, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
       E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, E('label', { class: 'fld', style: { flex: 1 } }, cin), capplyBtn), cmsg, sumBox, err, btn,
       E('div', { class: 'mut tiny' }, 'By placing the order you agree to the ', E('a', { href: link('policy/terms'), style: { textDecoration: 'underline' } }, 'terms'), ' and the ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'returns policy'), '.'))));
   F.pin.addEventListener('input', pinAuto); F.pin.addEventListener('change', pinAuto); F.phone.addEventListener('blur', saveCart); F.phone.addEventListener('change', saveCart);
