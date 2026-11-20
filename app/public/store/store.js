@@ -598,8 +598,10 @@ function minimalHome(v) {
   const stories = minimalStories(tiles);
   const banners = tiles.filter((tile) => tile.photo).slice(0, 8);
   if (banners.length) v.append(minimalCollectionCarousel(banners, stories));
-  // "Featured products" (a plain STY.slice(0,8) grid) was removed -- owner feedback: on a catalogue this
-  // size it just repeated "Latest drop" verbatim with no distinct selection of its own.
+  // The section and its grid stay -- only the "Featured products" heading text was removed (owner request);
+  // "Shop all" still links through to the full catalogue.
+  if (STY.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
+    E('div', { class: 'minimal-heading' }, E('span'), E('a', { href: link('shop') }, 'Shop all', ' ↗')), gridOf(STY.slice(0, 8))));
   const accessories = minimalGroupProducts('accessories');
   if (accessories.length) {
     const category = accessories[0].category;
