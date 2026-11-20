@@ -195,7 +195,7 @@
 .minimal-store [data-page="shop"] .pc .in{min-height:45px;padding:7px 2px 3px}
 .minimal-store [data-page="shop"] .minimal-category-nav{gap:18px;padding-block:8px 13px;margin-bottom:12px}
 .minimal-store [data-page="p"]{max-width:none;padding:0 clamp(12px,1.25vw,24px) 40px}
-.minimal-store:has([data-page="p"]) #app>.announce{display:none}
+.minimal-store:has([data-page="p"],[data-page="collections"]) #app>.announce{display:none}
 .minimal-store [data-page="p"] .minimal-pd{grid-template-areas:"photos" "purchase";gap:14px}
 .minimal-store [data-page="p"] .minimal-pd .gal{grid-area:photos}
 .minimal-store [data-page="p"] .minimal-pinned-photo{display:none}
@@ -210,9 +210,21 @@
 .minimal-recommendations .minimal-heading{margin-bottom:12px}
 .minimal-recommendations .minimal-heading h2{font-size:14px;font-weight:700}
 .minimal-recommendations .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px!important}
-.minimal-recommendations .pc .ph{aspect-ratio:273/369!important;background:#f2f2f0}
+.minimal-recommendations .pc .ph{aspect-ratio:3/4!important;background:#fff}
 .minimal-recommendations .pc :is(.ph,.sc){border-radius:9px}
-.minimal-recommendations .pc .sc img{transform:none}
+.minimal-recommendations .pc .sc img{transform:none;object-fit:contain!important;background:#fff}
+.minimal-store [data-page="collections"]{max-width:none;padding:0 clamp(10px,1vw,20px) 38px}
+.minimal-collection-index{padding-top:20px}
+.minimal-collection-index h1{margin:0 0 22px;font-size:13px;font-weight:650;line-height:18px}
+.minimal-collection-index-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px 8px}
+.minimal-collection-index-card{min-width:0;display:block}
+.minimal-collection-cover{display:grid;place-items:center;aspect-ratio:408/385;border-radius:10px;overflow:hidden;background:#111;color:#fff}
+.minimal-collection-cover img{width:100%;height:100%;object-fit:cover}
+.minimal-collection-cover>span{max-width:90%;text-align:center;font-size:clamp(16px,3vw,42px);font-weight:800;line-height:1.08;text-transform:uppercase}
+.minimal-collection-caption{display:flex;align-items:center;gap:5px;min-height:43px;font-size:12px;font-weight:650}
+.minimal-collection-caption svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5}
+.minimal-collection-index-card:hover .minimal-collection-caption{text-decoration:underline;text-underline-offset:3px}
+@media(max-width:700px){.minimal-collection-index-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .minimal-recommendations .pc .in{min-height:41px;padding:6px 2px 2px}
 .minimal-store [data-page="blog"]>.pg.wide{max-width:none;margin:20px auto;padding-inline:4px}
 .minimal-store [data-page="blog"] .bgrid{gap:8px}

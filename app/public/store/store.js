@@ -851,11 +851,20 @@ V.collections = (v) => {
       title: category, route: 'shop?cat=' + encodeURIComponent(category),
       photo: STY.filter((style) => style.category === category).map((style) => pickPic(style, 'banner')).find(Boolean),
     }));
-    return v.append(E('section', { class: 'minimal-catalog' },
-      E('div', { class: 'minimal-heading' }, E('h1', null, 'Collections'), E('a', { href: link('shop') }, 'View all products ↗')),
-      E('div', { class: 'minimal-collections' }, [...collectionTiles, ...categories].map((tile) =>
-        E('a', { class: 'minimal-collection', href: link(tile.route) },
-          tile.photo ? E('img', { src: tile.photo, alt: '', loading: 'lazy' }) : null, E('span', null, tile.title))))));
+    const titles = new Set(collectionTiles.map((tile) => tile.title.trim().toLowerCase()));
+    const all = { title: 'All products', route: 'shop', photo: (cfg().heroImages || []).find(Boolean) };
+    const bags = minimalGroupProducts('bags');
+    const bagTile = bags.length ? [{ title: 'Bags', route: 'shop?group=bags', photo: bags.map((style) => pickPic(style, 'banner')).find(Boolean) }] : [];
+    const categoryTiles = categories.filter((tile) => !minimalCategoryGroups.bags.pattern.test(tile.title) && !titles.has(tile.title.trim().toLowerCase()));
+    const tiles = [all, ...collectionTiles, ...bagTile.filter((tile) => !titles.has(tile.title.toLowerCase())), ...categoryTiles]
+      .sort((a, b) => a.title.localeCompare(b.title));
+    return v.append(E('section', { class: 'minimal-collection-index' }, E('h1', null, 'Collections'),
+      E('div', { class: 'minimal-collection-index-grid' }, tiles.map((tile) =>
+        E('a', { class: 'minimal-collection-index-card', href: link(tile.route) },
+          E('div', { class: 'minimal-collection-cover' }, tile.photo
+            ? E('img', { src: tile.photo, alt: '', loading: 'lazy' })
+            : E('span', { 'aria-hidden': 'true' }, tile.title)),
+          E('span', { class: 'minimal-collection-caption' }, tile.title, icon('right')))))));
   }
   v.append(E('div', { class: 'shophd' }, E('h1', null, 'Collections')), cols.length ? E('div', { class: 'deck', style: { flexWrap: 'wrap', overflow: 'visible' } }, cols.map((x) => { const s0 = x.styleIds.map((id) => BYID[id]).find((s) => s && photos(s)[0]); const pic = x.image || (s0 && pickPic(s0, 'banner')); return E('a', { class: 'dk' + (pic ? '' : ' ph'), href: link('shop?col=' + x.id) }, pic ? E('img', { src: pic, alt: '', loading: 'lazy' }) : null, E('div', { class: 'nm' }, x.name)); })) : E('div', { class: 'empty' }, E('div', { class: 'mut' }, 'No collections yet.'), E('a', { class: 'btn', href: link('shop') }, 'Shop all')));
 };
