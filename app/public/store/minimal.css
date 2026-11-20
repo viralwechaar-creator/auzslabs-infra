@@ -32,7 +32,7 @@
 .minimal-store :is(.sum,.empty){border:1px solid var(--line)}
 .minimal-store .pc{background:#fff;border-radius:0;box-shadow:none}
 .minimal-store .pc .in{padding:12px 0}
-.minimal-store .pc .nm{font-size:13px;font-weight:650}
+.minimal-store .pc .nm{font-size:11px;font-weight:480}
 .minimal-store .pd .info{padding:clamp(16px,3vw,48px);border-radius:0;box-shadow:none;border:1px solid var(--line)}
 .minimal-store .pd .info .nm{font-size:clamp(22px,3vw,46px);line-height:1.1}
 .minimal-store .pd .info .sz{border-radius:9px}
@@ -187,8 +187,8 @@
 .minimal-store [data-page="shop"] .pc .ph{aspect-ratio:303/409!important}
 .minimal-store [data-page="shop"] .pc .sc img{transform:scale(var(--card-zoom,1))}
 .minimal-store [data-page="shop"] .pc .in{min-height:45px;padding:7px 2px 3px}
-.minimal-store [data-page="shop"] .pc .in .nm{font-size:10px;font-weight:500}
-.minimal-store [data-page="shop"] .pc .in .pr{font-size:9px;font-weight:400}
+.minimal-store [data-page="shop"] .pc .in .nm{font-size:9.5px;font-weight:440}
+.minimal-store [data-page="shop"] .pc .in .pr{font-size:8.5px;font-weight:380}
 .minimal-store [data-page="shop"] .minimal-category-nav{gap:18px;padding-block:8px 13px;margin-bottom:12px}
 .minimal-store [data-page="p"]{max-width:none;padding:0 clamp(12px,1.25vw,24px) 40px}
 .minimal-store:has([data-page="p"]) #app>.announce{display:none}
@@ -252,8 +252,8 @@
 .minimal-latest .minimal-heading{margin-bottom:5px}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc{background:transparent}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in{display:flex;min-height:46px;padding:8px 6px 4px;color:#121212}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .nm{font-size:13px;font-weight:600}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:12px;color:#444}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .nm{font-size:11px;font-weight:480}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:10px;font-weight:400;color:#555}
 .minimal-home .minimal-home-products .pc :is(.ph,.sc){border-radius:16px}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .add{min-height:26px;height:26px}
 .minimal-home .minimal-latest .pc .ph{aspect-ratio:3/4!important}
