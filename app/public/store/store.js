@@ -243,17 +243,24 @@ function shell() {
   counts = [];
   const name = D.shop.name;
   const minimal = cfg().template === 'minimal';
-  const brandEl = E('a', { class: 'brand', href: link('') }, name);
+  const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name },
+    minimal && D.shop.logoUrl ? E('img', { src: D.shop.logoUrl, alt: '' }) : name);
+  const stories = minimal ? minimalStories() : [];
+  const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
-    E('div', { class: 'l' }, minimal ? E('button', { class: 'ic minimal-menu', 'aria-label': 'Menu', onclick: openMenu }, icon('menu')) : null,
+    E('div', { class: 'l' },
       E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
-    E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
+    E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')),
+      stories.length ? E('button', { class: 'ic minimal-header-stories', type: 'button', 'aria-label': 'Stories',
+        onclick: (e) => openMinimalStory(stories, 0, e.currentTarget) }, E('span', null, name.trim().charAt(0).toUpperCase())) : null,
+      E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
       minimal ? E('button', { class: 'ic', type: 'button', 'aria-label': 'Notifications', onclick: openMinimalNotifications }, icon('bell'), countBadge(() => minimalNotifications().filter((item) => !LS.get('notice.' + item.id, false)).length)) : null,
-      E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length)), E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')),
+      !minimal ? saved : null, E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), minimal ? saved : null,
       minimal ? E('button', { class: 'ic', type: 'button', 'aria-label': 'Bag', onclick: openMinimalBag }, icon('bag'), countBadge(bagCount))
         : E('a', { class: 'ic', href: link('bag'), 'aria-label': 'Bag' }, icon('bag'), countBadge(bagCount)),
-      E('button', { class: 'menu-pill deskonly', onclick: openMenu }, E('i'), 'Menu')));
+      minimal ? E('button', { class: 'ic minimal-menu', type: 'button', 'aria-label': 'Menu', onclick: openMenu }, icon('menu'))
+        : E('button', { class: 'menu-pill deskonly', onclick: openMenu }, E('i'), 'Menu')));
   const c = cfg();
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
   const waUrl = phoneNo ? 'https://wa.me/' + (phoneNo.length === 10 ? '91' + phoneNo : phoneNo) : '';
@@ -520,16 +527,25 @@ function minimalGroupProducts(group, products = STY) {
   const { pattern } = minimalCategoryGroups[group];
   return products.filter((product) => pattern.test(product.category || ''));
 }
+function minimalCollectionTiles() {
+  const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
+  return collections.map((col) => ({
+    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)),
+    photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
+  }));
+}
+function minimalStories(tiles = minimalCollectionTiles()) {
+  const configuredStories = (cfg().minimalStories || []).filter((story) => story?.title && story.image).map((story) => ({
+    name: story.title, photo: story.image, href: minimalDestination(story.link), cta: story.cta,
+  }));
+  return (configuredStories.length ? configuredStories : tiles.filter((tile) => tile.photo)).slice(0, 12);
+}
 function minimalHome(v) {
   const c = cfg();
   const featured = newest(12);
   const configuredImages = (c.heroImages || []).filter(Boolean);
   const heroImages = configuredImages.length ? configuredImages : featured.map((s) => pickPic(s, 'hero')).filter(Boolean);
-  const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
-  const tiles = collections.map((col) => ({
-    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)),
-    photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
-  }));
+  const tiles = minimalCollectionTiles();
   const heading = (title, href, caption) => E('div', { class: 'minimal-heading' },
     E('h2', null, title), E('a', { href }, caption, ' ↗'));
   const heroImage = heroImages.length ? E('img', { src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
@@ -549,10 +565,7 @@ function minimalHome(v) {
   if (featured.length) v.append(minimalProductRail('Latest drop', featured, link('shop?new=1'), 'minimal-latest'));
   const bags = minimalGroupProducts('bags');
   if (bags.length) v.append(minimalProductRail('Bags', bags, link('shop?group=bags'), 'minimal-bags'));
-  const configuredStories = (c.minimalStories || []).filter((story) => story?.title && story.image).map((story) => ({
-    name: story.title, photo: story.image, href: minimalDestination(story.link), cta: story.cta,
-  }));
-  const stories = (configuredStories.length ? configuredStories : tiles.filter((tile) => tile.photo)).slice(0, 12);
+  const stories = minimalStories(tiles);
   const banners = tiles.filter((tile) => tile.photo).slice(0, 8);
   if (banners.length) v.append(minimalCollectionCarousel(banners, stories));
   if (STY.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
@@ -1294,7 +1307,6 @@ V.sitemap = (v) => {
 };
 
 function footer() {
-  if (cfg().template === 'minimal') return minimalFooter();
   const c = cfg(), so = c.social || {}; const ph = String(D.shop.phone || '').replace(/\D/g, '');
   const ext = (t, u) => (u ? E('a', { href: /^https?:/.test(u) ? u : 'https://' + u, target: '_blank', rel: 'noopener' }, t) : null);
   const cats = [...new Set(STY.map((x) => x.category).filter(Boolean))].slice(0, 8);
@@ -1321,33 +1333,6 @@ function footer() {
   tog.onclick = () => { const on = wrap.classList.toggle('open'); tog.setAttribute('aria-expanded', String(on)); tog.querySelector('.pl').textContent = on ? '\u2013' : '+'; };
   return wrap;
 }
-function minimalFooter() {
-  const c = cfg();
-  const socials = c.social || {};
-  const phone = String(c.phone || D.shop.phone || '').replace(/\D/g, '');
-  const dial = phone.length === 10 ? '91' + phone : phone;
-  const group = (title, items) => E('nav', { 'aria-label': title }, E('h2', null, title), items.map(([label, path]) => E('a', { href: link(path) }, label)));
-  const social = (label, url) => url ? E('a', { href: /^https?:\/\//i.test(url) ? url : 'https://' + url, rel: 'noopener', target: '_blank' }, label) : null;
-  return E('footer', { class: 'minimal-footer' },
-    E('div', { class: 'minimal-footer-links' },
-      group('Shop', [['New in', 'shop?new=1'], ['Collections', 'collections'], ['All products', 'shop'], ['Wishlist', 'wishlist']]),
-      group('Order support', [['Track your order', 'orders'], ['My account', 'me'], ['Returns & exchanges', 'policy/returns'],
-        ['Shipping', 'policy/shipping'], ['FAQs', 'faq']]),
-      group('About ' + D.shop.name, [['Our story', 'about'], ['Walk-in stores', 'stores'], ['Journal', 'blog'],
-        ['Collaborations & media', 'media'], ['Careers', 'careers'], ['Contact', 'contact'],
-        ...minimalPages().map((page) => [page.title, 'page/' + page.slug])]),
-      E('nav', { 'aria-label': 'Connect' }, E('h2', null, 'Connect'),
-        dial ? E('a', { href: 'tel:+' + dial }, 'Call') : null,
-        dial ? E('a', { href: 'https://wa.me/' + dial, rel: 'noopener', target: '_blank' }, 'WhatsApp') : null,
-        c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null,
-        social('Instagram', socials.instagram), social('Facebook', socials.facebook),
-        E('a', { href: link('sitemap') }, 'Sitemap'))),
-    E('a', { class: 'minimal-footer-wordmark', href: link('') }, D.shop.name),
-    E('div', { class: 'minimal-footer-legal' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name),
-      E('a', { href: link('policy/privacy') }, 'Privacy'), E('a', { href: link('policy/terms') }, 'Terms'),
-      E('a', { href: 'https://auzslab.in', rel: 'noopener', target: '_blank' }, 'Store by AUZslab')));
-}
-
 // ---------- anonymous visitor analytics (no names, phones or addresses) ----------
 const TR = (() => {
   let sid = ''; let ret = false; try { sid = localStorage.getItem('st.sid'); ret = !!localStorage.getItem('st.seen'); if (!sid) { sid = 'v' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('st.sid', sid); } localStorage.setItem('st.seen', '1'); } catch { sid = sid || 'v' + Math.random().toString(36).slice(2, 14); }
