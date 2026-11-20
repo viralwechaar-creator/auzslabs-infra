@@ -384,6 +384,9 @@
 .minimal-store .top .brand span{display:block;overflow:hidden;text-overflow:ellipsis}
 .minimal-store .pc .sc img{object-fit:cover!important;transform:scale(var(--card-zoom,1))}
 .minimal-store .pc .sc{overflow-y:hidden}
+.minimal-store .pc .bm{background:none;width:18px;height:20px;top:10px;right:10px}
+.minimal-store .pc .bm svg{width:18px;height:20px;fill:#9a9a9a;stroke:none}
+.minimal-store .pc .bm.on svg{fill:#fff}
 .minimal-home .minimal-latest,.minimal-store [data-page="p"] .minimal-purchase-panel{background:transparent}
 .minimal-store [data-page="p"] .minimal-pd .info,.minimal-store [data-page="p"] .minimal-product-details{border:1px solid #ddd;border-radius:14px;background:#f7f7f7}
 .minimal-store [data-page="p"] .minimal-product-details{margin-top:10px;padding:0}

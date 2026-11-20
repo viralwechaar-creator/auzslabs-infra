@@ -520,7 +520,7 @@ svg.f{fill:currentColor!important;stroke:none!important}
 .ftwrap footer .fin,.ftwrap footer .fin span{color:#8f8b86;border-color:#3a3837}.ftwrap footer .cols{border-color:#3a3837}
 @media(min-width:900px){.perks{grid-template-columns:repeat(4,1fr);margin:6px 28px 18px}}
 .dock .chat,.chatfab{box-shadow:0 0 0 2px #fff,0 6px 18px rgba(0,0,0,.35)}.dock .chat svg.f,.chatfab svg.f{color:#fff}
-.dock .pill,.dock>div:not(.chat){background:rgba(255,255,255,.94)!important}
+.dock .pill,.dock>div.pill{background:rgba(255,255,255,.94)!important}
 /* Filter sheet: compact, grouped by hairlines, grey pills, one dark action */
 .sheet.refine{padding:14px 16px calc(12px + env(safe-area-inset-bottom));max-height:90svh;display:flex;flex-direction:column;overflow:hidden}
 .sheet.refine .grab{margin-bottom:8px}.sheet.refine .hd{margin-bottom:2px}.sheet.refine .hd h2{font-size:15px;font-weight:700}
