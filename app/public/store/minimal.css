@@ -1,27 +1,18 @@
 .minimal-home{max-width:none;width:100%;padding:0;background:#eee;color:#121212;--r1:0;--r2:0;--r3:0;--sh:none}
-.minimal-store{background:#eee;--bg:#eee;--card:#fff;--soft:#f6f6f6;--line:#e4e4e4;--r1:0;--r2:0;--r3:0;--sh:none}
+.minimal-store{background:#eee;--matte-control:#55565a;--matte-fill:#4c4e52;--ink:var(--matte-control);--bg:#eee;--card:#fff;--soft:#f6f6f6;--line:#e4e4e4;--r1:0;--r2:0;--r3:0;--sh:none}
 .minimal-store .top{background:#fff;border-bottom:1px solid #ededed}
 .minimal-store.homehero #app>.announce{display:none}
 .minimal-store.homehero #view{padding:0;margin:0;max-width:none}
 .minimal-store.homehero:not(.pasthero) .top{position:absolute;inset:0 0 auto;background:transparent!important;border:0;box-shadow:none;backdrop-filter:none}
-.minimal-store.homehero:not(.pasthero) .top :is(.brand,.l a,.r .ic){color:#fff;text-shadow:0 1px 6px #000}
-.minimal-store.homehero:not(.pasthero) .top .r .ic svg{filter:drop-shadow(0 1px 3px #000)}
-.minimal-store.homehero:not(.pasthero) .top{position:absolute;inset:0 0 auto;background:transparent!important;border:0;box-shadow:none;backdrop-filter:none}
-.minimal-store.homehero:not(.pasthero) .top :is(.brand,.l a,.r .ic){color:#fff;text-shadow:0 1px 6px #000}
-.minimal-store.homehero:not(.pasthero) .top .r .ic svg{filter:drop-shadow(0 1px 3px #000)}
-.minimal-store.homehero:not(.pasthero) .top{position:absolute;inset:0 0 auto;background:transparent!important;border:0;box-shadow:none;backdrop-filter:none}
-.minimal-store.homehero:not(.pasthero) .top :is(.brand,.l a,.r .ic){color:#fff;text-shadow:0 1px 6px #000}
-.minimal-store.homehero:not(.pasthero) .top .r .ic svg{filter:drop-shadow(0 1px 3px #000)}
-.minimal-store.homehero:not(.pasthero) .top{position:absolute;inset:0 0 auto;background:transparent!important;border:0;box-shadow:none;backdrop-filter:none}
-.minimal-store.homehero:not(.pasthero) .top :is(.brand,.l a,.r .ic){color:#fff;text-shadow:0 1px 6px #000}
+.minimal-store.homehero:not(.pasthero) .top :is(.brand,.l a,.r .ic){color:#eeeeef;text-shadow:0 1px 6px #000}
 .minimal-store.homehero:not(.pasthero) .top .r .ic svg{filter:drop-shadow(0 1px 3px #000)}
 .minimal-store.homehero.pasthero .top{position:fixed;inset:0 0 auto;background:#fff!important;transform:none}
 .minimal-store .brand{font-size:clamp(16px,2vw,26px);font-weight:800;letter-spacing:.08em}
 .minimal-store .top .l a{font-size:12px;font-weight:600;border-radius:999px}.minimal-store .top .l a:hover,.minimal-store .top .l a:focus-visible{background:#8882}
-.minimal-store .top .minimal-menu{width:42px;height:28px;border-radius:999px;background:#f0f0f0;color:#111;text-shadow:none}
-.minimal-store.homehero:not(.pasthero) .top .r .minimal-menu{color:#111;text-shadow:none}
+.minimal-store .top .minimal-menu{width:42px;height:28px;border-radius:999px;background:#f0f0f0;color:var(--matte-control);text-shadow:none}
+.minimal-store.homehero:not(.pasthero) .top .r .minimal-menu{color:var(--matte-control);text-shadow:none}
 .minimal-store.homehero:not(.pasthero) .top .r .minimal-menu svg{filter:none}
-.minimal-header-stories span{display:grid;place-items:center;width:24px;height:24px;border:1px solid #fff;border-radius:50%;outline:2px solid #2b80c2;background:#111;color:#fff;font-weight:800}
+.minimal-header-stories span{display:grid;place-items:center;width:24px;height:24px;border:1px solid #fff;border-radius:50%;outline:2px solid #a6a9ae;background:var(--matte-fill);color:#fff;font-weight:800}
 @media(max-width:700px){
   .minimal-store .top{grid-template-columns:minmax(0,1fr) auto;gap:4px}
   .minimal-store .top .l{display:none}
@@ -405,3 +396,11 @@
 .minimal-filter-drawer .minimal-filter-form>.minimal-filter-field,.minimal-filter-drawer .minimal-filter-form>.row2:not(.minimal-filter-actions){padding:12px 22px}
 .minimal-filter-drawer .minimal-filter-field :is(select,input){border-radius:8px}
 .minimal-filter-drawer .minimal-filter-actions{position:sticky;bottom:0;padding:10px 12px max(10px,env(safe-area-inset-bottom));background:#eee;border-top:1px solid #ddd}
+
+.minimal-store:not(.homehero) .top :is(.brand,.l a,.r .ic),
+body.minimal-store.homehero.pasthero .top :is(.brand,.l a,.r .ic){color:var(--matte-control)!important}
+.minimal-store .top .n{background:var(--matte-fill);color:#fff}
+.minimal-store .btn:not(.out,.soft){background:var(--matte-fill);color:#fff}
+.minimal-store .btn:not(.out,.soft):hover:not(:disabled){background:#3f4145}
+.minimal-store :is(.btn.out,.btn.soft,.minimal-filter-button,.minimal-view-toggle,.minimal-collection-controls button){color:var(--matte-control)}
+.minimal-store .minimal-view-toggle[aria-pressed="true"],.minimal-store .minimal-facets input:checked+span{background:var(--matte-fill);color:#fff}
