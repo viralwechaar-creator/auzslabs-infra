@@ -106,7 +106,21 @@ const addedStyles = sampleProducts.map((sample) => ({
       id: sample.slug + '-' + colourIndex + '-' + sizeIndex, size, colour, left: Math.max(2, 10 - colourIndex * 3 - sizeIndex), price: sample.price,
     }))),
 }));
-catalog.styles = [...addedStyles.slice(0, 3), ...originalStyles, ...addedStyles.slice(3)];
+const studio = require('./genx-studio-catalog.json');
+const studioMedia = new Set(studio.flatMap(({ files }) => files));
+const studioStyles = studio.map((product) => {
+  const images = product.files.map((file) => '/store/genx-studio/' + file);
+  return {
+    id: product.slug, name: product.name, category: product.category, brand: 'GenX Cloths',
+    code: product.sku, description: product.description, details: product.fabric + '\n' + product.colour,
+    fabric: product.fabric, washcare: product.washcare, weightG: product.weightG, collection: product.collection,
+    createdAt: '2026-11-21T00:00:00Z', photoUrl: images[0], photos: images.slice(1),
+    price: product.price, mrp: product.price,
+    variants: product.sizes.map((size) => ({ id: product.slug + '-' + size, size, colour: product.colour,
+      left: product.stock, price: product.price })),
+  };
+});
+catalog.styles = [...studioStyles, ...addedStyles.slice(0, 3), ...originalStyles, ...addedStyles.slice(3)];
 const sampleCollections = [
   { id: 'offbeat-streetwear', name: 'Offbeat Streetwear', file: 'street-cover.png', banner: 'street-wide.png',
     styleIds: ['orbit-graphic-tee', 'switchback-wide-leg-jeans', 'utility-bomber'] },
@@ -120,6 +134,9 @@ const sampleCollections = [
   { id: 'small-essentials', name: 'Small Essentials', file: 'small-essentials.jpg', banner: 'essentials-wide.png',
     styleIds: ['slate-cap', 'burgundy-case', 'rib-cuff-beanie', 'ridge-phone-case'] },
 ];
+for (const collection of sampleCollections) {
+  collection.styleIds.push(...studioStyles.filter((product) => product.collection === collection.name).map((product) => product.id));
+}
 catalog.collections.unshift(...sampleCollections.map(({ file, banner, ...collection }) => ({ ...collection, image: collectionCover(file), bannerImage: collectionCover(banner) })));
 const previewImage = catalog.config.heroImages?.[0] || catalog.styles.find((item) => item.photoUrl)?.photoUrl;
 catalog.config.minimalStories = [
@@ -149,6 +166,12 @@ http.createServer((req, res) => {
     if (!imageFiles.has(file)) return res.writeHead(404).end();
     res.writeHead(200, { 'Content-Type': file.endsWith('.jpg') ? 'image/jpeg' : 'image/png' });
     return fs.createReadStream(path.join(__dirname, 'minimal-preview-assets', file)).pipe(res);
+  }
+  if (url.pathname.startsWith('/store/genx-studio/')) {
+    const file = url.pathname.slice('/store/genx-studio/'.length);
+    if (!studioMedia.has(file)) return res.writeHead(404).end();
+    res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+    return fs.createReadStream(path.join(root, 'store', 'genx-studio', file)).pipe(res);
   }
   if (!files.has(url.pathname)) return res.writeHead(404).end();
   const type = url.pathname.endsWith('.jpg') ? 'image/jpeg' : url.pathname.endsWith('.css') ? 'text/css' : 'text/javascript';

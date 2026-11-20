@@ -33,3 +33,20 @@ Production deployment, migrations, live entitlement changes, tenant cutovers and
 - Platform Admin also owns signup and add-on approvals, provisioning, tenant slug changes, licence records, client orders, payments and bills, platform notifications, audit and privacy requests. Keep those admin mutations on the existing privileged path. Merchant Account should continue to reflect the shared records through its own scoped reads.
 - Before moving the website controls, pilot with an owner, manager, staff member, customer with no tenant and platform admin. Verify that an unrelated tenant cannot read or update another storefront. Compare grants, staff permissions, published domain and template, service renewals, invoice history, notifications, and help links before and after.
 - The design preview uses sample records and represents proposed navigation. It is not a replacement for authenticated Account or Platform Admin.
+
+## Ledger demo audit and AUZsStyle integration
+
+The demo owner navigation opened all 30 sidebar destinations. Drawer movement forms, count controls, activity filters, and the Expense editor, Dates, More options, Scan bill entry point and recurring workspace were inspected without saving records. This is navigation and form coverage. Posting, reversals, role variants and offline behavior still need isolated tests.
+
+| Ledger pages observed | AUZsStyle integration |
+| --- | --- |
+| Home, Reports and analytics, Reports, GST | Keep retail Overview and Analytics. Use Accounting for accounting reports and GSTR-2B. Shared posting and reconciliation are pending. |
+| Scan to bill, Sales, Collect, Returns and exchanges | Keep Style Sell, Bills and Money received. Use Scan and Ledger as references for native Style forms. Style transactions stay in Style. |
+| Customers, Parties, Follow-ups, Subscriptions | Keep Style's native customer and party cards and reminders. Use Accounting for recurring customer billing. |
+| Purchases, Suppliers, Pay suppliers | Keep Style stock receipts, suppliers and parties. Use Accounting for orders, debit notes, payables and invoice posting until the integration is verified. |
+| Expenses, Expense requests | Native Style expenses gain compact cards, date and payment filters, search and CSV. Accounting retains scan-to-document, recurrence, approvals, GST and vendor payment workflows. |
+| Products, Stock, Print barcodes | Keep Style retail catalogue and barcode workflows. Accounting catalogue IDs and warehouse movements need mapping. |
+| Books, Bank and cash, Cash drawer, Fixed assets | Keep shared Ledger screens for journals, bank transfers, loans, owner funds, assets and accounting adjustments. Native Style Cash drawer uses its operational shift, notes, denominations and cash in/out. |
+| Bulk import, Import and export, Messages, Notifications, AI connector, Settings | Use the original Accounting screens as design references. Implement Style features against Style records and permissions. |
+
+Style and Ledger remain separate apps with distinct balances and records. Copy workflows and UI patterns into Style using its own data and permissions. Barcode printing remains under Style Stock.

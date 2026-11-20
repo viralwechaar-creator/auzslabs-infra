@@ -149,6 +149,7 @@ const RECEIPT_TEMPLATES = [
       sale.placeOfSupply ? row(t('Place of supply'), sale.placeOfSupply) : null,
       sale.customer ? row(t('Customer'), sale.customer.name + (sale.customer.phone ? ' · ' + sale.customer.phone : '')) : null,
       sale.customer && sale.customer.gstin ? row(t('Customer GSTIN'), sale.customer.gstin) : null,
+      sale.customer?.address ? row(t('Billing address'), sale.customer.address) : null,
       sale.dueDate ? row(t('Due date'), new Date(sale.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })) : null,
       h('div', { class: 'rc-sep' }),
       h('div', { class: 'rc-thead' }, h('span', null, t('Item')), h('span', { class: 'num' }, 'HSN'), h('span', null, t('Qty')), h('span', { class: 'num' }, t('Rate')), h('span', { class: 'num' }, t('Tax')), h('span', { class: 'num' }, t('Amount'))),
@@ -170,7 +171,7 @@ const RECEIPT_TEMPLATES = [
 function receiptNode(sale, templateId) {
   const sh = shopHeader(), d = new Date(sale.at || Date.now());
   const row = (a, b, cls) => h('div', { class: 'rc-r' + (cls ? ' ' + cls : '') }, h('span', null, a), h('span', { class: 'num' }, b));
-  const tpl = RECEIPT_TEMPLATES.find((q) => q.id === (templateId || receiptTemplateId())) || RECEIPT_TEMPLATES[0];
+  const tpl = RECEIPT_TEMPLATES.find((q) => q.id === (templateId || (sale.customer?.gstin ? 'formal' : receiptTemplateId()))) || RECEIPT_TEMPLATES[0];
   return tpl.build(sale, sh, d, row);
 }
 function printReceipt(sale) {
@@ -266,6 +267,7 @@ function gstFetchRow(gstInput, onFill) {
     b.disabled = true; msg.textContent = t('Fetching details...');
     try {
       const r = await sb.gst.lookup(g); if (r.error) throw new Error(r.error.message || t('Could not fetch the details.'));
+      if (!gstInput.isConnected || gstInput.value.trim().toUpperCase() !== g) return;
       const d = r.data; gstInput.value = d.gstin || g; onFill(d);
       msg.textContent = (d.active ? t('Found') + ': ' : t('Found, but status is') + ' ' + (d.status || '?') + ': ') + (d.trade_name || d.legal_name || d.gstin);
     } catch (e) { msg.textContent = e.message; toast(e.message, { err: true }); } finally { b.disabled = false; }

@@ -1,12 +1,12 @@
 /* AUZsStyle: Sell (the till). Left/top: styles grid with category chips + barcode/search. Right (desktop) or a bottom bar
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
-const BILL = { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0, quoteId: null };
+const BILL = { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', custAddress: '', gstProfile: null, paymentMode: 'cash', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0, quoteId: null };
 const UI = { q: '', cat: 'All', col: null, scanFirst: false };
 // How the style cards look on the Sell screen: big picture cards, small picture cards, or a plain list with no pictures (remembered on this device).
 const SELL_VIEWS = ['photos', 'small', 'list'];
 const sellView = () => { try { const v = localStorage.getItem('sty.sellView'); return SELL_VIEWS.includes(v) ? v : 'photos'; } catch { return 'photos'; } };
-const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0, quoteId: null }); };
+const newBill = () => { Object.assign(BILL, { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', custAddress: '', gstProfile: null, paymentMode: 'cash', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0, quoteId: null }); };
 const billCalc = () => calcBill(BILL.lines.map((l) => ({ unit: l.price, qty: l.qty, discPct: l.discPct, discAmt: l.discAmt, taxPct: l.taxPct })), { billDiscPct: BILL.billDiscPct, billDiscAmt: BILL.billDiscAmt, extraAmt: BILL.couponDiscount });
 const unitCount = () => BILL.lines.reduce((a, l) => a + l.qty, 0);
 
@@ -143,7 +143,7 @@ page('sell', {
       const c = billCalc();
       clear(cartHost).append(billPanel(c));
       bar.replaceChildren(h('span', { class: 'bc' }, icon('tag', 18), unitCount() + ' ' + t('Units')), h('span', { class: 'grow' }), h('b', { class: 'num' }, inr(c.total)), h('span', { class: 'go' }, t('Bill'), icon('chevU', 16)));
-      bar.classList.toggle('hidden', !BILL.lines.length);
+
     }
     function billPanel(c, inSheet) {
       const lines = BILL.lines.map((l, i) => h('div', { class: 'bl' },
@@ -152,24 +152,32 @@ page('sell', {
           h('button', { type: 'button', 'aria-label': '+', onclick: () => { const vv = allVariants().find((x) => x.id === l.variantId); if (vv && addLine(vv.style, vv)) { paintCart(); inSheet && inSheet(); } } }, icon('plus', 16))),
         h('div', { class: 'amt num' }, inr(c.lines[i].net))));
       return h('div', { class: 'bill' },
-        BILL.exchange > 0 ? h('div', { class: 'exbar' }, icon('swap', 16), t('Exchange credit') + ' ' + inr(BILL.exchange)) : null,
-        h('div', { class: 'bill-h' }, h('b', null, t('Bill')), h('span', { class: 'muted small' }, unitCount() + ' ' + t('Units')), h('span', { class: 'grow' }), BILL.lines.length ? h('button', { class: 'btn plain sm', type: 'button', onclick: async () => { if (await confirmBox(t('Clear'), t('Remove everything from this bill?'), t('Clear'), true)) { newBill(); paintCart(); inSheet && inSheet(true); } } }, t('Clear')) : null),
+        h('section', { class: 'bill-card bill-customer', 'aria-label': t('Customer') },
+        !BILL.customer ? h('button', { class: 'cust bill-walkin', type: 'button', onclick: () => customerPicker((cu) => {
+          selectBillCustomer(cu); paintCart(); inSheet && inSheet();
+        }) }, icon('user', 18), h('span', { class: 'grow' }, h('b', null, t('Walk-in customer')),
+          h('small', null, t('Choose an existing customer'))), icon('chevR', 16)) : null,
         BILL.customer
-          ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('user', 18), h('span', { class: 'grow' }, BILL.customer.name + (BILL.customer.phone ? ' · ' + BILL.customer.phone : '')), h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')), h('span', { class: 'cust-x', role: 'button', 'aria-label': t('Clear'), onclick: (e) => { e.stopPropagation(); BILL.customer = null; BILL.exchange = 0; paintCart(); inSheet && inSheet(); } }, icon('x', 14)))
+          ? h('button', { class: 'cust', type: 'button', onclick: () => customerPicker((cu) => { selectBillCustomer(cu); paintCart(); inSheet && inSheet(); }) }, icon('user', 18), h('span', { class: 'grow' }, BILL.customer.name + (BILL.customer.phone ? ' · ' + BILL.customer.phone : '')), h('span', { class: 'muted small' }, (BILL.customer.points || 0) + ' ' + t('Points')), h('span', { class: 'cust-x', role: 'button', 'aria-label': t('Clear'), onclick: (e) => { e.stopPropagation(); BILL.customer = null; BILL.exchange = 0; paintCart(); inSheet && inSheet(); } }, icon('x', 14)))
           : h('div', { class: 'grid', style: { gap: '8px' } },
             h('div', { class: 'custrow' },
               h('input', { class: 'input cin', placeholder: t('Customer name'), value: BILL.custName, 'aria-label': t('Customer name'), autocomplete: 'off', oninput: (e) => { BILL.custName = e.target.value; } }),
               h('input', { class: 'input cin', placeholder: t('Phone'), value: BILL.custPhone, inputmode: 'tel', 'aria-label': t('Phone'), autocomplete: 'off', oninput: (e) => { BILL.custPhone = e.target.value; } }),
-              h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { if (cu.id !== (BILL.customer && BILL.customer.id)) BILL.exchange = 0; BILL.customer = cu; paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
-            canGstLookup() ? (BILL.showGstin ? gstBillRow(paintCart, inSheet) : h('button', { class: 'btn plain sm', type: 'button', style: { alignSelf: 'flex-start' }, onclick: () => { BILL.showGstin = true; paintCart(); inSheet && inSheet(); } }, icon('plus', 14), t('Bill to a GST number'))) : null),
+              h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Customer'), title: t('Find a customer'), onclick: () => customerPicker((cu) => { selectBillCustomer(cu); paintCart(); inSheet && inSheet(); }) }, icon('search', 16))),
+            canGstLookup() ? (BILL.showGstin ? gstBillRow(paintCart, inSheet) : h('button', { class: 'btn plain sm', type: 'button', style: { alignSelf: 'flex-start' }, onclick: () => { BILL.showGstin = true; paintCart(); inSheet && inSheet(); } }, icon('plus', 14), t('Bill to a GST number'))) : null)),
+        h('section', { class: 'bill-card bill-items', 'aria-label': t('Bill') },
+        h('div', { class: 'bill-h' }, h('b', null, t('Bill')), h('span', { class: 'muted small' }, unitCount() + ' ' + t('Units')), h('span', { class: 'grow' }), BILL.lines.length ? h('button', { class: 'btn plain sm', type: 'button', onclick: async () => { if (await confirmBox(t('Clear'), t('Remove everything from this bill?'), t('Clear'), true)) { newBill(); paintCart(); inSheet && inSheet(true); } } }, t('Clear')) : null),
+        BILL.exchange > 0 ? h('div', { class: 'exbar' }, icon('swap', 16), t('Exchange credit') + ' ' + inr(BILL.exchange)) : null,
         BILL.lines.length ? h('div', { class: 'blines' }, lines, inSheet ? null : quickAdd()) : h('div', { class: 'bempty' }, icon('tag', 26), h('div', null, t('Cart is empty')), h('div', { class: 'small' }, t('Tap a style or scan a tag'))),
-        BILL.lines.length ? h('div', { class: 'tots' },
-          trow(t('Subtotal'), inr(c.subtotal)), c.discount > 0 ? trow(t('Discount'), '-' + inr(c.discount), 'g') : null, trow(t('Tax') + ' (incl.)', inr(c.tax)), c.rounding ? trow(t('Round off'), inr(c.rounding)) : null,
-          h('button', { class: 'btn wide sm', type: 'button', onclick: () => discountSheet(() => { paintCart(); inSheet && inSheet(); }) }, icon('tag', 16), t('Discount'))) : null,
-        BILL.lines.length ? h('div', { class: 'payrow' }, h('div', { class: 'tot' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(c.total))),
-          h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn', type: 'button', onclick: () => holdBill(() => { paintCart(); inSheet && inSheet(true); }) }, t('Hold')),
-            h('button', { class: 'btn', type: 'button', onclick: () => saveAsQuote(() => { paintCart(); inSheet && inSheet(true); }) }, t('Save as quote')),
-            h('button', { class: 'btn fill grow', type: 'button', onclick: async () => { await resolveTypedCustomer(); inSheet && inSheet('close'); paySheet(billCalc(), () => { paintCart(); }); } }, t('Pay') + ' ' + inr(c.total)))) : null);
+        BILL.lines.length ? h('button', { class: 'btn wide sm', type: 'button', onclick: () => discountSheet(() => { paintCart(); inSheet && inSheet(); }) }, icon('tag', 16), t('Discount')) : null,
+        h('div', { class: 'tot' }, h('span', null, t('Total')), h('b', { class: 'num' }, inr(c.total)))),
+        h('section', { class: 'bill-card bill-payment', 'aria-label': t('Payment') },
+          h('b', null, t('Payment')),
+          seg([['cash', t('Cash')], ['upi', t('UPI')], ['card', t('Card')]], BILL.paymentMode,
+            (mode) => { BILL.paymentMode = mode; paintCart(); inSheet && inSheet(); }, { full: true }),
+          h('div', { class: 'row', style: { gap: '8px' } }, h('button', { class: 'btn', type: 'button', disabled: !BILL.lines.length, onclick: () => holdBill(() => { paintCart(); inSheet && inSheet(true); }) }, t('Hold')),
+            h('button', { class: 'btn', type: 'button', disabled: !BILL.lines.length, onclick: () => saveAsQuote(() => { paintCart(); inSheet && inSheet(true); }) }, t('Save as quote')),
+            h('button', { class: 'btn fill grow', type: 'button', disabled: !BILL.lines.length, onclick: async () => { if (!await resolveTypedCustomer()) return; inSheet && inSheet('close'); paySheet(billCalc(), () => { paintCart(); }); } }, t('Pay') + ' ' + inr(c.total)))));
     }
     // fills the free space under the lines with a few styles to add next
     function quickAdd() {
@@ -177,7 +185,6 @@ page('sell', {
       if (!picks.length) return null;
       return h('div', { class: 'quick' }, h('div', { class: 'cap' }, t('Add more')), h('div', { class: 'chips wrap' }, picks.map((x) => h('button', { class: 'chip', type: 'button', onclick: () => pickVariant(x) }, x.name))));
     }
-    const trow = (a, b, cls) => h('div', { class: 'tr' + (cls ? ' ' + cls : '') }, h('span', null, a), h('span', { class: 'num' }, b));
     function cartSheet() {
       let sh; const body = h('div');
       const rerender = (flag) => { if (flag === 'close' || flag === true) { sh.close(); return; } clear(body).append(billPanel(billCalc(), rerender)); };
@@ -234,7 +241,7 @@ function discountSheet(done) {
 }
 
 async function saveAsQuote(done) {
-  await resolveTypedCustomer();
+  if (!await resolveTypedCustomer()) return;
   const validUntil = await promptValidUntil();
   if (validUntil === null) return;
   try {
@@ -391,21 +398,58 @@ function paySheet(c, done) {
     } catch (e) { ok.disabled = false; fail(e); }
   };
 }
-// B2B bill: a GST number typed on the bill, with a Fetch details button (same gstFetchRow helper the customer/supplier forms use) --
-// filling the business's name from the GST record when the cashier hasn't typed one. Only shown where the admin switched gst_lookup on.
-function gstBillRow(paintCart, inSheet) {
-  const g = input({ value: BILL.custGstin, placeholder: 'GSTIN', max: 15, oninput: (e) => { BILL.custGstin = e.target.value.toUpperCase(); } });
-  const row = gstFetchRow(g, (d) => { if (!BILL.custName.trim()) BILL.custName = d.trade_name || d.legal_name || ''; paintCart(); inSheet && inSheet(); });
-  return h('div', { class: 'custrow' }, g, row,
-    h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Clear'), onclick: () => { BILL.custGstin = ''; BILL.showGstin = false; paintCart(); inSheet && inSheet(); } }, icon('x', 14)));
+// Keep business billing details on the draft until the customer is linked.
+function selectBillCustomer(customer) {
+  if (customer.id !== BILL.customer?.id) BILL.exchange = 0;
+  Object.assign(BILL, { customer, custName: '', custPhone: '', custGstin: '', custAddress: '', gstProfile: null, showGstin: false });
 }
-// a name/phone/GSTIN typed on the bill becomes a customer (found by phone, else created) before paying; offline it is skipped
+function gstBillRow(paintCart, inSheet) {
+  const repaint = () => { paintCart(); inSheet && inSheet(); };
+  const g = input({ value: BILL.custGstin, placeholder: 'GSTIN', max: 15, oninput: (e) => {
+    const value = e.target.value.toUpperCase();
+    const changed = value !== BILL.custGstin && BILL.gstProfile;
+    BILL.custGstin = value;
+    if (changed) { BILL.gstProfile = null; BILL.custAddress = ''; BILL.custName = ''; repaint(); }
+  } });
+  const row = gstFetchRow(g, (d) => {
+    BILL.custGstin = d.gstin || g.value.trim().toUpperCase();
+    BILL.gstProfile = d;
+    BILL.custName = d.legal_name || d.trade_name || '';
+    const address = d.address || '';
+    BILL.custAddress = address ? [address, ...[d.city, d.pincode].filter((part) => part && !address.toLowerCase().includes(String(part).toLowerCase()))].join(', ') : '';
+    repaint();
+  });
+  return h('div', { class: 'grid bill-gst' },
+    h('div', { class: 'row wrap', style: { gap: '6px' } }, g, row,
+      h('button', { class: 'btn icon sm', type: 'button', 'aria-label': t('Clear GST details'), onclick: () => {
+        if (BILL.gstProfile) BILL.custName = '';
+        Object.assign(BILL, { custGstin: '', custAddress: '', gstProfile: null, showGstin: false }); repaint();
+      } }, icon('x', 14))),
+    field(t('Billing address'), input({ value: BILL.custAddress, oninput: (e) => { BILL.custAddress = e.target.value; } })),
+    BILL.gstProfile ? h('div', { class: 'muted small' }, [
+      BILL.gstProfile.trade_name !== BILL.custName ? BILL.gstProfile.trade_name : '',
+      BILL.gstProfile.state_code ? t('State code') + ' ' + BILL.gstProfile.state_code : '',
+      BILL.gstProfile.status,
+    ].filter(Boolean).join(' · ')) : null);
+}
 async function resolveTypedCustomer() {
-  if (BILL.customer) return;
-  const name = (BILL.custName || '').trim(), phone = (BILL.custPhone || '').trim(), gstin = (BILL.custGstin || '').trim().toUpperCase();
-  if (!name && !phone && !gstin) return;
-  if (netDown()) return;
-  try { BILL.customer = await api('sty_save_customer', { p: { newId: uid(), name: name || gstin || phone, phone: phone || undefined, gstin: gstin || undefined } }); } catch { /* the bill can still go through as walk-in */ }
+  if (BILL.customer) return true;
+  const name = BILL.custName.trim(), phone = BILL.custPhone.trim(), gstin = BILL.custGstin.trim().toUpperCase();
+  if (BILL.showGstin) {
+    const address = BILL.custAddress.trim();
+    if (!gstinOk(gstin) || !name || !address || BILL.gstProfile?.active === false) {
+      toast(t(BILL.gstProfile?.active === false ? 'This GST registration is inactive' : 'Enter a valid GSTIN, business name and billing address'), { err: true });
+      return false;
+    }
+    if (netDown()) { toast(t('Connect to the internet to link the GST customer'), { err: true }); return false; }
+    try {
+      BILL.customer = await api('sty_resolve_b2b_customer', { p: { name, gstin, address, city: BILL.gstProfile?.city } });
+      return !!BILL.customer;
+    } catch (e) { fail(e); return false; }
+  }
+  if ((!name && !phone) || netDown()) return true;
+  try { BILL.customer = await api('sty_save_customer', { p: { newId: uid(), name: name || phone, phone: phone || undefined } }); } catch { /* Walk-in billing remains available. */ }
+  return true;
 }
 function provisional(p, c) {
   return { number: 'WAITING', at: new Date().toISOString(), customer: BILL.customer, lines: c.lines.map((l, i) => ({ name: BILL.lines[i].name, colour: BILL.lines[i].colour, size: BILL.lines[i].size, qty: l.qty, price: l.unit, net: l.net })),
@@ -423,11 +467,33 @@ function successSheet(sale, queued) {
 }
 
 // ---- cash shift ----
-async function shiftSheet() {
-  let cur = null; try { cur = await api('sty_shift_current', { p_branch: S.branch }); } catch (e) { return fail(e); }
+async function shiftSheet(done) {
+  let cur;
+  try { cur = await api('sty_shift_current', { p_branch: S.branch }); }
+  catch (error) { return fail(error); }
   if (!cur) {
-    const oc = input({ type: 'number', mode: 'decimal', placeholder: '0' });
-    sheet({ title: t('Open shift'), body: h('div', { class: 'grid' }, h('p', { class: 'muted' }, t('Count the cash in the drawer and start your shift.')), field(t('Opening cash'), oc)), actions: [{ label: t('Open shift'), primary: true, onclick: async (close) => { await api('sty_shift_open', { p: { branchId: S.branch, openingCash: N(oc.value) } }); close(); toast(t('Shift started')); } }] });
+    const branchId = S.branch;
+    const amount = input({ type: 'number', mode: 'decimal', min: 0, placeholder: '0' });
+    const note = input({ placeholder: t('Note (optional)') });
+    const count = {};
+    const breakdown = h('details', null, h('summary', null, t('Count notes and coins')),
+      h('div', { class: 'two' }, [2000, 500, 200, 100, 50, 20, 10, 5, 2, 1].map((denomination) => field(inr(denomination, 0),
+        input({ type: 'number', mode: 'numeric', min: 0, placeholder: '0', oninput: (event) => {
+          const quantity = Math.max(0, Math.floor(Number(event.target.value) || 0));
+          if (event.target.value === '') delete count[denomination];
+          else count[denomination] = quantity;
+          amount.value = Object.entries(count).reduce((total, [value, units]) => total + Number(value) * units, 0);
+        } })))));
+    sheet({ title: t('Open shift'), body: h('div', { class: 'grid' }, field(t('Opening cash'), amount), breakdown, field(t('Note'), note)),
+      actions: [{ label: t('Open shift'), primary: true, onclick: async (close) => {
+        const openingCash = N(amount.value);
+        if (openingCash < 0) { toast(t('Opening cash cannot be negative'), { err: true }); return false; }
+        const total = Object.entries(count).reduce((sum, [value, units]) => sum + Number(value) * units, 0);
+        try { await api('sty_shift_open', { p: { branchId, openingCash, note: note.value,
+          denominations: Object.keys(count).length && total === openingCash ? count : undefined } }); }
+        catch (error) { fail(error); return false; }
+        close(); toast(t('Shift started')); done?.();
+      } }] });
   } else {
     const moves = await api('sty_cash_moves_list', {});
     const nt = input({ placeholder: t('Note (optional)') });
@@ -439,7 +505,7 @@ async function shiftSheet() {
     const recalcTotal = () => { const n = DENOMS.reduce((a, d) => a + d * (qty[d] || 0), 0); totalEl.textContent = inr(n); return n; };
     recalcTotal();
     const denomGrid = h('div', { class: 'grid', style: { gap: '4px' } }, DENOMS.map((d) => {
-      const qi = input({ type: 'number', mode: 'numeric', placeholder: '0', min: '0', oninput: (e) => { qty[d] = parseInt(e.target.value, 10) || 0; recalcTotal(); } });
+      const qi = input({ type: 'number', mode: 'numeric', placeholder: '0', min: '0', oninput: (e) => { qty[d] = Math.max(0, parseInt(e.target.value, 10) || 0); recalcTotal(); } });
       return h('div', { class: 'row', style: { gap: '8px', alignItems: 'center' } },
         h('span', { style: { width: '64px' } }, '₹' + d), h('div', { class: 'grow' }, qi));
     }));
@@ -454,18 +520,100 @@ async function shiftSheet() {
       h('div', { class: 'kv' }, h('span', null, t('Counted total')), totalEl), field(t('Note'), nt)),
       actions: [{ label: t('Close shift'), primary: true, onclick: async (close) => {
         const denominations = {}; for (const d of DENOMS) if (qty[d]) denominations[d] = qty[d];
-        const r = await api('sty_shift_close', { p: { denominations, note: nt.value } }); close();
+        const r = await api('sty_shift_close', { p: { denominations, note: nt.value } }); close(); done?.();
         alertBox({ title: Math.abs(r.difference) < 1 ? t('Drawer matches') : (r.difference > 0 ? t('Over by') : t('Short by')) + ' ' + inr(Math.abs(r.difference)), actions: [{ label: t('Done'), value: true, role: 'def' }] });
       } }] });
   }
 }
 
-function cashMoveSheet(kind, done) {
+const DRAWER_ACTIONS = [
+  ['bank_deposit', 'Bank', 'Deposit to bank', 'Bank account'],
+  ['bank_withdrawal', 'Bank', 'Withdraw from bank', 'Bank account'],
+  ['lend', 'Loans', 'Lend money', 'Lent to'],
+  ['loan_repaid_to_us', 'Loans', 'Loan paid back to you', 'Paid back by'],
+  ['borrow', 'Loans', 'Borrow money', 'Borrowed from'],
+  ['loan_repayment', 'Loans', 'Repay a loan', 'Paid back to'],
+  ['owner_in', 'Owner', 'Owner puts in cash', 'By'],
+  ['owner_out', 'Owner', 'Owner takes out cash', 'By'],
+];
+function cashMoveSheet(kind, done, movement) {
+  const id = uid();
+  const today = rangeFor('today').to;
+  const date = input({ type: 'date', value: today });
+  const party = input({ max: 160 });
   const amt = input({ type: 'number', mode: 'decimal', placeholder: '0' }), rs = input({ placeholder: t('Reason (optional)') });
-  sheet({ title: t(kind === 'in' ? 'Cash in' : 'Cash out'), body: h('div', { class: 'grid' }, field(t('Amount'), amt), field(t('Reason'), rs)),
+  sheet({ title: t(movement ? movement[2] : kind === 'in' ? 'Cash in' : 'Cash out'), body: h('div', { class: 'grid' }, field(t('Amount'), amt),
+    movement ? field(t('Date'), date) : null, movement ? field(t(movement[3]), party) : null, field(t('Note'), rs)),
     actions: [{ label: t('Save'), primary: true, onclick: async (close) => {
       const n = N(amt.value); if (!(n > 0)) { toast(t('Enter an amount above 0'), { err: true }); return false; }
-      try { await api('sty_cash_move', { p: { kind, amount: n, reason: rs.value } }); } catch (e) { return fail(e); }
-      close(); toast(kind === 'in' ? t('Cash in saved') : t('Cash out saved')); done && done();
+      if (movement && (!party.value.trim() || !date.value || date.value > today)) {
+        toast(t('Enter a valid date and bank account or counterparty'), { err: true }); return false;
+      }
+      try { await api('sty_cash_move', { p: { id, kind, amount: r2(n), reason: rs.value,
+        action: movement?.[0], counterparty: movement ? party.value.trim() : undefined, movementDate: movement ? date.value : undefined } }); } catch (e) { return fail(e); }
+      close(); toast(t('Cash movement saved')); done && done();
     } }] });
 }
+
+page('drawer', {
+  title: 'Cash drawer', perm: 'sty_view',
+  async render(v) {
+    const args = { p_branch: S.branch };
+    const [current, history] = await Promise.all([
+      api('sty_shift_current', args),
+      api('sty_drawer_history', args).then(rows => ({ rows }), error => ({ error })),
+    ]);
+    const refresh = () => v.refresh();
+    v.header({ title: t('Cash drawer'), actions: [
+      can('sty_sell') ? { label: t(current ? 'Count drawer' : 'Open shift'), icon: 'cash', primary: true, run: () => shiftSheet(refresh) } : null,
+    ] });
+    const moves = current ? await api('sty_cash_moves_list', { p_shift_id: current.id }).then(rows => ({ rows }), error => ({ error })) : {};
+    const countDetails = (title, denominations) => denominations ? section(t(title), h('div', { class: 'list' },
+      Object.entries(denominations).sort((a, b) => Number(b[0]) - Number(a[0])).map(([value, units]) =>
+        liRow({ title: inr(Number(value), 0), sub: String(units), value: inr(Number(value) * units) })))) : null;
+    const showShift = (shift) => sheet({ title: t('Shift count'), body: h('div', { class: 'grid' },
+      kpi(t('Opening cash'), inr(shift.openingCash), shift.openingNote || ''),
+      countDetails('Opening count', shift.openingDenominations),
+      shift.countedCash != null ? kpi(t('Closing cash'), inr(shift.countedCash), shift.note || '') : null,
+      countDetails('Closing count', shift.denominations),
+      shift.countedCash != null && shift.expectedCash != null
+        ? kpi(t('Difference'), inr(Number(shift.countedCash) - Number(shift.expectedCash))) : null,
+    ) });
+    const movementList = h('div', { class: 'list' });
+    function showMoves(filter) {
+      if (moves.error) return clear(movementList).append(empty('cloudOff', t('Could not load movements'), moves.error.message));
+      const rows = [];
+      if (current && ['All', 'Sales'].includes(filter) && Number(current.cashSales)) {
+        rows.push(liRow({ title: t('Cash sales'), sub: t('Current shift'), value: '+' + inr(current.cashSales) }));
+      }
+      for (const move of moves.rows || []) {
+        const definition = DRAWER_ACTIONS.find(([action]) => action === move.action);
+        if (filter !== 'All' && definition?.[1] !== filter) continue;
+        rows.push(liRow({ title: t(definition?.[2] || (move.kind === 'in' ? 'Cash in' : 'Cash out')),
+          sub: [move.counterparty, move.reason, move.movementDate || fmtDT(move.at), move.staff].filter(Boolean).join(' · '),
+          value: (move.kind === 'in' ? '+' : '−') + inr(move.amount) }));
+      }
+      clear(movementList).append(...(rows.length ? rows : [empty('cash', t('No cash movements yet'))]));
+    }
+    showMoves('All');
+    const openingCount = (history.rows || []).find((shift) => shift.id === current?.id)?.openingDenominations;
+    v.root.append(h('div', { class: 'grid' },
+      current ? h('div', { class: 'people-total' }, h('strong', null, t('Expected in drawer')), h('b', null, inr(current.expectedCash)))
+        : empty('cash', t('No open shift'), t('Open a shift to count starting cash and record drawer activity.')),
+      current ? h('div', { class: 'kpis' }, kpi(t('Opening cash'), inr(current.openingCash)),
+        kpi(t('Cash sales'), inr(current.cashSales)), kpi(t('Cash in'), inr(current.cashIn)), kpi(t('Cash out'), inr(current.cashOut))) : null,
+      current && can('sty_sell') ? section(t('Move cash'), h('div', { class: 'drawer-moves' },
+        ...DRAWER_ACTIONS.map((action) => h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet(undefined, refresh, action) }, t(action[2]))),
+        ...['in', 'out'].map((kind) => h('button', { class: 'btn', type: 'button', onclick: () => cashMoveSheet(kind, refresh) }, t(kind === 'in' ? 'Cash in' : 'Cash out'))))) : null,
+      countDetails('Opening balance by note and coin', openingCount),
+      current ? section(t('Cash movements'), h('div', { class: 'grid' },
+        seg(['All', 'Sales', 'Bank', 'Loans', 'Owner'].map((key) => [key, t(key)]), 'All', showMoves, { full: true }), movementList)) : null,
+      section(t('Shift history'), h('div', { class: 'people-cards' },
+        history.error ? empty('cloudOff', t('Could not load shift history'), history.error.message)
+          : (history.rows || []).length ? history.rows.map(shift => peopleRecordCard({
+            name: fmtDT(shift.startedAt), detail: shift.openingNote || shift.note || t('Shift count'),
+            amount: inr(shift.countedCash ?? shift.openingCash), status: t(shift.endedAt ? 'Closed' : 'Open'),
+            tone: shift.endedAt ? 'settled' : 'open', open: () => showShift(shift),
+          })) : empty('cash', t('No shifts yet'), '')))));
+  },
+});

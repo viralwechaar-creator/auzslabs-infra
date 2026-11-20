@@ -22,6 +22,10 @@ const delta = (a, b) => { const d = pct(a, b); return h('span', { class: 'dl ' +
 page('home', {
   title: 'Overview', perm: 'sty_reports',
   async render(v) {
+    const sectionId = v.q.get('view') === 'analytics' ? 'analytics' : 'overview';
+    v.root.append(seg([['overview', t('Overview')], ['analytics', t('Analytics')]], sectionId,
+      (id) => go(id === 'analytics' ? 'home?view=analytics' : 'home'), { full: true }));
+    if (sectionId === 'analytics') return PAGES.analytics.render(v);
     v.header({ title: t('Overview') });
     Object.assign(RU, rangeFor(RU.k, RU.from ? { from: RU.from, to: RU.to } : null));
     const host = h('div', { class: 'grid' });
@@ -54,12 +58,28 @@ const GU = { sub: 'period', year: new Date().getFullYear(), month: new Date().ge
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 function periodGstTab(host) {
   host.append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
-  let sub = 'summary';
+  let sub = 'summary', request = 0;
   async function load() {
-    let p, c; try { [p, c] = await Promise.all([api('sty_gst_period_summary', { p: { year: GU.year, month: GU.month } }), api('sty_gst_period_checks', { p: { year: GU.year, month: GU.month } })]); } catch (e) { return clear(host).append(empty('cloudOff', t('Could not load'), e.message)); }
-    paint(p, c);
+    const version = ++request;
+    const period = { year: GU.year, month: GU.month };
+    const from = period.year + '-' + String(period.month).padStart(2, '0') + '-01';
+    const to = from.slice(0, 8) + new Date(period.year, period.month, 0).getDate();
+    let summary, checks, purchases, salesRegister;
+    try {
+      [summary, checks, purchases, salesRegister] = await Promise.all([
+        api('sty_gst_period_summary', { p: period }),
+        api('sty_gst_period_checks', { p: period }),
+        sub === 'registers' && can('sty_purchase') ? api('sty_purchase_register', { p: { from, to } }) : null,
+        sub === 'registers' ? api('sty_gst_sales_register', { p: period }).then(data => ({ data }), error => ({ error })) : null,
+      ]);
+    } catch (error) {
+      if (version === request) clear(host).append(empty('cloudOff', t('Could not load'), error.message,
+        h('button', { class: 'btn', type: 'button', onclick: load }, t('Try again'))));
+      return;
+    }
+    if (version === request) paint(summary, checks, purchases, salesRegister, { ...period, from });
   }
-  function paint(p, c) {
+  function paint(p, c, purchases, salesRegister, period) {
     const filed = p.status === 'filed';
     const monthSel = selectEl(MONTHS.map((m, i) => [i + 1, t(m)]), GU.month, { onchange: (e) => { GU.month = Number(e.target.value); load(); } });
     const yearSel = selectEl([GU.year - 1, GU.year, GU.year + 1].map((y) => [y, String(y)]), GU.year, { onchange: (e) => { GU.year = Number(e.target.value); load(); } });
@@ -67,7 +87,7 @@ function periodGstTab(host) {
     clear(host).append(h('div', { class: 'grid' },
       h('div', { class: 'row', style: { gap: '8px' } }, monthSel, yearSel, h('span', { class: 'chip', style: { pointerEvents: 'none' } }, filed ? t('Filed') : t('Open'))),
       h('p', { class: 'muted small' }, t('These are working papers built from your bills -- AUZsStyle does not file returns or call the GST portal. Have your accountant confirm figures and rates before filing.')),
-      seg([['summary', t('Summary')], ['checks', t('Checks')]], sub, (x) => { sub = x; paint(p, c); }),
+      seg([['summary', t('Summary')], ['registers', t('Registers')], ['checks', t('Checks')], ['filing', t('Filing lock')]], sub, (x) => { sub = x; load(); }),
       sub === 'summary' ? h('div', { class: 'grid' },
         h('div', { class: 'kpis' }, kpi(t('Output tax'), inr(p.output.tax, 0), t('On sales of') + ' ' + inr(p.output.taxable, 0)),
           kpi(t('Input tax credit'), inr(p.input.tax, 0), t('Eligible purchases') + ' ' + inr(p.input.taxable, 0)),
@@ -78,9 +98,19 @@ function periodGstTab(host) {
             [{ head: 'IGST', output: p.output.igst, credit: p.input.igst }, { head: 'CGST', output: p.output.cgst, credit: p.input.cgst }, { head: 'SGST', output: p.output.sgst, credit: p.input.sgst }])
           : h('div', { class: 'list' }, ['igst', 'cgst', 'sgst'].map((k) => liRow({ title: k.toUpperCase(), sub: t('Credit available') + ' ' + inr(p.input[k], 0), value: inr(p.output[k], 0), valueSub: t('Output') }))))),
         p.byRate.length ? section(t('Sales by rate'), h('div', { class: 'list' }, p.byRate.map((r) => liRow({ title: r.rate + '% GST', sub: t('Taxable') + ' ' + inr(r.taxable, 0), value: inr(r.tax, 0), valueSub: t('Tax') })))) : null,
-        h('div', { class: 'row', style: { gap: '8px' } }, filed
-          ? (can('sty_manage') ? h('button', { class: 'btn', type: 'button', onclick: async () => { if (!await confirmBox(t('Reopen this month?'), t('Bills and purchases can be added or changed in it again.'), t('Reopen'), true)) return; await api('sty_gst_period_reopen', { p: { year: GU.year, month: GU.month } }); load(); } }, t('Reopen')) : null)
-          : (can('sty_manage') ? h('button', { class: 'btn fill', type: 'button', onclick: async () => { if (!await confirmBox(t('Mark this month as filed?'), t('Bills and purchases dated in') + ' ' + t(MONTHS[GU.month - 1]) + ' ' + GU.year + ' ' + t('can no longer be added or changed until you reopen it.'), t('Mark filed'), true)) return; await api('sty_gst_period_file', { p: { year: GU.year, month: GU.month } }); load(); } }, t('Mark this month as filed')) : null)))
+        null)
+        : sub === 'registers' ? styleGstRegisters(p, purchases, salesRegister, period.from.slice(0, 7))
+        : sub === 'filing' ? h('div', { class: 'card grid' },
+          h('strong', null, filed ? t('Filed and locked') : t('Open')),
+          h('p', { class: 'muted small' }, filed ? t('Bills and purchases in this month are locked.') : t('Bills and purchases can still be recorded for this month.')),
+          can('sty_manage') ? h('div', null, h('button', { class: 'btn' + (filed ? '' : ' fill'), type: 'button', onclick: async () => {
+            const label = filed ? t('Unlock period') : t('Mark as filed and lock');
+            const prompt = filed ? t('Bills and purchases can be changed in this month again.') : t('Bills and purchases in this month will be locked until it is reopened.');
+            if (!await confirmBox(label, prompt, label, filed)) return;
+            try { await api(filed ? 'sty_gst_period_reopen' : 'sty_gst_period_file', { p: { year: period.year, month: period.month } }); }
+            catch (error) { return fail(error); }
+            load();
+          } }, filed ? t('Unlock period') : t('Mark as filed and lock'))) : null)
         : h('div', { class: 'grid' },
           c.noShopGstin ? banner('warn', 'alert', t('No GSTIN set for your shop (Settings -> Shop).')) : null,
           c.salesMissingHsn > 0 ? banner('warn', 'alert', c.salesMissingHsn + ' ' + t('taxed sale lines this month have no HSN code')) : null,
@@ -90,6 +120,66 @@ function periodGstTab(host) {
   }
   load();
 }
+function styleGstRegisters(summary, purchases, salesRegister, month) {
+  const sales = summary.byRate || [];
+  const bills = purchases?.bills || [];
+  const table = (head, fields, rows) => h('div', { class: 'card' }, dataView(head.map(([label, money], index) => ({
+    label: t(label), r: money, render: (row) => money ? inr(row[fields[index]]) : row[fields[index]],
+  })), rows));
+  const details = h('div', { class: 'grid' });
+  const registers = [
+    ['registered', 'Registered sales', ['Date', 'Invoice', 'Customer', 'GSTIN', 'Place of supply', 'Taxable', 'CGST', 'SGST', 'IGST', 'Total'],
+      ['at', 'number', 'customer', 'gstin', 'placeOfSupply', 'taxable', 'cgst', 'sgst', 'igst', 'total']],
+    ['unregistered', 'Unregistered sales', ['Date', 'Invoice', 'Customer', 'Place of supply', 'Taxable', 'CGST', 'SGST', 'IGST', 'Total'],
+      ['at', 'number', 'customer', 'placeOfSupply', 'taxable', 'cgst', 'sgst', 'igst', 'total']],
+    ['hsn', 'HSN summary', ['HSN', 'Rate', 'Lines', 'Taxable', 'CGST', 'SGST', 'IGST'],
+      ['hsn', 'rate', 'lines', 'taxable', 'cgst', 'sgst', 'igst']],
+  ];
+  const paintDetails = (key) => {
+    const [, label, columns, fields] = registers.find(([id]) => id === key);
+    const rows = salesRegister?.data?.[key] || [];
+    const values = (row) => fields.map((field) => row[field] ?? (field === 'hsn' ? t('Missing HSN') : ''));
+    clear(details).append(
+      h('p', { class: 'muted small' }, t('Sales are grouped using the current customer GSTIN. Review this register before filing.')),
+      rows.length ? h('div', null, h('button', { class: 'btn', type: 'button', onclick: () => exportCSV('gst-' + key + '-' + month, columns, rows.map(values)) }, t('Export CSV'))) : null,
+      rows.length ? h('div', { class: 'people-cards' }, rows.map((row) => peopleRecordCard({
+        name: key === 'hsn' ? (row.hsn || t('Missing HSN')) : row.number,
+        detail: key === 'hsn' ? row.rate + '% · ' + row.lines + ' ' + t('lines')
+          : [row.customer || t('Walk-in'), row.gstin, fmtDay(row.at)].filter(Boolean).join(' · '),
+        amount: inr(row.taxable), status: t('Taxable'), tone: 'open',
+        open: () => key === 'hsn' ? sheet({ title: row.hsn || t('Missing HSN'), body: h('div', { class: 'list' },
+          [['CGST', row.cgst], ['SGST', row.sgst], ['IGST', row.igst]].map(([title, amount]) => liRow({ title, value: inr(amount) }))) })
+          : billSheet(row.id),
+      }))) : empty('tag', t('Nothing in this register'), t(label)));
+  };
+  if (salesRegister?.data) paintDetails('registered');
+  const detailTabs = salesRegister?.data ? h('div', { class: 'grid' },
+    seg(registers.map(([id, label]) => [id, t(label)]), 'registered', paintDetails), details)
+    : empty('cloudOff', t('Could not load detailed sales registers'), salesRegister?.error?.message || '');
+  return h('div', { class: 'grid' },
+    detailTabs,
+    section(t('Sales by tax rate'), sales.length ? h('div', { class: 'grid' },
+      h('div', null, h('button', { class: 'btn', type: 'button', onclick: () => exportCSV('gst-sales-' + month,
+        ['Rate', 'Taxable', 'CGST', 'SGST', 'IGST', 'Tax'], sales.map((row) => [row.rate, row.taxable, row.cgst, row.sgst, row.igst, row.tax])) }, t('Export sales CSV'))),
+      table([['Rate'], ['Taxable', true], ['CGST', true], ['SGST', true], ['IGST', true]], ['rate', 'taxable', 'cgst', 'sgst', 'igst'], sales))
+      : empty('tag', t('No sales in this period'))),
+    can('sty_purchase') ? section(t('Purchase register'), bills.length ? h('div', { class: 'grid' },
+      h('div', null, h('button', { class: 'btn', type: 'button', onclick: () => exportCSV('gst-purchases-' + month,
+        ['Date', 'Invoice', 'Supplier', 'Taxable', 'CGST', 'SGST', 'IGST', 'Total'],
+        bills.map((row) => [row.at, row.invoiceNo, row.supplier, row.taxableValue, row.cgst, row.sgst, row.igst, row.total])) }, t('Export purchases CSV'))),
+      h('div', { class: 'list' }, bills.map((row) => liRow({ title: row.supplier || t('No supplier'), sub: [row.invoiceNo, fmtDay(row.at)].filter(Boolean).join(' · '),
+        value: inr(row.total), chevron: true, onclick: () => purchaseSheet({ id: row.id }) }))))
+      : empty('box', t('No purchases in this period'))) : null);
+}
+page('gst', {
+  title: 'GST', perm: 'sty_reports',
+  render(v) {
+    v.header({ title: t('GST') });
+    const host = h('div', { class: 'grid' });
+    v.root.append(host);
+    periodGstTab(host);
+  },
+});
 page('analytics', {
   title: 'Analytics', perm: 'sty_reports',
   async render(v) {
