@@ -579,8 +579,6 @@ function minimalHome(v) {
   const configuredImages = (c.heroImages || []).filter(Boolean);
   const heroImages = configuredImages.length ? configuredImages : featured.map((s) => pickPic(s, 'hero')).filter(Boolean);
   const tiles = minimalCollectionTiles();
-  const heading = (title, href, caption) => E('div', { class: 'minimal-heading' },
-    E('h2', null, title), E('a', { href }, caption, ' ↗'));
   const heroImage = heroImages.length ? E('img', { src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
   let slide = 0;
   const dots = heroImages.map((_, index) => E('button', { type: 'button', 'aria-label': 'Show banner ' + (index + 1),
@@ -600,8 +598,8 @@ function minimalHome(v) {
   const stories = minimalStories(tiles);
   const banners = tiles.filter((tile) => tile.photo).slice(0, 8);
   if (banners.length) v.append(minimalCollectionCarousel(banners, stories));
-  if (STY.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
-    heading('Featured products', link('shop'), 'Shop all'), gridOf(STY.slice(0, 8))));
+  // "Featured products" (a plain STY.slice(0,8) grid) was removed -- owner feedback: on a catalogue this
+  // size it just repeated "Latest drop" verbatim with no distinct selection of its own.
   const accessories = minimalGroupProducts('accessories');
   if (accessories.length) {
     const category = accessories[0].category;
