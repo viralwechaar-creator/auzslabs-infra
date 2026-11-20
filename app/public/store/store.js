@@ -245,15 +245,12 @@ function shell() {
   const name = D.shop.name;
   const minimal = cfg().template === 'minimal';
   const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name }, E('span', null, name));
-  const stories = minimal ? minimalStories() : [];
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' },
       E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')),
-      stories.length ? E('button', { class: 'ic minimal-header-stories', type: 'button', 'aria-label': 'Stories',
-        onclick: (e) => openMinimalStory(stories, 0, e.currentTarget) }, E('span', null, name.trim().charAt(0).toUpperCase())) : null,
       E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
       minimal ? E('button', { class: 'ic', type: 'button', 'aria-label': 'Notifications', onclick: openMinimalNotifications }, icon('bell'), countBadge(() => minimalNotifications().filter((item) => !LS.get('notice.' + item.id, false)).length)) : null,
       !minimal ? saved : null, E('a', { class: 'ic', href: link('me'), 'aria-label': 'My account' }, icon('user')), minimal ? saved : null,
@@ -769,51 +766,6 @@ function filterSet(q) {
   return list;
 }
 function setQ(patch) { const q = { ...q$(), ...patch }; for (const k in q) if (q[k] == null || q[k] === '') delete q[k]; const qs = new URLSearchParams(q).toString(); location.hash = '#/shop' + (qs ? '?' + qs : ''); }
-function minimalFilters() {
-  const current = q$();
-  const control = (name, label, choices) => E('label', { class: 'minimal-filter-field' }, label,
-    E('select', { name }, choices.map(([value, title]) =>
-      E('option', { value, selected: (current[name] || '') === value }, title))));
-  const facets = (name, label, options, legacyValue) => {
-    const chosen = new Set(facetValues(current[name]));
-    if (legacyValue) chosen.add(legacyValue);
-    return E('fieldset', { class: 'minimal-facets' }, E('legend', null, label), [...new Set(options)].map((value) =>
-      E('label', null, E('input', { name, type: 'checkbox', value, checked: chosen.has(value) }), E('span', null, value,
-        name === 'colours' ? E('i', { style: { background: hex(value) }, 'aria-hidden': 'true' }) : null))));
-  };
-  const pills = (name, label, options) => E('fieldset', { class: 'minimal-facets' },
-    E('legend', null, label), options.map(([value, title]) => E('label', null,
-      E('input', { name, type: 'radio', value, checked: (current[name] || '') === value }), E('span', null, title))));
-  const price = (name, label) => E('label', { class: 'minimal-filter-field' }, label,
-    E('input', { name, type: 'number', min: 0, step: 1, value: current[name] || '' }));
-  const form = E('form', { class: 'minimal-filter-form', onsubmit: (event) => {
-    event.preventDefault();
-    const data = new FormData(form);
-    const selected = (name) => data.getAll(name).length ? JSON.stringify(data.getAll(name)) : '';
-    setQ({ size: '', colour: '', fam: '', sizes: selected('sizes'), colours: selected('colours'),
-      stock: data.get('stock'), cat: data.get('cat'), sort: data.get('sort'), min: data.get('min'), max: data.get('max') });
-    panel.close();
-  } },
-  facets('sizes', 'Size', STY.flatMap(sizesOf), current.size),
-  pills('stock', 'Availability', [['', 'Any'], ['1', 'In stock'], ['sold-out', 'Out of stock']]),
-  pills('cat', 'Type', [['', 'All types'], ...[...new Set(STY.map((item) => item.category).filter(Boolean))].sort().map((type) => [type, type])]),
-  facets('colours', 'Colour', STY.flatMap(colours), current.colour),
-  E('div', { class: 'row2' }, price('min', 'Minimum price'), price('max', 'Maximum price')),
-  control('sort', 'Sort by', [['', 'Newest'], ['low', 'Price, low to high'], ['high', 'Price, high to low'], ['az', 'Alphabetically, A–Z']]),
-  E('div', { class: 'row2 minimal-filter-actions' },
-    E('button', { class: 'btn out', type: 'button', onclick: () => {
-      setQ({ size: '', sizes: '', stock: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', cat: '' });
-      panel.close();
-    } }, 'Remove all'),
-    E('button', { class: 'btn', type: 'submit' }, 'Apply')));
-  const panel = sheet('Filter', form);
-  panel.el.classList.add('minimal-bag-drawer', 'minimal-filter-drawer');
-  panel.el.setAttribute('aria-label', 'Filter products');
-  const heading = panel.el.querySelector('.hd h2');
-  heading.append(E('small', null, filterSet(current).length + ' products'));
-  panel.el.querySelector('.hd button').focus();
-  panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
-}
 function refine(anchor) {
   const base = q$(); const draft = { ...base };
   const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1) / 100) * 100;
@@ -821,19 +773,21 @@ function refine(anchor) {
   const allSizes = [...new Set(STY.flatMap(sizesOf))]; const allCols = [...new Set(STY.flatMap(colours))]; const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const paint = () => {
     clear(body);
-    const pick = (key, val) => { draft[key] = draft[key] === val ? '' : val; paint(); };
+    const pick = (key, val) => { draft[key] = draft[key] === val ? '' : val; if (key === 'size') delete draft.sizes; if (key === 'colour') { delete draft.colours; delete draft.fam; } paint(); };
     body.append(
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Sort'), E('div', { class: 'fwrap' }, [['new', 'Newest'], ['low', 'Price low'], ['high', 'Price high'], ['az', 'A to Z']].map(([k, l]) => E('button', { class: 'sz' + ((draft.sort || 'new') === k ? ' on' : ''), onclick: () => { draft.sort = k; paint(); } }, l)))),
       cats.length > 1 ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Type'), E('div', { class: 'fwrap' }, cats.map((c) => E('button', { class: 'sz' + (draft.cat === c ? ' on' : ''), onclick: () => pick('cat', c) }, c)))) : null,
       allSizes.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Size'), E('div', { class: 'fwrap' }, allSizes.map((z) => E('button', { class: 'sz' + (draft.size === z ? ' on' : ''), onclick: () => pick('size', z) }, z)))) : null,
       allCols.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Colour'), E('div', { class: 'fwrap' }, allCols.map((c) => E('button', { class: 'sz cl' + (draft.colour === c ? ' on' : ''), onclick: () => pick('colour', c) }, E('span', { class: 'c', style: { background: hex(c) } }), c)))) : null,
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Budget'), (() => { const mn = E('input', { type: 'range', min: lo, max: hi, value: draft.min || lo, step: 100 }), mx = E('input', { type: 'range', min: lo, max: hi, value: draft.max || hi, step: 100 }); const rv = E('div', { class: 'rv' }); const up = () => { if (+mn.value > +mx.value) mn.value = mx.value; draft.min = +mn.value > lo ? mn.value : ''; draft.max = +mx.value < hi ? mx.value : ''; rv.textContent = ''; add(rv, [E('span', null, inr(mn.value)), E('span', null, inr(mx.value))]); live(); }; mn.oninput = up; mx.oninput = up; up(); return E('div', { class: 'range' }, rv, mn, mx); })()),
-      E('button', { class: 'tgl' + (draft.stock ? ' on' : ''), style: { width: '100%' }, onclick: () => { draft.stock = draft.stock ? '' : '1'; paint(); } }, E('span', null, 'Only what is in stock'), E('i')));
+      E('button', { class: 'tgl' + (draft.stock === '1' ? ' on' : ''), style: { width: '100%' }, onclick: () => { draft.stock = draft.stock === '1' ? '' : '1'; paint(); } }, E('span', null, 'Only what is in stock'), E('i')));
     live();
   };
   paint();
-  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); location.hash = '#/shop'; } }, 'Clear all'));
+  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); if (cfg().template === 'minimal') setQ({ cat: '', size: '', sizes: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', stock: '', gender: '' }); else location.hash = '#/shop'; } }, 'Clear all'));
   const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
+  sh.el.setAttribute('aria-label', 'Filter products');
+  sh.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') { sh.close(); anchor?.focus(); } });
   if (anchor && anchor.getBoundingClientRect && matchMedia('(min-width: 900px)').matches) { const r = anchor.getBoundingClientRect(), hd = document.querySelector('header, .nav, .hdr'), hb = hd ? Math.max(0, hd.getBoundingClientRect().bottom) : 56, W = Math.min(740, innerWidth - 32), left = Math.max(16, Math.min(r.right + 24 - W, innerWidth - W - 16)), top = Math.min(r.top - 10, hb + 12), card = sh.el.querySelector('.sheet'); sh.el.classList.add('pop'); card.style.cssText = 'left:' + left + 'px;top:' + Math.max(hb + 6, top) + 'px;width:' + W + 'px;max-height:' + Math.max(300, innerHeight - hb - 24) + 'px;transform-origin:' + (r.left + r.width / 2 - left) + 'px ' + (r.top + r.height / 2 - Math.max(hb + 6, top)) + 'px'; }
   showBtn.onclick = () => { sh.close(); const q = { ...draft }; for (const k in q) if (!q[k]) delete q[k]; location.hash = '#/shop' + (Object.keys(q).length ? '?' + new URLSearchParams(q).toString() : ''); };
 }
@@ -873,7 +827,7 @@ V.shop = (v) => {
     catalog.append(
       E('div', { class: 'minimal-heading' }, E('div', null, E('h1', null, title), E('span', { class: 'mut' }, list.length + (list.length === 1 ? ' product' : ' products'))),
         E('div', { class: 'minimal-section-actions' }, compact,
-          E('button', { class: 'minimal-filter-button', type: 'button', onclick: minimalFilters }, 'Advanced filters'))),
+          E('button', { class: 'minimal-filter-button', type: 'button', onclick: (event) => refine(event.currentTarget) }, 'Advanced filters'))),
       E('nav', { class: 'minimal-category-nav', 'aria-label': 'Product categories' },
         E('a', { href: link('shop'), 'aria-current': !q.cat && !q.col && !q.new && !groupName ? 'page' : null }, 'View all'),
         categories.map((category) => E('a', { href: link('shop?cat=' + encodeURIComponent(category)),

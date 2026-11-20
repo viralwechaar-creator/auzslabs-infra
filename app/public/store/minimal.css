@@ -12,7 +12,6 @@
 .minimal-store .top .minimal-menu{width:42px;height:28px;border-radius:999px;background:#f0f0f0;color:var(--matte-control);text-shadow:none}
 .minimal-store.homehero:not(.pasthero) .top .r .minimal-menu{color:var(--matte-control);text-shadow:none}
 .minimal-store.homehero:not(.pasthero) .top .r .minimal-menu svg{filter:none}
-.minimal-header-stories span{display:grid;place-items:center;width:24px;height:24px;border:1px solid #fff;border-radius:50%;outline:2px solid #a6a9ae;background:var(--matte-fill);color:#fff;font-weight:800}
 @media(max-width:700px){
   .minimal-store .top{grid-template-columns:minmax(0,1fr) auto;gap:4px}
   .minimal-store .top .l{display:none}
@@ -78,12 +77,6 @@
 .minimal-catalog .grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .minimal-category-nav{display:flex;gap:24px;overflow:auto;white-space:nowrap;padding:10px 0 16px;margin-bottom:20px;border-bottom:1px solid var(--line)}
 .minimal-category-nav a[aria-current]{text-decoration:underline;text-underline-offset:6px}
-.minimal-filter-form{display:grid;gap:16px;overflow:auto}
-.minimal-filter-field{display:grid;gap:8px;font-weight:650}
-.minimal-filter-field :is(select,input){min-width:0;min-height:42px;padding:8px;background:#fff;border:1px solid var(--line)}
-.minimal-facets{display:flex;flex-wrap:wrap;gap:8px 12px;padding:10px;border:1px solid var(--line)}
-.minimal-facets legend{font-weight:650}
-.minimal-facets label{display:flex;align-items:center;gap:5px}
 .minimal-hero{position:relative;isolation:isolate;display:grid;place-items:end center;min-height:100vh;min-height:100svh;overflow:hidden;background:#202020;color:#fff;text-align:center}
 .minimal-hero>img{position:absolute;inset:0;width:100%;height:100%}
 .minimal-hero>img{object-fit:cover;object-position:center;z-index:-2}
@@ -257,9 +250,18 @@
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:10px;color:#444}
 .minimal-home .minimal-home-products .pc :is(.ph,.sc){border-radius:9px}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .add{min-height:22px;height:22px}
-.minimal-home :is(.minimal-latest,.minimal-bags) .pc .ph{aspect-ratio:2/3!important}
+.minimal-home .minimal-latest .pc .ph{aspect-ratio:2/3!important}
 .minimal-home .minimal-latest .pc :is(.ph,.sc){border-radius:9px}
 .minimal-home .minimal-bags .pc :is(.in,.bm,.tag,.dt){display:none}
+.minimal-home .minimal-bags .pc .ph{aspect-ratio:4/5!important}
+.minimal-home .minimal-bags .minimal-heading{margin-bottom:8px}
+.minimal-store .top .r{gap:2px}
+@media(min-width:701px){
+  .minimal-store .top .r .ic{width:33px;height:38px}
+  .minimal-store .top .r .minimal-menu{width:38px;height:28px;margin-left:3px}
+}
+.minimal-store .top .r .n{right:1px}
+
 .minimal-home .minimal-accessories .pc .ph{aspect-ratio:318/421!important}
 .minimal-collection-carousel{position:relative;margin:14px clamp(10px,1.5vw,24px)}
 .minimal-collection-track{display:grid;width:100%;grid-auto-flow:column;grid-auto-columns:100%;grid-template-rows:minmax(0,1fr);aspect-ratio:12/5;max-height:min(90svh,760px);overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;border-radius:25px}
@@ -380,24 +382,6 @@
   to{transform:translate3d(0,0,0) rotateY(0) scale(1)}
 }
 @supports (animation-timeline:view()){ @media(prefers-reduced-motion:no-preference){.minimal-store-stage::before{animation:minimal-store-depth 1ms ease-out both;animation-timeline:view();animation-range:entry 0% cover 45%}}}
-.minimal-filter-drawer .bd{background:#10101026;backdrop-filter:blur(3px)}
-.minimal-filter-drawer .sheet{width:min(100%,400px);padding:0;background:#eee;overflow:hidden}
-.minimal-filter-drawer .hd{position:relative;justify-content:center;min-height:58px;margin:0;border-bottom:1px solid #bbb;text-align:center}
-.minimal-filter-drawer .hd h2{font-size:13px;font-weight:600;text-transform:uppercase}
-.minimal-filter-drawer .hd h2 small{display:block;margin-top:3px;font-size:10px;font-weight:400}
-.minimal-filter-drawer .hd .ic{position:absolute;right:10px}
-.minimal-filter-drawer .minimal-filter-form{flex:1;min-height:0;gap:0;display:block}
-.minimal-filter-drawer .minimal-facets{border:0;border-bottom:1px solid #ddd;margin:0;padding:0 22px 14px;gap:5px}
-.minimal-filter-drawer .minimal-facets legend{padding:14px 0 10px;font-size:12px;font-weight:500}
-.minimal-filter-drawer .minimal-facets label{position:relative;cursor:pointer}
-.minimal-filter-drawer .minimal-facets input{position:absolute;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.minimal-filter-drawer .minimal-facets label span{display:flex;align-items:center;gap:5px;min-height:28px;padding:0 12px;border-radius:999px;background:#ddd;font-size:10px}
-.minimal-filter-drawer .minimal-facets label i{width:9px;height:9px;border:1px solid #aaa;border-radius:50%}
-.minimal-filter-drawer .minimal-facets input:checked+span{background:#171717;color:#fff}
-.minimal-filter-drawer .minimal-facets input:focus-visible+span{outline:2px solid #333;outline-offset:2px}
-.minimal-filter-drawer .minimal-filter-form>.minimal-filter-field,.minimal-filter-drawer .minimal-filter-form>.row2:not(.minimal-filter-actions){padding:12px 22px}
-.minimal-filter-drawer .minimal-filter-field :is(select,input){border-radius:8px}
-.minimal-filter-drawer .minimal-filter-actions{position:sticky;bottom:0;padding:10px 12px max(10px,env(safe-area-inset-bottom));background:#eee;border-top:1px solid #ddd}
 
 .minimal-store:not(.homehero) .top :is(.brand,.l a,.r .ic),
 body.minimal-store.homehero.pasthero .top :is(.brand,.l a,.r .ic){color:var(--matte-control)!important}
@@ -405,4 +389,4 @@ body.minimal-store.homehero.pasthero .top :is(.brand,.l a,.r .ic){color:var(--ma
 .minimal-store .btn:not(.out,.soft){background:var(--matte-fill);color:#fff}
 .minimal-store .btn:not(.out,.soft):hover:not(:disabled){background:#3f4145}
 .minimal-store :is(.btn.out,.btn.soft,.minimal-filter-button,.minimal-view-toggle,.minimal-collection-controls button){color:var(--matte-control)}
-.minimal-store .minimal-view-toggle[aria-pressed="true"],.minimal-store .minimal-facets input:checked+span{background:var(--matte-fill);color:#fff}
+.minimal-store .minimal-view-toggle[aria-pressed="true"]{background:var(--matte-fill);color:#fff}
