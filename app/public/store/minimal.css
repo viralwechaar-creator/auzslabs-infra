@@ -188,6 +188,8 @@
 .minimal-store [data-page="shop"] .pc .ph{aspect-ratio:303/409!important}
 .minimal-store [data-page="shop"] .pc .sc img{transform:scale(var(--card-zoom,1))}
 .minimal-store [data-page="shop"] .pc .in{min-height:45px;padding:7px 2px 3px}
+.minimal-store [data-page="shop"] .pc .in .nm{font-size:10px;font-weight:500}
+.minimal-store [data-page="shop"] .pc .in .pr{font-size:9px;font-weight:400}
 .minimal-store [data-page="shop"] .minimal-category-nav{gap:18px;padding-block:8px 13px;margin-bottom:12px}
 .minimal-store [data-page="p"]{max-width:none;padding:0 clamp(12px,1.25vw,24px) 40px}
 .minimal-store:has([data-page="p"]) #app>.announce{display:none}
@@ -335,8 +337,6 @@
   .minimal-store [data-page="shop"] .pc .ph{aspect-ratio:189/280!important;border-radius:8px}
   .minimal-store [data-page="shop"] .pc .sc,.minimal-store [data-page="shop"] .pc .sc>a,.minimal-store [data-page="shop"] .pc .sc img{height:100%!important}
   .minimal-store [data-page="shop"] .pc .in{min-height:46px;padding:6px 5px 3px}
-  .minimal-store [data-page="shop"] .pc .in .nm{font-size:10px;font-weight:500}
-  .minimal-store [data-page="shop"] .pc .in .pr{font-size:10px;font-weight:400}
   .minimal-store [data-page="p"]{padding-inline:6px}
   .minimal-store [data-page="p"] .minimal-pd{gap:2px}
   .minimal-store [data-page="p"] .minimal-product-gallery img,.minimal-store [data-page="p"] .minimal-product-gallery img:only-child{aspect-ratio:364/468;border-radius:12px;height:auto}
