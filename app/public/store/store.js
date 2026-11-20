@@ -693,7 +693,6 @@ function minimalHomeStores(stores) {
   const { track, controls } = minimalRail(cards, 'Store locations');
   return E('section', { class: 'minimal-section minimal-home-stores', 'aria-labelledby': 'minimal-stores-heading' },
     E('div', { class: 'minimal-store-stage' },
-      E('div', { class: 'minimal-globe', 'aria-hidden': 'true' }),
       E('div', { class: 'minimal-heading' },
         E('h2', { id: 'minimal-stores-heading' }, 'Stores across India'),
         E('div', { class: 'minimal-section-actions' }, controls, E('a', { class: 'minimal-discover', href: link('stores') }, 'All stores')))),

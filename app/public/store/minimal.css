@@ -172,22 +172,16 @@
 .minimal-home .minimal-product-section .pc .ph{aspect-ratio:5/6!important;background:#e8ebef}
 .minimal-home .minimal-product-section .pc .ph,.minimal-home .minimal-product-section .pc .sc{border-radius:24px}
 .minimal-home .minimal-home-stores{position:relative;margin-top:14px;padding-block:16px 24px;background:#ededed;border:0;border-radius:28px}
-.minimal-store-stage{position:relative;isolation:isolate;min-height:clamp(275px,32vw,480px);overflow:hidden;border-radius:20px;background:linear-gradient(155deg,#9accf5,#c0e7ff)}
+.minimal-store-stage{position:relative;isolation:isolate;min-height:clamp(275px,32vw,480px);overflow:hidden;border-radius:20px;background:#938879 url("/store/store-architecture.jpg") center 42% / cover no-repeat}
 .minimal-store-stage .minimal-heading{position:relative;z-index:1;padding:14px}
 .minimal-store-stage h2{padding:3px 7px;border:1px solid #454545;border-radius:5px;background:#f9fcff;font-size:10px}
-.minimal-globe{position:absolute;top:28%;left:50%;width:min(58%,800px);aspect-ratio:1;transform:translateX(-50%);overflow:hidden;border-radius:50%;background:radial-gradient(circle at 42% 27%,#41deff 0,#00aadf 27%,#0087cd 53%,#005ca5 83%);box-shadow:inset 0 12px 36px #d9f8ff,0 -8px 32px #e2f7ff90}
-.minimal-globe::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle,#c9fcffb0 0 1px,transparent 1.5px);background-size:5px 5px;mask-image:radial-gradient(ellipse at 30% 60%,#000 0 20%,transparent 34%),radial-gradient(ellipse at 62% 45%,#000 0 23%,transparent 38%),radial-gradient(ellipse at 76% 74%,#000 0 10%,transparent 23%);animation:minimal-globe-drift 8s linear infinite}
-.minimal-globe::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 47% 0,#f4fdfff0,transparent 43%);opacity:.62}
-@keyframes minimal-globe-drift{from{background-position:0 0}to{background-position:60px 10px}}
 .minimal-home-stores .minimal-rail{position:relative;grid-auto-columns:calc((100% - 26px)/3);gap:13px;margin-top:clamp(-105px,-7vw,-58px);padding:0 0 4px}
 .minimal-home-stores .swcard{max-width:none;width:auto;padding:10px;border-radius:28px 28px 13px 13px;background:#fff}
 .minimal-home-stores .swcard .im{aspect-ratio:378/449;border-radius:16px}
 .minimal-home-stores .swcard .tx{padding:0 6px;gap:7px 10px}
-@media(prefers-reduced-motion:reduce){.minimal-globe::before{animation:none}}
 @media(max-width:700px){
   .minimal-rail{grid-auto-columns:72%;gap:8px}
   .minimal-home-stores .minimal-rail{grid-auto-columns:82%;gap:9px}
-  .minimal-globe{width:86%}
 }
 
 /* Storefront page proportions, scoped to Minimal. */
