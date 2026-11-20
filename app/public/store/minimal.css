@@ -252,8 +252,8 @@
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .add{min-height:22px;height:22px}
 .minimal-home .minimal-latest .pc .ph{aspect-ratio:2/3!important}
 .minimal-home .minimal-latest .pc :is(.ph,.sc){border-radius:9px}
-.minimal-home .minimal-bags .pc :is(.in,.bm,.tag,.dt){display:none}
 .minimal-home .minimal-bags .pc .ph{aspect-ratio:4/5!important}
+.minimal-home .minimal-bags .pc :is(.ph,.sc){border-radius:9px}
 .minimal-home .minimal-bags .minimal-heading{margin-bottom:8px}
 .minimal-store .top .r{gap:2px}
 @media(min-width:701px){
