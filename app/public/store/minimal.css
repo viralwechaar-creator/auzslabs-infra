@@ -268,7 +268,7 @@
 .minimal-collection-slide{position:relative;min-width:0;scroll-snap-align:start;overflow:hidden;background:#202020;color:#fff}
 .minimal-collection-slide img{position:absolute;inset:0;width:100%;height:100%}
 .minimal-collection-art{object-fit:contain}
-.minimal-collection-name{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:calc(100% - 40px);width:max-content;text-align:center;padding:5px 9px;border-radius:6px;background:#191919d9;color:#fff;font-size:clamp(11px,1vw,14px);font-weight:550;line-height:1.25}
+.minimal-collection-name{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:calc(100% - 32px);width:max-content;text-align:center;color:#fff;font-size:clamp(14px,1.45vw,22px);font-weight:400;letter-spacing:.04em;text-transform:uppercase;line-height:1.2;text-shadow:0 1px 6px #000,0 1px 16px #000}
 .minimal-collection-controls{position:absolute;z-index:1;inset:12px 12px auto auto;display:flex;gap:5px}
 .minimal-collection-controls button{display:grid;place-items:center;min-width:32px;height:32px;padding:0 8px;background:#fff;color:#111;border-radius:999px;font-size:11px}
 .minimal-collection-controls svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5}
@@ -315,8 +315,17 @@
   .minimal-home .minimal-bags .pc .ph{aspect-ratio:1!important}
   .minimal-home .minimal-accessories .minimal-rail{grid-auto-columns:56%}
   .minimal-home .minimal-home-stores .minimal-rail{grid-auto-columns:76%}
-  .minimal-collection-track{aspect-ratio:16/9;border-radius:16px}
-  .minimal-collection-track.is-panoramic{aspect-ratio:12/5}
+  .minimal-collection-carousel{margin-inline:0}
+  .minimal-collection-track{aspect-ratio:auto;height:min(118vw,68svh);border-radius:0}
+  .minimal-collection-track.has-multiple{box-sizing:border-box;padding-inline:11%;scroll-padding-inline:11%;gap:8px}
+  .minimal-collection-slide{border-radius:16px}
+  .minimal-collection-art{object-fit:cover;object-position:center top}
+  .minimal-collection-name{font-size:clamp(13px,4vw,18px)}
+  .minimal-collection-controls{position:static;justify-content:center;margin-top:8px}
+  @media(pointer:coarse){
+    .minimal-collection-controls button[aria-label="Previous collection"],
+    .minimal-collection-controls button[aria-label="Next collection"]{display:none}
+  }
   .minimal-collection-controls{inset:6px 6px auto auto;gap:3px}
   .minimal-collection-controls button{min-width:28px;height:28px}
 }

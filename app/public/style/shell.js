@@ -222,25 +222,6 @@ function navItem(id, label, ic) {
   if (!allowed(PAGES[id])) return null;
   return h('a', { href: '#/' + id, 'data-nav': id, class: 'nav-i', title: t(label) }, icon(ic, 20), h('span', { class: 'lbl-t' }, t(label)));
 }
-const NAV_GROUPS = [
-  ['Sales', ['sell', 'bills', 'requests']],
-  ['Inventory & purchasing', ['stock', 'buy', 'intel']],
-  ['Contacts & expenses', ['people', 'parties', 'expenses']],
-  ['Business insights', ['home', 'analytics']],
-  ['Store & settings', ['store', 'ai', 'settings']],
-];
-function groupedNav(nav) {
-  const items = new Map(nav.map(([id, label, iconName]) => [id, navItem(id, label, iconName)]));
-  const groups = NAV_GROUPS.map(([label, ids]) => {
-    const links = ids.map((id) => items.get(id)).filter(Boolean);
-    if (!links.length) return null;
-    links.forEach((link) => items.delete(link.dataset.nav));
-    const toggle = h('button', { class: 'nav-group-toggle', type: 'button', 'aria-expanded': 'false',
-      onclick: () => toggle.setAttribute('aria-expanded', String(toggle.getAttribute('aria-expanded') !== 'true')) }, t(label), icon('chevR', 14));
-    return h('div', { class: 'nav-group' }, toggle, h('div', { class: 'nav-group-links' }, links));
-  });
-  return [...groups, ...items.values()];
-}
 function pillNode() {
   const n = pendingCount(), bad = failedOps().length, off = netDown() || S.offlineData;
   const label = bad ? bad + ' ' + t('need attention') : n ? n + ' ' + t('waiting to send') : off ? t('Offline') : t('Up to date');
@@ -258,7 +239,7 @@ function buildShell() {
     h('div', { class: 'brand' }, (S.ctx.settings && S.ctx.settings.logoUrl) ? h('img', { class: 'brand-logo', src: S.ctx.settings.logoUrl, alt: '' }) : icon('shirt', 28), h('div', { class: 'lbl-t grow' }, h('b', null, 'AUZsStyle'), h('span', null, S.ctx.settings.shopName || (S.dash.tenant ? S.dash.tenant.name : ''))),
       h('button', { class: 'side-tg', type: 'button', 'aria-label': 'Toggle sidebar', onclick: () => $('#shell').classList.toggle('min') }, icon('sidebar', 20))),
     (S.ctx.branches || []).length > 1 ? h('button', { class: 'nav-i', type: 'button', onclick: (e) => pickBranch(e.currentTarget) }, icon('building', 20), h('span', { class: 'lbl-t' }, branchName())) : null,
-    groupedNav(nav),
+    nav.map(([id, l, ic]) => navItem(id, l, ic)),
     h('div', { class: 'foot' }, h('span', null, pillNode()), h('span', null, S.user.email),
       seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => { setLang(v); buildShell(); route_(); }, { full: true }),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
@@ -324,7 +305,6 @@ async function route_() {
   clear(main).append(root);
   $$('[data-nav]').forEach((a) => a.removeAttribute('aria-current')); $$('[data-tab]').forEach((a) => a.removeAttribute('aria-current'));
   $(`[data-nav="${route.id}"]`)?.setAttribute('aria-current', 'page');
-  $(`[data-nav="${route.id}"]`)?.closest('.nav-group')?.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded', 'true');
   const tab = tabsFor().includes(route.id) ? route.id : 'more'; $(`[data-tab="${tab}"]`)?.setAttribute('aria-current', 'page');
   const nm = (NAV.find((x) => x[0] === route.id) || [0, route.id])[1];
   const view = { id: route.id, args: route.args, q: route.q, root, header: (o) => header(o, root), refresh: () => route_(), onLeave: (f) => cleanup.push(f) };

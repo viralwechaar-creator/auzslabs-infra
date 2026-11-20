@@ -614,9 +614,10 @@ function minimalHome(v) {
 }
 function minimalCollectionCarousel(banners, stories) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const track = E('div', { class: 'minimal-collection-track' + (banners.every((banner) => banner.widePhoto) ? ' is-panoramic' : ''), tabindex: '0', 'aria-label': 'Collection banners' },
+  const track = E('div', { class: 'minimal-collection-track' + (banners.length > 1 ? ' has-multiple' : ''), tabindex: '0', 'aria-label': 'Collection banners' },
     banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href, 'aria-label': banner.name },
-      E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' }),
+      E('picture', {}, banner.photo && banner.widePhoto ? E('source', { media: '(max-width:700px)', srcset: banner.photo }) : null,
+        E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' })),
       E('span', { class: 'minimal-collection-name', 'aria-hidden': 'true' }, banner.name))));
   let paused = reducedMotion.matches;
   const pause = E('button', { type: 'button', onclick: () => {
@@ -624,9 +625,12 @@ function minimalCollectionCarousel(banners, stories) {
     pause.textContent = paused ? 'Play' : 'Pause';
   } }, paused ? 'Play' : 'Pause');
   const step = (direction) => {
-    const current = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    const first = track.children[0].offsetLeft;
+    const stride = track.children[1].offsetLeft - first;
+    if (stride <= 0) return;
+    const current = Math.round(track.scrollLeft / stride);
     const next = (current + direction + banners.length) % banners.length;
-    track.scrollTo({ left: next * track.clientWidth, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+    track.scrollTo({ left: track.children[next].offsetLeft - first, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
   };
   const section = E('section', { class: 'minimal-collection-carousel', 'aria-label': 'Discover collections' }, track,
     E('div', { class: 'minimal-collection-controls' },
