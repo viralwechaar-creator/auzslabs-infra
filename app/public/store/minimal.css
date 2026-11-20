@@ -6,7 +6,7 @@
 .minimal-store.homehero:not(.pasthero) .top{position:absolute;inset:0 0 auto;background:transparent!important;border:0;box-shadow:none;backdrop-filter:none}
 .minimal-store.homehero:not(.pasthero) .top :is(.brand,.l a,.r .ic){color:#eeeeef;text-shadow:0 1px 6px #000}
 .minimal-store.homehero:not(.pasthero) .top .r .ic svg{filter:drop-shadow(0 1px 3px #000)}
-.minimal-store.homehero.pasthero .top{position:fixed;inset:0 0 auto;background:#fff!important;transform:none}
+.minimal-store.homehero.pasthero .top{position:fixed;inset:0 0 auto;background:rgba(255,255,255,.72)!important;-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border-bottom:0;box-shadow:0 1px 0 rgba(0,0,0,.05);transform:none}
 .minimal-store .brand{font-size:clamp(16px,2vw,26px);font-weight:800;letter-spacing:.08em}
 .minimal-store .top .l a{font-size:12px;font-weight:600;border-radius:999px}.minimal-store .top .l a:hover,.minimal-store .top .l a:focus-visible{background:#8882}
 .minimal-store .top .minimal-menu{width:42px;height:28px;border-radius:999px;background:#f0f0f0;color:var(--matte-control);text-shadow:none}
@@ -18,8 +18,14 @@
   .minimal-store .top .brand{max-width:100%;justify-content:flex-start}
   .minimal-store .top .minimal-menu{width:32px}
   .minimal-store .top .r .ic[aria-label="Notifications"]{display:none}
+  .minimal-store.homehero.pasthero .top{grid-template-columns:auto minmax(0,1fr) auto}
+  .minimal-store.homehero.pasthero .top .l{display:flex!important;min-width:0}
+  .minimal-store.homehero.pasthero .top .l .menu-pill.phoneonly{display:flex!important;background:rgba(255,255,255,.75);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .minimal-store.homehero.pasthero .top .r .minimal-menu{display:none}
+  .minimal-store.homehero.pasthero .top .brand{justify-content:flex-start;width:max-content;max-width:100%;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.75);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 }
-.minimal-store :is(.top .menu-pill,.top .dview,.zdesk){display:none!important}
+.minimal-store :is(.top .menu-pill,.top .dview,.zdesk,.dock .zfab){display:none!important}
+.minimal-store .dock .chat{box-shadow:0 6px 18px rgba(0,0,0,.25)!important}
 .minimal-store :is(.card,.scard,.pc .ph,.pc .sc){border-radius:0}
 .minimal-store :is(.btn,.chip){border-radius:999px}
 .minimal-store .shophd h1{font-size:clamp(22px,3vw,44px);line-height:1.1;font-weight:650}
@@ -131,7 +137,7 @@
 .minimal-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px}
 .minimal-heading h2{font-size:clamp(19px,2.6vw,36px);font-weight:650;letter-spacing:-.02em}
 .minimal-heading a{text-decoration:underline;text-underline-offset:4px;font-size:12px}
-.minimal-home .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px!important}
+.minimal-home .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px!important}
 .minimal-home .minimal-section{padding-inline:clamp(10px,1.5vw,24px)}
 .minimal-home .minimal-latest{padding-block:17px 28px}
 .minimal-latest .minimal-heading{margin-bottom:12px}
@@ -245,11 +251,11 @@
 .minimal-home .minimal-latest{background:#fff;margin:0;padding:5px clamp(10px,1.5vw,24px) 8px}
 .minimal-latest .minimal-heading{margin-bottom:5px}
 .minimal-home :is(.minimal-product-section,.minimal-home-products) .pc{background:transparent}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in{display:flex;min-height:38px;padding:6px 5px 3px;color:#121212}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .nm{font-size:11px;font-weight:600}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:10px;color:#444}
-.minimal-home .minimal-home-products .pc :is(.ph,.sc){border-radius:9px}
-.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .add{min-height:22px;height:22px}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in{display:flex;min-height:46px;padding:8px 6px 4px;color:#121212}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .nm{font-size:13px;font-weight:600}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .in .pr{font-size:12px;color:#444}
+.minimal-home .minimal-home-products .pc :is(.ph,.sc){border-radius:16px}
+.minimal-home :is(.minimal-product-section,.minimal-home-products) .pc .add{min-height:26px;height:26px}
 .minimal-home .minimal-latest .pc .ph{aspect-ratio:3/4!important}
 .minimal-home .minimal-latest .pc :is(.ph,.sc){border-radius:16px}
 .minimal-home .minimal-bags .pc .ph{aspect-ratio:4/5!important}
@@ -268,12 +274,19 @@
 .minimal-collection-slide{position:relative;min-width:0;scroll-snap-align:start;overflow:hidden;background:#202020;color:#fff}
 .minimal-collection-slide img{position:absolute;inset:0;width:100%;height:100%}
 .minimal-collection-art{object-fit:contain}
+.minimal-collection-slide.has-stack{background:#f1efec}
+.minimal-collection-stack{position:relative;width:100%;height:100%;display:grid;place-items:center}
+.minimal-collection-stack .mcs-photo{position:absolute;inset:auto;top:50%;left:50%;width:44%;aspect-ratio:3/4;object-fit:cover;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.28);transform:translate(-50%,-50%)}
+.minimal-collection-stack .mcs-main{z-index:3}
+.minimal-collection-stack .mcs-left{z-index:2;left:30%;transform:translate(-50%,-46%) rotate(-9deg)}
+.minimal-collection-stack .mcs-right{z-index:1;left:70%;transform:translate(-50%,-46%) rotate(9deg)}
 .minimal-collection-name{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:calc(100% - 32px);width:max-content;text-align:center;color:#fff;font-size:clamp(14px,1.45vw,22px);font-weight:400;letter-spacing:.04em;text-transform:uppercase;line-height:1.2;text-shadow:0 1px 6px #000,0 1px 16px #000}
+.minimal-collection-slide.has-stack .minimal-collection-name{top:auto;bottom:22px;left:50%;transform:translateX(-50%);color:#171717;text-shadow:none;font-weight:600}
 .minimal-collection-controls{position:absolute;z-index:1;inset:12px 12px auto auto;display:flex;gap:5px}
 .minimal-collection-controls button{display:grid;place-items:center;min-width:32px;height:32px;padding:0 8px;background:#fff;color:#111;border-radius:999px;font-size:11px}
 .minimal-collection-controls svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5}
 @media(max-width:700px){
-  .minimal-home .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px!important}
+  .minimal-home .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px!important}
   .minimal-catalog .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .minimal-section{padding-block:22px}
   .minimal-collections{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px}
@@ -321,6 +334,8 @@
   .minimal-collection-slide{border-radius:16px}
   .minimal-collection-art{object-fit:cover;object-position:center top}
   .minimal-collection-name{font-size:clamp(13px,4vw,18px)}
+  .minimal-collection-stack .mcs-photo{width:48%;border-radius:11px;box-shadow:0 10px 26px rgba(0,0,0,.26)}
+  .minimal-collection-slide.has-stack .minimal-collection-name{bottom:14px;font-size:clamp(12px,3.6vw,16px)}
   .minimal-collection-controls{position:static;justify-content:center;margin-top:8px}
   @media(pointer:coarse){
     .minimal-collection-controls button[aria-label="Previous collection"],
