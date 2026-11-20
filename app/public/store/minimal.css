@@ -224,6 +224,7 @@
 .minimal-recommendations .pc :is(.ph,.sc){border-radius:9px}
 .minimal-recommendations .pc .sc,.minimal-recommendations .pc .sc> a{height:100%!important}.minimal-recommendations .pc .sc img{width:100%;height:100%!important;transform:scale(var(--card-zoom,1));object-fit:cover!important}
 .minimal-store [data-page="collections"] .dk{--r1:18px;--sh:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05)}
+.minimal-recommendations .pc,.minimal-recommendations .pc .in{background:transparent;box-shadow:none}
 .minimal-recommendations .pc .in{min-height:41px;padding:6px 2px 2px}
 .minimal-store [data-page="blog"]>.pg.wide{max-width:none;margin:20px auto;padding-inline:4px}
 .minimal-store [data-page="blog"] .bgrid{gap:8px}
