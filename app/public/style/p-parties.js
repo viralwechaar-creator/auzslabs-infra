@@ -7,21 +7,44 @@ page('parties', {
   title: 'Parties', perm: 'sty_view',
   async render(v) {
     v.header({ title: t('Parties') });
-    let q = '', type = '';
-    const list = h('div', { class: 'list' }), kp = h('div', { class: 'kpis' });
-    const chipRow = h('div', { class: 'chips' }, [['', t('All')], ['customer', t('Customers')], ['supplier', t('Suppliers')]].map(([k, l]) =>
-      h('button', { class: 'chip', type: 'button', 'aria-pressed': String(type === k), onclick: () => { type = k; load(); } }, l)));
-    const load = debounce(async () => {
+    let q = '', type = '', request = 0;
+    const list = h('div', { class: 'people-cards' }), kp = h('div', { class: 'kpis' });
+    const count = h('div', { class: 'muted small', 'aria-live': 'polite' });
+    const refresh = () => load(++request);
+    const filters = seg([['', t('All')], ['customer', t('Customers')], ['supplier', t('Suppliers')]], type,
+      (value) => { type = value; refresh(); }, { label: t('Party type') });
+    const load = debounce(async (version) => {
       clear(list).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '20px auto' } }));
-      let rows = []; try { rows = await api('sty_list_parties', { p: { q, type } }) || []; } catch (e) { return clear(list).append(empty('cloudOff', t('Could not load'), e.message)); }
-      const owedToYou = rows.reduce((a, r) => a + (r.theyOweYou || 0), 0), owedByYou = rows.reduce((a, r) => a + (r.youOweThem || 0), 0);
-      clear(kp).append(kpi(t('Owed to you'), inr(owedToYou, 0), '', null, owedToYou > 0 ? 'neg' : ''), kpi(t('You owe'), inr(owedByYou, 0), '', null, owedByYou > 0 ? 'neg' : ''));
-      clear(list).append(...(rows.length ? rows.map((r) => liRow({ icon: r.type === 'customer' ? 'user' : 'truck', title: r.name, sub: [r.phone, r.type === 'customer' ? t('Customer') : t('Supplier'), r.lastAt ? t('Last') + ' ' + fmtDay(r.lastAt) : ''].filter(Boolean).join(' · '),
-        value: r.theyOweYou > 0 ? inr(r.theyOweYou) : r.youOweThem > 0 ? '-' + inr(r.youOweThem) : inr(0), valueSub: r.theyOweYou > 0 ? t('Owes you') : r.youOweThem > 0 ? t('You owe') : t('Settled'),
-        chevron: true, onclick: () => partySheet(r) })) : [empty('wallet', t('No parties yet'), t('Customers and suppliers show here once added.'))]));
+      let rows;
+      try { rows = await api('sty_list_parties', { p: { q, type } }) || []; }
+      catch (error) {
+        if (version === request) clear(list).append(empty('cloudOff', t('Could not load'), error.message,
+          h('button', { class: 'btn', type: 'button', onclick: refresh }, t('Try again'))));
+        return;
+      }
+      if (version !== request) return;
+      const owedToYou = rows.reduce((sum, row) => sum + (Number(row.theyOweYou) || 0), 0);
+      const owedByYou = rows.reduce((sum, row) => sum + (Number(row.youOweThem) || 0), 0);
+      clear(kp).append(kpi(t('Owed to you'), inr(owedToYou, 0)), kpi(t('You owe'), inr(owedByYou, 0)));
+      count.textContent = rows.length + ' ' + t('parties');
+      clear(list).append(...(rows.length ? rows.map((party) => {
+        const receivable = party.theyOweYou > 0;
+        const payable = party.youOweThem > 0;
+        return peopleRecordCard({
+          name: party.name,
+          detail: [party.type === 'customer' ? t('Customer') : t('Supplier'), party.phone,
+            party.lastAt ? t('Last') + ' ' + fmtDay(party.lastAt) : ''].filter(Boolean).join(' · '),
+          amount: inr(receivable ? party.theyOweYou : payable ? party.youOweThem : 0),
+          status: t(receivable ? 'Owes you' : payable ? 'You owe' : 'Settled'),
+          tone: receivable ? 'open' : payable ? 'due' : 'settled',
+          open: () => partySheet(party),
+        });
+      }) : [empty('wallet', t(q || type ? 'No matching parties' : 'No parties yet'),
+        t(q || type ? 'Try another search or filter.' : 'Customers and suppliers show here once added.'))]));
     }, 200);
-    v.root.append(h('div', { class: 'grid' }, kp, searchField(t('Name or phone'), (x) => { q = x; load(); }), chipRow, list));
-    load();
+    v.root.append(h('div', { class: 'grid' }, kp, searchField(t('Name or phone'), (value) => { q = value; refresh(); }), filters, count, list));
+    refresh();
+
   },
 });
 function partySheet(p0) {
