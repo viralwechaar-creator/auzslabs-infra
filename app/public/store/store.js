@@ -315,21 +315,42 @@ function openMenu() {
   m.onclick = (e) => { if (e.target === m) close(); };
 }
 function openMinimalMenu() {
+  const trigger = document.activeElement;
+  const dialog = E('dialog', { class: 'minimal-mega-menu', 'aria-label': 'Store menu' });
+  const item = (label, path, extra) => E('a', { href: link(path), onclick: () => dialog.close() }, label, extra);
+  const action = (label, glyph, run) => E('button', { class: 'ic', type: 'button', 'aria-label': label,
+    onclick: () => { dialog.close(); run(); } }, icon(glyph));
+  const close = action('Close menu', 'x', () => {});
+  const collections = D.collections.filter((collection) => collection.styleIds.some((id) => BYID[id])).slice(0, 5);
   const items = [
-    ['Explore', [['New arrivals', 'shop?new=1'], ['All products', 'shop'], ['Collections', 'collections']]],
+    ['Featured', [['New arrivals', 'shop?new=1'], ...collections.map((c) => [c.name, 'shop?col=' + encodeURIComponent(c.id)]), ['All products', 'shop']]],
     ...groups().map(([title, categories]) => [title, categories.map((category) => [category, 'shop?cat=' + encodeURIComponent(category)])]),
     ['Shop by colour', FAM.filter(([name]) => STY.some((style) => colours(style).some((colour) => famOf(colour) === name)))
-      .map(([name]) => [name, 'shop?fam=' + encodeURIComponent(name)])],
-    ['Discover', [['Our story', 'about'], ['Journal', 'blog'], ['Collaborations', 'media'], ['Walk-in stores', 'stores'],
-      ...minimalPages().map((page) => [page.title, 'page/' + page.slug])]],
-    ['Help', [['My account', 'me'], ['Track your order', 'orders'], ['FAQs', 'faq'], ['Contact', 'contact'], ['Sitemap', 'sitemap']]],
+      .map(([name, , palette]) => [name, 'shop?fam=' + encodeURIComponent(name),
+        E('span', { class: 'minimal-mega-swatches', 'aria-hidden': 'true' }, palette.map((colour) => E('i', { style: { backgroundColor: colour } })) )])],
   ];
-  const panel = sheet('Menu', E('div', { class: 'minimal-menu-sections' }, items.filter((entry) => entry[1].length).map(([title, links]) =>
-    E('nav', { 'aria-label': title }, E('h3', null, title), links.map(([label, path]) =>
-      E('a', { href: link(path), onclick: () => panel.close() }, label))))));
-  panel.el.classList.add('minimal-bag-drawer', 'minimal-menu-drawer');
-  panel.el.querySelector('button').focus();
-  panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
+  dialog.append(E('div', { class: 'minimal-mega-top' },
+    E('nav', { 'aria-label': 'Featured links' }, item('New in', 'shop?new=1'), item('Collections', 'collections')),
+    E('div', { class: 'minimal-mega-brand' }, item(D.shop.name, '')),
+    E('div', { class: 'minimal-mega-actions' }, action('Search', 'search', openMinimalSearch),
+      action('Notifications', 'bell', openMinimalNotifications), item('My account', 'me'), action('Bag', 'bag', openMinimalBag), close)),
+    E('div', { class: 'minimal-mega-grid' }, items.filter(([, links]) => links.length).map(([title, links]) =>
+      E('nav', { class: title === 'Featured' ? 'minimal-mega-featured' : '', 'aria-label': title },
+        title === 'Featured' ? null : E('h3', null, title), E('div', null, links.map(([label, path, extra]) => item(label, path, extra)))))),
+    E('nav', { class: 'minimal-mega-secondary', 'aria-label': 'More from the store' },
+      item('Our story', 'about'), item('Journal', 'blog'), item('Collaborations', 'media'), item('Walk-in stores', 'stores'),
+      item('Wishlist', 'wishlist'), item('Track your order', 'orders'), item('FAQs', 'faq'), item('Contact', 'contact'), item('Sitemap', 'sitemap'),
+      minimalPages().map((page) => item(page.title, 'page/' + page.slug))));
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog && event.clientY > dialog.getBoundingClientRect().bottom) dialog.close();
+  });
+  dialog.addEventListener('close', () => {
+    dialog.remove();
+    if (trigger?.isConnected && !document.querySelector('.sheetwrap')) trigger.focus();
+  }, { once: true });
+  document.body.append(dialog);
+  dialog.showModal();
+  close.focus();
 }
 function openSearch() {
   if (cfg().template === 'minimal') return openMinimalSearch();
@@ -510,12 +531,14 @@ function minimalHome(v) {
     heroImage.src = heroImages[slide];
     counter.textContent = String(slide + 1).padStart(2, '0') + ' / ' + String(heroImages.length).padStart(2, '0');
   };
-  v.append(E('section', { class: 'minimal-hero' }, heroImage,
+  v.append(E('section', { class: 'minimal-hero' + (heroImage ? ' has-image' : '') }, heroImage,
     E('div', { class: 'minimal-hero-copy' }, E('h1', null, c.heroTitle || D.shop.name),
       E('a', { href: link('shop') }, c.heroCta || 'Shop now')),
     heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav' },
       E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')), counter,
       E('button', { type: 'button', 'aria-label': 'Next banner', onclick: () => step(1) }, icon('right'))) : null));
+  if (featured.length) v.append(E('section', { class: 'minimal-section minimal-latest' },
+    heading('Latest drop', link('shop?new=1'), 'Discover more'), gridOf(featured)));
   const configuredStories = (c.minimalStories || []).filter((story) => story?.title && story.image).map((story) => ({
     name: story.title, photo: story.image, href: minimalDestination(story.link), cta: story.cta,
   }));
@@ -525,8 +548,6 @@ function minimalHome(v) {
     E('div', { class: 'minimal-stories' }, stories.map((story) =>
       E('button', { type: 'button', onclick: (event) => openMinimalStory(stories, stories.indexOf(story), event.currentTarget) },
         E('img', { src: story.photo, alt: '', loading: 'lazy' }), E('span', null, story.name))))));
-  if (featured.length) v.append(E('section', { class: 'minimal-section' },
-    heading('Latest drop', link('shop?new=1'), 'View all'), gridOf(featured)));
   if (tiles.length) v.append(E('section', { class: 'minimal-section' },
     heading('Collections', link('collections'), 'Explore'),
     E('div', { class: 'minimal-collections' }, tiles.slice(0, 3).map((tile) =>
@@ -1254,11 +1275,16 @@ function route() {
   if (id !== 'p' && !(id === 'blog' && parts[1])) setMeta(document.title,
     (page?.body || '').slice(0, 150) || cfg().tagline || ('Shop online at ' + D.shop.name),
     page?.image || ((D.styles || [])[0] && photos((D.styles || [])[0])[0]) || '', canonical);
-  window.scrollTo(0, 0); document.body.classList.add('atop');
+  window.scrollTo(0, 0); navState();
   TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
   if (id === 'checkout') TR.push('checkout', null, { step: 'start' });
 }
-const heroEnd = () => { const h = document.querySelector('.hero,.minimal-hero'); return h ? h.offsetHeight - 70 : window.innerHeight * 0.9; };
+const heroEnd = () => {
+  const minimalHero = document.querySelector('.minimal-hero');
+  if (minimalHero) return minimalHero.offsetHeight;
+  const hero = document.querySelector('.hero');
+  return hero ? hero.offsetHeight - 70 : window.innerHeight * 0.9;
+};
 const navState = () => { document.body.classList.toggle('atop', window.scrollY < 40); document.body.classList.toggle('pasthero', window.scrollY > heroEnd()); const dp = Math.max(0, Math.min(1, (window.scrollY - (heroEnd() - 260)) / 220)); document.documentElement.style.setProperty('--dp', dp.toFixed(3)); document.body.classList.toggle('dockon', dp > 0.6); };
 window.addEventListener('scroll', navState, { passive: true }); window.addEventListener('hashchange', () => setTimeout(navState, 50));
 function ingest(d) {
