@@ -47,12 +47,13 @@ function cashCountSheet(target) {
         return h('div', { class: 'row', style: { gap: '4px', alignItems: 'center' } }, h('span', { style: { width: '50px', flex: 'none' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
       };
       const pairs = []; for (let i = 0; i < DENOMS.length; i += 2) pairs.push([DENOMS[i], DENOMS[i + 1]]);
-      // Columns hug their own content (not a stretched 1fr/1fr split) so the two rows of a pair sit close
-      // together like the Accounting app's own counter -- a 1fr/1fr grid left a wide dead gap down the middle
-      // of a 980px-wide sheet since each row is only ~220px wide.
-      return h('div', { class: 'grid', style: { gap: '6px' } }, pairs.map(([a, b]) => h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, max-content)', justifyContent: 'space-between', gap: '8px 20px' } }, row(a), b != null ? row(b) : h('span'))));
+      // Columns hug their own content and sit centred with a small, fixed gap -- NOT space-between, which
+      // throws all the sheet's leftover width into one gap down the middle (the actual cause of the dead
+      // centre space a wide sheet kept showing). Together with dropping the sheet's own extra width (below),
+      // the whole card is now only as wide as two note rows need, like the Accounting app's own counter.
+      return h('div', { class: 'grid', style: { gap: '6px' } }, pairs.map(([a, b]) => h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, max-content)', justifyContent: 'center', gap: '8px 24px' } }, row(a), b != null ? row(b) : h('span'))));
     };
-    const s = sheet({ title: t('Count cash'), wide: true, body: h('div', { class: 'grid' },
+    const s = sheet({ title: t('Count cash'), body: h('div', { class: 'grid' },
       h('div', { class: 'kv' }, h('span', null, t('Cash to receive')), h('b', { class: 'num' }, inr(target))),
       quick.length ? h('div', { class: 'chips' }, quick.map((v) => h('button', { class: 'chip', type: 'button', onclick: () => { Object.keys(cnt).forEach((k) => cnt[k] = 0); Object.assign(cnt, dnChange(v)); upd(); } }, inr(v)))) : null,
       h('div', { class: 'cap' }, t('Notes and coins received')), grid(cnt, ins, subs, (d, x) => { cnt[d] = Math.max(0, (cnt[d] || 0) + x); }),
