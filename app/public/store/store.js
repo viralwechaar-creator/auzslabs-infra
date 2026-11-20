@@ -564,14 +564,10 @@ function minimalCollectionTiles() {
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
   return collections.map((col) => {
     const members = col.styleIds.map((id) => BYID[id]).filter(Boolean);
-    // Up to 3 distinct product photos for the fanned-stack carousel slide (reference: a competitor's
-    // homepage collage of overlapping product shots) -- falls back to a single full-bleed photo below
-    // when a collection has only one real product photo to show.
-    const stackPhotos = [...new Set(members.map((s) => pickPic(s, 'banner')).filter(Boolean))].slice(0, 3);
+    const firstPhoto = members.map((s) => pickPic(s, 'banner')).find(Boolean);
     return {
       name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: collectionBanner(col),
-      photo: col.image || stackPhotos[0],
-      stackPhotos,
+      photo: col.image || firstPhoto,
     };
   });
 }
@@ -623,24 +619,14 @@ function minimalHome(v) {
   const locations = storeList();
   if (locations.length) v.append(minimalHomeStores(locations));
 }
-// A fanned stack of up to 3 product photos (reference: a competitor's homepage collage of overlapping
-// shots) instead of one flat banner photo -- falls back to the plain full-bleed photo when a collection
-// doesn't have at least 2 distinct product photos to fan out.
 function minimalCollectionArt(banner) {
-  const photos = banner.stackPhotos || [];
-  if (photos.length < 2) {
-    return E('picture', {}, banner.photo && banner.widePhoto ? E('source', { media: '(max-width:700px)', srcset: banner.photo }) : null,
-      E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' }));
-  }
-  return E('div', { class: 'minimal-collection-stack' },
-    photos[2] ? E('img', { class: 'mcs-photo mcs-right', src: photos[2], alt: '', loading: 'lazy' }) : null,
-    photos[1] ? E('img', { class: 'mcs-photo mcs-left', src: photos[1], alt: '', loading: 'lazy' }) : null,
-    E('img', { class: 'mcs-photo mcs-main', src: photos[0], alt: '', loading: 'lazy' }));
+  return E('picture', {}, banner.photo && banner.widePhoto ? E('source', { media: '(max-width:700px)', srcset: banner.photo }) : null,
+    E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' }));
 }
 function minimalCollectionCarousel(banners) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const track = E('div', { class: 'minimal-collection-track' + (banners.length > 1 ? ' has-multiple' : ''), tabindex: '0', 'aria-label': 'Collection banners' },
-    banners.map((banner) => E('a', { class: 'minimal-collection-slide' + ((banner.stackPhotos || []).length >= 2 ? ' has-stack' : ''), href: banner.href, 'aria-label': banner.name },
+    banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href, 'aria-label': banner.name },
       minimalCollectionArt(banner),
       E('span', { class: 'minimal-collection-name', 'aria-hidden': 'true' }, banner.name))));
   const step = (direction) => {
