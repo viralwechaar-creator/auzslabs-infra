@@ -21,7 +21,7 @@ export async function newCtx(browser, stack, dev = { w: 1280, h: 800 }) {
   if (!dev.simple) await fullView(ctx);
   // On phones the sign-in form is a bottom sheet that opens after tapping the big "Sign in" pill; tests fill the form directly, so keep the sheet open.
   await ctx.addInitScript(() => {
-    const open = () => document.querySelectorAll('.login-form-pane:not(.open),.auth-form-pane:not(.open)').forEach((e) => e.classList.add('open'));
+    const open = () => document.querySelectorAll('.login-form-pane:not(.open),.auth-form-pane:not(.open),.login2-form:not(.open)').forEach((e) => e.classList.add('open'));
     new MutationObserver(open).observe(document, { childList: true, subtree: true }); open();
   });
   return ctx;
