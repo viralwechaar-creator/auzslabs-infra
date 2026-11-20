@@ -507,9 +507,17 @@ function gridOf(list, withBlanks) {
   list.forEach((s, i) => { g.append(card(s)); if (withBlanks && (i + 1) % 7 === 0 && i + 1 < list.length) g.append(E('div', { class: 'blank' + (((i + 1) / 7) % 2 ? '' : ' ghost') + ' d', 'aria-hidden': 'true' })); });
   return g;
 }
+const minimalCategoryGroups = {
+  bags: { label: 'Bags', pattern: /\bbags?\b|backpack|tote/i },
+  accessories: { label: 'Accessories', pattern: /accessor|\bcap(s)?\b|\bhat(s)?\b|phone case|wallet|belt|jewel/i },
+};
+function minimalGroupProducts(group, products = STY) {
+  const { pattern } = minimalCategoryGroups[group];
+  return products.filter((product) => pattern.test(product.category || ''));
+}
 function minimalHome(v) {
   const c = cfg();
-  const featured = newest(4);
+  const featured = newest(12);
   const configuredImages = (c.heroImages || []).filter(Boolean);
   const heroImages = configuredImages.length ? configuredImages : featured.map((s) => pickPic(s, 'hero')).filter(Boolean);
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
@@ -537,40 +545,59 @@ function minimalHome(v) {
     heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav' },
       E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')), counter,
       E('button', { type: 'button', 'aria-label': 'Next banner', onclick: () => step(1) }, icon('right'))) : null));
-  if (featured.length) v.append(E('section', { class: 'minimal-section minimal-latest' },
-    heading('Latest drop', link('shop?new=1'), 'Discover more'), gridOf(featured)));
+  if (featured.length) v.append(minimalProductRail('Latest drop', featured, link('shop?new=1'), 'minimal-latest'));
+  const bags = minimalGroupProducts('bags');
+  if (bags.length) v.append(minimalProductRail('Bags', bags, link('shop?group=bags'), 'minimal-bags'));
   const configuredStories = (c.minimalStories || []).filter((story) => story?.title && story.image).map((story) => ({
     name: story.title, photo: story.image, href: minimalDestination(story.link), cta: story.cta,
   }));
   const stories = (configuredStories.length ? configuredStories : tiles.filter((tile) => tile.photo)).slice(0, 12);
-  if (stories.length) v.append(E('section', { class: 'minimal-section' },
-    heading('Shop the stories', link('collections'), 'All collections'),
-    E('div', { class: 'minimal-stories' }, stories.map((story) =>
-      E('button', { type: 'button', onclick: (event) => openMinimalStory(stories, stories.indexOf(story), event.currentTarget) },
-        E('img', { src: story.photo, alt: '', loading: 'lazy' }), E('span', null, story.name))))));
-  if (tiles.length) v.append(E('section', { class: 'minimal-section' },
-    heading('Collections', link('collections'), 'Explore'),
-    E('div', { class: 'minimal-collections' }, tiles.slice(0, 3).map((tile) =>
-      E('a', { class: 'minimal-collection', href: tile.href },
-        tile.photo ? E('img', { src: tile.photo, alt: '', loading: 'lazy' }) : null,
-        E('span', null, tile.name))))));
-  const feature = tiles.find((tile) => tile.photo);
-  if (feature) v.append(E('section', { class: 'minimal-editorial' },
-    E('a', { href: feature.href, 'aria-label': feature.name }, E('img', { src: feature.photo, alt: '', loading: 'lazy' })),
-    E('div', null, E('h2', null, feature.name), E('a', { href: feature.href }, 'Shop collection ↗'))));
-  const more = STY.filter((style) => !featured.includes(style));
-  if (more.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
-    heading('Discover more', link('shop'), 'Shop all'), gridOf(more.slice(0, 8))));
-  for (const collection of collections.slice(0, 3)) {
-    const products = collection.styleIds.map((id) => BYID[id]).filter(Boolean);
-    if (products.length > 1) v.append(minimalProductRail(collection.name, products, link('shop?col=' + encodeURIComponent(collection.id))));
-  }
-  for (const category of categories.filter((name) => STY.filter((product) => product.category === name).length > 1).slice(0, 4)) {
-    const products = STY.filter((product) => product.category === category);
-    v.append(minimalProductRail(category, products, link('shop?cat=' + encodeURIComponent(category))));
+  const banners = tiles.filter((tile) => tile.photo).slice(0, 8);
+  if (banners.length) v.append(minimalCollectionCarousel(banners, stories));
+  if (STY.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
+    heading('Featured products', link('shop'), 'Shop all'), gridOf(STY.slice(0, 8))));
+  const accessories = minimalGroupProducts('accessories');
+  if (accessories.length) {
+    const category = accessories[0].category;
+    const singleCategory = accessories.every((product) => product.category === category);
+    v.append(minimalProductRail(singleCategory ? category : 'Accessories', accessories,
+      singleCategory ? link('shop?cat=' + encodeURIComponent(category)) : link('shop?group=accessories'), 'minimal-accessories'));
   }
   const locations = storeList();
   if (locations.length) v.append(minimalHomeStores(locations));
+}
+function minimalCollectionCarousel(banners, stories) {
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const track = E('div', { class: 'minimal-collection-track', tabindex: '0', 'aria-label': 'Collection banners' },
+    banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href },
+      E('img', { src: banner.photo, alt: '', loading: 'lazy' }),
+      E('span', null, E('strong', null, banner.name), E('span', null, 'Shop now')))));
+  let paused = reducedMotion.matches;
+  const pause = E('button', { type: 'button', onclick: () => {
+    paused = !paused;
+    pause.textContent = paused ? 'Play' : 'Pause';
+  } }, paused ? 'Play' : 'Pause');
+  const step = (direction) => {
+    const current = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    const next = (current + direction + banners.length) % banners.length;
+    track.scrollTo({ left: next * track.clientWidth, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+  };
+  const section = E('section', { class: 'minimal-collection-carousel', 'aria-label': 'Discover collections' }, track,
+    E('div', { class: 'minimal-collection-controls' },
+      stories.length ? E('button', { type: 'button', onclick: (e) => openMinimalStory(stories, 0, e.currentTarget) }, 'Stories') : null,
+      banners.length > 1 ? [
+        E('button', { type: 'button', 'aria-label': 'Previous collection', onclick: () => step(-1) }, icon('left')),
+        pause,
+        E('button', { type: 'button', 'aria-label': 'Next collection', onclick: () => step(1) }, icon('right')),
+      ] : null));
+  if (banners.length > 1) {
+    const timer = setInterval(() => {
+      if (!section.isConnected) return clearInterval(timer);
+      const bounds = section.getBoundingClientRect();
+      if (!paused && !document.hidden && !section.matches(':hover,:focus-within') && bounds.top < innerHeight && bounds.bottom > 0) step(1);
+    }, 5000);
+  }
+  return section;
 }
 function openMinimalStory(stories, index, trigger) {
   const dialog = E('dialog', { class: 'minimal-story-viewer', 'aria-label': 'Shop the stories' });
@@ -606,9 +633,9 @@ function minimalRail(content, label) {
       E('button', { type: 'button', 'aria-label': 'Scroll ' + label + ' right', onclick: move(1) }, icon('right'))),
   };
 }
-function minimalProductRail(title, products, destination) {
+function minimalProductRail(title, products, destination, style = '') {
   const { track, controls } = minimalRail(products.map((product) => card(product)), title);
-  return E('section', { class: 'minimal-section minimal-product-section' },
+  return E('section', { class: 'minimal-section minimal-product-section ' + style },
     E('div', { class: 'minimal-heading' }, E('h2', null, title), E('div', { class: 'minimal-section-actions' },
       controls, E('a', { class: 'minimal-discover', href: destination }, 'Discover more'))), track);
 }
@@ -670,6 +697,7 @@ function facetValues(value) {
 }
 function filterSet(q) {
   let list = STY.slice();
+  if (cfg().template === 'minimal' && Object.hasOwn(minimalCategoryGroups, q.group)) list = minimalGroupProducts(q.group, list);
   if (q.cat) list = list.filter((s) => s.category === q.cat);
   if (q.col) { const cl = D.collections.find((x) => x.id === q.col); list = cl ? list.filter((s) => cl.styleIds.includes(s.id)) : []; }
   if (q.colour) list = list.filter((s) => colours(s).includes(q.colour));
@@ -765,9 +793,11 @@ V.shop = (v) => {
   let dens = false; try { dens = localStorage.getItem('st.dens') === '1'; } catch (x) {}
   const gw = E('div', { class: 'gw' + (dens ? ' dense' : '') });
   const colName = q.col ? (cols.find((x) => x.id === q.col) || {}).name : '';
-  const title = colName || q.cat || (q.new ? 'New arrivals' : 'All products');
+  const groupName = cfg().template === 'minimal' && Object.hasOwn(minimalCategoryGroups, q.group) ? minimalCategoryGroups[q.group].label : '';
+  const title = colName || q.cat || groupName || (q.new ? 'New arrivals' : 'All products');
   for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? (q[k] === 'sold-out' ? 'Out of stock' : 'In stock') : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
+  if (groupName) act.push(['group', groupName]);
   if (cfg().template === 'minimal') {
     const selectedSizes = facetValues(q.sizes), selectedColours = facetValues(q.colours);
     if (selectedSizes.length) act.push(['sizes', 'Size: ' + selectedSizes.join(', ')]);
@@ -785,7 +815,7 @@ V.shop = (v) => {
     applyDensity(LS.get('compact-products', false) === true);
     catalog.append(
       E('nav', { class: 'minimal-category-nav', 'aria-label': 'Product categories' },
-        E('a', { href: link('shop'), 'aria-current': !q.cat && !q.col && !q.new ? 'page' : null }, 'View all'),
+        E('a', { href: link('shop'), 'aria-current': !q.cat && !q.col && !q.new && !groupName ? 'page' : null }, 'View all'),
         categories.map((category) => E('a', { href: link('shop?cat=' + encodeURIComponent(category)),
           'aria-current': q.cat === category ? 'page' : null }, category))),
       E('div', { class: 'minimal-heading' }, E('div', null, E('h1', null, title), E('span', { class: 'mut' }, list.length + (list.length === 1 ? ' product' : ' products'))),
