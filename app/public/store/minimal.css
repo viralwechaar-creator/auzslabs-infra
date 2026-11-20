@@ -265,7 +265,9 @@
 .minimal-collection-carousel{position:relative;margin:14px clamp(10px,1.5vw,24px)}
 .minimal-collection-track{display:grid;grid-auto-flow:column;grid-auto-columns:100%;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;border-radius:25px}
 .minimal-collection-slide{position:relative;aspect-ratio:16/9;max-height:min(90svh,760px);scroll-snap-align:start;overflow:hidden;background:#202020;color:#fff}
-.minimal-collection-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.minimal-collection-slide img{position:absolute;inset:0;width:100%;height:100%}
+.minimal-collection-backdrop{object-fit:cover;filter:blur(26px) brightness(.65);transform:scale(1.12)}
+.minimal-collection-art{object-fit:contain}
 .minimal-collection-controls{position:absolute;z-index:1;inset:12px 12px auto auto;display:flex;gap:5px}
 .minimal-collection-controls button{display:grid;place-items:center;min-width:32px;height:32px;padding:0 8px;background:#fff;color:#111;border-radius:999px;font-size:11px}
 .minimal-collection-controls svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5}
