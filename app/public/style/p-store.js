@@ -4,12 +4,12 @@
 const OST = { tab: 'orders', status: 'new' };
 const PAYL = { cod: 'Cash on delivery', upi: 'UPI', online: 'Card / online' };
 const ORD_STATUS = [['new', 'New'], ['confirmed', 'Confirmed'], ['packed', 'Packed'], ['shipped', 'Shipped'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']];
-const storeLink = (slug, template) => 'https://' + slug + '.auzslab.in/' + (template === '2' ? 'store2.html' : 'store.html');
-// Template 2 (app/public/store2.html) is a paid add-on: entitled the same way every other add-on is
-// (tenant_settings.features, same featureOn()-style check shell.js already uses for the whole app gate).
+const storeLink = (slug) => 'https://' + slug + '.auzslab.in/store.html';
+// Minimal is a paid add-on: entitled the same way every other add-on is (tenant_settings.features, same
+// featureOn()-style check shell.js already uses for the whole app gate). Template 2 was retired (db/342) --
+// only Classic and Minimal remain.
 const storeTemplateOn = (feature) => S.dash?.features?.[feature] === true && S.dash?.enabled_features?.[feature] !== false;
 const storeTemplates = () => [['1', t('Classic')],
-  ...(storeTemplateOn('style_template_two') ? [['2', t('Template 2')]] : []),
   ...(storeTemplateOn('style_template_minimal') ? [['minimal', t('Minimal')]] : [])];
 
 page('store', {
@@ -111,16 +111,16 @@ async function editor(host) {
   const minimalPages = Array.isArray(C.minimalPages) ? C.minimalPages : [];
   const reqState = C.payReq === 'live' ? banner('ok', 'check', t('Online card payments are switched on for your store.')) : C.payReq === 'requested' ? banner('', 'clock', t('You asked for online card payments. AUZslab will contact you.')) : null;
 
-  const linkIn = h('input', { class: 'input grow', readonly: true, value: storeLink(C.slug, C.template), 'aria-label': t('Store link') });
-  const linkA = h('a', { class: 'btn sm', href: storeLink(C.slug, C.template), target: '_blank', rel: 'noopener' }, t('Open'));
-  const repaintLink = () => { const l = storeLink(C.slug, C.template); linkIn.value = l; linkA.setAttribute('href', l); };
+  const linkIn = h('input', { class: 'input grow', readonly: true, value: storeLink(C.slug), 'aria-label': t('Store link') });
+  const linkA = h('a', { class: 'btn sm', href: storeLink(C.slug), target: '_blank', rel: 'noopener' }, t('Open'));
+  const repaintLink = () => { const l = storeLink(C.slug); linkIn.value = l; linkA.setAttribute('href', l); };
   const tplBody = h('div', { class: 'card grid' });
   const paintTpl = () => {
     clear(tplBody);
     const choices = storeTemplates();
     if (choices.length === 1) { tplBody.append(h('div', { class: 'cap' }, t('Ask AUZslab to add more storefront templates to your plan.'))); return; }
     tplBody.append(seg(choices, C.template, (x) => { C.template = x; repaintLink(); paintTpl(); }, { full: true }),
-      C.template === '2' ? h('div', { class: 'cap' }, t('Your store link now opens the new black & white template. Switch back any time -- nothing in your catalogue changes.')) : null);
+      C.template === 'minimal' ? h('div', { class: 'cap' }, t('Your store link now opens the new Minimal template. Switch back any time -- nothing in your catalogue changes.')) : null);
   };
   paintTpl();
 

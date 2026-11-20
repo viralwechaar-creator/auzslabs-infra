@@ -1396,12 +1396,6 @@ function ingest(d) {
   STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
 }
-// A tenant that switched to Template 2 (Settings -> Online store -> Store) still has this exact URL
-// (store.html) saved everywhere -- bookmarks, old links, QR codes, search results. Rather than ask
-// them to replace all of those, this file sends a visitor straight on to store2.html the instant it
-// learns the tenant picked template '2'; store2.html itself never redirects back, so it stays an
-// open preview regardless of which template is actually live (see store2/store2.js's own comment).
-const toTemplate2 = () => location.replace('/store2.html' + location.search + location.hash);
 async function boot() {
   const app = $('#app');
   if (!location.hash) {
@@ -1414,13 +1408,16 @@ async function boot() {
   if (!SLUG) { app.append(E('div', { class: 'spin' })); clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Open this store from the shop address'), E('div', { class: 'mut' }, 'For example yourshop.auzslab.in/store.html'))); return; }
   // instant first paint from the last visit; the fresh catalogue is fetched right behind it
   let cached = null; try { cached = JSON.parse(localStorage.getItem('st.cat.' + SLUG) || 'null'); } catch (e) { cached = null; }
-  if (cached && cached.config && cached.config.template === '2') return toTemplate2();
+  // Template 2 was retired (db/342): a browser that cached a config from before that -- store2.html no longer
+  // exists -- must not try to use it; drop the stale cache and fall through to a fresh fetch, which can only
+  // ever return '1' or 'minimal' now.
+  if (cached && cached.config && cached.config.template === '2') cached = null;
   const fresh = rpc('public_sty_store', { p_slug: SLUG });
   const fail = (e) => { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Could not open the store'), E('div', { class: 'mut' }, e.message))); };
   const closed = (d) => { clear(app).append(E('div', { class: 'empty' }, E('h1', null, d.name || 'Store'), E('div', { class: 'mut' }, 'Our online store is not open yet. Please check back soon.'))); document.title = d.name || 'Store'; };
   if (cached && cached.styles && !cached.closed) {
     ingest(cached); shell(); window.addEventListener('hashchange', route); route();
-    fresh.then((d) => { if (!d || d.closed) return; if (d.config && d.config.template === '2') return toTemplate2(); try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify(d)); } catch (e) { /* storage full */ }
+    fresh.then((d) => { if (!d || d.closed) return; try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify(d)); } catch (e) { /* storage full */ }
       ingest(d); const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0]; if (!['checkout', 'order', 'orders', 'me'].includes(h) && !document.querySelector('.sheetwrap')) { const y = scrollY; route(); scrollTo(0, y); } }).catch(() => {});
     return;
   }
@@ -1428,7 +1425,6 @@ async function boot() {
   let d; try { d = await fresh; } catch (e) { fail(e); return; }
   if (!d) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'This store was not found'))); return; }
   if (d.closed) { closed(d); return; }
-  if (d.config && d.config.template === '2') return toTemplate2();
   try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify(d)); } catch (e) { /* storage full */ }
   ingest(d); shell(); window.addEventListener('hashchange', route); route();
 }
