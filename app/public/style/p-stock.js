@@ -126,7 +126,7 @@ function chipEditor(initial, suggestions, label, cap) {
   node.peek = () => [...items]; node.get = () => { addTyped(); return [...items]; }; node.setSuggestions = (s) => { suggestions = s; paint(); };
   return node;
 }
-function styleForm(s, done) {
+function styleForm(s, done, scannedBarcode = '') {
   const isNew = !s;
   const f = {
     name: input({ value: s ? s.name : '', placeholder: 'Blue slim shirt' }), brand: input({ value: s ? s.brand || '' : '' }), gender: selectEl(['', 'Men', 'Women', 'Kids', 'Unisex'], s ? s.gender || '' : ''),
@@ -240,7 +240,11 @@ function styleForm(s, done) {
         if (!c2.length && z2.length) c2 = ['']; if (!z2.length && c2.length) z2 = [''];
         const keys = []; c2.forEach((c) => z2.forEach((z) => keys.push(c + '|' + z)));
         p.variantIds = {}; keys.forEach((k) => { p.variantIds[k] = uid(); });
-        const codes = takeBarcodes(keys.length);   // reserved while online, so tags can be printed even with no connection
+        if (scannedBarcode && keys.length !== 1) {
+          toast(t('Use one variant for the scanned barcode'), { err: true });
+          return false;
+        }
+        const codes = scannedBarcode ? [scannedBarcode] : takeBarcodes(keys.length);   // reserved while online, so tags can be printed even with no connection
         if (codes) { p.barcodes = {}; keys.forEach((k, i) => { p.barcodes[k] = codes[i]; }); }
       }
       const r = await api('sty_save_style', { p });

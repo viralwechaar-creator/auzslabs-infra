@@ -48,6 +48,24 @@ page('sell', {
     const chips = h('div', { class: 'chips' });
     const filterHost = h('span');
     const scanHint = h('p', { class: 'muted small' }, t('Scan a barcode or type it and press Enter.'));
+    const unknownItem = h('div', { hidden: true }, h('button', { class: 'btn', type: 'button', onclick: () => {
+      const code = unknownItem.dataset.code;
+      if (!code || !can('sty_manage') || findBarcode(code) || findStyleCode(code)) return;
+      styleForm(null, async () => {
+        unknownItem.hidden = true;
+        try { await loadCatalog(true); } catch (error) { return fail(error); }
+        if (onCode(code, true)) {
+          sf.input.value = '';
+          UI.q = '';
+          paintGrid();
+        }
+      }, code);
+    } }, t('Add scanned item')));
+    function offerUnknownItem(code) {
+      if (!UI.scanFirst || !can('sty_manage')) return;
+      unknownItem.dataset.code = code;
+      unknownItem.hidden = false;
+    }
     const scanMode = h('button', { class: 'btn', type: 'button', onclick: () => {
       UI.scanFirst = !UI.scanFirst;
       paintScanMode();
@@ -58,6 +76,7 @@ page('sell', {
       scanMode.setAttribute('aria-pressed', String(UI.scanFirst));
       for (const node of [chips, grid, filterHost]) node.hidden = UI.scanFirst;
       scanHint.hidden = !UI.scanFirst;
+      unknownItem.hidden = true;
       // The existing grid and chip styles set display directly.
       chips.style.display = grid.style.display = UI.scanFirst ? 'none' : '';
     }
@@ -65,16 +84,20 @@ page('sell', {
     function paintChips() { clear(chips).append(...COL.list.filter((c) => (c.styleIds || []).length).map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.col === c.id), onclick: () => { UI.col = UI.col === c.id ? null : c.id; paintChips(); paintGrid(); } }, icon('tag', 14), c.name)), ...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.cat === c), onclick: () => { UI.cat = c; paintChips(); paintGrid(); } }, c === 'All' ? t('All') : c))); }
     // camera scan: say what happened on the scanner itself, so every scan has a visible answer
     function scanCode(code) {
+      unknownItem.hidden = true;
       const f = findBarcode(code);
       if (f) { const ok = addLine(f.style, f.variant); const l = BILL.lines.find((z) => z.variantId === f.variant.id); if (ok) paintCart(); return { text: `${f.style.name} · ${[f.variant.colour, f.variant.size].filter(Boolean).join(' ')} · ${t('on the bill')}: ${l ? l.qty : 1}`, bad: !ok }; }
       if (findStyleCode(code)) { onCode(code); return null; }
+      offerUnknownItem(code);
       return { text: t('No item with that code') + ': ' + code, bad: true };
     }
     function onCode(code, fromEnter) {
+      unknownItem.hidden = true;
       const f = findBarcode(code);
       if (f) { if (addLine(f.style, f.variant)) { paintCart(); } return true; }
       const sc = findStyleCode(code); if (sc) { pickVariant(sc); return true; }
       if (fromEnter) return false;
+      offerUnknownItem(code);
       toast(t('No item with that code'), { err: true }); beep(false); return false;
     }
     function priceRange(s) { const ps = s.variants.map((x) => x.price); const a = Math.min(...ps), b = Math.max(...ps); return a === b ? inr(a) : inr(a) + '+'; }
@@ -173,7 +196,7 @@ page('sell', {
     window.addEventListener('sty:cartchanged', paintCart);
     cleanupHook(v, () => window.removeEventListener('sty:cartchanged', paintCart));
     paintChips(); paintFilter(); paintGrid(); paintCart(); paintScanMode();
-    clear(root).append(h('div', { class: 'sell-l', 'data-title': t('All Products') }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn, scanMode), scanHint, chips, grid), cartHost, bar);
+    clear(root).append(h('div', { class: 'sell-l', 'data-title': t('All Products') }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn, scanMode), scanHint, unknownItem, chips, grid), cartHost, bar);
     if (isDesk()) setTimeout(() => sf.input.focus(), 50);
     // hardware barcode scanners type the code fast and press Enter, even when the search box is not focused
     let buf = '', last = 0;
