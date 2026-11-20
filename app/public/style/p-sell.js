@@ -2,7 +2,7 @@
    (phone): the bill. Pick a style -> choose colour + size (stock shown) -> it joins the bill. */
 'use strict';
 const BILL = { lines: [], customer: null, custName: '', custPhone: '', custGstin: '', showGstin: false, billDiscPct: 0, billDiscAmt: 0, redeem: 0, holdId: null, note: '', exchange: 0, coupon: '', couponDiscount: 0, quoteId: null };
-const UI = { q: '', cat: 'All', col: null };
+const UI = { q: '', cat: 'All', col: null, scanFirst: false };
 // How the style cards look on the Sell screen: big picture cards, small picture cards, or a plain list with no pictures (remembered on this device).
 const SELL_VIEWS = ['photos', 'small', 'list'];
 const sellView = () => { try { const v = localStorage.getItem('sty.sellView'); return SELL_VIEWS.includes(v) ? v : 'photos'; } catch { return 'photos'; } };
@@ -44,9 +44,23 @@ page('sell', {
     const bar = h('button', { class: 'cartbar', type: 'button', onclick: () => cartSheet() });
     const scanBtn = window.auzScanner ? h('button', { class: 'btn icon', type: 'button', 'aria-label': t('Scan'), onclick: () => scanWith((c) => scanCode(c)) }, icon('camera', 20)) : null;
     const sf = searchField(t('Search or scan a tag'), (val) => { UI.q = val; paintGrid(); }, UI.q);
-    sf.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const val = sf.input.value.trim(); if (val && onCode(val, true)) { sf.input.value = ''; UI.q = ''; paintGrid(); } } });
+    sf.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const val = sf.input.value.trim(); if (val && onCode(val, !UI.scanFirst)) { sf.input.value = ''; UI.q = ''; paintGrid(); } } });
     const chips = h('div', { class: 'chips' });
     const filterHost = h('span');
+    const scanHint = h('p', { class: 'muted small' }, t('Scan a barcode or type it and press Enter.'));
+    const scanMode = h('button', { class: 'btn', type: 'button', onclick: () => {
+      UI.scanFirst = !UI.scanFirst;
+      paintScanMode();
+      sf.input.focus();
+    } });
+    function paintScanMode() {
+      scanMode.textContent = t(UI.scanFirst ? 'Browse products' : 'Scan to bill');
+      scanMode.setAttribute('aria-pressed', String(UI.scanFirst));
+      for (const node of [chips, grid, filterHost]) node.hidden = UI.scanFirst;
+      scanHint.hidden = !UI.scanFirst;
+      // The existing grid and chip styles set display directly.
+      chips.style.display = grid.style.display = UI.scanFirst ? 'none' : '';
+    }
     const paintFilter = () => { clear(filterHost).append(filterButton(() => { paintFilter(); paintGrid(); })); };
     function paintChips() { clear(chips).append(...COL.list.filter((c) => (c.styleIds || []).length).map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.col === c.id), onclick: () => { UI.col = UI.col === c.id ? null : c.id; paintChips(); paintGrid(); } }, icon('tag', 14), c.name)), ...cats.map((c) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(UI.cat === c), onclick: () => { UI.cat = c; paintChips(); paintGrid(); } }, c === 'All' ? t('All') : c))); }
     // camera scan: say what happened on the scanner itself, so every scan has a visible answer
@@ -158,15 +172,15 @@ page('sell', {
     }
     window.addEventListener('sty:cartchanged', paintCart);
     cleanupHook(v, () => window.removeEventListener('sty:cartchanged', paintCart));
-    paintChips(); paintFilter(); paintGrid(); paintCart();
-    clear(root).append(h('div', { class: 'sell-l', 'data-title': t('All Products') }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn), chips, grid), cartHost, bar);
+    paintChips(); paintFilter(); paintGrid(); paintCart(); paintScanMode();
+    clear(root).append(h('div', { class: 'sell-l', 'data-title': t('All Products') }, h('div', { class: 'row', style: { gap: '8px' } }, h('div', { class: 'grow' }, sf), filterHost, scanBtn, scanMode), scanHint, chips, grid), cartHost, bar);
     if (isDesk()) setTimeout(() => sf.input.focus(), 50);
     // hardware barcode scanners type the code fast and press Enter, even when the search box is not focused
     let buf = '', last = 0;
     const key = (e) => {
       if (e.target.matches('input,textarea,select') || e.ctrlKey || e.metaKey || e.altKey) return;
       const now = Date.now(); if (now - last > 80) buf = ''; last = now;
-      if (e.key === 'Enter') { if (buf.length >= 4) { if (onCode(buf, true)) paintCart(); } buf = ''; } else if (e.key.length === 1) buf += e.key;
+      if (e.key === 'Enter') { if (buf.length >= 4) { if (onCode(buf, !UI.scanFirst)) paintCart(); } buf = ''; } else if (e.key.length === 1) buf += e.key;
     };
     document.addEventListener('keydown', key); cleanupHook(v, () => document.removeEventListener('keydown', key));
   },
