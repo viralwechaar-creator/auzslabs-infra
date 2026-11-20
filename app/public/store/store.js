@@ -263,7 +263,7 @@ function shell() {
   const c = cfg();
   const phoneNo = String(D.shop.phone || '').replace(/\D/g, '');
   const waUrl = phoneNo ? 'https://wa.me/' + (phoneNo.length === 10 ? '91' + phoneNo : phoneNo) : '';
-  const mk = D.shop.logoUrl ? E('img', { src: D.shop.logoUrl, alt: '' }) : String(name || 'S').trim().charAt(0).toUpperCase();
+  const mk = minimal ? name : D.shop.logoUrl ? E('img', { src: D.shop.logoUrl, alt: '' }) : String(name || 'S').trim().charAt(0).toUpperCase();
   const toContact = () => { const w = $('#chatwel'); if (w) w.remove(); go('contact'); };
   const dock = E('div', { class: 'dock phoneonly' },
     E('button', { class: 'mark', 'aria-label': name, onclick: () => go('') }, mk),
@@ -549,18 +549,17 @@ function minimalHome(v) {
     E('h2', null, title), E('a', { href }, caption, ' ↗'));
   const heroImage = heroImages.length ? E('img', { src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
   let slide = 0;
-  const counter = E('span', { 'aria-live': 'polite' }, '01 / ' + String(heroImages.length).padStart(2, '0'));
-  const step = (direction) => {
-    slide = (slide + direction + heroImages.length) % heroImages.length;
+  const dots = heroImages.map((_, index) => E('button', { type: 'button', 'aria-label': 'Show banner ' + (index + 1),
+    'aria-pressed': String(index === 0), onclick: () => showBanner(index) }));
+  function showBanner(index) {
+    slide = index;
     heroImage.src = heroImages[slide];
-    counter.textContent = String(slide + 1).padStart(2, '0') + ' / ' + String(heroImages.length).padStart(2, '0');
-  };
+    dots.forEach((dot, i) => dot.setAttribute('aria-pressed', String(i === slide)));
+  }
   v.append(E('section', { class: 'minimal-hero' + (heroImage ? ' has-image' : '') }, heroImage,
     E('div', { class: 'minimal-hero-copy' }, E('h1', null, c.heroTitle || D.shop.name),
       E('a', { href: link('shop') }, c.heroCta || 'Shop now')),
-    heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav' },
-      E('button', { type: 'button', 'aria-label': 'Previous banner', onclick: () => step(-1) }, icon('left')), counter,
-      E('button', { type: 'button', 'aria-label': 'Next banner', onclick: () => step(1) }, icon('right'))) : null));
+    heroImages.length > 1 ? E('div', { class: 'minimal-hero-nav', 'aria-label': 'Hero images' }, dots) : null));
   if (featured.length) v.append(minimalProductRail('Latest drop', featured, link('shop?new=1'), 'minimal-latest'));
   const bags = minimalGroupProducts('bags');
   if (bags.length) v.append(minimalProductRail('Bags', bags, link('shop?group=bags'), 'minimal-bags'));
@@ -624,8 +623,8 @@ function openMinimalStory(stories, index, trigger) {
       E('div', { class: 'minimal-story-caption' }, E('div', { 'aria-live': 'polite' }, (index + 1) + ' / ' + stories.length),
         E('h2', null, story.name), story.href ? E('a', { class: 'btn', href: story.href, onclick: () => dialog.close() }, story.cta || 'Shop now') : null),
       stories.length > 1 ? E('div', { class: 'minimal-story-controls' },
-        E('button', { class: 'ic', type: 'button', 'aria-label': 'Previous story', onclick: () => step(-1) }, icon('left')),
-        E('button', { class: 'ic', type: 'button', 'aria-label': 'Next story', onclick: () => step(1) }, icon('right'))) : null);
+        E('button', { class: 'ic', type: 'button', 'aria-label': 'Previous story', onclick: () => step(-1) }, 'Previous'),
+        E('button', { class: 'ic', type: 'button', 'aria-label': 'Next story', onclick: () => step(1) }, 'Next')) : null);
   }
   dialog.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); step(event.key === 'ArrowLeft' ? -1 : 1); }
@@ -827,13 +826,13 @@ V.shop = (v) => {
     }
     applyDensity(LS.get('compact-products', false) === true);
     catalog.append(
+      E('div', { class: 'minimal-heading' }, E('div', null, E('h1', null, title), E('span', { class: 'mut' }, list.length + (list.length === 1 ? ' product' : ' products'))),
+        E('div', { class: 'minimal-section-actions' }, compact,
+          E('button', { class: 'minimal-filter-button', type: 'button', onclick: minimalFilters }, 'Advanced filters'))),
       E('nav', { class: 'minimal-category-nav', 'aria-label': 'Product categories' },
         E('a', { href: link('shop'), 'aria-current': !q.cat && !q.col && !q.new && !groupName ? 'page' : null }, 'View all'),
         categories.map((category) => E('a', { href: link('shop?cat=' + encodeURIComponent(category)),
           'aria-current': q.cat === category ? 'page' : null }, category))),
-      E('div', { class: 'minimal-heading' }, E('div', null, E('h1', null, title), E('span', { class: 'mut' }, list.length + (list.length === 1 ? ' product' : ' products'))),
-        E('div', { class: 'minimal-section-actions' }, compact,
-          E('button', { class: 'minimal-filter-button', type: 'button', onclick: minimalFilters }, 'Advanced filters'))),
       act.length ? E('div', { class: 'chips' }, act.map(([key, label]) => E('button', {
         class: 'chip on', type: 'button', onclick: () => setQ({ [key]: '' }),
       }, label, ' ×'))) : null,
@@ -876,7 +875,7 @@ V.p = (v, id) => {
       clear(pinnedPhoto).append(ims.length > 1 ? E('img', { src: primary, alt: s.name + ' — main image', loading: 'eager' }) : null);
       pinnedPhoto.hidden = ims.length < 2;
       gal.parentElement?.classList.toggle('minimal-single-photo', ims.length < 2);
-      gal.append(E('div', { class: 'minimal-product-gallery' }, ims.length ? ims.map((url, index) =>
+      gal.append(E('div', { class: 'minimal-product-gallery', tabindex: ims.length > 1 ? '0' : null, 'aria-label': 'Product images' }, ims.length ? ims.map((url, index) =>
         E('img', { class: !index && ims.length > 1 ? 'minimal-mobile-primary' : null,
           src: url, alt: s.name + ' — image ' + (index + 1), loading: index > 1 ? 'lazy' : 'eager' })) : placeholder(s.name)));
       return;
@@ -973,7 +972,7 @@ V.p = (v, id) => {
     : null;
   const viewed = minimal ? recent().filter((id) => id !== s.id).map((id) => BYID[id]).filter(Boolean) : [];
   const product = E('div', { class: minimal ? 'pd minimal-pd' + (pinnedPhoto.hidden ? ' minimal-single-photo' : '') : 'pd' },
-    pinnedPhoto, gal, minimal ? E('aside', { class: 'minimal-purchase-panel', 'aria-label': 'Product details and purchase' }, details, info) : info);
+    pinnedPhoto, gal, minimal ? E('aside', { class: 'minimal-purchase-panel', 'aria-label': 'Product details and purchase' }, info, details) : info);
   v.append(minimal ? null : E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: destination }, s.category), ' / ', s.name),
     product, related,
     minimal ? (viewed.length ? minimalRecommendations('Recently viewed', viewed) : null) : recentBand(s.id));
