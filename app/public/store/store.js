@@ -604,7 +604,11 @@ function minimalHome(v) {
   const bags = minimalGroupProducts('bags');
   if (bags.length) v.append(minimalProductRail('Bags', bags, link('shop?group=bags'), 'minimal-bags'));
   const banners = tiles.filter((tile) => tile.photo).slice(0, 8);
-  if (banners.length) v.append(minimalCollectionCarousel(banners));
+  if (banners.length) {
+    v.append(E('div', { class: 'minimal-collection-desktop' }, minimalCollectionCarousel(banners)));
+    const deck = minimalCollectionStack(banners);
+    v.append(E('div', { class: 'minimal-collection-phone' }, deck || minimalCollectionCarousel(banners)));
+  }
   // The section and its grid stay -- only the "Featured products" heading text was removed (owner request);
   // "Shop all" still links through to the full catalogue.
   if (STY.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
@@ -659,6 +663,43 @@ function minimalCollectionCarousel(banners) {
     }, 5000);
   }
   return section;
+}
+// Same overlapping-card deck as the Classic shop page's `stack()` (reuses its .stk/.sk CSS):
+// one big bright centre card, its neighbours peeking out smaller and darker, drag or auto-advance.
+function minimalCollectionStack(banners) {
+  banners = banners.filter((b) => b.widePhoto || b.photo);
+  const n = banners.length;
+  if (n < 2) return null;
+  let cur = 0, hold = false, holdT = 0, moved = false;
+  const deck = E('div', { class: 'stk' }, banners.map((b) => E('a', { class: 'sk', href: b.href },
+    E('img', { src: b.widePhoto || b.photo, alt: '', loading: 'lazy', draggable: 'false' }),
+    E('div', { class: 'nm' }, E('span', null, b.name)))));
+  const items = [...deck.children];
+  const SC = [1, .87, .76], BR = [1, .62, .4], OFF = [0, 17, 30];
+  const place = () => { items.forEach((el, i) => {
+    let d = i - cur; if (d > n / 2) d -= n; if (d < -n / 2) d += n; const a = Math.abs(d), sg = d < 0 ? -1 : 1;
+    if (a > 2) { el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0'; el.style.transform = 'translateX(' + sg * OFF[2] + '%) scale(' + SC[2] * .9 + ')'; return; }
+    el.style.opacity = '1'; el.style.pointerEvents = 'auto'; el.style.zIndex = String(10 - a);
+    el.style.transform = 'translateX(' + sg * OFF[a] + '%) scale(' + SC[a] + ')'; el.style.filter = a ? 'brightness(' + BR[a] + ')' : 'none';
+    el.classList.toggle('on', a === 0);
+  }); };
+  const go = (i) => { cur = ((i % n) + n) % n; place(); };
+  const pause = (ms) => { hold = true; clearTimeout(holdT); holdT = setTimeout(() => { hold = false; }, ms || 5000); };
+  let x0 = null;
+  deck.addEventListener('pointerdown', (e) => { x0 = e.clientX; moved = false; pause(); });
+  deck.addEventListener('pointermove', (e) => { if (x0 != null && Math.abs(e.clientX - x0) > 10) moved = true; });
+  const end = (e) => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (Math.abs(dx) > 36) go(cur + (dx < 0 ? 1 : -1)); };
+  deck.addEventListener('pointerup', end); deck.addEventListener('pointercancel', () => { x0 = null; });
+  items.forEach((el, i) => el.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== cur) { e.preventDefault(); go(i); pause(); } }));
+  place();
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const timer = setInterval(() => {
+      if (!document.body.contains(deck)) return clearInterval(timer);
+      if (hold || document.hidden) return;
+      go(cur + 1);
+    }, 3200);
+  }
+  return deck;
 }
 function openMinimalStory(stories, index, trigger) {
   const dialog = E('dialog', { class: 'minimal-story-viewer', 'aria-label': 'Shop the stories' });

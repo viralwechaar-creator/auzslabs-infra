@@ -269,6 +269,14 @@
 .minimal-store .top .r .n{right:1px}
 
 .minimal-home .minimal-accessories .pc .ph{aspect-ratio:318/421!important}
+.minimal-collection-desktop{display:block}
+.minimal-collection-phone{display:none}
+@media(max-width:700px){
+  .minimal-collection-desktop{display:none}
+  .minimal-collection-phone{display:block}
+  .minimal-collection-phone .stk{margin:14px clamp(10px,1.5vw,24px) 4px}
+  .minimal-collection-phone .sk .nm span{font-size:13px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+}
 .minimal-collection-carousel{position:relative;margin:14px clamp(10px,1.5vw,24px)}
 .minimal-collection-track{display:grid;width:100%;grid-auto-flow:column;grid-auto-columns:100%;grid-template-rows:minmax(0,1fr);aspect-ratio:12/5;max-height:min(90svh,760px);overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;border-radius:25px}
 .minimal-collection-slide{position:relative;min-width:0;scroll-snap-align:start;overflow:hidden;background:#202020;color:#fff}
