@@ -172,7 +172,7 @@
 .minimal-home .minimal-product-section .pc .ph{aspect-ratio:5/6!important;background:#e8ebef}
 .minimal-home .minimal-product-section .pc .ph,.minimal-home .minimal-product-section .pc .sc{border-radius:24px}
 .minimal-home .minimal-home-stores{position:relative;margin-top:14px;padding-block:16px 24px;background:#ededed;border:0;border-radius:28px}
-.minimal-store-stage{position:relative;isolation:isolate;min-height:clamp(275px,32vw,480px);overflow:hidden;border-radius:20px;background:#938879 url("/store/store-architecture.jpg") center 42% / cover no-repeat}
+.minimal-store-stage{position:relative;isolation:isolate;min-height:clamp(275px,32vw,480px);overflow:hidden;border-radius:20px;background:#938879;perspective:900px}
 .minimal-store-stage .minimal-heading{position:relative;z-index:1;padding:14px}
 .minimal-store-stage h2{padding:3px 7px;border:1px solid #454545;border-radius:5px;background:#f9fcff;font-size:10px}
 .minimal-home-stores .minimal-rail{position:relative;grid-auto-columns:calc((100% - 26px)/3);gap:13px;margin-top:clamp(-105px,-7vw,-58px);padding:0 0 4px}
@@ -380,3 +380,28 @@
 }
 
 .chatwel .wt{text-align:left}.chatwel .welcome-close{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#fff2;color:#fff}
+
+.minimal-store-stage::before{content:"";position:absolute;inset:-8%;background:url("/store/store-architecture.jpg") center 42% / cover no-repeat}
+@keyframes minimal-store-depth{
+  from{transform:translate3d(-2%,0,-35px) rotateY(-4deg) scale(1.12)}
+  to{transform:translate3d(0,0,0) rotateY(0) scale(1)}
+}
+@supports (animation-timeline:view()){ @media(prefers-reduced-motion:no-preference){.minimal-store-stage::before{animation:minimal-store-depth 1ms ease-out both;animation-timeline:view();animation-range:entry 0% cover 45%}}}
+.minimal-filter-drawer .bd{background:#10101026;backdrop-filter:blur(3px)}
+.minimal-filter-drawer .sheet{width:min(100%,400px);padding:0;background:#eee;overflow:hidden}
+.minimal-filter-drawer .hd{position:relative;justify-content:center;min-height:58px;margin:0;border-bottom:1px solid #bbb;text-align:center}
+.minimal-filter-drawer .hd h2{font-size:13px;font-weight:600;text-transform:uppercase}
+.minimal-filter-drawer .hd h2 small{display:block;margin-top:3px;font-size:10px;font-weight:400}
+.minimal-filter-drawer .hd .ic{position:absolute;right:10px}
+.minimal-filter-drawer .minimal-filter-form{flex:1;min-height:0;gap:0;display:block}
+.minimal-filter-drawer .minimal-facets{border:0;border-bottom:1px solid #ddd;margin:0;padding:0 22px 14px;gap:5px}
+.minimal-filter-drawer .minimal-facets legend{padding:14px 0 10px;font-size:12px;font-weight:500}
+.minimal-filter-drawer .minimal-facets label{position:relative;cursor:pointer}
+.minimal-filter-drawer .minimal-facets input{position:absolute;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.minimal-filter-drawer .minimal-facets label span{display:flex;align-items:center;gap:5px;min-height:28px;padding:0 12px;border-radius:999px;background:#ddd;font-size:10px}
+.minimal-filter-drawer .minimal-facets label i{width:9px;height:9px;border:1px solid #aaa;border-radius:50%}
+.minimal-filter-drawer .minimal-facets input:checked+span{background:#171717;color:#fff}
+.minimal-filter-drawer .minimal-facets input:focus-visible+span{outline:2px solid #333;outline-offset:2px}
+.minimal-filter-drawer .minimal-filter-form>.minimal-filter-field,.minimal-filter-drawer .minimal-filter-form>.row2:not(.minimal-filter-actions){padding:12px 22px}
+.minimal-filter-drawer .minimal-filter-field :is(select,input){border-radius:8px}
+.minimal-filter-drawer .minimal-filter-actions{position:sticky;bottom:0;padding:10px 12px max(10px,env(safe-area-inset-bottom));background:#eee;border-top:1px solid #ddd}

@@ -779,8 +779,12 @@ function minimalFilters() {
     const chosen = new Set(facetValues(current[name]));
     if (legacyValue) chosen.add(legacyValue);
     return E('fieldset', { class: 'minimal-facets' }, E('legend', null, label), [...new Set(options)].map((value) =>
-      E('label', null, E('input', { name, type: 'checkbox', value, checked: chosen.has(value) }), value)));
+      E('label', null, E('input', { name, type: 'checkbox', value, checked: chosen.has(value) }), E('span', null, value,
+        name === 'colours' ? E('i', { style: { background: hex(value) }, 'aria-hidden': 'true' }) : null))));
   };
+  const pills = (name, label, options) => E('fieldset', { class: 'minimal-facets' },
+    E('legend', null, label), options.map(([value, title]) => E('label', null,
+      E('input', { name, type: 'radio', value, checked: (current[name] || '') === value }), E('span', null, title))));
   const price = (name, label) => E('label', { class: 'minimal-filter-field' }, label,
     E('input', { name, type: 'number', min: 0, step: 1, value: current[name] || '' }));
   const form = E('form', { class: 'minimal-filter-form', onsubmit: (event) => {
@@ -788,23 +792,27 @@ function minimalFilters() {
     const data = new FormData(form);
     const selected = (name) => data.getAll(name).length ? JSON.stringify(data.getAll(name)) : '';
     setQ({ size: '', colour: '', fam: '', sizes: selected('sizes'), colours: selected('colours'),
-      stock: data.get('stock'), sort: data.get('sort'), min: data.get('min'), max: data.get('max') });
+      stock: data.get('stock'), cat: data.get('cat'), sort: data.get('sort'), min: data.get('min'), max: data.get('max') });
     panel.close();
   } },
   facets('sizes', 'Size', STY.flatMap(sizesOf), current.size),
-  control('stock', 'Availability', [['', 'All products'], ['1', 'In stock'], ['sold-out', 'Out of stock']]),
+  pills('stock', 'Availability', [['', 'Any'], ['1', 'In stock'], ['sold-out', 'Out of stock']]),
+  pills('cat', 'Type', [['', 'All types'], ...[...new Set(STY.map((item) => item.category).filter(Boolean))].sort().map((type) => [type, type])]),
   facets('colours', 'Colour', STY.flatMap(colours), current.colour),
   E('div', { class: 'row2' }, price('min', 'Minimum price'), price('max', 'Maximum price')),
   control('sort', 'Sort by', [['', 'Newest'], ['low', 'Price, low to high'], ['high', 'Price, high to low'], ['az', 'Alphabetically, A–Z']]),
-  E('div', { class: 'row2' },
+  E('div', { class: 'row2 minimal-filter-actions' },
     E('button', { class: 'btn out', type: 'button', onclick: () => {
-      setQ({ size: '', sizes: '', stock: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '' });
+      setQ({ size: '', sizes: '', stock: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', cat: '' });
       panel.close();
-    } }, 'Clear filters'),
+    } }, 'Remove all'),
     E('button', { class: 'btn', type: 'submit' }, 'Apply')));
   const panel = sheet('Filter', form);
-  panel.el.classList.add('minimal-bag-drawer');
-  form.querySelector('select').focus();
+  panel.el.classList.add('minimal-bag-drawer', 'minimal-filter-drawer');
+  panel.el.setAttribute('aria-label', 'Filter products');
+  const heading = panel.el.querySelector('.hd h2');
+  heading.append(E('small', null, filterSet(current).length + ' products'));
+  panel.el.querySelector('.hd button').focus();
   panel.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') panel.close(); });
 }
 function refine(anchor) {
