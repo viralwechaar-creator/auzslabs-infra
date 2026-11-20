@@ -41,15 +41,25 @@ function cashCountSheet(target) {
     const grid = (counts, insMap, subMap, onStep) => {
       const row = (d) => {
         insMap[d] = input({ type: 'number', mode: 'numeric', value: '', placeholder: '0', oninput: (e) => { counts[d] = Math.max(0, Math.floor(N(e.target.value))); upd(); } });
-        insMap[d].style.width = '64px';
-        subMap[d] = h('span', { class: 'muted small num', style: { width: '70px', textAlign: 'right' } });
+        insMap[d].style.width = '52px'; insMap[d].style.textAlign = 'center';
+        subMap[d] = h('span', { class: 'muted small num', style: { width: '66px', textAlign: 'right' } });
         const step = (x) => h('button', { class: 'btn plain icon', type: 'button', onclick: () => { onStep(d, x); upd(); } }, x > 0 ? icon('plus', 14) : '−');
-        return h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } }, h('span', { style: { width: '56px' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
+        return h('div', { class: 'row', style: { gap: '4px', alignItems: 'center' } }, h('span', { style: { width: '50px', flex: 'none' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
       };
       const pairs = []; for (let i = 0; i < DENOMS.length; i += 2) pairs.push([DENOMS[i], DENOMS[i + 1]]);
-      return h('div', { class: 'grid', style: { gap: '4px' } }, pairs.map(([a, b]) => h('div', { class: 'two' }, row(a), b != null ? row(b) : null)));
+      // Columns hug their own content and sit centred with a small, fixed gap -- NOT space-between, which
+      // throws all the sheet's leftover width into one gap down the middle (the actual cause of the dead
+      // centre space a wide sheet kept showing). Together with dropping the sheet's own extra width (below),
+      // the whole card is now only as wide as two note rows need, like the Accounting app's own counter.
+      // repeat(2, ...) forced exactly two columns even when a phone's width can't fit both -- each row then
+      // overflowed and the LEFT column's label got clipped off-screen (only its +/- buttons and input stayed
+      // visible). auto-fit with a real minimum lets the grid fall back to one column on a narrow phone and
+      // keep two on anything wider, with no media query needed.
+      // 260px matches the row's real rendered width (50px label + two 40px step buttons + 52px input + 66px
+      // subtotal, plus their gaps) so auto-fit's "do two columns actually fit" check is exact, not a guess.
+      return h('div', { class: 'grid', style: { gap: '6px' } }, pairs.map(([a, b]) => h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, max-content))', justifyContent: 'center', gap: '8px 24px' } }, row(a), b != null ? row(b) : h('span'))));
     };
-    const s = sheet({ title: t('Count cash'), wide: true, body: h('div', { class: 'grid' },
+    const s = sheet({ title: t('Count cash'), body: h('div', { class: 'grid' },
       h('div', { class: 'kv' }, h('span', null, t('Cash to receive')), h('b', { class: 'num' }, inr(target))),
       quick.length ? h('div', { class: 'chips' }, quick.map((v) => h('button', { class: 'chip', type: 'button', onclick: () => { Object.keys(cnt).forEach((k) => cnt[k] = 0); Object.assign(cnt, dnChange(v)); upd(); } }, inr(v)))) : null,
       h('div', { class: 'cap' }, t('Notes and coins received')), grid(cnt, ins, subs, (d, x) => { cnt[d] = Math.max(0, (cnt[d] || 0) + x); }),

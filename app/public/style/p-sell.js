@@ -268,15 +268,19 @@ function paySheet(c, done) {
   const cashNote = h('div', { class: 'muted small' });
   MODES.forEach(([m, l]) => {
     const i = input({ type: 'number', value: pay[m] || '', mode: 'decimal', placeholder: '0', oninput: () => { pay[m] = N(i.value); if (m === 'cash') { cashDenoms = null; cashTendered = null; cashChangeDenoms = null; cashNote.textContent = ''; } upd(); } }); inputs[m] = i;
+    // Both buttons for the Cash row (Count cash + Exact) sit in one wrapper cell -- .payl is a fixed 3-column
+    // grid (label, input, actions), and a 4th top-level child used to wrap onto its own row, under the label,
+    // instead of sitting beside Count cash.
     rows.append(h('div', { class: 'payl' }, h('label', null, l), i,
-      m === 'cash' ? h('button', { class: 'btn sm', type: 'button', onclick: async () => {
-        const target = r2(due0 - sumNow() + (pay.cash || 0));
-        const r = await cashCountSheet(target); if (!r) return;
-        pay.cash = Math.min(r.tendered, target); cashDenoms = r.denoms; cashTendered = r.tendered; cashChangeDenoms = r.changeDenoms; inputs.cash.value = pay.cash;
-        cashNote.textContent = r.tendered > pay.cash ? t('Counted') + ' ' + inr(r.tendered) + ' · ' + t('Change') + ' ' + inr(r2(r.tendered - pay.cash)) : '';
-        upd();
-      } }, icon('tag', 16), t('Count cash')) : null,
-      h('button', { class: 'btn sm', type: 'button', onclick: () => { MODES.forEach(([x]) => { pay[x] = 0; inputs[x].value = ''; }); if (m === 'cash') { cashDenoms = null; cashTendered = null; cashChangeDenoms = null; cashNote.textContent = ''; } pay[m] = m === 'credit' ? Math.min(due0, cust.credit) : due0; inputs[m].value = pay[m]; upd(); } }, t('Exact'))));
+      h('div', { class: 'row', style: { gap: '6px', flex: 'none' } },
+        m === 'cash' ? h('button', { class: 'btn sm', type: 'button', onclick: async () => {
+          const target = r2(due0 - sumNow() + (pay.cash || 0));
+          const r = await cashCountSheet(target); if (!r) return;
+          pay.cash = Math.min(r.tendered, target); cashDenoms = r.denoms; cashTendered = r.tendered; cashChangeDenoms = r.changeDenoms; inputs.cash.value = pay.cash;
+          cashNote.textContent = r.tendered > pay.cash ? t('Counted') + ' ' + inr(r.tendered) + ' · ' + t('Change') + ' ' + inr(r2(r.tendered - pay.cash)) : '';
+          upd();
+        } }, icon('tag', 16), t('Count cash')) : null,
+        h('button', { class: 'btn sm', type: 'button', onclick: () => { MODES.forEach(([x]) => { pay[x] = 0; inputs[x].value = ''; }); if (m === 'cash') { cashDenoms = null; cashTendered = null; cashChangeDenoms = null; cashNote.textContent = ''; } pay[m] = m === 'credit' ? Math.min(due0, cust.credit) : due0; inputs[m].value = pay[m]; upd(); } }, t('Exact')))));
     if (m === 'cash') rows.append(cashNote);
   });
   // One or more saved UPI accounts (Settings -> Pay by UPI); fall back to the single legacy upiId/upiName so a
