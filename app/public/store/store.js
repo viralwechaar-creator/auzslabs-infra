@@ -562,10 +562,18 @@ function collectionBanner(col) {
 }
 function minimalCollectionTiles() {
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
-  return collections.map((col) => ({
-    name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: collectionBanner(col),
-    photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
-  }));
+  return collections.map((col) => {
+    const members = col.styleIds.map((id) => BYID[id]).filter(Boolean);
+    // Up to 3 distinct product photos for the fanned-stack carousel slide (reference: a competitor's
+    // homepage collage of overlapping product shots) -- falls back to a single full-bleed photo below
+    // when a collection has only one real product photo to show.
+    const stackPhotos = [...new Set(members.map((s) => pickPic(s, 'banner')).filter(Boolean))].slice(0, 3);
+    return {
+      name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)), widePhoto: collectionBanner(col),
+      photo: col.image || stackPhotos[0],
+      stackPhotos,
+    };
+  });
 }
 function minimalStories(tiles = minimalCollectionTiles()) {
   const configuredStories = (cfg().minimalStories || []).filter((story) => story?.title && story.image).map((story) => ({
@@ -595,9 +603,8 @@ function minimalHome(v) {
   if (featured.length) v.append(minimalProductRail('Latest drop', featured, link('shop?new=1'), 'minimal-latest'));
   const bags = minimalGroupProducts('bags');
   if (bags.length) v.append(minimalProductRail('Bags', bags, link('shop?group=bags'), 'minimal-bags'));
-  const stories = minimalStories(tiles);
   const banners = tiles.filter((tile) => tile.photo).slice(0, 8);
-  if (banners.length) v.append(minimalCollectionCarousel(banners, stories));
+  if (banners.length) v.append(minimalCollectionCarousel(banners));
   // The section and its grid stay -- only the "Featured products" heading text was removed (owner request);
   // "Shop all" still links through to the full catalogue.
   if (STY.length) v.append(E('section', { class: 'minimal-section minimal-home-products' },
@@ -612,18 +619,26 @@ function minimalHome(v) {
   const locations = storeList();
   if (locations.length) v.append(minimalHomeStores(locations));
 }
-function minimalCollectionCarousel(banners, stories) {
+// A fanned stack of up to 3 product photos (reference: a competitor's homepage collage of overlapping
+// shots) instead of one flat banner photo -- falls back to the plain full-bleed photo when a collection
+// doesn't have at least 2 distinct product photos to fan out.
+function minimalCollectionArt(banner) {
+  const photos = banner.stackPhotos || [];
+  if (photos.length < 2) {
+    return E('picture', {}, banner.photo && banner.widePhoto ? E('source', { media: '(max-width:700px)', srcset: banner.photo }) : null,
+      E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' }));
+  }
+  return E('div', { class: 'minimal-collection-stack' },
+    photos[2] ? E('img', { class: 'mcs-photo mcs-right', src: photos[2], alt: '', loading: 'lazy' }) : null,
+    photos[1] ? E('img', { class: 'mcs-photo mcs-left', src: photos[1], alt: '', loading: 'lazy' }) : null,
+    E('img', { class: 'mcs-photo mcs-main', src: photos[0], alt: '', loading: 'lazy' }));
+}
+function minimalCollectionCarousel(banners) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const track = E('div', { class: 'minimal-collection-track' + (banners.length > 1 ? ' has-multiple' : ''), tabindex: '0', 'aria-label': 'Collection banners' },
-    banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href, 'aria-label': banner.name },
-      E('picture', {}, banner.photo && banner.widePhoto ? E('source', { media: '(max-width:700px)', srcset: banner.photo }) : null,
-        E('img', { class: 'minimal-collection-art', src: banner.widePhoto || banner.photo, alt: '', loading: 'lazy' })),
+    banners.map((banner) => E('a', { class: 'minimal-collection-slide' + ((banner.stackPhotos || []).length >= 2 ? ' has-stack' : ''), href: banner.href, 'aria-label': banner.name },
+      minimalCollectionArt(banner),
       E('span', { class: 'minimal-collection-name', 'aria-hidden': 'true' }, banner.name))));
-  let paused = reducedMotion.matches;
-  const pause = E('button', { type: 'button', onclick: () => {
-    paused = !paused;
-    pause.textContent = paused ? 'Play' : 'Pause';
-  } }, paused ? 'Play' : 'Pause');
   const step = (direction) => {
     const first = track.children[0].offsetLeft;
     const stride = track.children[1].offsetLeft - first;
@@ -633,18 +648,14 @@ function minimalCollectionCarousel(banners, stories) {
     track.scrollTo({ left: track.children[next].offsetLeft - first, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
   };
   const section = E('section', { class: 'minimal-collection-carousel', 'aria-label': 'Discover collections' }, track,
-    E('div', { class: 'minimal-collection-controls' },
-      stories.length ? E('button', { type: 'button', onclick: (e) => openMinimalStory(stories, 0, e.currentTarget) }, 'Stories') : null,
-      banners.length > 1 ? [
-        E('button', { type: 'button', 'aria-label': 'Previous collection', onclick: () => step(-1) }, icon('left')),
-        pause,
-        E('button', { type: 'button', 'aria-label': 'Next collection', onclick: () => step(1) }, icon('right')),
-      ] : null));
+    banners.length > 1 ? E('div', { class: 'minimal-collection-controls' },
+      E('button', { type: 'button', 'aria-label': 'Previous collection', onclick: () => step(-1) }, icon('left')),
+      E('button', { type: 'button', 'aria-label': 'Next collection', onclick: () => step(1) }, icon('right'))) : null);
   if (banners.length > 1) {
     const timer = setInterval(() => {
       if (!section.isConnected) return clearInterval(timer);
       const bounds = section.getBoundingClientRect();
-      if (!paused && !document.hidden && !section.matches(':hover,:focus-within') && bounds.top < innerHeight && bounds.bottom > 0) step(1);
+      if (!reducedMotion.matches && !document.hidden && !section.matches(':hover,:focus-within') && bounds.top < innerHeight && bounds.bottom > 0) step(1);
     }, 5000);
   }
   return section;
