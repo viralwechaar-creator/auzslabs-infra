@@ -309,7 +309,7 @@
   .minimal-store .top .brand{font-size:clamp(13px,4vw,18px)}
   .minimal-store .top .r .ic{width:32px;min-width:32px}
   .minimal-store .top .r .minimal-menu{height:25px}
-  .minimal-hero{min-height:84svh}
+  .minimal-hero{min-height:100svh}
   .minimal-home :is(.minimal-latest,.minimal-home-products) .pc .ph{aspect-ratio:3/4!important}
   .minimal-home .minimal-bags .minimal-rail{grid-auto-columns:42%}
   .minimal-home .minimal-bags .pc .ph{aspect-ratio:1!important}
