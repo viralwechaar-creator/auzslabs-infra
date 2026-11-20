@@ -41,13 +41,16 @@ function cashCountSheet(target) {
     const grid = (counts, insMap, subMap, onStep) => {
       const row = (d) => {
         insMap[d] = input({ type: 'number', mode: 'numeric', value: '', placeholder: '0', oninput: (e) => { counts[d] = Math.max(0, Math.floor(N(e.target.value))); upd(); } });
-        insMap[d].style.width = '64px';
-        subMap[d] = h('span', { class: 'muted small num', style: { width: '70px', textAlign: 'right' } });
+        insMap[d].style.width = '52px'; insMap[d].style.textAlign = 'center';
+        subMap[d] = h('span', { class: 'muted small num', style: { width: '66px', textAlign: 'right' } });
         const step = (x) => h('button', { class: 'btn plain icon', type: 'button', onclick: () => { onStep(d, x); upd(); } }, x > 0 ? icon('plus', 14) : '−');
-        return h('div', { class: 'row', style: { gap: '6px', alignItems: 'center' } }, h('span', { style: { width: '56px' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
+        return h('div', { class: 'row', style: { gap: '4px', alignItems: 'center' } }, h('span', { style: { width: '50px', flex: 'none' } }, dnLabel(d)), step(-1), insMap[d], step(1), subMap[d]);
       };
       const pairs = []; for (let i = 0; i < DENOMS.length; i += 2) pairs.push([DENOMS[i], DENOMS[i + 1]]);
-      return h('div', { class: 'grid', style: { gap: '4px' } }, pairs.map(([a, b]) => h('div', { class: 'two' }, row(a), b != null ? row(b) : null)));
+      // Columns hug their own content (not a stretched 1fr/1fr split) so the two rows of a pair sit close
+      // together like the Accounting app's own counter -- a 1fr/1fr grid left a wide dead gap down the middle
+      // of a 980px-wide sheet since each row is only ~220px wide.
+      return h('div', { class: 'grid', style: { gap: '6px' } }, pairs.map(([a, b]) => h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, max-content)', justifyContent: 'space-between', gap: '8px 20px' } }, row(a), b != null ? row(b) : h('span'))));
     };
     const s = sheet({ title: t('Count cash'), wide: true, body: h('div', { class: 'grid' },
       h('div', { class: 'kv' }, h('span', null, t('Cash to receive')), h('b', { class: 'num' }, inr(target))),
