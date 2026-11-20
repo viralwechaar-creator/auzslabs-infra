@@ -526,14 +526,10 @@ function minimalHome(v) {
   const configuredImages = (c.heroImages || []).filter(Boolean);
   const heroImages = configuredImages.length ? configuredImages : featured.map((s) => pickPic(s, 'hero')).filter(Boolean);
   const collections = D.collections.filter((col) => col.styleIds.some((id) => BYID[id]));
-  const categories = [...new Set(STY.map((s) => s.category).filter(Boolean))];
   const tiles = collections.map((col) => ({
     name: col.name, href: link('shop?col=' + encodeURIComponent(col.id)),
     photo: col.image || col.styleIds.map((id) => BYID[id]).filter(Boolean).map((s) => pickPic(s, 'banner')).find(Boolean),
-  })).concat(categories.map((category) => ({
-    name: category, href: link('shop?cat=' + encodeURIComponent(category)),
-    photo: STY.filter((s) => s.category === category).map((s) => pickPic(s, 'banner')).find(Boolean),
-  })));
+  }));
   const heading = (title, href, caption) => E('div', { class: 'minimal-heading' },
     E('h2', null, title), E('a', { href }, caption, ' ↗'));
   const heroImage = heroImages.length ? E('img', { src: heroImages[0], alt: '', fetchpriority: 'high' }) : null;
@@ -574,9 +570,8 @@ function minimalHome(v) {
 function minimalCollectionCarousel(banners, stories) {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const track = E('div', { class: 'minimal-collection-track', tabindex: '0', 'aria-label': 'Collection banners' },
-    banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href },
-      E('img', { src: banner.photo, alt: '', loading: 'lazy' }),
-      E('span', null, E('strong', null, banner.name), E('span', null, 'Shop now')))));
+    banners.map((banner) => E('a', { class: 'minimal-collection-slide', href: banner.href, 'aria-label': banner.name },
+      E('img', { src: banner.photo, alt: '', loading: 'lazy' }))));
   let paused = reducedMotion.matches;
   const pause = E('button', { type: 'button', onclick: () => {
     paused = !paused;
