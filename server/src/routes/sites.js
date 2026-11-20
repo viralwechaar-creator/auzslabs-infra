@@ -62,9 +62,48 @@ const PAGE_404 = '<!doctype html><meta charset=utf-8><meta name=viewport content
 function notFound(res) { res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(PAGE_404.replace('AUZ_BASE', base())); }
 function redirect(res, to) { res.writeHead(302, { Location: to, 'Cache-Control': 'no-store' }); res.end(); }
 
+const contentSlug = (text) => String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+const escapeXml = (text) => text.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[char]);
+async function storeSitemap(req, res) {
+  const host = String(req.headers['x-forwarded-host'] || '').toLowerCase();
+  const domain = base();
+  const slug = host.endsWith('.' + domain) ? host.slice(0, -(domain.length + 1)) : '';
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug) || APP_SUBS.has(slug)) return notFound(res);
+  if (rateLimited(`store-sitemap:${clientIp(req)}`, 120, 60_000)) {
+    return res.writeHead(429, { 'Retry-After': '60' }).end();
+  }
+  const { rows } = await pool.query('select public_sty_store($1::text) as storefront', [slug]);
+  const store = rows[0]?.storefront;
+  if (!store || store.closed || store.config?.template !== 'minimal') return notFound(res);
+  const origin = `https://${slug}.${domain}`;
+  const page = (view, filters) => origin + '/store.html?' + new URLSearchParams({ view, ...filters });
+  const fixed = ['collections', 'about', 'stores', 'faq', 'contact', 'sitemap', 'policy/shipping', 'policy/returns', 'policy/privacy', 'policy/terms'];
+  const articles = (store.config.blogs || []).filter((entry) => contentSlug(entry?.title));
+  const features = (store.config.media || []).filter((entry) => contentSlug(entry?.title));
+  if (articles.length) fixed.push('blog', ...articles.map((entry) => 'blog/' + contentSlug(entry.title)));
+  if (features.length) fixed.push('media', ...features.map((entry) => 'media/' + contentSlug(entry.title)));
+  for (const entry of store.config.minimalPages || []) {
+    const route = contentSlug(entry?.slug || entry?.title);
+    if (entry?.title && route) fixed.push('page/' + route);
+  }
+  if ((store.config.jobs || []).some((job) => job?.title && job.active !== false && job.status !== 'closed')) fixed.push('careers');
+  const products = (store.styles || []).filter((product) => product.id && product.variants?.length);
+  const ids = new Set(products.map((product) => product.id));
+  const collections = (store.collections || []).filter((collection) => collection.id && collection.styleIds?.some((id) => ids.has(id)));
+  const urls = new Set([
+    origin + '/store.html', page('shop'), ...fixed.map((view) => page(view)),
+    ...collections.map((collection) => page('shop', { col: collection.id })),
+    ...products.map((product) => origin + '/store.html?' + new URLSearchParams({ p: product.id })),
+  ]);
+  const items = [...urls].slice(0, 50000).map((url) => '<url><loc>' + escapeXml(url) + '</loc></url>').join('');
+  res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=300' });
+  res.end('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + items + '</urlset>');
+}
+
 export async function handle(ctx) {
   const { req, res, url } = ctx;
 
+  if (url.pathname === '/site/store-sitemap' && req.method === 'GET') return storeSitemap(req, res);
   if (url.pathname === '/site/ask-tls' && req.method === 'GET') {
     const domain = String(url.searchParams.get('domain') || '').toLowerCase();
     const b = base();

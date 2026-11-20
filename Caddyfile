@@ -198,6 +198,12 @@
                 uri /site/check
                 copy_headers X-Site-Kind X-Site-Legacy X-Site-Remote
             }
+            handle /sitemap.xml {
+                rewrite * /site/store-sitemap
+                reverse_proxy api:3000 {
+                    header_up X-Forwarded-Host {host}
+                }
+            }
             # per-shop website files only: no app page can be served here whatever the server says
             # the salon website and its own API belong to salon shops only
             @salonOnly {
