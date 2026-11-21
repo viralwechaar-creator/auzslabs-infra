@@ -7,9 +7,9 @@
    flat, edge-to-edge, fully opaque bar. Both still participate in normal flow / fixed
    positioning exactly as before; only their paint and shape changed. */
 .topbar{position:sticky;top:calc(var(--safe-t) + 8px);z-index:30;display:grid;grid-template-columns:52px 1fr 52px;align-items:center;min-height:48px;margin:calc(var(--safe-t) + 8px) 12px 0;padding:0 6px;border-radius:22px;
-  background:color-mix(in srgb,var(--card) 68%,transparent);-webkit-backdrop-filter:saturate(200%) blur(26px);backdrop-filter:saturate(200%) blur(26px);
-  box-shadow:0 8px 28px rgba(0,0,0,.14),0 0 0 .5px var(--sep) inset,0 1px 0 rgba(255,255,255,.5) inset}
-@media (prefers-color-scheme:dark){.topbar{box-shadow:0 8px 28px rgba(0,0,0,.4),0 0 0 .5px var(--sep) inset}}
+  background:color-mix(in srgb,var(--card) 55%,transparent);-webkit-backdrop-filter:saturate(220%) blur(28px);backdrop-filter:saturate(220%) blur(28px);
+  box-shadow:0 14px 34px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.065),0 1px 0 rgba(255,255,255,.6) inset}
+@media (prefers-color-scheme:dark){.topbar{box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.09)}}
 .topbar .tt{font-size:16px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar.scrolled .tt{opacity:1}
 .topbar .l{grid-column:1;justify-self:start;display:flex}.topbar .tt{grid-column:2}.topbar .r{grid-column:3;justify-self:end;margin-left:auto;display:flex;gap:2px}
@@ -19,9 +19,9 @@
 .page-sub{margin-top:-14px;color:var(--label2);font-size:15px}
 
 .tabbar{position:fixed;left:12px;right:12px;bottom:calc(10px + var(--safe-b));z-index:40;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-radius:26px;padding:5px;
-  background:color-mix(in srgb,var(--card) 68%,transparent);-webkit-backdrop-filter:saturate(200%) blur(26px);backdrop-filter:saturate(200%) blur(26px);
-  box-shadow:0 10px 32px rgba(0,0,0,.18),0 0 0 .5px var(--sep) inset,0 1px 0 rgba(255,255,255,.5) inset}
-@media (prefers-color-scheme:dark){.tabbar{box-shadow:0 10px 32px rgba(0,0,0,.5),0 0 0 .5px var(--sep) inset}}
+  background:color-mix(in srgb,var(--card) 55%,transparent);-webkit-backdrop-filter:saturate(220%) blur(28px);backdrop-filter:saturate(220%) blur(28px);
+  box-shadow:0 16px 38px rgba(0,0,0,.22),0 0 0 1px rgba(0,0,0,.065),0 1px 0 rgba(255,255,255,.6) inset}
+@media (prefers-color-scheme:dark){.tabbar{box-shadow:0 16px 38px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.09)}}
 .tabbar button{display:grid;place-items:center;align-content:center;gap:1px;min-height:48px;margin:0 2px;padding:5px 0 4px;border-radius:18px;color:var(--label3);font-size:10.5px;font-weight:500;position:relative;transition:background .2s var(--ease),color .2s}
 .tabbar button[aria-current=page]{color:var(--label);background:var(--accent-soft)}
 .tabbar .ic svg{width:22px;height:22px}
@@ -29,8 +29,8 @@
 
 /* floating glass search pill (lists: Leads, Team performance) */
 .glass-search{position:sticky;top:calc(var(--safe-t) + 66px);z-index:25;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;margin:0 0 4px;border-radius:999px;color:var(--label2);
-  background:color-mix(in srgb,var(--card) 70%,transparent);-webkit-backdrop-filter:saturate(200%) blur(24px);backdrop-filter:saturate(200%) blur(24px);
-  box-shadow:0 6px 20px rgba(0,0,0,.1),0 0 0 .5px var(--sep) inset}
+  background:color-mix(in srgb,var(--card) 58%,transparent);-webkit-backdrop-filter:saturate(220%) blur(26px);backdrop-filter:saturate(220%) blur(26px);
+  box-shadow:0 10px 26px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.06)}
 .glass-search input{flex:1;min-width:0;background:none;border:0;font-size:16px;color:var(--label);min-height:40px;padding:0}
 .glass-search input::placeholder{color:var(--label3)}
 .glass-search .ic{color:var(--label3);flex:none}
