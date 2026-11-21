@@ -181,7 +181,9 @@ async function renderDashboard(dash) {
           try { await api('sos_visit_complete', { p_id: v.id, p: { outcome: outcomeSel.value || 'no_outcome' } }); await paintVisits(); }
           catch (e) { completeBtn.disabled = false; }
         };
-        row.appendChild(outcomeSel); row.appendChild(completeBtn);
+        var surveyBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:6px 12px;margin-top:4px;margin-left:6px' }, 'Survey');
+        surveyBtn.onclick = function () { runSurveyFlow(v.businessId); };
+        row.appendChild(outcomeSel); row.appendChild(completeBtn); row.appendChild(surveyBtn);
       }
       visitsList.appendChild(row);
     });
@@ -209,6 +211,24 @@ async function renderDashboard(dash) {
   var newVisitBtn = h('button', { class: 'btn fill', type: 'button', style: 'width:auto;padding:8px 14px' }, '+ New visit');
   newVisitBtn.onclick = newVisitFlow;
   var visitsCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My visits'), newVisitBtn), visitError, visitsList);
+
+  async function runSurveyFlow(businessId) {
+    var templates;
+    try { templates = await api('sos_survey_templates_list'); } catch (e) { alert(e.message); return; }
+    if (!templates.length) { alert('No survey templates yet. Ask a manager to create one.'); return; }
+    var pick = templates.length === 1 ? 0 : (parseInt(prompt('Which survey?\n' + templates.map(function (t, i) { return (i + 1) + '. ' + t.name; }).join('\n') + '\n\nEnter a number:'), 10) - 1);
+    if (!(pick >= 0 && pick < templates.length)) return;
+    var tmpl = templates[pick];
+    var answers = {};
+    for (var i = 0; i < tmpl.questions.length; i++) {
+      var q = tmpl.questions[i];
+      var hint = q.options && q.options.length ? ' (' + q.options.join(' / ') + ')' : (q.kind === 'yes_no' ? ' (yes/no)' : '');
+      var ans = prompt(q.label + hint + (q.required ? ' *' : ''));
+      if (ans) answers[q.id] = ans;
+    }
+    try { await api('sos_survey_submit', { p_template: tmpl.id, p_business: businessId, p_visit: null, p_answers: answers }); alert('Survey saved.'); }
+    catch (e) { alert(e.message); }
+  }
 
   var LEAD_STAGES = ['new_prospect', 'contacted', 'qualified', 'interested', 'demo_scheduled', 'demo_completed', 'trial_activated', 'negotiation', 'won', 'lost'];
   var leadsList = h('div');
@@ -273,6 +293,29 @@ async function renderDashboard(dash) {
     visits.slice(0, 20).forEach(function (v) {
       teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, v.businessName + ' · ' + v.staffName + ' · ' + v.status + (v.outcome ? ' · ' + v.outcome : '')));
     });
+    var intel;
+    try { intel = await api('sos_market_intel'); } catch (e) { intel = null; }
+    if (intel) {
+      teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Market intelligence (' + intel.totalResponses + ' survey responses, employee-reported)'));
+      intel.byCategory.forEach(function (c) { teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, c.category + ': ' + c.count)); });
+    }
+    var newTemplateBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:6px 12px;margin-top:10px' }, '+ New survey template');
+    newTemplateBtn.onclick = async function () {
+      var name = prompt('Survey template name:'); if (!name) return;
+      var category = prompt('Category (e.g. clothing, grocery, cafe), optional:') || '';
+      var questions = [];
+      while (true) {
+        var label = prompt('Question ' + (questions.length + 1) + ' (leave blank to finish):');
+        if (!label) break;
+        var kind = prompt('Type for this question: text, number, yes_no, single_choice, multiple_choice, dropdown, date', 'text') || 'text';
+        var required = confirm('Is this question required?');
+        questions.push({ label: label, kind: kind, required: required });
+      }
+      if (!questions.length) { alert('Add at least one question.'); return; }
+      try { await api('sos_survey_template_save', { p: { name: name, category: category, questions: questions } }); alert('Template saved.'); }
+      catch (e) { alert(e.message); }
+    };
+    teamCard.appendChild(newTemplateBtn);
   }
 
   var kpis = h('div', { class: 'kpis' },
