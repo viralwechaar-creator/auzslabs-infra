@@ -113,19 +113,63 @@ async function boot() {
   renderDashboard(dash);
 }
 
-function renderDashboard(dash) {
+var watchId = null;
+function stopWatch() { if (watchId != null && navigator.geolocation) { navigator.geolocation.clearWatch(watchId); watchId = null; } }
+function startWatch(sessionId, statusEl) {
+  if (!navigator.geolocation) { statusEl.textContent = 'This device has no location support.'; return; }
+  watchId = navigator.geolocation.watchPosition(function (pos) {
+    api('sos_location_batch', { p_session: sessionId, p_points: [{ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: new Date().toISOString() }] })
+      .then(function () { statusEl.textContent = 'Tracking · last update ' + new Date().toLocaleTimeString(); })
+      .catch(function () { statusEl.textContent = 'Could not send your location. Will retry.'; });
+  }, function (err) { statusEl.textContent = 'Location permission needed to track a field session: ' + err.message; },
+  { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 });
+}
+
+async function renderDashboard(dash) {
   var signOutBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;margin:0;padding:8px 14px' }, 'Sign out');
-  signOutBtn.onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
+  signOutBtn.onclick = function () { stopWatch(); sb.auth.signOut().then(function () { location.reload(); }); };
   var topbar = h('div', { class: 'topbar' },
     h('b', null, 'AUZslab SalesOS'),
     h('div', null, h('span', { class: 'muted' }, dash.my_role + ' · ' + dash.my_email + ' '), signOutBtn));
+
+  var fieldStatus = h('p', { class: 'muted' }, 'No open field session.');
+  var fieldActions = h('div');
+  var canField = dash.my_role === 'Sales Executive' || dash.my_role === 'owner';
+  var fieldCard = h('div', { class: 'notice' }, h('b', null, 'Field session'), fieldStatus, fieldActions);
+
+  async function paintField() {
+    var cur;
+    try { cur = await api('sos_field_session_current'); } catch (e) { fieldStatus.textContent = e.message; return; }
+    clear(fieldActions);
+    if (!cur) {
+      fieldStatus.textContent = 'No open field session.';
+      var startBtn = h('button', { class: 'btn fill', type: 'button', style: 'margin-top:10px' }, 'Start field session');
+      startBtn.onclick = async function () {
+        startBtn.disabled = true;
+        try { var r = await api('sos_field_session_start'); startWatch(r.id, fieldStatus); await paintField(); }
+        catch (e) { fieldStatus.textContent = e.message; startBtn.disabled = false; }
+      };
+      fieldActions.appendChild(startBtn);
+      return;
+    }
+    fieldStatus.textContent = (cur.status === 'active' ? 'Tracking active' : 'Paused') + ' · since ' + new Date(cur.startedAt).toLocaleTimeString();
+    if (cur.status === 'active') startWatch(cur.id, fieldStatus); else stopWatch();
+    var pauseBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;margin:6px 8px 0 0;padding:8px 14px' }, cur.status === 'active' ? 'Pause' : 'Resume');
+    var endBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;margin-top:6px;padding:8px 14px;color:#b00020' }, 'End session');
+    pauseBtn.onclick = async function () { stopWatch(); await api('sos_field_session_set', { p_id: cur.id, p_status: cur.status === 'active' ? 'paused' : 'active' }); await paintField(); };
+    endBtn.onclick = async function () { stopWatch(); await api('sos_field_session_set', { p_id: cur.id, p_status: 'ended' }); await paintField(); };
+    fieldActions.appendChild(pauseBtn); fieldActions.appendChild(endBtn);
+  }
+
   var main = h('main', null,
     h('div', { class: 'kpis' },
       h('div', { class: 'kpi' }, h('b', null, dash.my_role), h('span', null, 'Your post')),
       h('div', { class: 'kpi' }, h('b', null, dash.tenant && dash.tenant.name || 'AUZslab'), h('span', null, 'Team'))),
+    canField ? fieldCard : null,
     h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
-      h('p', { class: 'muted' }, 'Field visits, leads and reports are being built next. This page will grow into your daily workspace.')));
+      h('p', { class: 'muted' }, 'Visits, leads and reports are being built next. This page will grow into your daily workspace.')));
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
+  if (canField) paintField();
 }
 
 boot();
