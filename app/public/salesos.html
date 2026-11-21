@@ -407,6 +407,30 @@ async function renderDashboard(dash) {
     allTasks.slice(0, 20).forEach(function (x) {
       teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, x.title + ' · ' + x.assignedToName + ' · ' + x.status + (x.dueDate ? ' · due ' + x.dueDate : '')));
     });
+    var flagged;
+    try { flagged = await api('sos_flagged_visits'); } catch (e) { flagged = []; }
+    var unreviewed = flagged.filter(function (f) { return !f.reviewed; });
+    teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px;color:' + (unreviewed.length ? '#b00020' : 'inherit') }, 'Visit integrity flags (' + unreviewed.length + ' unreviewed)'));
+    unreviewed.forEach(function (f) {
+      var reviewBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px' }, 'Mark reviewed');
+      reviewBtn.onclick = async function () {
+        var note = prompt('Note (optional):') || null;
+        try { await api('sos_visit_mark_reviewed', { p_id: f.id, p_note: note }); await paintTeam(); } catch (e) { alert(e.message); }
+      };
+      teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' },
+        f.staffName + ' · ' + f.businessName + ' · checked out after ' + Math.round(f.seconds) + 's', h('br'), reviewBtn));
+    });
+    var incRule;
+    try { incRule = await api('sos_incentive_rule_get'); } catch (e) { incRule = { perDealAmount: 0 }; }
+    var setRuleBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px;margin-top:6px' }, 'Change incentive rate');
+    setRuleBtn.onclick = async function () {
+      var amt = prompt('₹ per deal won:', incRule.perDealAmount);
+      if (amt == null) return;
+      try { await api('sos_incentive_rule_set', { p_per_deal_amount: parseFloat(amt) }); await paintTeam(); } catch (e) { alert(e.message); }
+    };
+    teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Incentive rate: ₹' + incRule.perDealAmount + ' per deal won'));
+    teamCard.appendChild(setRuleBtn);
+
     var audit;
     try { audit = await api('sos_audit_log', { p_limit: 30 }); } catch (e) { audit = []; }
     teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Audit log (latest ' + audit.length + ')'));
@@ -437,12 +461,13 @@ async function renderDashboard(dash) {
     h('div', { class: 'kpi' }, h('b', null, dash.tenant && dash.tenant.name || 'AUZslab'), h('span', null, 'Team')));
   async function paintPerf() {
     if (!canField) return;
-    var perf, report;
-    try { [perf, report] = await Promise.all([api('sos_my_performance'), api('sos_daily_report')]); } catch (e) { return; }
+    var perf, report, incentive;
+    try { [perf, report, incentive] = await Promise.all([api('sos_my_performance'), api('sos_daily_report'), api('sos_my_incentive')]); } catch (e) { return; }
     kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, perf.visitsDone + (perf.visitsTarget ? '/' + perf.visitsTarget : '')), h('span', null, 'Visits this month')));
     kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, perf.leadsDone + (perf.leadsTarget ? '/' + perf.leadsTarget : '')), h('span', null, 'Leads this month')));
     kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, perf.dealsWon), h('span', null, 'Deals won this month')));
     kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, report.followUpsDue), h('span', null, 'Follow-ups due today')));
+    kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, '₹' + incentive.earned), h('span', null, 'Incentive this month')));
   }
 
   var main = h('main', null, kpis,
