@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AUZslab SalesOS</title>
+<link rel="icon" href="/icon-auzslab-192.png">
+<link rel="manifest" href="/manifest-salesos.json">
+<script src="/config.js"></script>
+<script src="/sb-client.js?v=8"></script>
+<style>
+:root{--bg:#f5f4f2;--card:#fff;--ink:#171717;--muted:#6b6b6b;--accent:#800020;--sep:#e3e1dd;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.4 -apple-system,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100dvh}
+.login{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--card);border-radius:var(--radius);padding:28px;max-width:360px;width:100%;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card img{height:32px;margin-bottom:16px}
+.card h1{font-size:20px;margin:0 0 4px}
+.muted{color:var(--muted);font-size:13px}
+.input{width:100%;padding:11px 12px;border:1px solid var(--sep);border-radius:10px;font-size:15px;margin-top:10px}
+.btn{display:block;width:100%;min-height:44px;border-radius:10px;border:none;font-weight:600;font-size:15px;cursor:pointer;margin-top:12px}
+.btn.fill{background:var(--accent);color:#fff}
+.btn.plain{background:transparent;color:var(--accent)}
+.divider{text-align:center;color:var(--muted);font-size:12px;margin:14px 0}
+.shell{min-height:100dvh;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--sep)}
+.topbar b{font-size:15px}
+main{flex:1;padding:18px;max-width:720px;margin:0 auto;width:100%}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:14px}
+.kpi b{display:block;font-size:22px}
+.kpi span{color:var(--muted);font-size:12px}
+.notice{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.notice b{display:block;margin-bottom:4px}
+.spin{width:24px;height:24px;border:3px solid var(--sep);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin:40px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.err{color:#b00020;font-size:13px;min-height:18px;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="app"><div class="login"><div class="spin"></div></div></div>
+<script src="/ds/gsignin.js?v=1"></script>
+<script>
+'use strict';
+var CFG = window.CFG || {};
+var sb = window.supabase.createClient(CFG.url, CFG.key);
+function h(tag, props) {
+  var e = document.createElement(tag);
+  var kids = [].slice.call(arguments, 2);
+  if (props) for (var k in props) {
+    var v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k.indexOf('on') === 0 && typeof v === 'function') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  kids.forEach(function (c) { if (c != null && c !== false) e.appendChild(c instanceof Node ? c : document.createTextNode(String(c))); });
+  return e;
+}
+function clear(e) { while (e.firstChild) e.removeChild(e.firstChild); return e; }
+var app = document.getElementById('app');
+
+async function api(fn, args) {
+  var r = await sb.rpc(fn, args || {});
+  if (r.error) { var e = new Error(r.error.message || 'Something went wrong'); e.status = r.error.status; throw e; }
+  return r.data;
+}
+
+function showLogin(msg) {
+  var email = h('input', { class: 'input', type: 'email', placeholder: 'Email', autocomplete: 'username' });
+  var pass = h('input', { class: 'input', type: 'password', placeholder: 'Password', autocomplete: 'current-password' });
+  var err = h('div', { class: 'err' }, msg || '');
+  var signInBtn = h('button', { class: 'btn fill', type: 'button' }, 'Sign in');
+  signInBtn.onclick = async function () {
+    err.textContent = ''; signInBtn.disabled = true;
+    var r = await sb.auth.signInWithPassword({ email: email.value.trim(), password: pass.value });
+    signInBtn.disabled = false;
+    if (r.error) { err.textContent = r.error.message; return; }
+    boot();
+  };
+  var googleHost = h('div');
+  var card = h('div', { class: 'card' },
+    h('img', { src: '/icon-auzslab-192.png', alt: '' }),
+    h('h1', null, 'AUZslab SalesOS'),
+    h('p', { class: 'muted' }, 'Sign in with the email you applied with.'),
+    email, pass, err, signInBtn,
+    h('div', { class: 'divider' }, 'or'),
+    googleHost);
+  clear(app).appendChild(h('div', { class: 'login' }, card));
+  if (CFG.googleClientId) auzGoogleLink(googleHost, 'salesos');
+}
+
+function blocked(title, text) {
+  var btn = h('button', { class: 'btn plain', type: 'button' }, 'Sign out');
+  btn.onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
+  clear(app).appendChild(h('div', { class: 'login' }, h('div', { class: 'card' },
+    h('h1', null, title), h('p', { class: 'muted' }, text), btn)));
+}
+
+async function boot() {
+  clear(app).appendChild(h('div', { class: 'login' }, h('div', { class: 'spin' })));
+  var sess = await sb.auth.getSession();
+  if (!sess.data.session) return showLogin();
+  var dash;
+  try { dash = await api('my_dashboard'); }
+  catch (e) {
+    if (e.status === 401) return showLogin('Your session ended. Please sign in again.');
+    return blocked('Could not load', e.message);
+  }
+  if (!(dash.features || {}).salesos) {
+    return blocked('Not a SalesOS account', 'This login is not part of the AUZslab SalesOS team. If you applied and were approved, make sure you are signing in with the same email.');
+  }
+  renderDashboard(dash);
+}
+
+function renderDashboard(dash) {
+  var signOutBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;margin:0;padding:8px 14px' }, 'Sign out');
+  signOutBtn.onclick = function () { sb.auth.signOut().then(function () { location.reload(); }); };
+  var topbar = h('div', { class: 'topbar' },
+    h('b', null, 'AUZslab SalesOS'),
+    h('div', null, h('span', { class: 'muted' }, dash.my_role + ' · ' + dash.my_email + ' '), signOutBtn));
+  var main = h('main', null,
+    h('div', { class: 'kpis' },
+      h('div', { class: 'kpi' }, h('b', null, dash.my_role), h('span', null, 'Your post')),
+      h('div', { class: 'kpi' }, h('b', null, dash.tenant && dash.tenant.name || 'AUZslab'), h('span', null, 'Team'))),
+    h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
+      h('p', { class: 'muted' }, 'Field visits, leads and reports are being built next. This page will grow into your daily workspace.')));
+  clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
+}
+
+boot();
+</script>
+</body>
+</html>
