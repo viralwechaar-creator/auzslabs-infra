@@ -65,6 +65,12 @@ async function api(fn, args) {
   if (r.error) { var e = new Error(r.error.message || 'Something went wrong'); e.status = r.error.status; throw e; }
   return r.data;
 }
+async function token() { var s = (await sb.auth.getSession()).data.session; return s && s.access_token; }
+async function uploadExpenseReceipt(expenseId, file) {
+  var t = await token();
+  var res = await fetch(CFG.url.replace(/\/$/, '') + '/storage/sos-expense-receipt/' + expenseId, { method: 'POST', body: file, headers: { Authorization: 'Bearer ' + t } });
+  if (!res.ok) { var m = res.statusText; try { m = (await res.json()).error || m; } catch (e2) {} throw new Error(m); }
+}
 
 function showLogin(msg) {
   var email = h('input', { class: 'input', type: 'email', placeholder: 'Email', autocomplete: 'username' });
@@ -273,6 +279,40 @@ async function renderDashboard(dash) {
   newLeadBtn.onclick = createLeadFlow;
   var leadsCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My leads'), newLeadBtn), leadsError, leadsList);
 
+  var expensesList = h('div', null);
+  var expensesError = h('div', { class: 'err' });
+  async function paintExpenses() {
+    clear(expensesList);
+    var rows;
+    try { rows = await api('sos_my_expenses'); } catch (e) { expensesError.textContent = e.message; return; }
+    if (!rows.length) { expensesList.appendChild(h('p', { class: 'muted' }, 'No expenses filed yet.')); return; }
+    rows.forEach(function (x) {
+      var fileInput = h('input', { type: 'file', accept: 'image/*,.pdf', style: 'display:none' });
+      var attachBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px' }, x.receiptFile ? 'Replace receipt' : 'Attach receipt');
+      if (x.status !== 'pending') attachBtn.disabled = true;
+      attachBtn.onclick = function () { fileInput.click(); };
+      fileInput.onchange = async function () {
+        if (!fileInput.files[0]) return;
+        try { await uploadExpenseReceipt(x.id, fileInput.files[0]); await paintExpenses(); }
+        catch (e) { alert(e.message); }
+      };
+      expensesList.appendChild(h('div', { style: 'padding:8px 0;border-top:1px solid var(--sep)' },
+        h('b', null, '₹' + x.amount + ' · ' + x.category), h('span', { class: 'muted' }, '  (' + x.status + ')'), h('br'),
+        x.purpose ? h('span', { class: 'muted' }, x.purpose) : null, h('br'), attachBtn, fileInput));
+    });
+  }
+  var newExpenseBtn = h('button', { class: 'btn fill', type: 'button', style: 'width:auto;padding:8px 14px' }, '+ New expense');
+  newExpenseBtn.onclick = async function () {
+    var category = prompt('Category: fuel, travel, transportation, food, accommodation, other', 'fuel');
+    if (!category) return;
+    var amount = prompt('Amount (₹):');
+    if (!amount) return;
+    var purpose = prompt('Purpose, optional:') || '';
+    try { await api('sos_expense_submit', { p: { category: category, amount: parseFloat(amount), purpose: purpose } }); await paintExpenses(); }
+    catch (e) { alert(e.message); }
+  };
+  var expensesCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My expenses'), newExpenseBtn), expensesError, expensesList);
+
   var canManage = dash.my_role === 'Sales Manager' || dash.my_role === 'Admin' || dash.my_role === 'owner';
   var teamCard = h('div', { class: 'notice' });
   async function paintTeam() {
@@ -299,6 +339,20 @@ async function renderDashboard(dash) {
       teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Market intelligence (' + intel.totalResponses + ' survey responses, employee-reported)'));
       intel.byCategory.forEach(function (c) { teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, c.category + ': ' + c.count)); });
     }
+    var expenses;
+    try { expenses = await api('sos_all_expenses', { p_status: 'pending' }); } catch (e) { expenses = []; }
+    teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Pending expenses (' + expenses.length + ')'));
+    expenses.forEach(function (x) {
+      var approveBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px' }, 'Approve');
+      var rejectBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px' }, 'Reject');
+      approveBtn.onclick = async function () { try { await api('sos_expense_review', { p_id: x.id, p_decision: 'approved' }); await paintTeam(); } catch (e) { alert(e.message); } };
+      rejectBtn.onclick = async function () {
+        var reason = prompt('Reason for rejecting:') || '';
+        try { await api('sos_expense_review', { p_id: x.id, p_decision: 'rejected', p_reject_reason: reason }); await paintTeam(); } catch (e) { alert(e.message); }
+      };
+      teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' },
+        x.staffName + ' · ₹' + x.amount + ' · ' + x.category + (x.hasReceipt ? ' · has receipt' : ''), h('br'), approveBtn, rejectBtn));
+    });
     var newTemplateBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:6px 12px;margin-top:10px' }, '+ New survey template');
     newTemplateBtn.onclick = async function () {
       var name = prompt('Survey template name:'); if (!name) return;
@@ -335,11 +389,12 @@ async function renderDashboard(dash) {
     canField ? fieldCard : null,
     canField ? visitsCard : null,
     canField ? leadsCard : null,
+    canField ? expensesCard : null,
     canManage ? teamCard : null,
     h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
       h('p', { class: 'muted' }, 'Notifications and the survey engine are being built next. This page will grow into your daily workspace.')));
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
-  if (canField) { paintField(); paintVisits(); paintLeads(); paintPerf(); }
+  if (canField) { paintField(); paintVisits(); paintLeads(); paintExpenses(); paintPerf(); }
   if (canManage) paintTeam();
 }
 
