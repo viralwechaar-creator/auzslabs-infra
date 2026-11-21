@@ -1,6 +1,22 @@
 /* AUZslab SalesOS: tokens and components shared by phone and desktop (Apple HIG), the same design
    language as AUZsScan/Accounting/Payroll. Layout that differs by device lives in salesos.mobile.css
-   (0-899px) and salesos.desktop.css (900px+). Colours, sizes and shadows all come from /ds/auz.css. */
+   (0-899px) and salesos.desktop.css (900px+). Sizes and shadows come from /ds/auz.css; the accent is
+   overridden here to black/white/grey, not the business wine colour -- this is AUZslab's own
+   internal tool, not a client's branded product, so there is no business to brand it for. State
+   colours (green/red/orange/blue/purple on badges and pills) are untouched -- Apple HIG keeps
+   semantic colour separate from the brand accent. */
+:root{
+  --accent:#1c1c1e;--on-accent:#fff;--accent-text:#1c1c1e;
+  --accent-soft:rgba(28,28,30,.08);--accent-soft2:rgba(28,28,30,.14);--accent-line:rgba(28,28,30,.32);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --accent:#f5f5f7;--on-accent:#1c1c1e;--accent-text:#f5f5f7;
+  --accent-soft:rgba(245,245,247,.16);--accent-soft2:rgba(245,245,247,.24);--accent-line:rgba(245,245,247,.42);
+}}
+:root[data-theme=dark]{
+  --accent:#f5f5f7;--on-accent:#1c1c1e;--accent-text:#f5f5f7;
+  --accent-soft:rgba(245,245,247,.16);--accent-soft2:rgba(245,245,247,.24);--accent-line:rgba(245,245,247,.42);
+}
 :root{
   --tint:var(--accent);--tint-text:var(--accent-text);--tint-fg:var(--on-accent);--tint-soft:var(--accent-soft);--tint-line:var(--accent-line);
   --r:var(--r2);--r-lg:var(--r3);--shadow:var(--sh2);
