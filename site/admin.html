@@ -1001,6 +1001,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="jobApplications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>Job applications<span class="a-row-badge" id="notifBadgeJobsSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="salesOs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>SalesOS team</button>
+        <button class="a-side-btn" data-section="idCards"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="11" r="2.2"/><path d="M5 17c.4-1.8 1.6-2.8 3-2.8s2.6 1 3 2.8M14 9h5M14 13h5"/></svg>Staff ID cards</button>
         <button class="a-side-btn" data-section="onboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>Onboard new</button>
         <button class="a-side-btn" data-section="setup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>Client setup<span class="a-row-badge" id="notifBadgeSetupSide" style="display:none"></span></button>
 
@@ -1129,7 +1130,55 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="salesOsAudit" style="margin-top:8px">Loading&hellip;</div>
       </section>
 
-      
+      <style id="idc">
+.idc-wrap{display:grid;gap:24px;align-items:start}
+@media (min-width:860px){.idc-wrap{grid-template-columns:320px 1fr}}
+.idc-cards{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+.idc-card{width:300px;min-height:460px;border-radius:22px;background:#fff;box-shadow:var(--lift,0 10px 30px rgba(0,0,0,.14));overflow:hidden;position:relative;display:flex;flex-direction:column;font-family:system-ui,-apple-system,sans-serif}
+.idc-bar{height:14px;background:#800020;flex:none}
+.idc-face{flex:1;display:flex;flex-direction:column;align-items:center;padding:18px 20px 22px;gap:10px}
+.idc-badge{font:700 11px/1 ui-monospace,monospace;letter-spacing:.14em;color:#800020;background:rgba(128,0,32,.08);border:1px solid rgba(128,0,32,.28);border-radius:999px;padding:5px 14px;text-transform:uppercase}
+.idc-photo{width:150px;height:184px;border-radius:14px;background:#f1eceb center/cover no-repeat;border:1px solid rgba(128,0,32,.18);display:flex;align-items:center;justify-content:center;color:#b5a9a9;font-size:12px;margin-top:4px}
+.idc-photo img{width:100%;height:100%;object-fit:cover;border-radius:14px}
+.idc-name{font-size:26px;font-weight:800;color:#1c1c1e;text-align:center;line-height:1.1;margin-top:6px;word-break:break-word}
+.idc-role{font:600 11px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#800020}
+.idc-rows{width:100%;margin-top:4px;border-top:1px solid #eee;padding-top:10px;display:grid;gap:6px}
+.idc-row{display:flex;justify-content:space-between;font-size:12px;color:#444;gap:10px}
+.idc-row b{color:#1c1c1e;font-weight:700}
+.idc-back-head{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:4px}
+.idc-back-head img{height:28px}
+.idc-back-head span{font:800 13px/1 system-ui,sans-serif;letter-spacing:.06em;color:#800020}
+.idc-blurb{font-size:11.5px;line-height:1.5;color:#444;text-align:center;padding:0 4px}
+.idc-quote{font-style:italic;font-size:11px;line-height:1.45;color:#800020;text-align:center;border-top:1px dashed rgba(128,0,32,.3);border-bottom:1px dashed rgba(128,0,32,.3);padding:8px 6px;margin:2px 0}
+.idc-qr{width:118px;height:118px;margin:2px auto 0;border:1px solid #eee;border-radius:10px;padding:5px;background:#fff}
+.idc-qr img{width:100%;height:100%}
+.idc-foot{font-size:9.5px;line-height:1.5;color:#777;text-align:center;margin-top:auto}
+.print-only{display:none}
+@media print{
+  body>*:not(.print-only){display:none!important}
+  .print-only{display:flex!important;flex-direction:column;align-items:center;gap:0}
+  .print-only .idc-card{box-shadow:none;page-break-after:always;margin:24px auto}
+  .print-only .idc-card:last-child{page-break-after:auto}
+}
+      </style>
+      <section class="a-page" id="idCardsSection" data-title="Staff ID cards" data-parent="more">
+        <div class="label">AUZslab SalesOS</div>
+        <h2 class="h-2">Staff ID cards</h2>
+        <p class="p" style="margin-top:-6px">Fill in a staff member's details, then print or save the card as a PDF.</p>
+        <div class="idc-wrap">
+          <div class="card">
+            <div class="field"><label for="idcName">Full name</label><input id="idcName" placeholder="e.g. Rohan Mehta"></div>
+            <div class="field"><label for="idcRole">Role / designation</label><input id="idcRole" placeholder="e.g. Field Sales Executive"></div>
+            <div class="field"><label for="idcEmpId">Employee ID</label><input id="idcEmpId" placeholder="e.g. AUZ-1042"></div>
+            <div class="field"><label for="idcPhone">Phone</label><input id="idcPhone" placeholder="e.g. +91 98765 43210"></div>
+            <div class="field"><label for="idcPhoto">Photo</label><input id="idcPhoto" type="file" accept="image/*"></div>
+            <div class="onb-foot" style="margin-top:14px">
+              <button type="button" class="btn btn-primary" id="idcPrintBtn">Print / Save as PDF</button>
+            </div>
+          </div>
+          <div class="idc-cards" id="idcPreview"></div>
+        </div>
+      </section>
 
       <section class="a-page" id="clientsSection" data-title="Clients">
         <div class="label">Your clients</div>
@@ -1365,6 +1414,11 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="salesOs">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
             <span class="grow">SalesOS team</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="idCards">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="11" r="2.2"/><path d="M5 17c.4-1.8 1.6-2.8 3-2.8s2.6 1 3 2.8M14 9h5M14 13h5"/></svg>
+            <span class="grow">Staff ID cards</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="onboard">
@@ -1625,6 +1679,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
 </div>
 
 <script src="/sb-client.js?v=109"></script>
+<script src="vendor/qrcode.js"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
 const sb = supabase.createClient(CFG.url, CFG.key);
@@ -3832,6 +3887,56 @@ function bmInit() {
   if (!BM.inited) { BM.inited = true; if (!BM.items.length) bmNew('software'); document.querySelectorAll('#bmSteps button').forEach((b) => { b.onclick = () => { const n = Number(b.dataset.bms); if (n > 1 && !BM.c.business_name) { alert('Enter the client details first.'); return; } if (n === 3 && !bmCalc().lines.length) { alert('Add the items first.'); return; } BM.done = null; BM.step = n; bmRender(); }; }); }
   bmRender(); bmRecent();
 }
+
+const IDC = { name: '', role: '', empId: '', phone: '', photo: '' };
+function idcQr() {
+  try { const q = qrcode(0, 'M'); q.addData('https://auzslab.in'); q.make(); return q.createDataURL(5, 2); } catch (e) { return ''; }
+}
+function idcCardsHtml() {
+  const initials = (IDC.name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const qr = idcQr();
+  const front = `<div class="idc-card"><div class="idc-bar"></div><div class="idc-face">
+    <span class="idc-badge">Staff ID</span>
+    <div class="idc-photo">${IDC.photo ? `<img src="${esc(IDC.photo)}" alt="">` : esc(initials || 'Photo')}</div>
+    <div class="idc-name">${esc(IDC.name || 'Staff name')}</div>
+    <div class="idc-role">${esc(IDC.role || 'Role')}</div>
+    <div class="idc-rows">
+      <div class="idc-row"><span>Employee ID</span><b>${esc(IDC.empId || '—')}</b></div>
+      <div class="idc-row"><span>Phone</span><b>${esc(IDC.phone || '—')}</b></div>
+    </div></div><div class="idc-bar"></div></div>`;
+  const back = `<div class="idc-card"><div class="idc-bar"></div><div class="idc-face">
+    <div class="idc-back-head"><img src="logo.png" alt=""><span>About AUZslab</span></div>
+    <p class="idc-blurb">AUZslab builds point-of-sale, CRM, billing, inventory and workforce software for small and growing businesses &mdash; one login, every tool a business needs to run.</p>
+    <div class="idc-quote">&ldquo;We build the tools so our clients can focus on their customers.&rdquo;</div>
+    ${qr ? `<div class="idc-qr"><img src="${qr}" alt="auzslab.in"></div>` : ''}
+    <div class="idc-foot">AUZslab Technologies<br>auzslab.in<br>This card is the property of AUZslab and must be returned on separation.</div>
+    </div><div class="idc-bar"></div></div>`;
+  return front + back;
+}
+function idcRender() {
+  const el = document.getElementById('idcPreview'); if (!el) return;
+  el.innerHTML = idcCardsHtml();
+}
+function idcInit() {
+  if (IDC.inited) { idcRender(); return; }
+  IDC.inited = true;
+  const bind = (id, key) => document.getElementById(id).addEventListener('input', (e) => { IDC[key] = e.target.value; idcRender(); });
+  bind('idcName', 'name'); bind('idcRole', 'role'); bind('idcEmpId', 'empId'); bind('idcPhone', 'phone');
+  document.getElementById('idcPhoto').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => { IDC.photo = reader.result; idcRender(); };
+    reader.readAsDataURL(f);
+  });
+  document.getElementById('idcPrintBtn').onclick = () => {
+    let sheet = document.getElementById('idcPrintSheet');
+    if (!sheet) { sheet = document.createElement('div'); sheet.id = 'idcPrintSheet'; sheet.className = 'print-only'; document.body.append(sheet); }
+    sheet.innerHTML = idcCardsHtml();
+    window.print();
+  };
+  idcRender();
+}
+SECTION_LOADERS.idCards = () => idcInit();
 </script>
 </body>
 </html>

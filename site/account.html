@@ -174,6 +174,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open POS (add-on)</span></a>
       <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open Payroll</span></a>
       <button class="" id="helpLink" type="button"><span>Help &amp; report a problem</span></button>
+      <button class="" id="signOutNavBtn" type="button" style="color:#b3261e"><span>Sign out</span></button>
       <a href="#" id="openAccountsLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open Accounting</span></a>
       <a href="#" id="openMobLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open AUZsMob</span></a>
       <a href="#" id="openScanLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open AUZsScan</span></a>
@@ -422,8 +423,14 @@ async function checkConsent() {
   } catch (e) { /* never block the account page for this */ }
 }
 
+function bindSignOut() {
+  const go = async () => { await sb.auth.signOut(); window.location.href = 'signup.html'; };
+  const a = $('#signOutBtn'); if (a) a.onclick = go;
+  const b = $('#signOutNavBtn'); if (b) b.onclick = go;
+}
+
 async function bootProspect(session) {
-  $('#signOutBtn').onclick = async () => { await sb.auth.signOut(); window.location.href = 'signup.html'; };
+  bindSignOut();
   document.querySelectorAll('.tenant-only').forEach((e) => { e.style.display = 'none'; });
   $('#pageTitle').textContent = 'Welcome';
   $('#pageLede').textContent = 'Complete your profile and review your cart.';
@@ -442,7 +449,7 @@ async function boot() {
   if (error) {
     // A login that no longer exists (account removed) or an expired session: clear it and start again at sign-in,
     // instead of leaving a dead page. Sign out always works, even when the account could not load.
-    $('#signOutBtn').onclick = async () => { await sb.auth.signOut(); window.location.href = 'signup.html'; };
+    bindSignOut();
     if (error.status === 401 || /authentication required|not a tenant member/i.test(error.message || '')) {
       // A signed-in person with no business yet gets "authentication required" here too (they have no staff record),
       // so ask a function that only needs the login: if it works, they are a new customer, not a dead session.
@@ -521,10 +528,7 @@ async function boot() {
   checkConsent();
   setInterval(async () => { await loadNotifications(); if ($('#pane-notifications').classList.contains('on')) renderNotifications(); }, 20000);
 
-  $('#signOutBtn').onclick = async () => {
-    await sb.auth.signOut();
-    window.location.href = 'signup.html';
-  };
+  bindSignOut();
 }
 
 function showTab(tab) {

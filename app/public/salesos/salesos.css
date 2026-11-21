@@ -25,6 +25,12 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;background:var(--bg)}
 body{margin:0;background:var(--bg);color:var(--label);font:var(--fs-body)/1.4 var(--font);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;overscroll-behavior-y:none}
+/* a faint fixed wash the glass bars can actually show through -- a flat page has nothing to
+   blur, so without this the "glass" fill reads as a plain near-white pill at rest. */
+body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(640px 360px at 18% 0%,color-mix(in srgb,var(--label) 7%,transparent),transparent 70%),
+             radial-gradient(520px 320px at 100% 8%,color-mix(in srgb,var(--label) 5%,transparent),transparent 70%)}
+#app{position:relative;z-index:2}
 h1,h2,h3,h4,p{margin:0}
 button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
 button{cursor:pointer;border:0;background:none}
