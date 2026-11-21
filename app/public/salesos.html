@@ -210,16 +210,48 @@ async function renderDashboard(dash) {
   newVisitBtn.onclick = newVisitFlow;
   var visitsCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My visits'), newVisitBtn), visitError, visitsList);
 
+  var LEAD_STAGES = ['new_prospect', 'contacted', 'qualified', 'interested', 'demo_scheduled', 'demo_completed', 'trial_activated', 'negotiation', 'won', 'lost'];
+  var leadsList = h('div');
+  var leadsError = h('p', { class: 'err' });
+  async function paintLeads() {
+    var rows;
+    try { rows = await api('sos_my_leads'); } catch (e) { leadsError.textContent = e.message; return; }
+    clear(leadsList);
+    if (!rows.length) { leadsList.appendChild(h('p', { class: 'muted' }, 'No leads yet. Create one from a visited business below.')); return; }
+    rows.forEach(function (l) {
+      var sel = h('select', { class: 'input', style: 'margin-top:4px;width:auto;display:inline-block' },
+        LEAD_STAGES.map(function (s) { return h('option', { value: s, selected: s === l.stage ? true : false }, s.replace(/_/g, ' ')); }));
+      sel.onchange = async function () { try { await api('sos_lead_update', { p_id: l.id, p: { stage: sel.value } }); } catch (e) { alert(e.message); } };
+      leadsList.appendChild(h('div', { style: 'padding:8px 0;border-top:1px solid var(--sep)' },
+        h('b', null, l.businessName), l.product ? h('span', { class: 'muted' }, '  · ' + l.product) : null, h('br'), sel));
+    });
+  }
+  async function createLeadFlow() {
+    var rows;
+    try { rows = await api('sos_my_visits'); } catch (e) { alert(e.message); return; }
+    if (!rows.length) { alert('Visit a business first, then create a lead for it.'); return; }
+    var options = rows.map(function (v) { return v.businessName + '|' + v.businessId; });
+    var pick = prompt('Which business?\n' + options.map(function (o, i) { return (i + 1) + '. ' + o.split('|')[0]; }).join('\n') + '\n\nEnter a number:');
+    var idx = parseInt(pick, 10) - 1;
+    if (!(idx >= 0 && idx < rows.length)) return;
+    var product = prompt('Product (e.g. AUZsPOS), optional:') || null;
+    try { await api('sos_lead_create', { p_business: rows[idx].businessId, p_product: product }); await paintLeads(); } catch (e) { alert(e.message); }
+  }
+  var newLeadBtn = h('button', { class: 'btn fill', type: 'button', style: 'width:auto;padding:8px 14px' }, '+ New lead');
+  newLeadBtn.onclick = createLeadFlow;
+  var leadsCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My leads'), newLeadBtn), leadsError, leadsList);
+
   var main = h('main', null,
     h('div', { class: 'kpis' },
       h('div', { class: 'kpi' }, h('b', null, dash.my_role), h('span', null, 'Your post')),
       h('div', { class: 'kpi' }, h('b', null, dash.tenant && dash.tenant.name || 'AUZslab'), h('span', null, 'Team'))),
     canField ? fieldCard : null,
     canField ? visitsCard : null,
+    canField ? leadsCard : null,
     h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
-      h('p', { class: 'muted' }, 'Leads and reports are being built next. This page will grow into your daily workspace.')));
+      h('p', { class: 'muted' }, 'Demos, trials and reports are being built next. This page will grow into your daily workspace.')));
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
-  if (canField) { paintField(); paintVisits(); }
+  if (canField) { paintField(); paintVisits(); paintLeads(); }
 }
 
 boot();
