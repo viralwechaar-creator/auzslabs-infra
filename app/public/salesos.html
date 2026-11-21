@@ -222,8 +222,20 @@ async function renderDashboard(dash) {
       var sel = h('select', { class: 'input', style: 'margin-top:4px;width:auto;display:inline-block' },
         LEAD_STAGES.map(function (s) { return h('option', { value: s, selected: s === l.stage ? true : false }, s.replace(/_/g, ' ')); }));
       sel.onchange = async function () { try { await api('sos_lead_update', { p_id: l.id, p: { stage: sel.value } }); } catch (e) { alert(e.message); } };
+      var demoBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px;margin-left:6px' }, 'Schedule demo');
+      demoBtn.onclick = async function () {
+        var when = prompt('Demo date/time (e.g. 2026-12-01 15:00)');
+        if (!when) return;
+        try { await api('sos_demo_create', { p_lead: l.id, p_date: new Date(when).toISOString() }); await paintLeads(); alert('Demo scheduled.'); }
+        catch (e) { alert(e.message); }
+      };
+      var trialBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px;margin-left:6px' }, 'Start trial');
+      trialBtn.onclick = async function () {
+        try { await api('sos_trial_start', { p_lead: l.id }); await paintLeads(); alert('Trial started (14 days).'); }
+        catch (e) { alert(e.message); }
+      };
       leadsList.appendChild(h('div', { style: 'padding:8px 0;border-top:1px solid var(--sep)' },
-        h('b', null, l.businessName), l.product ? h('span', { class: 'muted' }, '  · ' + l.product) : null, h('br'), sel));
+        h('b', null, l.businessName), l.product ? h('span', { class: 'muted' }, '  · ' + l.product) : null, h('br'), sel, demoBtn, trialBtn));
     });
   }
   async function createLeadFlow() {
