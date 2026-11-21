@@ -37,21 +37,6 @@ export const RPC = {
   admin_wa_set_tenant: { params: ['p_tenant', 'p_allow_platform'], auth: true },
   admin_open_counts: { params: [], auth: true },
   submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche', 'p_hp'], auth: false },
-  // AUZslab team: join-the-team applications (db/177/188) -- built across several past migrations but never
-  // registered here, so every one of these 404'd via the HTTP API until now (same class of bug this project's
-  // own notes describe for submit_addon_request originally -- see CLAUDE.md's Website Builder section).
-  submit_team_application: { params: ['p_name', 'p_email', 'p_phone', 'p_city', 'p_role', 'p_experience', 'p_about', 'p_hp'], defaults: { p_hp: '' }, auth: false },
-  submit_team_application_resume: { params: ['p_id', 'p_filename'], auth: false },
-  admin_team_application_resume: { params: ['p_id'], auth: true },
-  my_team_candidate_profile: { params: [], auth: true },
-  save_my_team_candidate_profile: { params: ['p'], jsonb: ['p'], auth: true },
-  submit_my_team_application: { params: [], auth: true },
-  my_team_applications: { params: [], auth: true },
-  team_me: { params: [], auth: true },
-  admin_list_team_applications: { params: ['p_status'], defaults: { p_status: 'new' }, auth: true },
-  admin_decide_team_application: { params: ['p_id', 'p_decision', 'p_role'], defaults: { p_role: null }, auth: true },
-  admin_add_team_member: { params: ['p_email', 'p_name', 'p_role', 'p_phone'], defaults: { p_name: null, p_role: 'salesman', p_phone: null }, auth: true },
-  admin_set_team_role: { params: ['p_id', 'p_role'], auth: true },
   list_clients: { params: [], auth: true },
   update_client: { params: ['p_tenant_id', 'p_monthly_fee', 'p_renewal_date', 'p_notes', 'p_status'], auth: true },
   admin_set_tenant_slug: { params: ['p_tenant_id', 'p_slug'], auth: true },
