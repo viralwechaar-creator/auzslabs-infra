@@ -150,5 +150,28 @@ export async function handle(ctx) {
     return;
   }
 
+  // ---- job applications: the resume (public upload, platform-admin-only read) ----
+  const resumePost = url.pathname.match(/^\/storage\/job-application-resume\/([0-9a-f-]{36})$/);
+  if (resumePost && req.method === 'POST') {
+    if (rateLimited(`jobresume:${clientIp(req)}`, 10, 60 * 60_000)) throw new HttpError(429, 'too many uploads, try again later');
+    const buffer = await readRawBody(req, 6_000_000);
+    const saved = await saveDocUpload({ tenantId: 'applications', empId: resumePost[1], buffer });
+    const { rows } = await pool.query('select submit_job_application_resume($1, $2) as ok', [resumePost[1], saved.path.split('/')[2]]);
+    if (!rows[0]?.ok) throw new HttpError(404, 'This application is not waiting for a resume.');
+    return reply(200, { ok: true });
+  }
+  const resumeGet = url.pathname.match(/^\/storage\/job-application-resume\/([0-9a-f-]{36})$/);
+  if (resumeGet && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const { rows } = await withAuth(user.id, (client) => client.query('select admin_job_application_resume($1) as f', [resumeGet[1]]));
+    const file = rows[0] && rows[0].f;
+    if (!file) throw new HttpError(404, 'no resume');
+    const doc = await readDocUpload({ tenantId: 'applications', empId: resumeGet[1], filename: file });
+    if (!doc) throw new HttpError(404, 'not found');
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
+    res.end(doc.buffer);
+    return;
+  }
+
   return false;
 }
