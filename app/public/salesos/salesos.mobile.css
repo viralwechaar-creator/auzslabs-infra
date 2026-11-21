@@ -1,20 +1,39 @@
 /* AUZslab SalesOS: compact (phones, under 600px) and medium (600-899px: tablet portrait). Independent of salesos.desktop.css. */
-.shell{min-height:100dvh;padding-bottom:calc(54px + var(--safe-b))}
+.shell{min-height:100dvh;padding-bottom:calc(86px + var(--safe-b))}
 .side{display:none}
-.topbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:52px 1fr 52px;align-items:center;min-height:calc(48px + var(--safe-t));padding:var(--safe-t) 8px 0;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid transparent;transition:border-color .2s}
-.topbar.scrolled{border-bottom-color:var(--sep)}
-.topbar .tt{font-size:17px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Glass nav (Apple "Liquid Glass"): the top bar and tab bar float above the content with a
+   margin on every side, a blurred translucent fill, a hairline rim and a soft shadow -- never a
+   flat, edge-to-edge, fully opaque bar. Both still participate in normal flow / fixed
+   positioning exactly as before; only their paint and shape changed. */
+.topbar{position:sticky;top:calc(var(--safe-t) + 8px);z-index:30;display:grid;grid-template-columns:52px 1fr 52px;align-items:center;min-height:48px;margin:calc(var(--safe-t) + 8px) 12px 0;padding:0 6px;border-radius:22px;
+  background:color-mix(in srgb,var(--card) 68%,transparent);-webkit-backdrop-filter:saturate(200%) blur(26px);backdrop-filter:saturate(200%) blur(26px);
+  box-shadow:0 8px 28px rgba(0,0,0,.14),0 0 0 .5px var(--sep) inset,0 1px 0 rgba(255,255,255,.5) inset}
+@media (prefers-color-scheme:dark){.topbar{box-shadow:0 8px 28px rgba(0,0,0,.4),0 0 0 .5px var(--sep) inset}}
+.topbar .tt{font-size:16px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar.scrolled .tt{opacity:1}
 .topbar .l{grid-column:1;justify-self:start;display:flex}.topbar .tt{grid-column:2}.topbar .r{grid-column:3;justify-self:end;margin-left:auto;display:flex;gap:2px}
-.topbar .btn.plain{min-width:44px}
+.topbar .btn.plain{min-width:40px}
 .page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
 .large-title{font-size:32px;line-height:1.14;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}
 .page-sub{margin-top:-14px;color:var(--label2);font-size:15px}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep);padding-bottom:max(2px,calc(var(--safe-b) - 14px))}
-.tabbar button{display:grid;place-items:center;align-content:center;gap:2px;min-height:46px;padding:4px 0 3px;color:var(--label3);font-size:11px;font-weight:500;position:relative}
-.tabbar button[aria-current=page]{color:var(--tint-text)}
-.tabbar .ic svg{width:23px;height:23px}
+
+.tabbar{position:fixed;left:12px;right:12px;bottom:calc(10px + var(--safe-b));z-index:40;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-radius:26px;padding:5px;
+  background:color-mix(in srgb,var(--card) 68%,transparent);-webkit-backdrop-filter:saturate(200%) blur(26px);backdrop-filter:saturate(200%) blur(26px);
+  box-shadow:0 10px 32px rgba(0,0,0,.18),0 0 0 .5px var(--sep) inset,0 1px 0 rgba(255,255,255,.5) inset}
+@media (prefers-color-scheme:dark){.tabbar{box-shadow:0 10px 32px rgba(0,0,0,.5),0 0 0 .5px var(--sep) inset}}
+.tabbar button{display:grid;place-items:center;align-content:center;gap:1px;min-height:48px;margin:0 2px;padding:5px 0 4px;border-radius:18px;color:var(--label3);font-size:10.5px;font-weight:500;position:relative;transition:background .2s var(--ease),color .2s}
+.tabbar button[aria-current=page]{color:var(--label);background:var(--accent-soft)}
+.tabbar .ic svg{width:22px;height:22px}
 .tabbar .cnt{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+/* floating glass search pill (lists: Leads, Team performance) */
+.glass-search{position:sticky;top:calc(var(--safe-t) + 66px);z-index:25;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;margin:0 0 4px;border-radius:999px;color:var(--label2);
+  background:color-mix(in srgb,var(--card) 70%,transparent);-webkit-backdrop-filter:saturate(200%) blur(24px);backdrop-filter:saturate(200%) blur(24px);
+  box-shadow:0 6px 20px rgba(0,0,0,.1),0 0 0 .5px var(--sep) inset}
+.glass-search input{flex:1;min-width:0;background:none;border:0;font-size:16px;color:var(--label);min-height:40px;padding:0}
+.glass-search input::placeholder{color:var(--label3)}
+.glass-search .ic{color:var(--label3);flex:none}
 .sheet{left:0;right:0;bottom:0;max-height:94dvh;border-radius:16px 16px 0 0;animation:sheetUp .38s var(--ease)}
 .sheet.full{top:calc(var(--safe-t) + 10px);max-height:none}
 @keyframes sheetUp{from{transform:translateY(100%)}}
