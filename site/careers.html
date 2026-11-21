@@ -195,6 +195,7 @@
 <div class="ct-q"><label>What role interests you?</label><div class="ct-chips"><button type="button" data-v="salesman">Field salesman</button><button type="button" data-v="setup">Client setup</button><button type="button" data-v="support">Support</button><button type="button" data-v="other">Something else</button></div><select id="j-role" name="role" hidden><option value="salesman">salesman</option><option value="setup">setup</option><option value="support">support</option><option value="other">other</option></select></div>
 <div class="ct-q"><label for="j-experience">Relevant experience</label><input id="j-experience" name="experience" type="text" placeholder="e.g. 2 years in field sales"></div>
 <div class="ct-q"><label for="j-note">Tell us about yourself</label><textarea id="j-note" name="about" placeholder="A few lines about you"></textarea></div>
+<div class="ct-q"><label for="j-resume">Resume (PDF, optional)</label><input id="j-resume" name="resume" type="file" accept="application/pdf"></div>
 <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"><label for="j-hp">Leave this field empty</label><input id="j-hp" name="hp" type="text" tabindex="-1" autocomplete="off"></div>
 <div id="careersError" class="sub" style="color:#b00020;display:none"></div>
 <div class="ct-nav"><button type="button" class="back">Back</button><button type="submit" class="go">Submit application</button></div></form>
@@ -249,6 +250,7 @@
     var experience = form.querySelector('[name="experience"]').value.trim();
     var about = form.querySelector('[name="about"]').value.trim();
     var hp = (form.querySelector('[name="hp"]') || {}).value || '';
+    var file = ((form.querySelector('[name="resume"]') || {}).files || [])[0];
     var goBtn = form.querySelector('.go');
     goBtn.disabled = true;
     fetch(API + '/rpc/submit_team_application', {
@@ -257,6 +259,11 @@
       body: JSON.stringify({ p_name: name, p_email: email, p_phone: phone, p_city: city, p_role: role, p_experience: experience, p_about: about, p_hp: hp }),
     }).then(function (res) {
       if (!res.ok) return res.json().then(function (j) { throw new Error((j && j.error) || 'submit failed'); });
+      return res.json();
+    }).then(function (data) {
+      var id = data && data.id;
+      if (id && file) return fetch(API + '/storage/team-application-resume/' + id, { method: 'POST', body: file }).catch(function () {});
+    }).then(function () {
       form.style.display = 'none';
       var successView = form.parentElement.querySelector('.success-view');
       if (successView) {
