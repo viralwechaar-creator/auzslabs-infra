@@ -1,5 +1,14 @@
 # AUZslab SalesOS — architecture plan and build log
 
+**Second correction (same session):** the `team_*`/`platform_salesmen` system below was
+reused and re-registered, then found to have been **deliberately deleted by the owner in
+Oct 2026** (CLAUDE.md: "REMOVED (Oct 2026, owner decision): team workspace, website
+builder, UI kit, links between apps"). Owner confirmed: revert, stay removed. All of it —
+`careers.html`, the admin review screen, the `team_*` RPC registrations, the resume-upload
+migration — has been reverted. SalesOS is built fresh from here, not on that system. The
+section below is kept as a record of what was found and undone; don't reuse any of it.
+
+
 Internal platform for AUZslab's own sales/field team (not a product sold
 to clients). Built from the owner's "Master Build Prompt" (20-module
 spec: HR, attendance, GPS field tracking, CRM, surveys, demos/trials,

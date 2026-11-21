@@ -999,7 +999,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="orders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Client requests<span class="a-row-badge" id="ordersBadge" style="display:none"></span></button>
         <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
-        <button class="a-side-btn" data-section="jobApplications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>Job applications<span class="a-row-badge" id="notifBadgeJobsSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="onboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>Onboard new</button>
         <button class="a-side-btn" data-section="setup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>Client setup<span class="a-row-badge" id="notifBadgeSetupSide" style="display:none"></span></button>
 
@@ -1088,12 +1087,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div class="label">Existing clients</div>
         <h2 class="h-2">Add-on requests</h2>
         <div id="addonRequestsList">Loading&hellip;</div>
-      </section>
-
-      <section class="a-page" id="jobApplicationsSection" data-title="Job applications" data-parent="more">
-        <div class="label">AUZslab SalesOS</div>
-        <h2 class="h-2">Job applications</h2>
-        <div id="jobApplicationsList">Loading&hellip;</div>
       </section>
 
       
@@ -1322,11 +1315,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="addonRequests">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
             <span class="grow">Add-on requests</span><span class="a-row-badge" id="notifBadgeAddonMore" style="display:none"></span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="jobApplications">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>
-            <span class="grow">Job applications</span><span class="a-row-badge" id="notifBadgeJobsMore" style="display:none"></span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="onboard">
@@ -1641,7 +1629,7 @@ function resetMainScroll() {
 // Each section loads when it is opened (and again if its data is older than 20 seconds), not all at once at sign-in:
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
-  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), jobApplications: () => loadJobApplications(),
+  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(),
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(), domains: () => loadDomains(),
 };
@@ -1951,77 +1939,6 @@ async function loadAddonRequests() {
       loadAddonRequests();
     };
     tr.querySelector('[data-del]').onclick = async () => { const nm = tr.querySelector('.req-name')?.textContent || 'this request'; if (await permanentDelete('addon_request', id, nm)) loadAddonRequests(); };
-  });
-}
-
-// AUZslab SalesOS recruitment: no RLS policies on sos_applications (same discipline as
-// Payroll/Accounting/AUZsStyle), so this reads and writes only through SECURITY DEFINER
-// RPCs, never sb.from(...).select() directly.
-//
-// This is the existing "AUZslab team" system (db/176-188): team_applications, platform_salesmen,
-// team_me() etc. It already covered everything the "apply to join" flow needs -- found while building
-// a new one from scratch, which would have duplicated it (see this project's own standing rule about
-// that). Reused as-is, not forked. The only thing genuinely missing was registering its functions in
-// the RPC allow-list (server/src/data/rpc-registry.js) and building this review screen + the public
-// careers.html page -- the backend was already there, just never wired to anything.
-const TEAM_ROLE_LABEL = { salesman: 'Field salesman', setup: 'Client setup', support: 'Support', manager: 'Manager', other: 'Other / not sure' };
-const TEAM_ROLE_OPTIONS = ['salesman', 'setup', 'support', 'manager'];
-async function loadJobApplications() {
-  const listEl = document.getElementById('jobApplicationsList');
-  const { data, error } = await sb.rpc('admin_list_team_applications', { p_status: 'new' });
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const pending = data || [];
-  if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending job applications.'); return; }
-
-  const roleOptions = (wanted) => TEAM_ROLE_OPTIONS.map((r) => `<option value="${r}"${r === wanted ? ' selected' : ''}>${esc(TEAM_ROLE_LABEL[r])}</option>`).join('');
-  const rows = pending.slice().reverse().map((r) => `
-    <div class="req-card" data-id="${r.id}">
-      <div class="req-head">
-        <div>
-          <div class="req-name">${esc(r.name)}</div>
-          <div class="req-sub">${esc(r.email)}${r.phone ? ' &middot; ' + esc(r.phone) : ''}${r.city ? ' &middot; ' + esc(r.city) : ''}</div>
-        </div>
-      </div>
-      <div class="req-section req-body">Interested in: ${esc(TEAM_ROLE_LABEL[r.role_wanted] || r.role_wanted)}${r.experience ? ' &middot; ' + esc(r.experience) : ''}</div>
-      ${r.about ? `<div class="req-section req-body">${esc(r.about)}</div>` : ''}
-      ${r.resume_file ? '<div class="req-section"><a href="#" data-resume class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open resume</a></div>' : ''}
-      <div class="req-section">
-        <label style="font-size:12px;display:block;margin-bottom:4px">Assign post</label>
-        <select data-post class="field-input" style="width:100%">${roleOptions(['salesman', 'setup', 'support', 'manager'].includes(r.role_wanted) ? r.role_wanted : 'salesman')}</select>
-      </div>
-      <div class="req-actions">
-        <button class="req-primary" data-approve>Approve</button>
-        <button data-decline>Decline</button>
-      </div>
-    </div>`).join('');
-
-  listEl.innerHTML = `<div class="req-grid">${rows}</div>`;
-
-  listEl.querySelectorAll('[data-id]').forEach((tr) => {
-    const id = tr.dataset.id;
-    const resumeLink = tr.querySelector('[data-resume]');
-    if (resumeLink) resumeLink.onclick = async (e) => {
-      e.preventDefault();
-      try {
-        const { data: s } = await sb.auth.getSession();
-        const r = await fetch(CFG.url + '/storage/team-application-resume/' + id, { headers: { Authorization: 'Bearer ' + s.session.access_token } });
-        if (!r.ok) throw new Error('missing');
-        window.open(URL.createObjectURL(await r.blob()), '_blank', 'noopener');
-      } catch (e2) { alert('The resume could not be loaded.'); }
-    };
-    tr.querySelector('[data-approve]').onclick = async () => {
-      const post = tr.querySelector('[data-post]').value;
-      if (!confirm(`Approve as "${TEAM_ROLE_LABEL[post]}"? They'll become active the moment they sign in with Google using this email.`)) return;
-      const { error: appErr } = await sb.rpc('admin_decide_team_application', { p_id: id, p_decision: 'approve', p_role: post });
-      if (appErr) { alert(appErr.message); return; }
-      loadJobApplications();
-    };
-    tr.querySelector('[data-decline]').onclick = async () => {
-      if (!confirm('Decline this application?')) return;
-      const { error: decErr } = await sb.rpc('admin_decide_team_application', { p_id: id, p_decision: 'reject' });
-      if (decErr) { alert(decErr.message); return; }
-      loadJobApplications();
-    };
   });
 }
 
