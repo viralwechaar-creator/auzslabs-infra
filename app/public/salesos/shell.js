@@ -123,11 +123,17 @@ function buildShell() {
     h('div', { class: 'foot' }, h('span', null, S.user.email), h('span', null, roleLabel()),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet ? auzThemeGet() : 'system', (v) => auzTheme && auzTheme(v), { full: true }),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));
-  const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
-  const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
-    tabsFor().map((id) => PAGES[id] && allowed(PAGES[id]) ? h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(PAGES[id].icon, 23), h('span', null, PAGES[id].tabLabel || PAGES[id].title),
-      id === 'messages' ? h('span', { class: 'cnt hidden', id: 'tabUnread' }) : null) : null),
-    h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet }, icon('more', 23), h('span', null, 'More')));
+  const topbar = h('header', { class: 'topbar', id: 'topbar' },
+    h('div', { class: 'l' }, h('img', { class: 'tb-logo', id: 'tb-logo', src: '/icon-auzslab-192.png', alt: 'AUZslab' }), h('div', { class: 'tb-lwrap', id: 'tb-l' })),
+    h('div', { class: 'tt', id: 'tb-t', 'aria-live': 'polite' }), h('div', { class: 'r', id: 'tb-r' }));
+  const tabIds = tabsFor().filter((id) => PAGES[id] && allowed(PAGES[id]));
+  const homeId = tabIds[0], midIds = tabIds.slice(1);
+  const tabBtn = (id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id), 'aria-label': PAGES[id].tabLabel || PAGES[id].title }, icon(PAGES[id].icon, 23), h('span', null, PAGES[id].tabLabel || PAGES[id].title),
+    id === 'messages' ? h('span', { class: 'cnt hidden', id: 'tabUnread' }) : null);
+  const tabbar = h('div', { class: 'tabbar-row' },
+    homeId ? h('nav', { class: 'tabbar island one', 'aria-label': 'Home' }, tabBtn(homeId)) : null,
+    midIds.length ? h('nav', { class: 'tabbar island', 'aria-label': 'Main' }, midIds.map(tabBtn)) : null,
+    h('nav', { class: 'tabbar island one', 'aria-label': 'More' }, h('button', { type: 'button', 'data-tab': 'more', onclick: moreSheet, 'aria-label': 'More' }, icon('more', 23), h('span', null, 'More'))));
   clear($('#app')).append(h('div', { class: 'shell' + (sidePref() ? ' ' + sidePref() : ''), id: 'shell' }, side, h('div', { class: 'main' }, topbar, h('main', { id: 'main', tabindex: '-1' })), tabbar));
   document.addEventListener('keydown', globalKeys);
 }
@@ -192,10 +198,11 @@ async function route_() {
   main.focus({ preventScroll: true }); window.scrollTo(0, 0);
 }
 function header(o, root) {
-  const l = $('#tb-l'), t = $('#tb-t'), r = $('#tb-r'); if (!l) return;
+  const l = $('#tb-l'), t = $('#tb-t'), r = $('#tb-r'), logo = $('#tb-logo'); if (!l) return;
   clear(l); clear(r);
   t.textContent = o.title || '';
   document.title = (o.title ? o.title + ' · ' : '') + 'AUZslab SalesOS';
+  if (logo) logo.classList.toggle('hidden', !!o.back);
   if (o.back) l.append(h('button', { class: 'btn plain', type: 'button', 'aria-label': 'Back', onclick: () => (typeof o.back === 'function' ? o.back() : go(o.back)) }, icon('chevL', 22), h('span', { class: 'desk-only' }, 'Back')));
   const bellBtn = h('button', { class: 'btn icon plain bellbtn', type: 'button', id: 'bellBtn', 'aria-label': 'Notifications', onclick: notifPanel }, icon('bell', 20), h('span', { class: 'bellbadge hidden', id: 'bellDot' }));
   r.append(bellBtn);

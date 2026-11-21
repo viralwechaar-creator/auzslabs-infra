@@ -6,23 +6,31 @@
    margin on every side, a blurred translucent fill, a hairline rim and a soft shadow -- never a
    flat, edge-to-edge, fully opaque bar. Both still participate in normal flow / fixed
    positioning exactly as before; only their paint and shape changed. */
-.topbar{position:sticky;top:calc(var(--safe-t) + 8px);z-index:30;display:grid;grid-template-columns:52px 1fr 52px;align-items:center;min-height:48px;margin:calc(var(--safe-t) + 8px) 12px 0;padding:0 6px;border-radius:22px;
-  background:color-mix(in srgb,var(--card) 55%,transparent);-webkit-backdrop-filter:saturate(220%) blur(28px);backdrop-filter:saturate(220%) blur(28px);
-  box-shadow:0 14px 34px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.065),0 1px 0 rgba(255,255,255,.6) inset}
-@media (prefers-color-scheme:dark){.topbar{box-shadow:0 14px 34px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.09)}}
+.topbar{position:sticky;top:calc(var(--safe-t) + 8px);z-index:30;display:grid;grid-template-columns:auto 1fr 52px;align-items:center;min-height:48px;margin:calc(var(--safe-t) + 8px) 12px 0;padding:0 8px;border-radius:22px;
+  background:color-mix(in srgb,var(--card) 46%,transparent);-webkit-backdrop-filter:saturate(240%) blur(30px);backdrop-filter:saturate(240%) blur(30px);
+  box-shadow:0 16px 38px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.07),0 1px 0 rgba(255,255,255,.65) inset}
+@media (prefers-color-scheme:dark){.topbar{box-shadow:0 16px 38px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.1)}}
 .topbar .tt{font-size:16px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .topbar.scrolled .tt{opacity:1}
-.topbar .l{grid-column:1;justify-self:start;display:flex}.topbar .tt{grid-column:2}.topbar .r{grid-column:3;justify-self:end;margin-left:auto;display:flex;gap:2px}
+.topbar .l{grid-column:1;justify-self:start;display:flex;align-items:center;gap:6px}.topbar .tt{grid-column:2}.topbar .r{grid-column:3;justify-self:end;margin-left:auto;display:flex;gap:2px}
 .topbar .btn.plain{min-width:40px}
+.tb-logo{width:30px;height:30px;border-radius:9px;flex:none;object-fit:cover}
+.tb-logo.hidden{display:none}
+.tb-lwrap:empty{display:none}
 .page{padding:0 16px 28px;display:grid;gap:22px;align-content:start}
 .large-title{font-size:32px;line-height:1.14;font-weight:700;letter-spacing:-.03em;padding:2px 0 0}
 .page-sub{margin-top:-14px;color:var(--label2);font-size:15px}
 
-.tabbar{position:fixed;left:12px;right:12px;bottom:calc(10px + var(--safe-b));z-index:40;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-radius:26px;padding:5px;
-  background:color-mix(in srgb,var(--card) 55%,transparent);-webkit-backdrop-filter:saturate(220%) blur(28px);backdrop-filter:saturate(220%) blur(28px);
-  box-shadow:0 16px 38px rgba(0,0,0,.22),0 0 0 1px rgba(0,0,0,.065),0 1px 0 rgba(255,255,255,.6) inset}
-@media (prefers-color-scheme:dark){.tabbar{box-shadow:0 16px 38px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.09)}}
+/* three floating islands: Home | the rest of the tabs | More -- not one long bar */
+.tabbar-row{position:fixed;left:12px;right:12px;bottom:calc(10px + var(--safe-b));z-index:40;display:flex;gap:8px;align-items:stretch;pointer-events:none}
+.tabbar{pointer-events:auto;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-radius:26px;padding:5px;
+  background:color-mix(in srgb,var(--card) 46%,transparent);-webkit-backdrop-filter:saturate(240%) blur(30px);backdrop-filter:saturate(240%) blur(30px);
+  box-shadow:0 18px 40px rgba(0,0,0,.24),0 0 0 1px rgba(0,0,0,.07),0 1px 0 rgba(255,255,255,.65) inset}
+.tabbar.one{flex:none;grid-auto-columns:60px}
+.tabbar:not(.one){flex:1}
+@media (prefers-color-scheme:dark){.tabbar{box-shadow:0 18px 40px rgba(0,0,0,.58),0 0 0 1px rgba(255,255,255,.1)}}
 .tabbar button{display:grid;place-items:center;align-content:center;gap:1px;min-height:48px;margin:0 2px;padding:5px 0 4px;border-radius:18px;color:var(--label3);font-size:10.5px;font-weight:500;position:relative;transition:background .2s var(--ease),color .2s}
+.tabbar.one button span:not(.ic){display:none}
 .tabbar button[aria-current=page]{color:var(--label);background:var(--accent-soft)}
 .tabbar .ic svg{width:22px;height:22px}
 .tabbar .cnt{position:absolute;top:2px;right:calc(50% - 20px);min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--red);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
