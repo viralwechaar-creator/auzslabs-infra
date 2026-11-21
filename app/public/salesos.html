@@ -134,9 +134,27 @@ function startWatch(sessionId, statusEl) {
 async function renderDashboard(dash) {
   var signOutBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;margin:0;padding:8px 14px' }, 'Sign out');
   signOutBtn.onclick = function () { stopWatch(); sb.auth.signOut().then(function () { location.reload(); }); };
-  var topbar = h('div', { class: 'topbar' },
+  var notifBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;margin:0;padding:8px 10px' }, '🔔');
+  var notifPanel = h('div', { class: 'notice', style: 'display:none;position:absolute;right:16px;top:56px;max-width:320px;z-index:10;box-shadow:0 4px 16px rgba(0,0,0,.15)' });
+  async function paintNotif() {
+    var rows = await api('sos_my_notifications');
+    var unread = rows.filter(function (n) { return !n.read_at; }).length;
+    notifBtn.textContent = '🔔' + (unread ? ' (' + unread + ')' : '');
+    clear(notifPanel);
+    if (!rows.length) { notifPanel.appendChild(h('p', { class: 'muted' }, 'No notifications.')); return; }
+    var markAllBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px' }, 'Mark all read');
+    markAllBtn.onclick = async function () { await api('sos_notifications_mark_all_read'); await paintNotif(); };
+    notifPanel.appendChild(markAllBtn);
+    rows.slice(0, 20).forEach(function (n) {
+      notifPanel.appendChild(h('div', { style: 'padding:6px 0;border-top:1px solid var(--sep);' + (n.read_at ? 'opacity:.55' : '') },
+        h('b', { style: 'font-size:13px' }, n.title), n.body ? h('div', { class: 'muted', style: 'font-size:12px' }, n.body) : null));
+    });
+  }
+  notifBtn.onclick = function () { notifPanel.style.display = notifPanel.style.display === 'none' ? 'block' : 'none'; };
+  var topbar = h('div', { class: 'topbar', style: 'position:relative' },
     h('b', null, 'AUZslab SalesOS'),
-    h('div', null, h('span', { class: 'muted' }, dash.my_role + ' · ' + dash.my_email + ' '), signOutBtn));
+    h('div', null, h('span', { class: 'muted' }, dash.my_role + ' · ' + dash.my_email + ' '), notifBtn, signOutBtn), notifPanel);
+  paintNotif();
 
   var fieldStatus = h('p', { class: 'muted' }, 'No open field session.');
   var fieldActions = h('div');
@@ -388,6 +406,12 @@ async function renderDashboard(dash) {
     teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Team tasks (' + allTasks.length + ')'));
     allTasks.slice(0, 20).forEach(function (x) {
       teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, x.title + ' · ' + x.assignedToName + ' · ' + x.status + (x.dueDate ? ' · due ' + x.dueDate : '')));
+    });
+    var audit;
+    try { audit = await api('sos_audit_log', { p_limit: 30 }); } catch (e) { audit = []; }
+    teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Audit log (latest ' + audit.length + ')'));
+    audit.forEach(function (a) {
+      teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0;font-size:12px' }, a.actorName + ' ' + a.action + 'd ' + a.entity + ' · ' + a.createdAt));
     });
     var newTemplateBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:6px 12px;margin-top:10px' }, '+ New survey template');
     newTemplateBtn.onclick = async function () {
