@@ -33,6 +33,10 @@ export const USERS = {
   payManager: 'manager-pay@test.local',
   payStaff: 'staff-pay@test.local',
   payStaff2: 'staff2-pay@test.local',
+  sosAdmin: 'admin-sos@test.local',
+  sosManager: 'manager-sos@test.local',
+  sosExec: 'exec-sos@test.local',
+  sosExec2: 'exec2-sos@test.local',
   mobOwner: 'owner-mob@test.local',
   mobManager: 'manager-mob@test.local',
   mobStaff: 'staff-mob@test.local',
@@ -134,6 +138,18 @@ async function seed(c) {
   await user(c, USERS.finOwner, { tenant_id: fin, role: 'owner' });
   await user(c, USERS.finManager, { tenant_id: fin, role: 'manager' });
   await user(c, USERS.finStaff, { tenant_id: fin, role: 'cashier' });
+  // AUZslab SalesOS: a login per sos_* role, in the auzslab-internal tenant db/351 creates idempotently
+  // (this migration already ran above as part of the normal db/*.sql chain -- just look up what it made).
+  const { rows: sosTenant } = await c.query(`select id from tenants where slug = 'auzslab-internal'`);
+  const sos = sosTenant[0] && sosTenant[0].id;
+  if (sos) {
+    const { rows: sosRoles } = await c.query(`select id, name from roles where tenant_id = $1`, [sos]);
+    const roleId = (name) => sosRoles.find((r) => r.name === name).id;
+    await user(c, USERS.sosAdmin, { tenant_id: sos, role: 'Admin', role_id: roleId('Admin'), name: 'Test Sos Admin' });
+    await user(c, USERS.sosManager, { tenant_id: sos, role: 'Sales Manager', role_id: roleId('Sales Manager'), name: 'Test Sos Manager' });
+    await user(c, USERS.sosExec, { tenant_id: sos, role: 'Sales Executive', role_id: roleId('Sales Executive'), name: 'Test Sos Exec' });
+    await user(c, USERS.sosExec2, { tenant_id: sos, role: 'Sales Executive', role_id: roleId('Sales Executive'), name: 'Test Sos Exec Two' });
+  }
   await user(c, USERS.plain);
   const adminId = await user(c, USERS.admin);
   await c.query('insert into platform_admins (id) values ($1) on conflict do nothing', [adminId]);
