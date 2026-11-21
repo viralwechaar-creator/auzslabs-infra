@@ -457,6 +457,12 @@ async function boot() {
     return;
   }
   DASH = data;
+  // A SalesOS staffer's login resolves to the auzslab-internal tenant, same as anyone else's
+  // my_dashboard call -- but they have their own dedicated workspace (salesos.html), not this
+  // generic client dashboard. Approved from site/admin.html's Job applications screen, the
+  // account-page sign-in instructions (careers.html, the approval flow) all point a new hire
+  // here first, so this redirect is the one place that actually gets them to the right app.
+  if (DASH.features && DASH.features.salesos) { window.location.href = 'https://' + DASH.tenant.slug + '.auzslab.in/salesos.html'; return; }
   // Only matters for AUZslab's own tenant (the owner also has a platform_admins row) -- a plain client never
   // sees this card. One extra call, not folded into my_dashboard, so an ordinary client's dashboard load never
   // even touches the admin check.
