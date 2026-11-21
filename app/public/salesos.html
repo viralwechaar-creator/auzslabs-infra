@@ -161,15 +161,65 @@ async function renderDashboard(dash) {
     fieldActions.appendChild(pauseBtn); fieldActions.appendChild(endBtn);
   }
 
+  var visitsList = h('div');
+  var visitError = h('p', { class: 'err' });
+  async function paintVisits() {
+    var rows;
+    try { rows = await api('sos_my_visits'); } catch (e) { visitError.textContent = e.message; return; }
+    clear(visitsList);
+    if (!rows.length) { visitsList.appendChild(h('p', { class: 'muted' }, 'No visits yet.')); return; }
+    rows.forEach(function (v) {
+      var row = h('div', { style: 'padding:8px 0;border-top:1px solid var(--sep)' },
+        h('b', null, v.businessName), h('span', { class: 'muted' }, '  · ' + v.status + (v.outcome ? ' · ' + v.outcome : '')));
+      if (v.status === 'checked_in') {
+        var outcomeSel = h('select', { class: 'input', style: 'margin-top:6px' },
+          h('option', { value: '' }, 'Outcome…'), h('option', { value: 'interested' }, 'Interested'),
+          h('option', { value: 'not_interested' }, 'Not interested'), h('option', { value: 'follow_up' }, 'Needs follow-up'));
+        var completeBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:6px 12px;margin-top:4px' }, 'Check out');
+        completeBtn.onclick = async function () {
+          completeBtn.disabled = true;
+          try { await api('sos_visit_complete', { p_id: v.id, p: { outcome: outcomeSel.value || 'no_outcome' } }); await paintVisits(); }
+          catch (e) { completeBtn.disabled = false; }
+        };
+        row.appendChild(outcomeSel); row.appendChild(completeBtn);
+      }
+      visitsList.appendChild(row);
+    });
+  }
+  function newVisitFlow() {
+    var nameInput = h('input', { class: 'input', placeholder: 'Business name' });
+    var cityInput = h('input', { class: 'input', placeholder: 'City (optional)' });
+    var err = h('div', { class: 'err' });
+    var goBtn = h('button', { class: 'btn fill', type: 'button' }, 'Check in');
+    goBtn.onclick = async function () {
+      if (!nameInput.value.trim()) { err.textContent = 'Enter a business name'; return; }
+      goBtn.disabled = true;
+      try {
+        var biz = await api('sos_business_save', { p: { name: nameInput.value.trim(), city: cityInput.value.trim() } });
+        var pos = null;
+        try { pos = await new Promise(function (res) { navigator.geolocation.getCurrentPosition(function (p) { res(p); }, function () { res(null); }, { timeout: 8000 }); }); } catch (e) {}
+        await api('sos_visit_start', { p_business: biz.id, p_lat: pos ? pos.coords.latitude : null, p_lng: pos ? pos.coords.longitude : null });
+        wrap.remove();
+        await paintVisits();
+      } catch (e) { err.textContent = e.message; goBtn.disabled = false; }
+    };
+    var wrap = h('div', { class: 'notice' }, h('b', null, 'New visit'), nameInput, cityInput, err, goBtn);
+    visitsCard.insertBefore(wrap, visitsList);
+  }
+  var newVisitBtn = h('button', { class: 'btn fill', type: 'button', style: 'width:auto;padding:8px 14px' }, '+ New visit');
+  newVisitBtn.onclick = newVisitFlow;
+  var visitsCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My visits'), newVisitBtn), visitError, visitsList);
+
   var main = h('main', null,
     h('div', { class: 'kpis' },
       h('div', { class: 'kpi' }, h('b', null, dash.my_role), h('span', null, 'Your post')),
       h('div', { class: 'kpi' }, h('b', null, dash.tenant && dash.tenant.name || 'AUZslab'), h('span', null, 'Team'))),
     canField ? fieldCard : null,
+    canField ? visitsCard : null,
     h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
-      h('p', { class: 'muted' }, 'Visits, leads and reports are being built next. This page will grow into your daily workspace.')));
+      h('p', { class: 'muted' }, 'Leads and reports are being built next. This page will grow into your daily workspace.')));
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
-  if (canField) paintField();
+  if (canField) { paintField(); paintVisits(); }
 }
 
 boot();
