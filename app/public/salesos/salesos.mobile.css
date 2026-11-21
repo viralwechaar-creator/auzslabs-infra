@@ -7,7 +7,7 @@
    flat, edge-to-edge, fully opaque bar. Both still participate in normal flow / fixed
    positioning exactly as before; only their paint and shape changed. */
 .topbar{position:sticky;top:calc(var(--safe-t) + 8px);z-index:30;display:grid;grid-template-columns:auto 1fr 52px;align-items:center;min-height:48px;margin:calc(var(--safe-t) + 8px) 12px 0;padding:0 8px;border-radius:22px;
-  background:color-mix(in srgb,var(--card) 22%,transparent);-webkit-backdrop-filter:saturate(240%) blur(30px);backdrop-filter:saturate(240%) blur(30px);
+  background:color-mix(in srgb,var(--card) 9%,transparent);-webkit-backdrop-filter:saturate(240%) blur(30px);backdrop-filter:saturate(240%) blur(30px);
   box-shadow:0 16px 38px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.07),0 1px 0 rgba(255,255,255,.65) inset}
 @media (prefers-color-scheme:dark){.topbar{box-shadow:0 16px 38px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.1)}}
 .topbar .tt{font-size:16px;font-weight:600;text-align:center;opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -24,7 +24,7 @@
 /* three floating islands: Home | the rest of the tabs | More -- not one long bar */
 .tabbar-row{position:fixed;left:12px;right:12px;bottom:calc(10px + var(--safe-b));z-index:40;display:flex;gap:8px;align-items:stretch;pointer-events:none}
 .tabbar{pointer-events:auto;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border-radius:26px;padding:5px;
-  background:color-mix(in srgb,var(--card) 22%,transparent);-webkit-backdrop-filter:saturate(240%) blur(30px);backdrop-filter:saturate(240%) blur(30px);
+  background:color-mix(in srgb,var(--card) 9%,transparent);-webkit-backdrop-filter:saturate(240%) blur(30px);backdrop-filter:saturate(240%) blur(30px);
   box-shadow:0 18px 40px rgba(0,0,0,.24),0 0 0 1px rgba(0,0,0,.07),0 1px 0 rgba(255,255,255,.65) inset}
 .tabbar.one{flex:none;grid-auto-columns:60px}
 .tabbar:not(.one){flex:1}
@@ -37,7 +37,7 @@
 
 /* floating glass search pill (lists: Leads, Team performance) */
 .glass-search{position:sticky;top:calc(var(--safe-t) + 66px);z-index:25;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;margin:0 0 4px;border-radius:999px;color:var(--label2);
-  background:color-mix(in srgb,var(--card) 28%,transparent);-webkit-backdrop-filter:saturate(220%) blur(26px);backdrop-filter:saturate(220%) blur(26px);
+  background:color-mix(in srgb,var(--card) 14%,transparent);-webkit-backdrop-filter:saturate(220%) blur(26px);backdrop-filter:saturate(220%) blur(26px);
   box-shadow:0 10px 26px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.06)}
 .glass-search input{flex:1;min-width:0;background:none;border:0;font-size:16px;color:var(--label);min-height:40px;padding:0}
 .glass-search input::placeholder{color:var(--label3)}

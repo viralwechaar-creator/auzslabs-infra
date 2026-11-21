@@ -17,6 +17,11 @@
   --accent:#f5f5f7;--on-accent:#1c1c1e;--accent-text:#f5f5f7;
   --accent-soft:rgba(245,245,247,.16);--accent-soft2:rgba(245,245,247,.24);--accent-line:rgba(245,245,247,.42);
 }
+/* a cool neutral grey page, not the shared warm-beige token -- cards are pure white/black so the
+   whole app reads strictly monochrome, matching the accent override above. */
+:root{--bg:#eceeef;--bg2:#e3e6e7;--card:#fff;--card2:#f7f8f8;--elev:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e0e0f;--bg2:#000;--card:#1c1c1e;--card2:#242426;--elev:#242426}}
+:root[data-theme=dark]{--bg:#0e0e0f;--bg2:#000;--card:#1c1c1e;--card2:#242426;--elev:#242426}
 :root{
   --tint:var(--accent);--tint-text:var(--accent-text);--tint-fg:var(--on-accent);--tint-soft:var(--accent-soft);--tint-line:var(--accent-line);
   --r:var(--r2);--r-lg:var(--r3);--shadow:var(--sh2);
