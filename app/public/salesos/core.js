@@ -66,6 +66,7 @@ const ICONS = {
   rupee: '<path d="M7 5h10M7 9h10M9.5 5c3 0 4.5 1.6 4.5 4s-1.5 4-4.5 4H7l8 6"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15.6 15.6 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 3.6-.7"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
 };
 function icon(name, size = 22) {
   const s = document.createElement('span');
@@ -112,6 +113,11 @@ async function uploadExpenseReceipt(expenseId, file) {
   await apiFile('/storage/sos-expense-receipt/' + expenseId, { method: 'POST', body: file, headers: { 'Content-Type': file.type || 'application/octet-stream' } });
 }
 async function openExpenseReceipt(expenseId) { const res = await apiFile('/storage/sos-expense-receipt/' + expenseId); const b = await res.blob(); const u = URL.createObjectURL(b); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); }
+async function uploadStaffDoc(docId, file) {
+  if (file.size > 10e6) throw new Error('Files can be up to 10 MB');
+  await apiFile('/storage/sos-staff-doc/' + docId, { method: 'POST', body: file, headers: { 'Content-Type': file.type || 'application/octet-stream' } });
+}
+async function openStaffDoc(docId) { const res = await apiFile('/storage/sos-staff-doc/' + docId); const b = await res.blob(); const u = URL.createObjectURL(b); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); }
 
 // ---------- state ----------
 const S = { dash: null, user: null };

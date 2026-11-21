@@ -1000,6 +1000,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="jobApplications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>Job applications<span class="a-row-badge" id="notifBadgeJobsSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="salesOs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>SalesOS team</button>
         <button class="a-side-btn" data-section="onboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>Onboard new</button>
         <button class="a-side-btn" data-section="setup"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/></svg>Client setup<span class="a-row-badge" id="notifBadgeSetupSide" style="display:none"></span></button>
 
@@ -1094,6 +1095,38 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div class="label">AUZslab SalesOS</div>
         <h2 class="h-2">Job applications</h2>
         <div id="jobApplicationsList">Loading&hellip;</div>
+      </section>
+
+      <section class="a-page" id="salesOsSection" data-title="SalesOS team" data-parent="more">
+        <div class="label">AUZslab SalesOS</div>
+        <h2 class="h-2">SalesOS team</h2>
+        <p class="p" style="margin-top:-6px">Oversee the field team directly from here &mdash; no separate SalesOS sign-in needed.</p>
+        <div id="salesOsKpis" class="a-kpis">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:22px">Team performance this month</div>
+        <div id="salesOsTeamTable" style="margin-top:8px">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:22px">Pending expenses</div>
+        <div id="salesOsExpenses" style="margin-top:8px">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:22px">Visit integrity flags</div>
+        <div id="salesOsFlags" style="margin-top:8px">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:22px">Incentive rate</div>
+        <div id="salesOsIncentive" class="card" style="padding:14px;margin:8px 0;display:flex;align-items:center;justify-content:space-between;gap:12px">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:22px">Team announcements</div>
+        <div class="card" style="padding:14px;margin:8px 0 14px;display:grid;gap:8px">
+          <textarea id="salesOsAnnounceBody" class="field-input" rows="2" placeholder="Post an announcement to the whole SalesOS team&hellip;" style="width:100%"></textarea>
+          <button id="salesOsAnnounceBtn" class="req-primary" style="justify-self:start">Send announcement</button>
+        </div>
+        <div id="salesOsAnnouncements">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:22px">Documents on file</div>
+        <div id="salesOsDocuments" style="margin-top:8px">Loading&hellip;</div>
+
+        <div class="label" style="margin-top:22px">Audit log</div>
+        <div id="salesOsAudit" style="margin-top:8px">Loading&hellip;</div>
       </section>
 
       
@@ -1327,6 +1360,11 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="jobApplications">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>
             <span class="grow">Job applications</span><span class="a-row-badge" id="notifBadgeJobsMore" style="display:none"></span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="a-nav-row" data-section="salesOs">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+            <span class="grow">SalesOS team</span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="onboard">
@@ -1641,7 +1679,7 @@ function resetMainScroll() {
 // Each section loads when it is opened (and again if its data is older than 20 seconds), not all at once at sign-in:
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
-  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), jobApplications: () => loadJobApplications(),
+  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), jobApplications: () => loadJobApplications(), salesOs: () => loadSalesOsAdmin(),
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(), domains: () => loadDomains(),
 };
@@ -2006,6 +2044,121 @@ async function loadJobApplications() {
       loadJobApplications();
     };
   });
+}
+
+// AUZslab SalesOS team oversight, straight from the main admin console -- a platform admin has
+// no SalesOS login/profile of their own, so every call here goes through the admin_sos_*
+// SECURITY DEFINER functions (db/365), which check is_platform_admin() instead of tenant
+// membership. Never calls the sos_* functions a SalesOS manager uses directly -- those would
+// refuse a bare platform admin with "not a tenant member".
+function sosMoney(v) { return '₹' + Math.round(v || 0).toLocaleString('en-IN'); }
+function sosWhen(iso) { return iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''; }
+async function loadSalesOsAdmin() {
+  const kpisEl = document.getElementById('salesOsKpis');
+  const { data: dash, error: dashErr } = await sb.rpc('admin_sos_dashboard');
+  if (dashErr) { kpisEl.innerHTML = `<div class="err">${esc(dashErr.message)}</div>`; return; }
+  kpisEl.innerHTML = [
+    ['Staff', dash.staffCount], ['Deals won this month', dash.dealsWonThisMonth], ['Pipeline value', sosMoney(dash.pipelineValue)],
+    ['Visit flags to review', dash.flaggedVisits], ['Pending expenses', dash.pendingExpenses], ['Pending applications', dash.pendingApplications],
+  ].map(([k, n]) => `<div class="a-kpi"><div class="k">${esc(k)}</div><div class="n">${esc(String(n))}</div></div>`).join('');
+
+  const [{ data: perf }, { data: expenses }, { data: flags }, { data: rule }, { data: announcements }, { data: docs }, { data: audit }] = await Promise.all([
+    sb.rpc('admin_sos_team_performance'), sb.rpc('admin_sos_all_expenses', { p_status: 'pending' }), sb.rpc('admin_sos_flagged_visits'),
+    sb.rpc('admin_sos_incentive_rule_get'), sb.rpc('admin_sos_announcements'), sb.rpc('admin_sos_all_documents'), sb.rpc('admin_sos_audit_log', { p_limit: 50 }),
+  ]);
+
+  const teamEl = document.getElementById('salesOsTeamTable');
+  const perfRows = (perf || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${p.visitsDone}</td><td>${p.leadsDone}</td><td>${p.dealsWon}</td></tr>`).join('');
+  teamEl.innerHTML = (perf || []).length
+    ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Name</th><th>Role</th><th>Visits</th><th>Leads</th><th>Deals won</th></tr>${perfRows}</table></div>`
+    : emptyDoodle('No SalesOS staff yet.');
+
+  const expEl = document.getElementById('salesOsExpenses');
+  expEl.innerHTML = (expenses || []).length ? `<div class="req-grid">${(expenses || []).map((x) => `
+    <div class="req-card" data-exp="${x.id}">
+      <div class="req-head"><div><div class="req-name">${esc(x.staffName)} &mdash; ${sosMoney(x.amount)}</div>
+        <div class="req-sub">${esc(x.category)}${x.purpose ? ' &middot; ' + esc(x.purpose) : ''} &middot; ${esc(x.expenseDate)}${x.hasReceipt ? ' &middot; has receipt' : ''}</div></div></div>
+      <div class="req-actions"><button class="req-primary" data-approve>Approve</button><button data-reject>Reject</button></div>
+    </div>`).join('')}</div>` : emptyDoodle('No pending expenses.');
+  expEl.querySelectorAll('[data-exp]').forEach((card) => {
+    const id = card.dataset.exp;
+    card.querySelector('[data-approve]').onclick = async () => {
+      const { error: e2 } = await sb.rpc('admin_sos_expense_review', { p_id: id, p_decision: 'approved' });
+      if (e2) { alert(e2.message); return; } loadSalesOsAdmin();
+    };
+    card.querySelector('[data-reject]').onclick = async () => {
+      const reason = prompt('Reason for rejecting (optional)') || null;
+      const { error: e2 } = await sb.rpc('admin_sos_expense_review', { p_id: id, p_decision: 'rejected', p_reject_reason: reason });
+      if (e2) { alert(e2.message); return; } loadSalesOsAdmin();
+    };
+  });
+
+  const flagsEl = document.getElementById('salesOsFlags');
+  const unreviewed = (flags || []).filter((f) => !f.reviewed);
+  flagsEl.innerHTML = unreviewed.length ? `<div class="req-grid">${unreviewed.map((f) => `
+    <div class="req-card" data-flag="${f.id}">
+      <div class="req-head"><div><div class="req-name">${esc(f.staffName)} &mdash; ${esc(f.businessName)}</div>
+        <div class="req-sub">Checked out after ${Math.round(f.seconds)}s</div></div></div>
+      <div class="req-actions"><button class="req-primary" data-review>Mark reviewed</button></div>
+    </div>`).join('')}</div>` : emptyDoodle('No flagged visits.');
+  flagsEl.querySelectorAll('[data-flag]').forEach((card) => {
+    const id = card.dataset.flag;
+    card.querySelector('[data-review]').onclick = async () => {
+      const note = prompt('Review note (optional)') || null;
+      const { error: e2 } = await sb.rpc('admin_sos_visit_mark_reviewed', { p_id: id, p_note: note });
+      if (e2) { alert(e2.message); return; } loadSalesOsAdmin();
+    };
+  });
+
+  const incEl = document.getElementById('salesOsIncentive');
+  incEl.innerHTML = `<div><div class="req-name">${sosMoney(rule ? rule.perDealAmount : 0)} per deal won</div><div class="req-sub">Paid to the owning sales executive</div></div>
+    <button class="req-primary" id="salesOsIncentiveBtn" style="flex:none">Change rate</button>`;
+  document.getElementById('salesOsIncentiveBtn').onclick = async () => {
+    const v = prompt('New incentive rate per deal won (₹):', rule ? String(rule.perDealAmount) : '0');
+    if (v == null) return;
+    const { error: e2 } = await sb.rpc('admin_sos_incentive_rule_set', { p_per_deal_amount: Number(v) });
+    if (e2) { alert(e2.message); return; } loadSalesOsAdmin();
+  };
+
+  const annEl = document.getElementById('salesOsAnnouncements');
+  annEl.innerHTML = (announcements || []).length ? `<div class="req-grid">${(announcements || []).map((a) => `
+    <div class="req-card"><div class="req-head"><div><div class="req-name">${esc(a.senderName)}</div><div class="req-sub">${sosWhen(a.createdAt)}</div></div></div>
+      <div class="req-section req-body">${esc(a.body)}</div></div>`).join('')}</div>` : emptyDoodle('No announcements yet.');
+  const announceBtn = document.getElementById('salesOsAnnounceBtn');
+  announceBtn.onclick = async () => {
+    const body = document.getElementById('salesOsAnnounceBody').value.trim();
+    if (!body) return;
+    announceBtn.disabled = true;
+    const { error: e2 } = await sb.rpc('admin_sos_announcement_send', { p_body: body });
+    announceBtn.disabled = false;
+    if (e2) { alert(e2.message); return; }
+    document.getElementById('salesOsAnnounceBody').value = '';
+    loadSalesOsAdmin();
+  };
+
+  const docsEl = document.getElementById('salesOsDocuments');
+  docsEl.innerHTML = (docs || []).length
+    ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Document</th><th>Staff</th><th>Status</th><th></th></tr>${(docs || []).map((d) => `
+      <tr><td>${esc(d.label)}</td><td>${esc(d.staffName)}</td><td>${d.uploaded ? 'On file' : 'Pending'}</td>
+      <td>${d.uploaded ? `<a href="#" data-doc="${d.id}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open</a>` : ''}</td></tr>`).join('')}</table></div>`
+    : emptyDoodle('No documents uploaded yet.');
+  docsEl.querySelectorAll('[data-doc]').forEach((link) => {
+    link.onclick = async (e) => {
+      e.preventDefault();
+      try {
+        const { data: s } = await sb.auth.getSession();
+        const r = await fetch(CFG.url + '/storage/sos-staff-doc-admin/' + link.dataset.doc, { headers: { Authorization: 'Bearer ' + s.session.access_token } });
+        if (!r.ok) throw new Error('missing');
+        window.open(URL.createObjectURL(await r.blob()), '_blank', 'noopener');
+      } catch (e2) { alert('The document could not be loaded.'); }
+    };
+  });
+
+  const auditEl = document.getElementById('salesOsAudit');
+  auditEl.innerHTML = (audit || []).length
+    ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Who</th><th>Action</th><th>When</th></tr>${(audit || []).map((a) => `
+      <tr><td>${esc(a.actorName)}</td><td>${esc(a.action)}d a ${esc(a.entity)}</td><td>${sosWhen(a.createdAt)}</td></tr>`).join('')}</table></div>`
+    : emptyDoodle('Nothing recorded yet.');
 }
 
 // server/src/db.js sets the API's connection pool to 35 (PG_POOL_MAX; Postgres itself allows 100).
