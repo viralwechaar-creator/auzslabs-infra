@@ -275,18 +275,28 @@ async function renderDashboard(dash) {
     });
   }
 
-  var main = h('main', null,
-    h('div', { class: 'kpis' },
-      h('div', { class: 'kpi' }, h('b', null, dash.my_role), h('span', null, 'Your post')),
-      h('div', { class: 'kpi' }, h('b', null, dash.tenant && dash.tenant.name || 'AUZslab'), h('span', null, 'Team'))),
+  var kpis = h('div', { class: 'kpis' },
+    h('div', { class: 'kpi' }, h('b', null, dash.my_role), h('span', null, 'Your post')),
+    h('div', { class: 'kpi' }, h('b', null, dash.tenant && dash.tenant.name || 'AUZslab'), h('span', null, 'Team')));
+  async function paintPerf() {
+    if (!canField) return;
+    var perf, report;
+    try { [perf, report] = await Promise.all([api('sos_my_performance'), api('sos_daily_report')]); } catch (e) { return; }
+    kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, perf.visitsDone + (perf.visitsTarget ? '/' + perf.visitsTarget : '')), h('span', null, 'Visits this month')));
+    kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, perf.leadsDone + (perf.leadsTarget ? '/' + perf.leadsTarget : '')), h('span', null, 'Leads this month')));
+    kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, perf.dealsWon), h('span', null, 'Deals won this month')));
+    kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, report.followUpsDue), h('span', null, 'Follow-ups due today')));
+  }
+
+  var main = h('main', null, kpis,
     canField ? fieldCard : null,
     canField ? visitsCard : null,
     canField ? leadsCard : null,
     canManage ? teamCard : null,
     h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
-      h('p', { class: 'muted' }, 'Targets, reports and notifications are being built next. This page will grow into your daily workspace.')));
+      h('p', { class: 'muted' }, 'Notifications and the survey engine are being built next. This page will grow into your daily workspace.')));
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
-  if (canField) { paintField(); paintVisits(); paintLeads(); }
+  if (canField) { paintField(); paintVisits(); paintLeads(); paintPerf(); }
   if (canManage) paintTeam();
 }
 
