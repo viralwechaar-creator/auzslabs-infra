@@ -470,18 +470,88 @@ async function renderDashboard(dash) {
     kpis.appendChild(h('div', { class: 'kpi' }, h('b', null, '₹' + incentive.earned), h('span', null, 'Incentive this month')));
   }
 
+  // ---------- messaging: direct messages with any teammate, + manager team announcements ----------
+  var announcementsList = h('div', null);
+  var conversationsList = h('div', null);
+  var threadView = h('div', { style: 'display:none' });
+  var messagesError = h('div', { class: 'err' });
+  var directory = [];
+  async function paintAnnouncements() {
+    clear(announcementsList);
+    var rows = await api('sos_announcements');
+    if (!rows.length) { announcementsList.appendChild(h('p', { class: 'muted' }, 'No announcements yet.')); return; }
+    rows.slice(0, 10).forEach(function (a) {
+      announcementsList.appendChild(h('div', { style: 'padding:8px 0;border-top:1px solid var(--sep)' },
+        h('b', { style: 'font-size:13px' }, a.senderName), h('span', { class: 'muted', style: 'font-size:11px' }, '  ' + a.createdAt.slice(0, 16).replace('T', ' ')), h('br'), a.body));
+    });
+  }
+  function openThread(withId, withName) {
+    clear(threadView);
+    threadView.style.display = 'block';
+    var backBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px' }, '← Back');
+    backBtn.onclick = function () { threadView.style.display = 'none'; conversationsList.style.display = 'block'; };
+    var msgsBox = h('div', { style: 'max-height:260px;overflow:auto;margin:10px 0' });
+    var input = h('input', { class: 'input', placeholder: 'Message ' + withName, style: 'margin-top:0' });
+    var sendBtn = h('button', { class: 'btn fill', type: 'button', style: 'width:auto;padding:8px 14px' }, 'Send');
+    async function refresh() {
+      var rows = await api('sos_conversation', { p_with: withId });
+      clear(msgsBox);
+      rows.forEach(function (m) {
+        msgsBox.appendChild(h('div', { style: 'margin:6px 0;max-width:80%;' + (m.mine ? 'margin-left:auto;text-align:right' : '') },
+          h('div', { style: 'display:inline-block;padding:8px 12px;border-radius:12px;background:' + (m.mine ? 'var(--accent);color:#fff' : 'var(--bg)') }, m.body)));
+      });
+      msgsBox.scrollTop = msgsBox.scrollHeight;
+    }
+    sendBtn.onclick = async function () {
+      if (!input.value.trim()) return;
+      try { await api('sos_message_send', { p_recipient: withId, p_body: input.value }); input.value = ''; await refresh(); await paintConversations(); }
+      catch (e) { alert(e.message); }
+    };
+    threadView.appendChild(h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, backBtn, h('b', null, withName)));
+    threadView.appendChild(msgsBox);
+    threadView.appendChild(h('div', { style: 'display:flex;gap:8px' }, input, sendBtn));
+    refresh();
+  }
+  async function paintConversations() {
+    clear(conversationsList);
+    conversationsList.style.display = 'block';
+    var rows;
+    try { rows = await api('sos_my_conversations'); } catch (e) { messagesError.textContent = e.message; return; }
+    if (!rows.length) { conversationsList.appendChild(h('p', { class: 'muted' }, 'No conversations yet. Start one below.')); }
+    rows.forEach(function (c) {
+      var row = h('div', { style: 'padding:8px 0;border-top:1px solid var(--sep);cursor:pointer' },
+        h('b', null, c.withName), h('br'), h('span', { class: 'muted' }, c.lastBody || ''));
+      row.onclick = function () { openThread(c.withId, c.withName); };
+      conversationsList.appendChild(row);
+    });
+    var newDmSelect = h('select', { class: 'input' }, h('option', { value: '' }, '+ Message a teammate…'));
+    try { directory = await api('sos_team_directory'); directory.forEach(function (p) { newDmSelect.appendChild(h('option', { value: p.id }, p.name + ' (' + p.role + ')')); }); } catch (e) {}
+    newDmSelect.onchange = function () { if (newDmSelect.value) { var p = directory.find(function (x) { return x.id === newDmSelect.value; }); openThread(p.id, p.name); } };
+    conversationsList.appendChild(newDmSelect);
+  }
+  var announceBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:6px 12px' }, '+ Team announcement');
+  announceBtn.onclick = async function () {
+    var body = prompt('Announcement to the whole team:');
+    if (!body) return;
+    try { await api('sos_message_send', { p_recipient: null, p_body: body }); await paintAnnouncements(); } catch (e) { alert(e.message); }
+  };
+  var messagesCard = h('div', { class: 'notice' },
+    h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'Team announcements'), canManage ? announceBtn : null),
+    announcementsList,
+    h('b', { style: 'display:block;margin-top:16px' }, 'Direct messages'), messagesError, conversationsList, threadView);
+
   var main = h('main', null, kpis,
     canField ? fieldCard : null,
     canField ? visitsCard : null,
     canField ? leadsCard : null,
     canField ? expensesCard : null,
     canField ? tasksCard : null,
-    canManage ? teamCard : null,
-    h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
-      h('p', { class: 'muted' }, 'Notifications and the survey engine are being built next. This page will grow into your daily workspace.')));
+    messagesCard,
+    canManage ? teamCard : null);
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
   if (canField) { paintField(); paintVisits(); paintLeads(); paintExpenses(); paintTasks(); paintPerf(); }
   if (canManage) paintTeam();
+  paintAnnouncements(); paintConversations();
 }
 
 boot();
