@@ -173,5 +173,29 @@ export async function handle(ctx) {
     return;
   }
 
+  // ---- SalesOS: field expense receipts (private; authenticated both ways -- the staffer who
+  // filed the expense, or a manager, via the sos_expense_* SECURITY DEFINER checks) ----
+  const sosReceiptPost = url.pathname.match(/^\/storage\/sos-expense-receipt\/([0-9a-f-]{36})$/);
+  if (sosReceiptPost && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const buffer = await readRawBody(req, 6_000_000);
+    const saved = await saveDocUpload({ tenantId: 'sos-expenses', empId: sosReceiptPost[1], buffer });
+    const { rows } = await withAuth(user.id, (client) => client.query('select sos_expense_attach_receipt($1, $2) as ok', [sosReceiptPost[1], saved.path.split('/')[2]]));
+    if (!rows[0]?.ok) throw new HttpError(404, 'This expense is not waiting for a receipt.');
+    return reply(200, { ok: true });
+  }
+  const sosReceiptGet = url.pathname.match(/^\/storage\/sos-expense-receipt\/([0-9a-f-]{36})$/);
+  if (sosReceiptGet && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const { rows } = await withAuth(user.id, (client) => client.query('select sos_expense_receipt($1) as f', [sosReceiptGet[1]]));
+    const file = rows[0] && rows[0].f;
+    if (!file) throw new HttpError(404, 'no receipt');
+    const doc = await readDocUpload({ tenantId: 'sos-expenses', empId: sosReceiptGet[1], filename: file });
+    if (!doc) throw new HttpError(404, 'not found');
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600' });
+    res.end(doc.buffer);
+    return;
+  }
+
   return false;
 }
