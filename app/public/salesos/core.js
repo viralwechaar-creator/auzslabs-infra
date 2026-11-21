@@ -231,3 +231,11 @@ function liRow(o) {
 }
 function section(title, ...kids) { return h('div', { class: 'sec' }, title ? h('div', { class: 'sec-h' }, typeof title === 'string' ? h('h3', null, title) : title) : null, ...kids); }
 const isDesk = () => matchMedia('(min-width:900px)').matches;
+
+// Floating glass search pill (Apple "Liquid Glass"): a sticky, blurred, rounded bar that filters
+// a list live as the person types. onInput receives the trimmed, lowercased query on every
+// keystroke (debounced by the caller if the filter is expensive).
+function glassSearch(placeholder, onInput) {
+  const i = h('input', { type: 'search', placeholder, 'aria-label': placeholder, autocomplete: 'off', oninput: () => onInput(i.value.trim().toLowerCase()) });
+  return h('div', { class: 'glass-search' }, icon('search', 18), i);
+}

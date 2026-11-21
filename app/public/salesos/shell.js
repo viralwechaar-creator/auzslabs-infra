@@ -36,6 +36,10 @@ function moreItems() {
 }
 
 // ---------- sign in ----------
+// Same shared dark photo-panel sign-in every other AUZslab app uses (POS, Payroll, ...):
+// ds/auth-login.css restyles the chrome around this plain .card form -- the form itself never
+// changes. Desktop: the photo sits beside the form. Phone: the photo is full-bleed and the form
+// is a bottom sheet raised by the "Sign in" pill.
 function showLogin(msg) {
   const e = h('input', { class: 'input', type: 'email', placeholder: 'Email', autocomplete: 'username', 'aria-label': 'Email' });
   const p = h('input', { class: 'input', type: 'password', placeholder: 'Password', autocomplete: 'current-password', 'aria-label': 'Password' });
@@ -56,7 +60,19 @@ function showLogin(msg) {
     h('img', { src: '/icon-auzslab-192.png', alt: 'AUZslab', style: { height: '44px', width: '44px', borderRadius: '10px' } }),
     h('h1', null, 'SalesOS'), h('p', { class: 'muted' }, 'Sign in with the login AUZslab gave you.'),
     googleHost, socialDivider, e, pwWrap, btn, m);
-  clear($('#app')).append(h('div', { class: 'login' }, form));
+
+  const sheetClose = h('button', { type: 'button', class: 'login-sheet-close', 'aria-label': 'Close' }, '×');
+  const formPane = h('div', { class: 'login-form-pane', id: 'loginFormPane' }, sheetClose, h('div', { class: 'login-grab' }), form);
+  const scrim = h('div', { class: 'login-sheet-scrim', id: 'loginSheetScrim' });
+  const openSheet = () => { formPane.classList.add('open'); scrim.classList.add('show'); };
+  const closeSheet = () => { formPane.classList.remove('open'); scrim.classList.remove('show'); };
+  sheetClose.onclick = closeSheet; scrim.onclick = closeSheet;
+  const entryBtn = h('button', { type: 'button', class: 'login-pill', id: 'loginEntryBtn', onclick: openSheet }, 'Sign in');
+  const frame = h('div', { class: 'login-frame' },
+    h('aside', { class: 'login-photo' }, h('img', { class: 'login-photo-logo', src: '/logo.png', alt: '' }),
+      h('div', { class: 'login-photo-foot' }, h('p', { class: 'login-eyebrow' }, 'AUZslab internal'), h('h2', { class: 'login-headline' }, 'Field, leads, and the team, in one place.'))),
+    formPane);
+  clear($('#app')).append(h('div', { class: 'login' }, frame, h('div', { class: 'login-entry-ctas', id: 'loginEntryCtas' }, entryBtn), scrim));
   e.focus();
   if (CFG.googleClientId) { socialDivider.style.display = 'block'; auzGoogleLink(googleHost, 'salesos'); }
 }

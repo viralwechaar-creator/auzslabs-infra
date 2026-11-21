@@ -6,17 +6,20 @@ function stageBadge(s) { return badge(cap1(s), STAGE_TONE[s] || ''); }
 page('leads', {
   title: 'Leads', icon: 'target', field: true,
   async render(v) {
+    let all = [], q = '';
+    const search = glassSearch('Search leads by business or product', (val) => { q = val; paintFiltered(); });
     const list = h('div', { class: 'list' }, h('div', { class: 'skel', style: { height: '60px' } }));
-    v.root.append(h('div', { class: 'card' }, h('div', { class: 'row sp' }, h('h3', null, 'My pipeline'), h('button', { class: 'btn fill sm', type: 'button', onclick: () => newLeadFlow() }, '+ New lead')), list));
-    async function paint() {
-      const rows = await api('sos_my_leads');
+    v.root.append(h('div', { class: 'card' }, h('div', { class: 'row sp' }, h('h3', null, 'My pipeline'), h('button', { class: 'btn fill sm', type: 'button', onclick: () => newLeadFlow() }, '+ New lead')), search, list));
+    function paintFiltered() {
+      const rows = q ? all.filter((l) => l.businessName.toLowerCase().includes(q) || (l.product || '').toLowerCase().includes(q)) : all;
       clear(list);
-      if (!rows.length) { list.append(empty('target', 'No leads yet', 'Create one from a visited business.')); return; }
+      if (!rows.length) { list.append(empty('target', all.length ? 'No matches' : 'No leads yet', all.length ? 'Try a different search.' : 'Create one from a visited business.')); return; }
       rows.forEach((l) => list.append(liRow({
         icon: 'target', title: l.businessName, sub: (l.product || 'No product') + (l.dealValue ? ' · ' + inr(l.dealValue) : ''),
         badge: stageBadge(l.stage), onclick: () => leadDetail(l),
       })));
     }
+    async function paint() { all = await api('sos_my_leads'); paintFiltered(); }
     paint();
 
     async function newLeadFlow() {
