@@ -7,6 +7,7 @@
 <meta name="description" content="Apply to join the AUZslab team. Send your name, a short note and your resume — we will review it and get back to you.">
 <link rel="canonical" href="https://auzslab.in/careers.html">
 <meta name="robots" content="index,follow">
+<meta name="color-scheme" content="light dark">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
@@ -14,23 +15,57 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
+<style>
+/* This page only loads theme.css's tokens; every form control below is styled explicitly from
+   them (background, border, text colour, placeholder) instead of relying on the browser's own
+   dark-mode guess for unstyled inputs -- that guess is what made every field render solid black
+   with near-invisible text before this fix. */
+.jwrap{max-width:560px;margin:0 auto;padding:60px 20px 100px;width:100%;box-sizing:border-box}
+.jwrap .logo{display:inline-block;margin-bottom:30px}
+.jwrap .logo img{height:28px;display:block}
+@media (prefers-color-scheme:dark){.jwrap .logo img{filter:invert(1) brightness(1.8)}}
+:root[data-theme="dark"] .jwrap .logo img{filter:invert(1) brightness(1.8)}
+.jwrap h1{font-size:28px;margin:0 0 8px;color:var(--ink)}
+.jwrap .lede{color:var(--ink-dim);margin:0 0 28px;font-size:14px;line-height:1.6}
+#careersForm{display:grid;gap:16px}
+#careersForm label{display:block;font-size:13px;margin-bottom:6px;color:var(--ink-dim);font-weight:600}
+#careersForm .input,#careersForm input[type=text],#careersForm input[type=email],#careersForm input[type=tel],#careersForm textarea{
+  width:100%;padding:12px 14px;border-radius:10px;font-size:16px;font-family:inherit;
+  background:var(--bg-raised);color:var(--ink);border:1px solid var(--line);
+  -webkit-appearance:none;appearance:none}
+#careersForm textarea{resize:vertical;min-height:96px;line-height:1.5}
+#careersForm input::placeholder,#careersForm textarea::placeholder{color:var(--ink-faint)}
+#careersForm input:focus,#careersForm textarea:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 2px var(--line)}
+.jfile{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.jfile input[type=file]{color:var(--ink-dim);font-size:13px;max-width:100%}
+.jfile input[type=file]::file-selector-button{padding:8px 14px;border-radius:999px;border:1px solid var(--ink);background:transparent;color:var(--ink);font-size:13px;cursor:pointer;margin-right:10px}
+.jfile input[type=file]::file-selector-button:hover{background:var(--ink-solid);color:#fff}
+#careersError{color:#e5484d;display:none;font-size:13px}
+#careersForm .go{padding:13px;border-radius:10px;background:var(--ink-solid);color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;width:100%}
+#careersForm .go:hover{opacity:.9}
+#careersForm .go:disabled{opacity:.5;cursor:default}
+#successView{display:none}
+#successView b{color:var(--ink);font-size:17px}
+#successView p{color:var(--ink-dim);font-size:14px;line-height:1.6}
+#successView a{color:var(--ink)}
+</style>
 </head>
 <body>
-<main style="max-width:560px;margin:0 auto;padding:60px 20px 100px">
-  <a href="index.html" style="display:inline-block;margin-bottom:30px"><img src="logo.png" alt="AUZslab" height="28"></a>
-  <h1 style="font-size:28px;margin-bottom:8px">Apply to join AUZslab.</h1>
-  <p style="color:var(--l,#666);margin-bottom:28px">Send your name, a short note and (optionally) your resume. We'll review it and get back to you.</p>
-  <form id="careersForm" style="display:grid;gap:16px">
-    <div><label for="j-name" style="display:block;font-size:13px;margin-bottom:4px">Your name</label><input id="j-name" name="name" type="text" required style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px"></div>
-    <div><label for="j-email" style="display:block;font-size:13px;margin-bottom:4px">Your email (becomes your sign-in if approved)</label><input id="j-email" name="email" type="email" required style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px"></div>
-    <div><label for="j-phone" style="display:block;font-size:13px;margin-bottom:4px">Phone</label><input id="j-phone" name="phone" type="tel" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px"></div>
-    <div><label for="j-note" style="display:block;font-size:13px;margin-bottom:4px">Tell us about yourself</label><textarea id="j-note" name="note" rows="4" placeholder="Role you're interested in, experience" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px"></textarea></div>
-    <div><label for="j-resume" style="display:block;font-size:13px;margin-bottom:4px">Resume (PDF, optional)</label><input id="j-resume" name="resume" type="file" accept="application/pdf"></div>
+<main class="jwrap">
+  <a href="index.html" class="logo"><img src="logo.png" alt="AUZslab"></a>
+  <h1>Apply to join AUZslab.</h1>
+  <p class="lede">Send your name, a short note and (optionally) your resume. We'll review it and get back to you.</p>
+  <form id="careersForm">
+    <div><label for="j-name">Your name</label><input id="j-name" name="name" type="text" required></div>
+    <div><label for="j-email">Your email (becomes your sign-in if approved)</label><input id="j-email" name="email" type="email" required></div>
+    <div><label for="j-phone">Phone</label><input id="j-phone" name="phone" type="tel"></div>
+    <div><label for="j-note">Tell us about yourself</label><textarea id="j-note" name="note" rows="4" placeholder="Role you're interested in, experience"></textarea></div>
+    <div class="jfile"><label for="j-resume" style="width:100%">Resume (PDF, optional)</label><input id="j-resume" name="resume" type="file" accept="application/pdf"></div>
     <div style="position:absolute;left:-9999px" aria-hidden="true"><input name="hp" tabindex="-1" autocomplete="off"></div>
-    <div id="careersError" style="color:#b00020;display:none;font-size:13px"></div>
-    <button type="submit" class="go" style="padding:12px;border-radius:8px;background:var(--ink,#111);color:#fff;border:none;font-size:15px;cursor:pointer">Submit application</button>
+    <div id="careersError"></div>
+    <button type="submit" class="go">Submit application</button>
   </form>
-  <div id="successView" style="display:none">
+  <div id="successView">
     <b>Got it.</b>
     <p>Thanks, <span id="successContact">you</span>. We'll review your application and get back to you. Once approved, sign in with Google on the <a href="account.html">account page</a> using the same email.</p>
   </div>
