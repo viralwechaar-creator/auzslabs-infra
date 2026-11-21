@@ -313,6 +313,36 @@ async function renderDashboard(dash) {
   };
   var expensesCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My expenses'), newExpenseBtn), expensesError, expensesList);
 
+  var tasksList = h('div', null);
+  var tasksError = h('div', { class: 'err' });
+  async function paintTasks() {
+    clear(tasksList);
+    var data;
+    try { data = await api('sos_my_tasks'); } catch (e) { tasksError.textContent = e.message; return; }
+    if (data.leadFollowUps.length) {
+      tasksList.appendChild(h('b', { style: 'display:block;color:#b00020' }, 'Follow-ups due (' + data.leadFollowUps.length + ')'));
+      data.leadFollowUps.forEach(function (f) {
+        tasksList.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, f.businessName + ' · ' + f.stage + ' · due ' + f.followUpDate));
+      });
+    }
+    if (!data.tasks.length && !data.leadFollowUps.length) { tasksList.appendChild(h('p', { class: 'muted' }, 'No open tasks.')); return; }
+    data.tasks.forEach(function (x) {
+      var doneBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:4px 10px' }, 'Done');
+      doneBtn.onclick = async function () { try { await api('sos_task_set', { p_id: x.id, p_status: 'done' }); await paintTasks(); } catch (e) { alert(e.message); } };
+      tasksList.appendChild(h('div', { style: 'padding:8px 0;border-top:1px solid var(--sep)' },
+        h('b', null, x.title), x.due_date ? h('span', { class: 'muted' }, '  (due ' + x.due_date + ')') : null, h('br'),
+        x.notes ? h('span', { class: 'muted' }, x.notes) : null, h('br'), doneBtn));
+    });
+  }
+  var newTaskBtn = h('button', { class: 'btn fill', type: 'button', style: 'width:auto;padding:8px 14px' }, '+ New task');
+  newTaskBtn.onclick = async function () {
+    var title = prompt('Task title:'); if (!title) return;
+    var dueDate = prompt('Due date (YYYY-MM-DD), optional:') || '';
+    try { await api('sos_task_create', { p: { title: title, dueDate: dueDate } }); await paintTasks(); }
+    catch (e) { alert(e.message); }
+  };
+  var tasksCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My tasks'), newTaskBtn), tasksError, tasksList);
+
   var canManage = dash.my_role === 'Sales Manager' || dash.my_role === 'Admin' || dash.my_role === 'owner';
   var teamCard = h('div', { class: 'notice' });
   async function paintTeam() {
@@ -353,6 +383,12 @@ async function renderDashboard(dash) {
       teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' },
         x.staffName + ' · ₹' + x.amount + ' · ' + x.category + (x.hasReceipt ? ' · has receipt' : ''), h('br'), approveBtn, rejectBtn));
     });
+    var allTasks;
+    try { allTasks = await api('sos_all_tasks'); } catch (e) { allTasks = []; }
+    teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'Team tasks (' + allTasks.length + ')'));
+    allTasks.slice(0, 20).forEach(function (x) {
+      teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, x.title + ' · ' + x.assignedToName + ' · ' + x.status + (x.dueDate ? ' · due ' + x.dueDate : '')));
+    });
     var newTemplateBtn = h('button', { class: 'btn plain', type: 'button', style: 'width:auto;padding:6px 12px;margin-top:10px' }, '+ New survey template');
     newTemplateBtn.onclick = async function () {
       var name = prompt('Survey template name:'); if (!name) return;
@@ -390,11 +426,12 @@ async function renderDashboard(dash) {
     canField ? visitsCard : null,
     canField ? leadsCard : null,
     canField ? expensesCard : null,
+    canField ? tasksCard : null,
     canManage ? teamCard : null,
     h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
       h('p', { class: 'muted' }, 'Notifications and the survey engine are being built next. This page will grow into your daily workspace.')));
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
-  if (canField) { paintField(); paintVisits(); paintLeads(); paintExpenses(); paintPerf(); }
+  if (canField) { paintField(); paintVisits(); paintLeads(); paintExpenses(); paintTasks(); paintPerf(); }
   if (canManage) paintTeam();
 }
 
