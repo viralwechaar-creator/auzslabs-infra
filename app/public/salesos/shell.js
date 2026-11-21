@@ -30,8 +30,8 @@ function tabsFor() {
 }
 function moreItems() {
   const tabs = tabsFor();
-  const ordered = canField() ? ['dashboard', 'field', 'leads', 'demos', 'surveys', 'expenses', 'tasks', 'messages'].concat(canManage() ? ['team', 'audit'] : [])
-    : canManage() ? ['dashboard', 'team', 'audit', 'messages'] : ['dashboard', 'messages'];
+  const ordered = (canField() ? ['dashboard', 'field', 'leads', 'demos', 'surveys', 'expenses', 'tasks', 'messages'].concat(canManage() ? ['team', 'audit'] : [])
+    : canManage() ? ['dashboard', 'team', 'audit', 'messages'] : ['dashboard', 'messages']).concat(['profile']);
   return ordered.filter((id) => !tabs.includes(id) && allowed(PAGES[id]));
 }
 
@@ -114,11 +114,12 @@ function buildShell() {
     ? [{ group: '', items: ['dashboard'] }, { group: 'My work', items: ['field', 'leads', 'demos', 'surveys', 'expenses', 'tasks'] }, { group: '', items: ['messages'] }]
     : [{ group: '', items: ['dashboard'] }, { group: '', items: ['messages'] }];
   const manageGroup = canManage() ? [{ group: 'Manage', items: ['team', 'audit'] }] : [];
+  const meGroup = [{ group: '', items: ['profile'] }];
   const side = h('aside', { class: 'side', 'aria-label': 'Sections' },
     h('div', { class: 'brand' }, h('img', { src: '/icon-auzslab-192.png', alt: '', width: 30, height: 30, style: { borderRadius: '8px' } }),
       h('div', { class: 'lbl-t grow' }, h('b', null, 'SalesOS'), h('span', null, 'AUZslab internal')),
       h('button', { class: 'side-tg', type: 'button', title: 'Collapse or expand the sidebar', 'aria-label': 'Collapse or expand the sidebar', onclick: toggleSide }, icon('sidebar', 20))),
-    [...groups, ...manageGroup].map((g) => { const items = g.items.map((i) => navItem(i)).filter(Boolean); return items.length ? [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, items] : null; }),
+    [...groups, ...manageGroup, ...meGroup].map((g) => { const items = g.items.map((i) => navItem(i)).filter(Boolean); return items.length ? [g.group ? h('div', { class: 'gh' }, h('span', { class: 'lbl-t' }, g.group)) : null, items] : null; }),
     h('div', { class: 'foot' }, h('span', null, S.user.email), h('span', null, roleLabel()),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet ? auzThemeGet() : 'system', (v) => auzTheme && auzTheme(v), { full: true }),
       h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: signOut }, 'Sign out'))));

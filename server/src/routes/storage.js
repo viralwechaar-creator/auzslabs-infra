@@ -197,5 +197,45 @@ export async function handle(ctx) {
     return;
   }
 
+  // ---- SalesOS: personal staff documents (ID proof, resume, certificates, ...) -- private,
+  // authenticated both ways: the owning staffer, or a manager, via the sos_document_* checks ----
+  const sosDocPost = url.pathname.match(/^\/storage\/sos-staff-doc\/([0-9a-f-]{36})$/);
+  if (sosDocPost && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const buffer = await readRawBody(req, 10_000_000);
+    const saved = await saveDocUpload({ tenantId: 'sos-documents', empId: sosDocPost[1], buffer });
+    const { rows } = await withAuth(user.id, (client) => client.query('select sos_document_mark_uploaded($1, $2) as ok', [sosDocPost[1], saved.path.split('/')[2]]));
+    if (!rows[0]?.ok) throw new HttpError(404, 'This document is not waiting for an upload.');
+    return reply(200, { ok: true });
+  }
+  const sosDocGet = url.pathname.match(/^\/storage\/sos-staff-doc\/([0-9a-f-]{36})$/);
+  if (sosDocGet && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const { rows } = await withAuth(user.id, (client) => client.query('select sos_document_file($1) as f', [sosDocGet[1]]));
+    const file = rows[0] && rows[0].f;
+    if (!file) throw new HttpError(404, 'no file');
+    const doc = await readDocUpload({ tenantId: 'sos-documents', empId: sosDocGet[1], filename: file });
+    if (!doc) throw new HttpError(404, 'not found');
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600' });
+    res.end(doc.buffer);
+    return;
+  }
+
+  // ---- SalesOS: staff document read for a platform admin with no SalesOS profile at all
+  // (site/admin.html's SalesOS tab) -- sos_document_file above requires sos_perm('sos_manage'),
+  // which a bare platform admin doesn't have, so this goes through admin_sos_document_file instead ----
+  const sosDocAdminGet = url.pathname.match(/^\/storage\/sos-staff-doc-admin\/([0-9a-f-]{36})$/);
+  if (sosDocAdminGet && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    const { rows } = await withAuth(user.id, (client) => client.query('select admin_sos_document_file($1) as f', [sosDocAdminGet[1]]));
+    const file = rows[0] && rows[0].f;
+    if (!file) throw new HttpError(404, 'no file');
+    const doc = await readDocUpload({ tenantId: 'sos-documents', empId: sosDocAdminGet[1], filename: file });
+    if (!doc) throw new HttpError(404, 'not found');
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600' });
+    res.end(doc.buffer);
+    return;
+  }
+
   return false;
 }
