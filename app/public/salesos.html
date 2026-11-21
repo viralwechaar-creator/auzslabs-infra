@@ -253,6 +253,28 @@ async function renderDashboard(dash) {
   newLeadBtn.onclick = createLeadFlow;
   var leadsCard = h('div', { class: 'notice' }, h('div', { style: 'display:flex;justify-content:space-between;align-items:center' }, h('b', null, 'My leads'), newLeadBtn), leadsError, leadsList);
 
+  var canManage = dash.my_role === 'Sales Manager' || dash.my_role === 'Admin' || dash.my_role === 'owner';
+  var teamCard = h('div', { class: 'notice' });
+  async function paintTeam() {
+    clear(teamCard).appendChild(h('b', null, 'Team overview'));
+    var live, leads, visits;
+    try { [live, leads, visits] = await Promise.all([api('sos_live_field'), api('sos_all_leads'), api('sos_all_visits')]); }
+    catch (e) { teamCard.appendChild(h('p', { class: 'err' }, e.message)); return; }
+    teamCard.appendChild(h('p', { class: 'muted' }, live.length ? live.length + ' in an active field session' : 'No one is in an active field session right now.'));
+    live.forEach(function (s) {
+      var mapLink = s.lastSample ? h('a', { href: 'https://maps.google.com/?q=' + s.lastSample.lat + ',' + s.lastSample.lng, target: '_blank', rel: 'noopener' }, 'map') : null;
+      teamCard.appendChild(h('div', null, s.name + ' — ' + s.status, s.lastSample ? ' · ' : null, mapLink));
+    });
+    teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'All leads (' + leads.length + ')'));
+    leads.slice(0, 20).forEach(function (l) {
+      teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, l.businessName + ' · ' + l.stage + ' · ' + (l.ownerName || 'unassigned')));
+    });
+    teamCard.appendChild(h('b', { style: 'display:block;margin-top:14px' }, 'All visits (' + visits.length + ')'));
+    visits.slice(0, 20).forEach(function (v) {
+      teamCard.appendChild(h('div', { class: 'muted', style: 'padding:4px 0' }, v.businessName + ' · ' + v.staffName + ' · ' + v.status + (v.outcome ? ' · ' + v.outcome : '')));
+    });
+  }
+
   var main = h('main', null,
     h('div', { class: 'kpis' },
       h('div', { class: 'kpi' }, h('b', null, dash.my_role), h('span', null, 'Your post')),
@@ -260,10 +282,12 @@ async function renderDashboard(dash) {
     canField ? fieldCard : null,
     canField ? visitsCard : null,
     canField ? leadsCard : null,
+    canManage ? teamCard : null,
     h('div', { class: 'notice' }, h('b', null, 'Welcome.'),
-      h('p', { class: 'muted' }, 'Demos, trials and reports are being built next. This page will grow into your daily workspace.')));
+      h('p', { class: 'muted' }, 'Targets, reports and notifications are being built next. This page will grow into your daily workspace.')));
   clear(app).appendChild(h('div', { class: 'shell' }, topbar, main));
   if (canField) { paintField(); paintVisits(); paintLeads(); }
+  if (canManage) paintTeam();
 }
 
 boot();
