@@ -1984,6 +1984,7 @@ async function loadJobApplications() {
       </div>
       <div class="req-section req-body">Interested in: ${esc(TEAM_ROLE_LABEL[r.role_wanted] || r.role_wanted)}${r.experience ? ' &middot; ' + esc(r.experience) : ''}</div>
       ${r.about ? `<div class="req-section req-body">${esc(r.about)}</div>` : ''}
+      ${r.resume_file ? '<div class="req-section"><a href="#" data-resume class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open resume</a></div>' : ''}
       <div class="req-section">
         <label style="font-size:12px;display:block;margin-bottom:4px">Assign post</label>
         <select data-post class="field-input" style="width:100%">${roleOptions(['salesman', 'setup', 'support', 'manager'].includes(r.role_wanted) ? r.role_wanted : 'salesman')}</select>
@@ -1998,6 +1999,16 @@ async function loadJobApplications() {
 
   listEl.querySelectorAll('[data-id]').forEach((tr) => {
     const id = tr.dataset.id;
+    const resumeLink = tr.querySelector('[data-resume]');
+    if (resumeLink) resumeLink.onclick = async (e) => {
+      e.preventDefault();
+      try {
+        const { data: s } = await sb.auth.getSession();
+        const r = await fetch(CFG.url + '/storage/team-application-resume/' + id, { headers: { Authorization: 'Bearer ' + s.session.access_token } });
+        if (!r.ok) throw new Error('missing');
+        window.open(URL.createObjectURL(await r.blob()), '_blank', 'noopener');
+      } catch (e2) { alert('The resume could not be loaded.'); }
+    };
     tr.querySelector('[data-approve]').onclick = async () => {
       const post = tr.querySelector('[data-post]').value;
       if (!confirm(`Approve as "${TEAM_ROLE_LABEL[post]}"? They'll become active the moment they sign in with Google using this email.`)) return;

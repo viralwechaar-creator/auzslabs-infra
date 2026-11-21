@@ -41,6 +41,8 @@ export const RPC = {
   // registered here, so every one of these 404'd via the HTTP API until now (same class of bug this project's
   // own notes describe for submit_addon_request originally -- see CLAUDE.md's Website Builder section).
   submit_team_application: { params: ['p_name', 'p_email', 'p_phone', 'p_city', 'p_role', 'p_experience', 'p_about', 'p_hp'], defaults: { p_hp: '' }, auth: false },
+  submit_team_application_resume: { params: ['p_id', 'p_filename'], auth: false },
+  admin_team_application_resume: { params: ['p_id'], auth: true },
   my_team_candidate_profile: { params: [], auth: true },
   save_my_team_candidate_profile: { params: ['p'], jsonb: ['p'], auth: true },
   submit_my_team_application: { params: [], auth: true },
