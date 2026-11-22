@@ -34,15 +34,19 @@ function add(e, kids) {
 const clear = (e) => { while (e.firstChild) e.removeChild(e.firstChild); return e; };
 
 const ICONS = {
-  home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h4.5v-5.5h4v5.5h4.5V10"/>',
-  pin: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/>',
-  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/>',
+  /* home/pin/target/chat double as the bottom nav's Home/Field/Leads/Messages glyphs (and, since
+     each page's own icon is reused in the sidebar and in related list rows, everywhere else that
+     names the same concept) -- redrawn slightly more geometric/rounded than a bare outline, same
+     single-stroke, no-fill, 1.7 stroke-width convention as the rest of the icon set. */
+  home: '<path d="M4 11.5 12 4.2l8 7.3"/><path d="M6.4 11V20H10V15.6A1.8 1.8 0 0 1 13.6 15.6V20H17.6V11"/>',
+  pin: '<circle cx="12" cy="12" r="8.4"/><path d="M12 7.4 15 12l-3 4.6-3-4.6Z"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.1"/><path d="M12 2.5v3.3M12 18.2v3.3M2.5 12h3.3M18.2 12h3.3"/>',
   survey: '<path d="M6 3h9l3 3v15H6z"/><path d="M9 9h8M9 13h8M9 17h5"/>',
   calendar: '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8 3v4M16 3v4"/>',
   wallet: '<path d="M4 7a2 2 0 0 1 2-2h12v4"/><rect x="4" y="7" width="16" height="12" rx="2.5"/><path d="M16 13h2"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   checksq: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 11l2.5 2.5L16 8.5"/>',
-  chat: '<path d="M4 5h16v11H9l-5 4Z"/>',
+  chat: '<path d="M4 5h16v10H10l-6 4.5Z"/><circle cx="9" cy="10" r=".55" fill="currentColor"/><circle cx="12" cy="10" r=".55" fill="currentColor"/><circle cx="15" cy="10" r=".55" fill="currentColor"/>',
   users: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c.4-3.2 2.8-5 6-5s5.6 1.8 6 5"/><path d="M16 5a3 3 0 0 1 0 6M18 15c1.8.6 3 2 3.2 5"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c.5-3.6 3.2-5.5 7-5.5s6.5 1.9 7 5.5"/>',
   log: '<path d="M4 6h16M4 12h16M4 18h10"/>',
