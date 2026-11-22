@@ -2764,14 +2764,8 @@ function loadSetupQueue() {
 // so CRM, billing, inventory etc. are never ticked separately. keys[0] is the product's own key. Kitchen (db/264)
 // is its own module in module_catalogue, not bundled into POS, so it is its own toggle here too.
 const SELLABLE = [
-  { id: 'pos', label: 'AUZsPOS', keys: ['pos', 'crm', 'billing', 'inventory', 'purchases', 'membership', 'tasks', 'helpdesk'], note: 'Includes billing, inventory, customers (CRM), purchases, memberships, tasks, helpdesk' },
-  { id: 'kds', label: 'Kitchen screen', keys: ['kds'], note: 'Orders appear on a kitchen screen with timers, and the KOT report. Needs AUZsPOS.' },
-  { id: 'qr', label: 'AUZsPOS QR', keys: ['self_order'], note: 'Customers scan a table QR and order themselves' },
-  { id: 'pay', label: 'AUZsPay', keys: ['payroll'], note: 'Payroll and attendance' },
   { id: 'ledger', label: 'AUZsLedger', keys: ['accounting'], note: 'Accounting and GST books' },
-  { id: 'scan', label: 'AUZsScan', keys: ['scan'], note: 'Scan, bill and add stock (runs on AUZsLedger books)' },
   { id: 'mob', label: 'AUZsMob', keys: ['mobile'], note: 'Mobile shop: stock, sales, repairs' },
-  { id: 'fin', label: 'AUZsFinance', keys: ['finance'], note: 'Money in and out, owner capital, loans, dues, accounts' },
   { id: 'sty', label: 'AUZsStyle', keys: ['style'], note: 'Clothing and footwear shop: sizes, colours, billing, analytics' },
   { id: 'salon', label: 'AUZslab Salon', keys: ['salon', 'booking', 'crm', 'billing'], note: 'Website, booking, customers (CRM) and billing are always included' },
 ];
@@ -3251,7 +3245,7 @@ document.getElementById('billForm').onsubmit = async (e) => {
 
 document.getElementById('mkClose').onclick = () => document.getElementById('mkOverlay').classList.remove('open');
 document.getElementById('mkOverlay').onclick = (e) => { if (e.target.id === 'mkOverlay') e.currentTarget.classList.remove('open'); };
-document.getElementById('mkAdd').onclick = () => { const cur = mkRead(); cur.push({ key: 'pos', plan: 'month', rate: 0, gst: 18 }); mkDraw(cur); };
+document.getElementById('mkAdd').onclick = () => { const cur = mkRead(); cur.push({ key: 'accounting', plan: 'month', rate: 0, gst: 18 }); mkDraw(cur); };
 document.getElementById('mkGstin').oninput = () => mkTotal();
 document.getElementById('mkForm').onsubmit = async (e) => {
   e.preventDefault(); const g = (id) => document.getElementById(id);
@@ -3262,7 +3256,7 @@ document.getElementById('mkForm').onsubmit = async (e) => {
 };
 // ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
 const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
-const ORD_PRODUCTS = [['pos', 'AUZsPOS'], ['self_order', 'AUZsPOS QR'], ['payroll', 'AUZsPay'], ['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['finance', 'AUZsFinance'], ['scan', 'AUZsScan'], ['salon', 'AUZslab Salon']];
+const ORD_PRODUCTS = [['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['salon', 'AUZslab Salon']];
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 0;

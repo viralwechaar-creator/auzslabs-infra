@@ -1,6 +1,6 @@
 {
-  "name": "Showoff Salon",
-  "short_name": "Showoff Salon",
+  "name": "Salon",
+  "short_name": "Salon",
   "start_url": "/salon/",
   "display": "standalone",
   "background_color": "#F3E6C8",

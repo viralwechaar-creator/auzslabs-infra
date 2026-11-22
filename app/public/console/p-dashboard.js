@@ -77,7 +77,7 @@ const inRange=o=>{const d=dayOf(o.paidAt||o.created);return d>=rangeFrom()&&d<=r
 const orderQ=o=>matchQ([o.no,o.type,o.src,(o.cust||{}).name,(o.cust||{}).phone].join(' '));
 PAGES['daily/live']=()=>{
  const os=orders().filter(o=>o.status=='open'&&!o.trial&&orderQ(o)).sort((a,b)=>b.created>a.created?1:-1),tab=S.f.live||'orders',tables={};os.filter(o=>o.table).forEach(o=>{(tables[o.table]=tables[o.table]||[]).push(o)});const kc=k=>os.filter(o=>o.kstat==k).length;
- return[pageHead('Live Orders','Running orders and tables across dine-in, takeaway and delivery.',h('a',{class:'btn',href:'/index.html'},'Open billing POS'),btn('Refresh',()=>{sync();render()},'',null)),allOutletsNote(),
+ return[pageHead('Live Orders','Running orders and tables across dine-in, takeaway and delivery.',btn('Refresh',()=>{sync();render()},'',null)),allOutletsNote(),
   kpis([['Running orders',os.length],['Running tables',Object.keys(tables).length],['In kitchen',kc('new')+kc('preparing')],['Ready / out',kc('ready')+kc('dispatched')]]),
   h('div',{class:'bar-row'},tabsBar([['orders','Running Orders'],['tables','Running Tables']],tab,k=>{S.f.live=k;render()}),search('Search orders…')),
   card(tab=='tables'?table([{label:'Table',get:r=>h('b',{},tn(r[0])||'Table')},{label:'Orders',get:r=>r[1].map(o=>o.no).join(', ')},{label:'Amount',r:true,get:r=>inr(sum(r[1],o=>o.t.total))},{label:'Status',get:r=>stPill(r[1][0])}],Object.entries(tables),{empty:'No running tables',emptyText:'Tables with an open order appear here.'}):ordersTable(os,{empty:'No running orders'}))]};
