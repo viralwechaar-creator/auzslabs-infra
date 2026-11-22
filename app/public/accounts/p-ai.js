@@ -12,6 +12,10 @@ const AI_TOOL_LABEL = {
   ledger_list_documents: 'Looked up documents', ledger_get_document: 'Looked up a document', ledger_list_parties: 'Looked up customers/suppliers',
   ledger_list_products: 'Looked up products', ledger_context: 'Looked up accounts and tax codes', ledger_reports: 'Ran a report',
   ledger_gst_summary: 'Looked up GST summary', ledger_ageing: 'Looked up ageing',
+  finance_save_transaction: 'Recorded a Finance transaction', finance_dashboard: 'Looked up the Finance dashboard', finance_list_transactions: 'Looked up Finance entries',
+  finance_people: 'Looked up who owes/is owed', finance_list_assets: 'Looked up assets', finance_list_loans: 'Looked up loans', finance_list_recurring: 'Looked up repeating entries',
+  finance_reports: 'Ran a Finance report', finance_reconciliation: 'Looked up bank reconciliation', finance_anomalies: 'Checked for unusual entries',
+  finance_bank_import_preview: 'Previewed a bank statement import', finance_bank_import_commit: 'Imported a bank statement', finance_download_attachment: 'Downloaded a Finance attachment',
 };
 const aiToolLabel = (t) => AI_TOOL_LABEL[t] || (t || '').replace(/^[a-z]+_/, '').replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
 
