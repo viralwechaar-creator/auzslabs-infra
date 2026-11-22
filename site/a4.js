@@ -5,7 +5,7 @@
   var root = document.getElementById('dm2'); if (!root) return;
   var feat = document.getElementById('dm2Feat'), grid = document.getElementById('dm2Grid'), more = document.getElementById('dm2More');
   var D = JSON.parse(document.getElementById('dm-data').textContent);
-  var ORDER = ['salon', 'pay', 'ledger', 'style', 'pos', 'mob', 'scan', 'finance'];
+  var ORDER = Object.keys(D);
   var expanded = false;
 
   // single-stroke line icons, 24x24 viewBox, scaled up by the caller -- matches the site's no-emoji icon convention
@@ -73,7 +73,7 @@
       b.addEventListener('click', function () { select(id); });
       grid.appendChild(b);
     });
-    more.hidden = expanded;
+    more.hidden = expanded || ORDER.every(function (id) { return D[id].primary; });
   }
 
   function select(id) { paintFeat(id); paintGrid(id); }
@@ -81,7 +81,7 @@
   more.addEventListener('click', function () { expanded = true; paintGrid((location.hash || '#salon').slice(1)); });
 
   var start = location.hash.slice(1);
-  if (!D[start]) start = 'salon';
+  if (!Object.prototype.hasOwnProperty.call(D, start)) start = ORDER[0];
   if (!D[start].primary) expanded = true;
   select(start);
 })();

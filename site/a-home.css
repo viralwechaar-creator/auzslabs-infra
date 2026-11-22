@@ -66,14 +66,15 @@ html body.a-home main.content .ah-lt .g{color:#8d8d8a!important}
 html body.a-home main.content .ah-lt.left{text-align:left;align-items:flex-start}
 .ah-lp{max-width:420px;font-size:11px;color:#5d5d59!important;margin:0}.ah-lp.left{margin-bottom:20px}
 .ah-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:1180px;margin:0 auto}
-@media(min-width:900px){.ah-grid{grid-template-columns:repeat(4,1fr);gap:12px}}
-.ah-c{--g1:#7fb0ff;--g2:#dbe9ff;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:210px;padding:16px;border-radius:18px;background:#fff;border:1px solid #ececea;isolation:isolate;transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s}
+@media(min-width:900px){.ah-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}}
+.ah-c{--g1:#7fb0ff;--g2:#dbe9ff;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;min-height:92px;padding:14px 36px 14px 16px;border-radius:14px;background:#fff;border:1px solid #ececea;isolation:isolate;transition:transform .4s cubic-bezier(.2,.8,.2,1),box-shadow .4s}
 .ah-c::before{content:"";position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .5s;background:radial-gradient(120% 90% at 20% 10%,var(--g1),transparent 60%),radial-gradient(110% 100% at 90% 90%,var(--g2),transparent 62%),#fff}
 .ah-c.c1{--g1:#ff7d93;--g2:#ffe0e5}.ah-c.c2{--g1:#7ed3bb;--g2:#dcf5ec}.ah-c.c3{--g1:#b79cff;--g2:#ece4ff}.ah-c.c4{--g1:#ffb470;--g2:#ffe9d3}
+.ah-c::after{content:"\2197";position:absolute;right:14px;top:14px;color:#6c6c68;font-size:14px}
 .ah-c:hover{transform:translateY(-5px);box-shadow:0 24px 46px rgba(0,0,0,.1)}.ah-c:hover::before{opacity:1}
 .ah-c i{font-style:normal;font-size:clamp(36px,5vw,58px);font-weight:400;letter-spacing:-.05em;line-height:.9;color:#e4e4e1;transition:color .4s}
 .ah-c:hover i{color:rgba(255,255,255,.95)}
-html body.a-home main.content .ah-c b{margin-top:auto;font-size:15px;font-weight:500;letter-spacing:-.02em;color:#0a0a0a!important}
+html body.a-home main.content .ah-c b{font-size:15px;font-weight:500;letter-spacing:-.02em;color:#0a0a0a!important}
 html body.a-home main.content .ah-c span{margin-top:4px;font-size:10px;color:#55554f!important}
 .ah-more{display:block;width:max-content;margin:24px auto 0;padding:11px 24px;border-radius:8px;border:1px solid #141414;font-size:10.5px;color:#0a0a0a;transition:background .3s,color .3s}
 .ah-more:hover{background:#141414;color:#fff}
@@ -83,12 +84,13 @@ html body.a-home main.content .ah-c span{margin-top:4px;font-size:10px;color:#55
 .ah-btn{display:inline-block;padding:11px 24px;border-radius:8px;background:#141414;color:#fff!important;font-size:10.5px;box-shadow:0 10px 22px rgba(0,0,0,.18);transition:transform .3s}
 .ah-btn:hover{transform:translateY(-2px)}
 .ah-l2r{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.ah-fc{display:flex;flex-direction:column;min-height:170px;padding:16px;border-radius:16px;background:#f6f6f5;border:1px solid #ececea;transition:transform .4s,background .4s,box-shadow .4s}
+.ah-fc{display:grid;grid-template-columns:auto minmax(0,1fr);align-content:center;column-gap:10px;min-height:84px;padding:12px;border-radius:14px;background:#f6f6f5;border:1px solid #ececea;transition:transform .4s,background .4s,box-shadow .4s}
 .ah-fc:nth-child(even){transform:translateY(14px)}
 .ah-fc:hover{background:#fff;box-shadow:0 20px 40px rgba(0,0,0,.09);transform:translateY(-4px)}
-.ah-fc i{font-style:normal;font-size:30px;letter-spacing:-.04em;color:#dcdcd9;line-height:1}
-html body.a-home main.content .ah-fc b{margin-top:auto;font-size:14px;font-weight:500;color:#0a0a0a!important}
+.ah-fc i{grid-row:1 / span 2;font-style:normal;font-size:16px;letter-spacing:-.04em;color:#73736e;line-height:1.35}
+html body.a-home main.content .ah-fc b{font-size:14px;font-weight:500;color:#0a0a0a!important}
 html body.a-home main.content .ah-fc span{font-size:9.5px;color:#66665f!important;margin-top:3px}
+@media(max-width:420px){.ah-grid,.ah-l2r{grid-template-columns:1fr}}
 .ah-end{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;max-width:1180px;margin:44px auto 0;padding:24px 26px;border-radius:20px;background:#f6f6f5;border:1px solid #ececea}
 .ah-end span{font-size:clamp(22px,3.6vw,44px);font-weight:500;letter-spacing:-.04em}
 @media(prefers-reduced-motion:reduce){.ah-c,.ah-fc{transition:none}}

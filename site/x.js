@@ -85,6 +85,9 @@
   if (ct) {
     var form = $('form', ct), qs = $$('.ct-q', form), at = 0, prog = $('.ct-prog', ct), done = $('.ct-done', ct);
     var niche = $('[name=niche]', form);
+    var service = (new URLSearchParams(location.search).get('service') || '').trim().slice(0, 120);
+    var message = $('[name=message]', form);
+    if (service && message && !message.value) message.value = 'I’d like to learn more about ' + service + '.\n\n';
     function go(n) {
       at = Math.max(0, Math.min(qs.length - 1, n));
       qs.forEach(function (q, i) { q.classList.toggle('on', i === at); });
