@@ -6,6 +6,38 @@ history. Keep it updated as the project changes — it goes stale fast
 otherwise, and a stale brief is worse than none (see "README.md is stale"
 below for exactly that failure mode already happening once).
 
+## RETIRED PRODUCTS (read this first): AUZsPOS, AUZslab Payroll, AUZsScan, AUZslab Finance
+
+Owner decision: these four apps were deleted from the codebase (`app/public/index.html`+`pos/*`,
+`payroll.html`+`payroll/*`, `scan.html`, `finance.html`+`finance/*`), along with their marketing/
+pricing/onboarding listings (`site/products.html`, `site/cart.html`, `site/account.html`'s product
+choices and "Open X" links, `site/admin.html`'s onboarding/bill-creation product pickers) and their
+service-worker precache entries. Every section below the "SESSION LOG" markers that describes the
+POS rebuild, Payroll v2, or AUZsScan as a live product is **historical** — the code it describes no
+longer exists. Kept, and fully live: AUZsStyle, AUZsLedger/Accounting, AUZslab Salon, SalesOS.
+
+**What was deliberately NOT touched, and why:**
+- The `pos_*`/`pay_*`/`finance_*` database tables, functions and RLS policies are all still in
+  place — only the apps that called them are gone. In particular `pay_*` is still load-bearing:
+  AUZslab Salon links staff logins to payroll (`db/054_salon_staff_payroll.sql`,
+  `salon_hr_ensure`/`salon_punch`), and the admin console's Team → Payroll page still calls
+  `pay_console_summary()` directly. Do not drop these tables/functions without re-checking both.
+- `tenant_settings.features` flags (`pos`/`payroll`/`scan`/`finance`) were left exactly as they are
+  on every existing tenant — clearing them would be a live customer-data change nobody asked for.
+  The app files are gone either way, so an existing flag is just inert history now.
+- `server/src/data/rpc-registry.js`'s `pos_*`/`pay_*`/`finance_*` entries were left registered,
+  for the same reason as the tables — `pay_console_summary` specifically must stay reachable.
+- **Real, unresolved product gap**: a tenant whose niche is restaurant/cafe/retail/general (not
+  salon, not one of the kept products) now has no front-door app at all — `app/public/land.html`'s
+  niche router used to send these tenants to AUZsPOS; it now falls back to the sign-in page
+  instead of a 404, but that is a stopgap, not a real answer. The admin console
+  (`dashboard.html`+`console/*`) still works for reading/managing existing records for such a
+  tenant, but there is no surviving way to *create* a new order/bill for one. This needs an actual
+  product decision from the owner, not an invented replacement.
+- `site/products.html`'s AUZsPOS/Payroll marketing cards still describe the old products (their
+  "Add" buttons were neutralized so they can't be requested) — a full copy/design pass to remove
+  those cards is still owed; not done here given the size of that single-file page.
+
 ## What this is
 
 AUZslab is a self-hosted, multi-tenant SaaS: point-of-sale, CRM, billing,

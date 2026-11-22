@@ -275,7 +275,7 @@ function topBar(){
   h('a',{class:'disc',href:'https://auzslab.in/products.html'},ic('store',18),h('span',{},'Discover Apps')))}
 function sidebar(){
  return h('aside',{class:'side'+(S.sideOpen?' open':'')+(S.collapsed?' hide':'')},
-  h('div',{class:'brand'},h('div',{class:'logo'},h('img',{src:'/icon-pos.svg',alt:'',width:42,height:42})),h('div',{},h('b',{},'AUZslab'),h('span',{},'Admin console'))),
+  h('div',{class:'brand'},h('div',{class:'logo'},h('img',{src:'/icon-auzslab-192.png',alt:'',width:42,height:42})),h('div',{},h('b',{},'AUZslab'),h('span',{},'Admin console'))),
   sideNav())}
 function render(){
  if(!S.user)return login();
