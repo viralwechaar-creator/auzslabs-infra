@@ -8,7 +8,7 @@
   var host, root, ready = false;
   var $ = function (s) { return root.querySelector(s); }, $$ = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
   var APPDEF = [['pos', 'AUZsPOS', 'Billing, tables, kitchen, QR orders', 'till', 'lavender'], ['payroll', 'AUZsPay', 'Attendance, leave and payslips', 'users', 'mint'], ['accounting', 'AUZsLedger', 'Accounts, GST and banking', 'book', 'peach'], ['mobile', 'AUZsMob', 'Phone shop sales and repairs', 'phone', 'sky'], ['style', 'AUZsStyle', 'Clothing and footwear shop', 'tag', 'lavender'], ['scan', 'AUZsScan', 'Scan to bill', 'scan', 'mint'], ['salon', 'AUZslab Salon', 'Booking, billing, website', 'tag', 'peach'], ['finance', 'AUZsFinance', 'Money in, out and dues', 'book', 'sky']];
-  var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], REQS = [], CART = [], PROFILE = { products: [] };
+  var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], REQS = [], CART = [], PROFILE = { products: [] }, FEAT = {};
   window.AC5 = { ACT: {}, AFTER: {}, ENTER: {}, OWN: {}, VIEWS: null };
   var S = { mode: 'owner', view: 'home', more: false, nf: 'all' };
   var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors', 'clockin'];
@@ -21,6 +21,7 @@
     BIZ = { name: t.name || '', slug: t.slug || '', plan: t.plan || '', status: t.status || 'active', renewal: t.renewal_date ? new Date(t.renewal_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not set', since: t.created_at ? new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : '' };
     ME = { name: P.name || (D && D.my_email) || 'Welcome', email: (D && D.my_email) || g('LOGIN_EMAIL') || '', phone: P.phone || '' };
     var f = (D && D.features) || {}, en = (D && D.enabled_features) || {}, links = {};
+    FEAT = { payroll: f.payroll === true && en.payroll !== false };
     document.querySelectorAll('#acctNav a[id^=open]').forEach(function (a) { if (a.style.display !== 'none') links[a.textContent.trim().replace(/^Open /, '').replace(/ system$/i, '')] = a.href; });
     ALL_APPS = APPDEF.map(function (a) { return { k: a[0], n: a[1], d: a[2], ic: a[3], tone: a[4], href: links[a[1]] || '' }; });
     OWNED = {}; ENABLED = {}; APPDEF.forEach(function (a) { if (f[a[0]] === true) { OWNED[a[0]] = true; ENABLED[a[0]] = en[a[0]] !== false; } });
@@ -69,7 +70,7 @@
     { id: 'services', t: 'Services', ic: 'grid', g: 'Workspace', need: ['owner', 'manager', 'admin'], biz: true, count: true },
     { id: 'apps', t: 'Open an app', ic: 'apps', g: 'Workspace', need: ['owner', 'manager', 'admin'], biz: true },
     { id: 'staff', t: 'Staff', ic: 'users', g: 'Workspace', need: ['owner', 'manager'], biz: true },
-    { id: 'clockin', t: 'Clock in', ic: 'clock', g: 'Workspace', need: ['owner', 'manager'], biz: true },
+    { id: 'clockin', t: 'Clock in', ic: 'clock', g: 'Workspace', need: ['owner', 'manager'], biz: true, feat: 'payroll' },
     { id: 'roles', t: 'Roles and access', ic: 'key', g: 'Workspace', need: ['owner', 'manager'], biz: true },
     { id: 'cart', t: 'Billing and plan', ic: 'bag', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] },
     { id: 'notifications', t: 'Notifications', ic: 'bell', g: 'Account', need: ['owner', 'manager', 'admin'], biz: true, badge: true },
@@ -77,7 +78,7 @@
     { id: 'privacy', t: 'Privacy and my data', ic: 'lock', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] },
     { id: 'connectors', t: 'AI connectors', ic: 'connect', g: 'Account', need: ['owner'], biz: true },
     { id: 'help', t: 'Help and support', ic: 'help', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] }];
-  var can = function (sec) { return sec.need.indexOf(S.mode) > -1; };
+  var can = function (sec) { return sec.need.indexOf(S.mode) > -1 && (!sec.feat || FEAT[sec.feat]); };
   var isOwner = function () { return S.mode === 'owner'; };
   var hasBiz = function () { return S.mode !== 'customer'; };
   var unread = function () { return NOTIFS.filter(function (n) { return !n.read; }).length; };

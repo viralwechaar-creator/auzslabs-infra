@@ -164,7 +164,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="acct-nav-btn" data-tab="profile"><span>My profile</span></button>
       <a href="cart.html" class="" id="cartNavLink"><span>My cart</span><span id="cartNavCount"></span></a>
       <button class="acct-nav-btn tenant-only active" data-tab="account"><span>Account</span></button>
-      <button class="acct-nav-btn tenant-only" data-tab="clockin"><span>Clock in</span></button>
+      <button class="acct-nav-btn" data-tab="clockin" id="tabClockinBtn" style="display:none"><span>Clock in</span></button>
       <button class="acct-nav-btn tenant-only" data-tab="services"><span>Services</span></button>
       <button class="acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none"><span>Staff</span></button>
       <button class="acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
@@ -197,7 +197,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 <script src="vendor/qrcode.js"></script>
 <script src="tool/lock.js?v=101"></script><script src="tool/mydata.js?v=201"></script><script src="tool/help.js?v=103"></script><script src="tool/twofa.js?v=101"></script>
 <script src="site.js?v=113"></script>
-<script src="ac5.js?v=16"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
+<script src="ac5.js?v=17"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
 <script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -478,6 +478,9 @@ async function boot() {
   $('#tabsSection').style.display = 'block';
   $('#acctNav').style.display = 'flex';
   if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; $('#tabConnectorsBtn').style.display = ''; }
+  // Clock in only makes sense once the tenant actually has Payroll (the pay_* functions behind it) --
+  // a tenant without it would just see a dead-end "ask your manager to link your login" message.
+  if ((DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false) { $('#tabClockinBtn').style.display = ''; }
   // AUZsPOS, AUZsPay (standalone) and AUZsScan were retired -- only AUZslab Salon's own console
   // (a different product, untouched) still gets this link.
   if (DASH.tenant.niche === 'salon') {
