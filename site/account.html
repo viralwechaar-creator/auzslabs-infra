@@ -164,6 +164,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="acct-nav-btn" data-tab="profile"><span>My profile</span></button>
       <a href="cart.html" class="" id="cartNavLink"><span>My cart</span><span id="cartNavCount"></span></a>
       <button class="acct-nav-btn tenant-only active" data-tab="account"><span>Account</span></button>
+      <button class="acct-nav-btn tenant-only" data-tab="clockin"><span>Clock in</span></button>
       <button class="acct-nav-btn tenant-only" data-tab="services"><span>Services</span></button>
       <button class="acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none"><span>Staff</span></button>
       <button class="acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
@@ -180,6 +181,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
         <div class="section-pane" id="pane-profile"></div>
         <div class="section-pane" id="pane-privacy"></div>
         <div class="section-pane" id="pane-account"></div>
+        <div class="section-pane" id="pane-clockin"></div>
         <div class="section-pane" id="pane-services"></div>
         <div class="section-pane" id="pane-staff"></div>
         <div class="section-pane" id="pane-roles"></div>
@@ -195,7 +197,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
 <script src="vendor/qrcode.js"></script>
 <script src="tool/lock.js?v=101"></script><script src="tool/mydata.js?v=201"></script><script src="tool/help.js?v=103"></script><script src="tool/twofa.js?v=101"></script>
 <script src="site.js?v=113"></script>
-<script src="ac5.js?v=15"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
+<script src="ac5.js?v=16"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
 <script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -520,6 +522,7 @@ function showTab(tab) {
   if (tab === 'profile') renderProfile();
   if (tab === 'privacy') renderPrivacy();
   if (tab === 'account') renderAccount();
+  if (tab === 'clockin') renderClockin();
   if (tab === 'services') renderServices();
   if (tab === 'staff') renderStaff();
   if (tab === 'roles') renderRoles();
@@ -717,6 +720,80 @@ function renderAccount() {
   if ($('#testiCard')) renderTestimonial();
 }
 
+// Staff self-service clock in/out (db/077_payroll_ess.sql). pay_punches only knows 'in'/'out', not a
+// break kind, so "break" here is just read off how many punches today: after an odd punch count the
+// next one starts a break, after an even one (>0) it ends it, and the 4th closes the day -- then it
+// loops, which covers someone forgetting to clock out and starting a fresh session later.
+let CLOCKIN_EMP = null;
+// pay_me_emp(tid) returns a pay_employees row, not jsonb, so the server hands it back as Postgres's
+// plain composite text (e.g. "(abc123,tenant-uuid,E001,"Jane Doe",...)") rather than a JS object --
+// id is always the first field and is always a bare id with no special characters, so that is all we read.
+function empIdFrom(raw) {
+  if (raw == null) return null;
+  if (typeof raw === 'object') return raw.id;
+  const m = /^\(([^,]*),/.exec(String(raw));
+  return m ? m[1] : null;
+}
+function clockinLabel(st) {
+  const n = st.count || 0, open = !!st.open;
+  if (!open) return n % 4 === 0 ? 'Clock in' : 'End break';
+  return n % 4 === 1 ? 'Start break' : 'Clock out';
+}
+function punchLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve({});
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    setTimeout(() => finish({}), 3000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => finish({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      () => finish({}),
+      { timeout: 3000, maximumAge: 60000 }
+    );
+  });
+}
+async function renderClockin() {
+  const pane = $('#pane-clockin');
+  pane.innerHTML = '<div class="card"><p class="muted">Loading...</p></div>';
+  let emp;
+  try {
+    const { data, error } = await sb.rpc('pay_me_emp', { tid: DASH.tenant.id });
+    if (error) throw error;
+    emp = data;
+  } catch (e) {
+    pane.innerHTML = `<div class="card"><h3 class="h-2">Clock in</h3><p class="muted">Ask your manager to link your login for clock-in.</p></div>`;
+    return;
+  }
+  const empId = empIdFrom(emp);
+  if (!empId) { pane.innerHTML = `<div class="card"><h3 class="h-2">Clock in</h3><p class="muted">Ask your manager to link your login for clock-in.</p></div>`; return; }
+  CLOCKIN_EMP = empId;
+  const { data: st, error: e2 } = await sb.rpc('pay_punch_state', { tid: DASH.tenant.id, emp: empId });
+  if (e2) { pane.innerHTML = `<div class="card"><h3 class="h-2">Clock in</h3><p class="muted">${esc(e2.message)}</p></div>`; return; }
+  renderClockinState(st);
+}
+function renderClockinState(st) {
+  const statusText = st.open
+    ? 'Clocked in' + (st.in ? ' since ' + new Date(st.in).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '')
+    : (st.count ? 'Clocked out' : 'Not clocked in today');
+  $('#pane-clockin').innerHTML = `
+    <div class="card">
+      <h3 class="h-2">Clock in</h3>
+      <p class="muted">${esc(statusText)}</p>
+      <button class="btn btn-primary form-submit" id="punchBtn" style="margin-top:12px">${esc(clockinLabel(st))}</button>
+      <div id="punchMsg" class="muted" style="margin-top:8px"></div>
+    </div>`;
+  $('#punchBtn').onclick = async () => {
+    const btn = $('#punchBtn'), msg = $('#punchMsg');
+    btn.disabled = true; msg.textContent = ''; msg.style.color = '';
+    const p = await punchLocation();
+    const { data, error } = await sb.rpc('pay_me_punch', { p });
+    btn.disabled = false;
+    if (error) { msg.style.color = 'var(--accent)'; msg.textContent = error.message; return; }
+    if (data.out_of_range) msg.textContent = 'Recorded -- you seem to be away from your usual workplace.';
+    renderClockinState(data);
+  };
+}
+
 // Two-factor authentication (db/117): owner/manager only -- see server/src/auth.js's own comment.
 // Loaded async into its own card so the rest of the account page renders immediately either way.
 // Client testimonials (db/297): a client's own feedback, owner/manager only. Never shown on the homepage
@@ -908,7 +985,7 @@ function renderStaff() {
       <div class="field"><label>Role</label><select id="stRole"><option value="">Staff (everyday access)</option><option value="builtin:manager">Manager (reports and management)</option>${ROLES.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}</select></div>
       <button class="btn btn-primary form-submit" id="stAdd" style="margin-top:12px">Add staff</button>
       <div id="stMsg"></div>
-      ${payrollOn ? `<p class="muted" style="margin-top:12px;font-size:12.5px">This creates their login only. For Payroll self-service (attendance, leave, payslips), also add them under <a href="https://${esc(DASH.tenant.slug)}.auzslab.in/payroll.html" target="_blank" style="color:inherit;text-decoration:underline">Payroll → Employees</a>, entering this same email there.</p>` : ''}
+      ${payrollOn ? `<p class="muted" style="margin-top:12px;font-size:12.5px">An email + password login is linked for clock-in (Clock in tab) automatically. A username + PIN login has no email, so it is not linked -- ask AUZslab to link it if that staff member also needs to clock in.</p>` : ''}
     </div>
     <div class="card">
       <h3 class="h-2">Current staff</h3>
@@ -951,6 +1028,18 @@ function renderStaff() {
     if (!name) { msg.className = 'err'; msg.textContent = 'Name and email are required.'; return; }
     const { data, error } = await sb.rpc('invite_staff', { p_email: email, p_name: name, p_phone: phone, p_role_id: /^[0-9a-f-]{36}$/.test(roleId) ? roleId : null, p_builtin: roleId === 'builtin:manager' ? 'manager' : null });
     if (error) { msg.className = 'err'; msg.textContent = error.message; return; }
+    // Payroll self-service (clock in/out) is linked automatically so there is no separate manual step --
+    // a soft failure here (e.g. Payroll not entitled yet) must never block the staff invite itself.
+    let provisionWarning = '';
+    if (payrollOn) {
+      try {
+        const empId = await sb.rpc('pay_save_employee', { p: { name, email } }).then((r) => { if (r.error) throw r.error; return r.data; });
+        const { error: linkErr } = await sb.rpc('pay_link_login', { p_emp: empId, p_email: email });
+        if (linkErr) throw linkErr;
+      } catch (pe) {
+        provisionWarning = '<br><br><span class="muted">(Clock-in was not linked automatically: ' + esc(pe.message || String(pe)) + '. You can link it later from Payroll.)</span>';
+      }
+    }
     const verifyLink = 'https://app.auzslab.in/verify.html?token=' + data.verify_token;
     let emailSent = false;
     try {
@@ -963,13 +1052,14 @@ function renderStaff() {
       const body = await res.json();
       emailSent = res.ok && body.sent;
     } catch {}
-    msg.className = 'ok-box';
-    msg.innerHTML = `Added. Share this temporary password with them directly:<br><b>${esc(email)}</b> / <b>${esc(data.temp_password)}</b><br><br>` +
+    const successHtml = `Added. Share this temporary password with them directly:<br><b>${esc(email)}</b> / <b>${esc(data.temp_password)}</b><br><br>` +
       (emailSent
         ? `They can't sign in until they confirm their email — we've sent a verification link to <b>${esc(email)}</b>.`
-        : `They can't sign in until this link is opened — <b>the verification email couldn't be sent</b>, so share this link with them directly too:<br><a href="${esc(verifyLink)}" target="_blank" style="word-break:break-all">${esc(verifyLink)}</a>`);
+        : `They can't sign in until this link is opened — <b>the verification email couldn't be sent</b>, so share this link with them directly too:<br><a href="${esc(verifyLink)}" target="_blank" style="word-break:break-all">${esc(verifyLink)}</a>`) + provisionWarning;
     $('#stName').value = ''; $('#stPhone').value = ''; $('#stEmail').value = '';
-    await loadStaff(); renderStaff();
+    // renderStaff() below rebuilds this whole pane (a fresh, empty #stMsg included), so the message has
+    // to be re-applied to the new node afterward -- same reason the username+PIN branch above does it too.
+    await loadStaff(); renderStaff(); $('#stMsg').className = 'ok-box'; $('#stMsg').innerHTML = successHtml;
   };
   $('#stMethod').onchange = () => { $('#stEmailWrap').style.display = $('#stMethod').value === 'email' ? '' : 'none'; };
   (async () => {
