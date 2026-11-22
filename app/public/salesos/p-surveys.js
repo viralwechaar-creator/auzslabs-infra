@@ -21,7 +21,7 @@ page('surveys', {
       function paintQ() {
         clear(qList);
         questions.forEach((q, i) => qList.append(h('div', { class: 'row', style: { gap: '8px' } },
-          h('span', { class: 'small muted' }, String(i + 1) + '.'), h('span', { class: 'grow' }, q.label + ' (' + q.kind + (q.required ? ', required' : '') + ')'),
+          h('span', { class: 'small muted' }, String(i + 1) + '.'), h('span', { class: 'grow' }, (q.section ? q.section + ': ' : '') + q.label + ' (' + q.kind + (q.required ? ', required' : '') + ')'),
           h('button', { class: 'btn icon plain sm', type: 'button', onclick: () => { questions.splice(i, 1); paintQ(); } }, icon('x', 16)))));
       }
       const addBtn = h('button', { class: 'btn sm', type: 'button' }, '+ Add question');
@@ -35,8 +35,10 @@ page('surveys', {
           const raw = await askText('Options', 'Comma-separated, e.g. Tally, Zoho, None');
           options = raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : [];
         }
+        const lastSection = questions.length ? questions[questions.length - 1].section : '';
+        const section2 = await askText('Section (optional)', 'Groups this question into a tab/page when filling the survey, e.g. "Business information"', 'Section name', lastSection || '');
         const required = await confirmBox('Required?', 'Field staff must answer this before submitting.', 'Required');
-        questions.push({ label, kind, options, required: !!required });
+        questions.push({ label, kind, options, required: !!required, section: (section2 || '').trim() || null });
         paintQ();
       };
       const s = sheet({ title: 'New survey template', wide: true, closeLabel: 'Cancel', body: h('div', { class: 'grid' }, field('Name', nameInput), field('Category', catInput), section('Questions', qList, addBtn)),
