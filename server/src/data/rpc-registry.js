@@ -505,6 +505,8 @@ export const RPC = {
   pay_kiosk_list: { params: [], auth: true },
   pay_kiosk_punch: { params: ['p_emp', 'p_pin'], auth: true },
   pay_me: { params: [], auth: true },
+  pay_me_emp: { params: ['tid'], auth: true },
+  pay_punch_state: { params: ['tid', 'emp'], auth: true },
   pay_me_punch: { params: ['p'], jsonb: ['p'], defaults: { p: {} }, auth: true },
   pay_me_punch_offline: { params: ['p'], jsonb: ['p'], auth: true },
   acc_save_draft_offline: { params: ['p'], jsonb: ['p'], auth: true },
