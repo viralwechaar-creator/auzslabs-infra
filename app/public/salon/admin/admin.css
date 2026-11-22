@@ -246,7 +246,7 @@ dialog.a-dialog h2 { font-size: 22px; margin-bottom: 14px; }
   .a-pv-frame { height: calc(100vh - 110px); }
 }
 
-/* ---- Admin console input styling (owner kept Showoff Salon's own plum/cream/gold
+/* ---- Admin console input styling (owner kept Salon's own plum/cream/gold
    colour scheme -- an earlier pass that switched it to the shared AUZslab wine accent
    was reverted; this part (bordered, rounded Apple-HIG-style inputs instead of the
    public booking form's editorial underline style) was kept on its own merits,

@@ -80,7 +80,7 @@ window.readImage = (file, max = 1100, png = false) => new Promise((resolve, reje
 
 /* Per-salon branding. Every page calls this once it has the salon's settings:
    `theme` recolours the shared CSS tokens, `logo` / `logoLight` replace the
-   bundled Showoff Salon marks (dark-on-light / light-on-dark). Nothing set =
+   bundled Salon marks (dark-on-light / light-on-dark). Nothing set =
    the original look, unchanged. Values come from the owner's admin console, so
    they are validated before touching CSS or an img src. */
 window.applyBrand = function applyBrand(S) {

@@ -171,13 +171,10 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="acct-nav-btn tenant-only" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
       <span class="ac-sep"></span>
       <a href="#" id="openPosLink" target="_blank" rel="noopener" class="" style="display:none"><span id="openPosLabel">Open POS system</span></a>
-      <a href="#" id="openPosAddonLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open POS (add-on)</span></a>
-      <a href="#" id="openPayrollLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open Payroll</span></a>
       <button class="" id="helpLink" type="button"><span>Help &amp; report a problem</span></button>
       <button class="" id="signOutNavBtn" type="button" style="color:#b3261e"><span>Sign out</span></button>
       <a href="#" id="openAccountsLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open Accounting</span></a>
       <a href="#" id="openMobLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open AUZsMob</span></a>
-      <a href="#" id="openScanLink" target="_blank" rel="noopener" class="" style="display:none"><span>Open AUZsScan</span></a>
     </nav>
       <section class="ac-body" id="tabsSection" style="display:none">
         <div class="section-pane" id="pane-profile"></div>
@@ -236,7 +233,7 @@ function visiblePermKeys() {
   });
 }
 
-const PRODUCT_CHOICES = [['pos', 'AUZsPOS (billing, kitchen, stock, customers)'], ['self_order', 'AUZsPOS QR (table QR ordering)'], ['payroll', 'AUZsPay (attendance and payroll)'], ['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['scan', 'AUZsScan (scan, bill and add stock)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
+const PRODUCT_CHOICES = [['accounting', 'AUZsLedger (accounting and GST)'], ['mobile', 'AUZsMob (mobile shop)'], ['style', 'AUZsStyle (clothing and footwear shop)'], ['salon', 'AUZslab Salon (booking, billing, website)'], ['whatsapp', 'WhatsApp automation (add-on)'], ['aggregators', 'Zomato / Swiggy orders (add-on)'], ['custom', 'Custom software']];
 const BIZ_TYPES = ['Cafe / restaurant / bar', 'Salon / spa', 'Retail shop', 'Clothing / boutique', 'Mobile phone shop', 'Office / services', 'Other'];
 const START_WHEN = [['', 'Choose'], ['now', 'As soon as possible'], ['month', 'Within a month'], ['quarter', 'In 2 to 3 months'], ['exploring', 'Just exploring']];
 let PROFILE = null, LOGIN_EMAIL = '';
@@ -479,32 +476,17 @@ async function boot() {
   $('#tabsSection').style.display = 'block';
   $('#acctNav').style.display = 'flex';
   if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; $('#tabConnectorsBtn').style.display = ''; }
-  // Salon tenants run AUZslab Salon (app/public/salon/), not the POS -- its
-  // staff/owner console lives at /salon/admin/. Everyone else only gets this
-  // link when they actually have the pos feature -- it used to show
-  // unconditionally for every tenant, including e.g. a mobile-shop-only
-  // client with no POS entitlement at all.
-  const posOn = (DASH.features || {}).pos === true && (DASH.enabled_features || {}).pos !== false;
+  // AUZsPOS, AUZsPay (standalone) and AUZsScan were retired -- only AUZslab Salon's own console
+  // (a different product, untouched) still gets this link.
   if (DASH.tenant.niche === 'salon') {
     $('#openPosLabel').textContent = 'Open AUZslab Salon';
     $('#openPosLink').style.display = '';
     $('#openPosLink').href = 'https://' + DASH.tenant.slug + '.auzslab.in/salon/admin/';
-  } else if (posOn) {
-    $('#openPosLink').style.display = '';
-    $('#openPosLink').href = 'https://auzspos.auzslab.in';
   }
-  // A salon that added the POS product keeps AUZslab Salon as its main app; the POS is a second link.
-  if (DASH.tenant.niche === 'salon' && posOn) {
-    $('#openPosAddonLink').style.display = ''; $('#openPosAddonLink').href = 'https://auzspos.auzslab.in/index.html';
-  }
-  const payrollOn = (DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false;
-  if (payrollOn) { $('#openPayrollLink').style.display = ''; $('#openPayrollLink').href = 'https://auzspay.auzslab.in/payroll.html'; }
   const accountingOn = (DASH.features || {}).accounting === true && (DASH.enabled_features || {}).accounting !== false;
   if (accountingOn) { $('#openAccountsLink').style.display = ''; $('#openAccountsLink').href = 'https://auzsledger.auzslab.in/accounts.html'; }
   const mobileOn = (DASH.features || {}).mobile === true && (DASH.enabled_features || {}).mobile !== false;
   if (mobileOn) { $('#openMobLink').style.display = ''; $('#openMobLink').href = 'https://auzsmob.auzslab.in/mob.html'; }
-  const scanOn = (DASH.features || {}).scan === true && (DASH.enabled_features || {}).scan !== false;
-  if (scanOn) { $('#openScanLink').style.display = ''; $('#openScanLink').href = 'https://auzsscan.auzslab.in/scan.html'; }
 
   await loadRoles();
   if (DASH.my_role === 'owner') await loadStaff();
