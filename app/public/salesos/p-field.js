@@ -82,22 +82,55 @@ page('field', {
         if (!ok) return;
         tpl = templates.find((t) => t.id === pick.value);
       }
-      const answers = {};
-      const fields = tpl.questions.map((q) => {
-        let ctl;
-        if (q.kind === 'yes_no') ctl = selectEl([['', 'Choose…'], ['yes', 'Yes'], ['no', 'No']], '');
-        else if (q.kind === 'single_choice' || q.kind === 'dropdown') ctl = selectEl([['', 'Choose…'], ...(q.options || []).map((o) => [o, o])], '');
-        else if (q.kind === 'number') ctl = input({ type: 'number' });
-        else if (q.kind === 'date') ctl = input({ type: 'date' });
-        else ctl = input({});
-        answers[q.id] = ctl;
-        return field(q.label + (q.required ? ' *' : ''), ctl);
-      });
-      const s = sheet({ title: tpl.name, closeLabel: 'Cancel', body: h('div', { class: 'grid' }, fields),
-        actions: [{ label: 'Submit', primary: true, onclick: async () => {
-          const out = {}; Object.keys(answers).forEach((k) => { out[k] = answers[k].value; });
-          try { await api('sos_survey_submit', { p_template: tpl.id, p_business: businessId, p_visit: visitId, p_answers: out }); s.close(); toast('Survey submitted'); } catch (e) { fail(e); return false; }
-        } }] });
+      // group questions into sections (tabs) in the order they first appear; untagged
+      // questions (older templates with no section set) share one trailing section, so this
+      // degrades gracefully to a single-page form when a template has no sections at all.
+      const sectionOrder = []; const bySection = {};
+      tpl.questions.forEach((q) => { const sec = q.section || 'Survey'; if (!bySection[sec]) { bySection[sec] = []; sectionOrder.push(sec); } bySection[sec].push(q); });
+      const values = {}; let idx = 0;
+      function ctlFor(q) {
+        const v = values[q.id];
+        if (q.kind === 'yes_no') return selectEl([['', 'Choose…'], ['yes', 'Yes'], ['no', 'No']], v || '');
+        if (q.kind === 'single_choice' || q.kind === 'dropdown') return selectEl([['', 'Choose…'], ...(q.options || []).map((o) => [o, o])], v || '');
+        if (q.kind === 'multiple_choice') {
+          const wrap = h('div', { class: 'grid', style: { gap: '6px' } });
+          const selected = new Set(Array.isArray(v) ? v : []);
+          (q.options || []).forEach((o) => {
+            const cb = h('input', { type: 'checkbox', checked: selected.has(o) });
+            cb.onchange = () => { if (cb.checked) selected.add(o); else selected.delete(o); values[q.id] = [...selected]; };
+            wrap.append(h('label', { class: 'row', style: { gap: '8px', alignItems: 'center' } }, cb, h('span', null, o)));
+          });
+          wrap.dataset.multi = '1';
+          return wrap;
+        }
+        if (q.kind === 'number') return input({ type: 'number', value: v || '' });
+        if (q.kind === 'date') return input({ type: 'date', value: v || '' });
+        return input({ value: v || '' });
+      }
+      const body = h('div', { class: 'grid' });
+      function renderSection() {
+        clear(body);
+        const sec = sectionOrder[idx], qs = bySection[sec];
+        if (sectionOrder.length > 1) body.append(h('p', { class: 'muted small' }, 'Section ' + (idx + 1) + ' of ' + sectionOrder.length + ' — ' + sec));
+        qs.forEach((q) => {
+          const ctl = ctlFor(q);
+          if (!(ctl.dataset && ctl.dataset.multi)) ctl.oninput = ctl.onchange = () => { values[q.id] = ctl.value; };
+          body.append(field(q.label + (q.required ? ' *' : ''), ctl));
+        });
+        const nav = h('div', { class: 'row', style: { gap: '8px', marginTop: '8px' } });
+        if (idx > 0) nav.append(h('button', { class: 'btn', type: 'button', onclick: () => { idx--; renderSection(); } }, 'Back'));
+        nav.append(h('span', { class: 'grow' }));
+        if (idx < sectionOrder.length - 1) nav.append(h('button', { class: 'btn fill', type: 'button', onclick: () => { idx++; renderSection(); } }, 'Next section'));
+        else nav.append(h('button', { class: 'btn fill', type: 'button', onclick: submit }, 'Submit'));
+        body.append(nav);
+      }
+      async function submit() {
+        const missing = tpl.questions.find((q) => q.required && (values[q.id] == null || values[q.id] === '' || (Array.isArray(values[q.id]) && !values[q.id].length)));
+        if (missing) { toast('Please answer: ' + missing.label, { err: true }); const i = sectionOrder.indexOf(missing.section || 'Survey'); idx = i < 0 ? 0 : i; renderSection(); return; }
+        try { await api('sos_survey_submit', { p_template: tpl.id, p_business: businessId, p_visit: visitId, p_answers: values }); s.close(); toast('Survey submitted'); } catch (e) { fail(e); }
+      }
+      const s = sheet({ title: tpl.name, closeLabel: 'Cancel', body });
+      renderSection();
     }
   },
 });
