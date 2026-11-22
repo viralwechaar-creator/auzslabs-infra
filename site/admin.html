@@ -2123,10 +2123,12 @@ async function loadSalesOsAdmin() {
   ]);
 
   const teamEl = document.getElementById('salesOsTeamTable');
-  const perfRows = (perf || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${p.visitsDone}</td><td>${p.leadsDone}</td><td>${p.dealsWon}</td></tr>`).join('');
+  const perfRows = (perf || []).map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.role)}</td><td>${p.visitsDone}</td><td>${p.leadsDone}</td><td>${p.dealsWon}</td>
+    <td><button type="button" class="btn btn-ghost" data-staff-profile="${p.staffId}" data-staff-name="${esc(p.name)}" style="font-size:11px;padding:4px 10px;min-height:0">Full profile</button></td></tr>`).join('');
   teamEl.innerHTML = (perf || []).length
-    ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Name</th><th>Role</th><th>Visits</th><th>Leads</th><th>Deals won</th></tr>${perfRows}</table></div>`
+    ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Name</th><th>Role</th><th>Visits</th><th>Leads</th><th>Deals won</th><th></th></tr>${perfRows}</table></div>`
     : emptyDoodle('No SalesOS staff yet.');
+  teamEl.querySelectorAll('[data-staff-profile]').forEach((btn) => { btn.onclick = () => openStaffProfileModal(btn.dataset.staffProfile, btn.dataset.staffName); });
 
   const expEl = document.getElementById('salesOsExpenses');
   expEl.innerHTML = (expenses || []).length ? `<div class="req-grid">${(expenses || []).map((x) => `
@@ -2214,6 +2216,164 @@ async function loadSalesOsAdmin() {
     ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Who</th><th>Action</th><th>When</th></tr>${(audit || []).map((a) => `
       <tr><td>${esc(a.actorName)}</td><td>${esc(a.action)}d a ${esc(a.entity)}</td><td>${sosWhen(a.createdAt)}</td></tr>`).join('')}</table></div>`
     : emptyDoodle('Nothing recorded yet.');
+}
+
+// Employee Master Database (db/369): the full personal/address/education/previous-employment/
+// job/identity/banking/assets/exit record for one SalesOS staffer, opened from "Full profile"
+// in the team table above. Built entirely in JS (no static markup) since it's one-off from here.
+function sosField(label, id, value, type) {
+  return `<div class="field"><label for="${id}">${esc(label)}</label><input id="${id}" type="${type || 'text'}" value="${esc(value == null ? '' : String(value))}"></div>`;
+}
+function sosTextField(label, id, value) {
+  return `<div class="field"><label for="${id}">${esc(label)}</label><textarea id="${id}" rows="2">${esc(value || '')}</textarea></div>`;
+}
+async function openStaffProfileModal(staffId, staffName) {
+  let overlay = document.getElementById('staffProfileOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'staffProfileOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)';
+    overlay.innerHTML = '<div class="modal" id="staffProfileModal" style="width:min(720px,94vw);max-height:90vh;overflow-y:auto"><button class="modal-close" id="staffProfileClose" aria-label="Close">&times;</button><div id="staffProfileBody"></div></div>';
+    document.body.appendChild(overlay);
+    document.getElementById('staffProfileClose').onclick = () => { overlay.style.display = 'none'; };
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
+  }
+  overlay.style.display = 'flex';
+  const body = document.getElementById('staffProfileBody');
+  body.innerHTML = '<div class="label">Staff profile</div><h3 class="h-2">' + esc(staffName) + '</h3><p class="p">Loading&hellip;</p>';
+
+  const [{ data: prof, error: profErr }, { data: sens }, { data: assets }, { data: exit }, { data: docs }] = await Promise.all([
+    sb.rpc('admin_sos_staff_profile_get', { p_user: staffId }),
+    sb.rpc('admin_sos_staff_sensitive_get', { p_user: staffId }),
+    sb.rpc('admin_sos_staff_assets_list', { p_user: staffId }),
+    sb.rpc('admin_sos_staff_exit_get', { p_user: staffId }),
+    sb.rpc('admin_sos_staff_documents', { p_user: staffId }),
+  ]);
+  if (profErr) { body.innerHTML = `<div class="err">${esc(profErr.message)}</div>`; return; }
+  const p = prof || {}, s = sens || {}, ex = exit || {};
+
+  body.innerHTML = `
+    <div class="label">Staff profile</div><h3 class="h-2" style="margin-bottom:14px">${esc(staffName)}</h3>
+    <div class="label">Job &amp; company</div>
+    <div class="onb-grid">
+      ${sosField('Employee ID', 'spEmployeeCode', p.employee_code)}
+      ${sosField('Department', 'spDepartment', p.department)}
+      ${sosField('Designation', 'spDesignation', p.designation)}
+      ${sosField('Employment type (full_time/part_time/contract)', 'spEmploymentType', p.employment_type)}
+      ${sosField('Work location', 'spWorkLocation', p.work_location)}
+      ${sosField('Joining date', 'spJoiningDate', p.joining_date, 'date')}
+      ${sosField('Probation end date', 'spProbationEndDate', p.probation_end_date, 'date')}
+      ${sosField('Working days', 'spWorkingDays', p.working_days)}
+      ${sosField('Shift timing', 'spShiftTiming', p.shift_timing)}
+      ${sosField('Weekly off', 'spWeeklyOff', p.weekly_off)}
+    </div>
+    <div class="onb-foot"><button type="button" class="btn btn-primary" id="spSaveJob">Save job &amp; company</button><span class="small muted" id="spJobMsg"></span></div>
+
+    <div class="label" style="margin-top:18px">Personal, address, education, previous employment, emergency contact</div>
+    <div class="onb-grid">
+      ${sosField('Date of birth', 'spDob', p.dob, 'date')} ${sosField('Gender', 'spGender', p.gender)}
+      ${sosField('Father’s name', 'spFatherName', p.father_name)} ${sosField('Mother’s name', 'spMotherName', p.mother_name)}
+      ${sosField('Marital status', 'spMaritalStatus', p.marital_status)} ${sosField('Nationality', 'spNationality', p.nationality)}
+      ${sosTextField('Current address', 'spAddrCurrent', p.addr_current)} ${sosTextField('Permanent address', 'spAddrPermanent', p.addr_permanent)}
+      ${sosField('City', 'spCity', p.city)} ${sosField('State', 'spState', p.state)} ${sosField('Country', 'spCountry', p.country)} ${sosField('PIN code', 'spPincode', p.pincode)}
+      ${sosField('Highest qualification', 'spHighestQualification', p.highest_qualification)} ${sosField('Institution', 'spInstitution', p.institution)}
+      ${sosField('Course', 'spCourse', p.course)} ${sosField('Specialization', 'spSpecialization', p.specialization)}
+      ${sosField('Passing year', 'spPassingYear', p.passing_year, 'number')} ${sosField('Percentage / CGPA', 'spPercentage', p.percentage)}
+      ${sosField('Previous company', 'spPrevCompany', p.prev_company)} ${sosField('Previous designation', 'spPrevDesignation', p.prev_designation)}
+      ${sosField('Previous joining date', 'spPrevJoiningDate', p.prev_joining_date, 'date')} ${sosField('Previous last working date', 'spPrevLastWorkingDate', p.prev_last_working_date, 'date')}
+      ${sosField('Previous last salary', 'spPrevLastSalary', p.prev_last_salary, 'number')} ${sosField('Previous experience (years)', 'spPrevExperienceYears', p.prev_experience_years, 'number')}
+      ${sosField('Reason for leaving (previous job)', 'spPrevReasonLeaving', p.prev_reason_leaving)}
+      ${sosField('Emergency contact name', 'spEmgName', p.emg_name)} ${sosField('Relationship', 'spEmgRelation', p.emg_relation)}
+      ${sosField('Emergency phone', 'spEmgPhone', p.emg_phone)} ${sosField('Emergency alternate phone', 'spEmgAltPhone', p.emg_alt_phone)}
+      ${sosTextField('Emergency address', 'spEmgAddress', p.emg_address)}
+    </div>
+    <div class="onb-foot"><button type="button" class="btn btn-primary" id="spSaveDetails">Save details</button><span class="small muted" id="spDetailsMsg"></span></div>
+
+    <div class="label" style="margin-top:18px">Identity documents &amp; banking (sensitive)</div>
+    <div class="onb-grid">
+      ${sosField('Aadhaar', 'spAadhaar', s.aadhaar)} ${sosField('PAN', 'spPan', s.pan)}
+      ${sosField('Driving licence', 'spDrivingLicence', s.driving_licence)} ${sosField('Voter ID', 'spVoterId', s.voter_id)}
+      ${sosField('Passport', 'spPassport', s.passport)} ${sosField('Police verification', 'spPoliceVerification', s.police_verification)}
+      ${sosField('Basic salary', 'spBasicSalary', s.basic_salary, 'number')} ${sosField('HRA', 'spHra', s.hra, 'number')}
+      ${sosField('Other allowances', 'spOtherAllowances', s.other_allowances, 'number')} ${sosField('Incentives base', 'spIncentivesBase', s.incentives_base, 'number')}
+      ${sosField('Gross salary', 'spGrossSalary', s.gross_salary, 'number')} ${sosField('Deductions', 'spDeductions', s.deductions, 'number')}
+      ${sosField('Net salary', 'spNetSalary', s.net_salary, 'number')}
+      ${sosField('Bank name', 'spBankName', s.bank_name)} ${sosField('Account holder', 'spAccountHolder', s.account_holder)}
+      ${sosField('Account number', 'spAccountNumber', s.account_number)} ${sosField('IFSC', 'spIfsc', s.ifsc)}
+      ${sosField('UAN', 'spUan', s.uan)} ${sosField('ESIC', 'spEsic', s.esic)}
+    </div>
+    <div class="onb-foot"><button type="button" class="btn btn-primary" id="spSaveSensitive">Save identity &amp; banking</button><span class="small muted" id="spSensitiveMsg"></span></div>
+
+    <div class="label" style="margin-top:18px">Company assets</div>
+    <div id="spAssetsList">${(assets || []).length ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Type</th><th>Detail</th><th>Status</th><th></th></tr>${(assets || []).map((a) => `
+      <tr><td>${esc(a.assetType)}</td><td>${esc(a.assetDetail || '')}</td><td>${a.status === 'returned' ? 'Returned ' + esc(String(a.returnDate || '')) : 'Issued ' + esc(String(a.issueDate || ''))}</td>
+      <td>${a.status !== 'returned' ? `<button type="button" class="btn btn-ghost" data-return-asset="${a.id}" style="font-size:11px;padding:4px 10px;min-height:0">Mark returned</button>` : ''}</td></tr>`).join('')}</table></div>` : emptyDoodle('No assets assigned.')}</div>
+    <div class="onb-foot" style="margin-top:8px">
+      <input id="spNewAssetType" placeholder="Asset type (e.g. Mobile phone)" style="max-width:220px">
+      <input id="spNewAssetDetail" placeholder="Detail (optional)" style="max-width:220px">
+      <button type="button" class="btn btn-ghost" id="spAssignAsset">+ Assign asset</button>
+    </div>
+
+    <div class="label" style="margin-top:18px">Documents on file</div>
+    <div>${(docs || []).length ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Document</th><th>Category</th><th>Status</th></tr>${(docs || []).map((d) => `
+      <tr><td>${esc(d.label)}</td><td>${esc(d.category || '')}</td><td>${d.uploaded ? 'On file' : 'Pending'}</td></tr>`).join('')}</table></div>` : emptyDoodle('No documents uploaded yet.')}</div>
+
+    <div class="label" style="margin-top:18px">Exit management</div>
+    <div class="onb-grid">
+      ${sosField('Resignation date', 'spResignationDate', ex.resignation_date, 'date')} ${sosField('Last working day', 'spLastWorkingDay', ex.last_working_day, 'date')}
+      ${sosTextField('Resignation reason', 'spResignationReason', ex.resignation_reason)} ${sosField('Notice period', 'spNoticePeriod', ex.notice_period)}
+      ${sosField('Pending salary', 'spPendingSalary', ex.pending_salary, 'number')} ${sosField('Outstanding advances', 'spOutstandingAdvances', ex.outstanding_advances, 'number')}
+      ${sosTextField('Exit interview notes', 'spExitInterviewNotes', ex.exit_interview_notes)}
+      ${sosField('Relieving letter status (pending/issued/not_applicable)', 'spRelievingLetterStatus', ex.relieving_letter_status)}
+    </div>
+    <label class="svc-row"><input type="checkbox" id="spAssetsReturned" ${ex.assets_returned ? 'checked' : ''}><span><b>Company assets returned</b></span></label>
+    <label class="svc-row"><input type="checkbox" id="spAccessRevoked" ${ex.access_revoked ? 'checked' : ''}><span><b>Account access revoked</b></span></label>
+    <label class="svc-row"><input type="checkbox" id="spFnfSettled" ${ex.fnf_settled ? 'checked' : ''}><span><b>Full and final settlement paid</b></span></label>
+    <div class="onb-foot"><button type="button" class="btn btn-primary" id="spSaveExit">Save exit record</button><span class="small muted" id="spExitMsg"></span></div>
+  `;
+
+  const g = (id) => document.getElementById(id);
+  document.getElementById('spSaveJob').onclick = async () => {
+    const payload = { employeeCode: g('spEmployeeCode').value, department: g('spDepartment').value, designation: g('spDesignation').value,
+      employmentType: g('spEmploymentType').value, workLocation: g('spWorkLocation').value, joiningDate: g('spJoiningDate').value, probationEndDate: g('spProbationEndDate').value,
+      workingDays: g('spWorkingDays').value, shiftTiming: g('spShiftTiming').value, weeklyOff: g('spWeeklyOff').value };
+    const { error } = await sb.rpc('admin_sos_staff_profile_save', { p_user: staffId, p: payload });
+    g('spJobMsg').textContent = error ? error.message : 'Saved.';
+  };
+  document.getElementById('spSaveDetails').onclick = async () => {
+    const payload = { dob: g('spDob').value, gender: g('spGender').value, fatherName: g('spFatherName').value, motherName: g('spMotherName').value, maritalStatus: g('spMaritalStatus').value, nationality: g('spNationality').value,
+      addrCurrent: g('spAddrCurrent').value, addrPermanent: g('spAddrPermanent').value, city: g('spCity').value, state: g('spState').value, country: g('spCountry').value, pincode: g('spPincode').value,
+      highestQualification: g('spHighestQualification').value, institution: g('spInstitution').value, course: g('spCourse').value, specialization: g('spSpecialization').value, passingYear: g('spPassingYear').value, percentage: g('spPercentage').value,
+      prevCompany: g('spPrevCompany').value, prevDesignation: g('spPrevDesignation').value, prevJoiningDate: g('spPrevJoiningDate').value, prevLastWorkingDate: g('spPrevLastWorkingDate').value, prevLastSalary: g('spPrevLastSalary').value, prevExperienceYears: g('spPrevExperienceYears').value, prevReasonLeaving: g('spPrevReasonLeaving').value,
+      emgName: g('spEmgName').value, emgRelation: g('spEmgRelation').value, emgPhone: g('spEmgPhone').value, emgAltPhone: g('spEmgAltPhone').value, emgAddress: g('spEmgAddress').value };
+    const { error } = await sb.rpc('admin_sos_staff_profile_save', { p_user: staffId, p: payload });
+    g('spDetailsMsg').textContent = error ? error.message : 'Saved.';
+  };
+  document.getElementById('spSaveSensitive').onclick = async () => {
+    const payload = { aadhaar: g('spAadhaar').value, pan: g('spPan').value, drivingLicence: g('spDrivingLicence').value, voterId: g('spVoterId').value, passport: g('spPassport').value, policeVerification: g('spPoliceVerification').value,
+      basicSalary: g('spBasicSalary').value, hra: g('spHra').value, otherAllowances: g('spOtherAllowances').value, incentivesBase: g('spIncentivesBase').value, grossSalary: g('spGrossSalary').value, deductions: g('spDeductions').value, netSalary: g('spNetSalary').value,
+      bankName: g('spBankName').value, accountHolder: g('spAccountHolder').value, accountNumber: g('spAccountNumber').value, ifsc: g('spIfsc').value, uan: g('spUan').value, esic: g('spEsic').value };
+    const { error } = await sb.rpc('admin_sos_staff_sensitive_save', { p_user: staffId, p: payload });
+    g('spSensitiveMsg').textContent = error ? error.message : 'Saved.';
+  };
+  document.getElementById('spAssignAsset').onclick = async () => {
+    const assetType = g('spNewAssetType').value.trim();
+    if (!assetType) return;
+    const { error } = await sb.rpc('admin_sos_staff_asset_assign', { p_user: staffId, p: { assetType, assetDetail: g('spNewAssetDetail').value } });
+    if (error) { alert(error.message); return; }
+    openStaffProfileModal(staffId, staffName);
+  };
+  body.querySelectorAll('[data-return-asset]').forEach((btn) => {
+    btn.onclick = async () => { const { error } = await sb.rpc('admin_sos_staff_asset_return', { p_id: btn.dataset.returnAsset }); if (error) { alert(error.message); return; } openStaffProfileModal(staffId, staffName); };
+  });
+  document.getElementById('spSaveExit').onclick = async () => {
+    const payload = { resignationDate: g('spResignationDate').value, lastWorkingDay: g('spLastWorkingDay').value, resignationReason: g('spResignationReason').value, noticePeriod: g('spNoticePeriod').value,
+      pendingSalary: g('spPendingSalary').value, outstandingAdvances: g('spOutstandingAdvances').value, exitInterviewNotes: g('spExitInterviewNotes').value, relievingLetterStatus: g('spRelievingLetterStatus').value,
+      assetsReturned: g('spAssetsReturned').checked, accessRevoked: g('spAccessRevoked').checked, fnfSettled: g('spFnfSettled').checked };
+    const { error } = await sb.rpc('admin_sos_staff_exit_save', { p_user: staffId, p: payload });
+    g('spExitMsg').textContent = error ? error.message : 'Saved.';
+  };
 }
 
 // server/src/db.js sets the API's connection pool to 35 (PG_POOL_MAX; Postgres itself allows 100).
