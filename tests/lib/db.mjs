@@ -134,7 +134,9 @@ async function seed(c) {
   await user(c, USERS.styOwner, { tenant_id: sty, role: 'owner' });
   await user(c, USERS.styManager, { tenant_id: sty, role: 'manager' });
   await user(c, USERS.styStaff, { tenant_id: sty, role: 'cashier' });
-  const fin = await tenant(c, TENANTS.fin, 'Test Finance Shop', 'retail', { finance: true });
+  // Finance's own pages now live inside the Accounting app (accounts.html), so a tenant with the old
+  // "finance" flag also needs "accounting" to reach them -- same as a tenant that always had both.
+  const fin = await tenant(c, TENANTS.fin, 'Test Finance Shop', 'retail', { finance: true, accounting: true });
   await user(c, USERS.finOwner, { tenant_id: fin, role: 'owner' });
   await user(c, USERS.finManager, { tenant_id: fin, role: 'manager' });
   await user(c, USERS.finStaff, { tenant_id: fin, role: 'cashier' });
