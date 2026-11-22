@@ -1,0 +1,810 @@
+{
+  "cod": false,
+  "upi": false,
+  "shop": {
+    "name": "GenX Cloths",
+    "phone": "",
+    "address": "3/21 DDP Nagar, Madhuban, Jodhpur",
+    "logoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792646528407-q2xrh.jpg",
+    "returnDays": 30
+  },
+  "config": {
+    "on": true,
+    "pay": {
+      "cod": false,
+      "upi": false
+    },
+    "faqs": [],
+    "jobs": [],
+    "about": {
+      "text": "Welcome to GenX Cloths â where your style speaks for you. We believe fashion is more than just what you wear; itâs how you express your personality, confidence, and individuality. From everyday essentials to statement looks, our collection brings together modern trends, effortless comfort, and styles for every occasion. Whether youâre keeping it casual or dressing to stand out, GenX Cloths is here to help you find your look and own it. Stay original. Stay confident. Stay GenX.",
+      "image": "https://api.auzslab.in/uploads/site/demo/style/1792637595116-jh1xt.jpg",
+      "title": "about us"
+    },
+    "blogs": [],
+    "email": "store@example.test",
+    "media": [],
+    "phone": "",
+    "hiring": {},
+    "social": {
+      "instagram": "instagram.com/auzslab.in"
+    },
+    "stores": [
+      {
+        "name": "GenX cloths",
+        "hours": "9 AM - 10 PM",
+        "phone": "",
+        "photo": "https://api.auzslab.in/uploads/site/demo/style/1792612270380-c98i2.jpg",
+        "address": "3/21 DDP Nagar, Madhuban , Jodhpur -342005"
+      },
+      {
+        "name": "GenX Cloths",
+        "hours": "9 AM - 10 PM",
+        "phone": "",
+        "photo": "https://api.auzslab.in/uploads/site/demo/style/1792614482382-rk85w.jpg",
+        "address": "Rz-47, 357 Najafgarh , New Delhi -110043"
+      },
+      {
+        "name": "GenX Cloths",
+        "hours": "9 AM - 10 PM",
+        "phone": "",
+        "photo": "https://api.auzslab.in/uploads/site/demo/style/1792614939903-szq29.jpg",
+        "address": "E-48 bankerâs colony, Jaipur, Rajasthan 302021"
+      }
+    ],
+    "heroCta": "Shop now",
+    "tagline": "",
+    "waOrder": true,
+    "announce": "Free shipping above â¹3499/-",
+    "founders": [],
+    "policies": {
+      "terms": "Welcome to our online store. By accessing our website or placing an order, you agree to these Terms and Conditions. Please read them carefully before making a purchase.\n\nProducts and Pricing: We make reasonable efforts to display accurate product descriptions, colours, sizes, images, and prices. Actual colours may vary slightly due to screen settings. Prices and product availability may change without prior notice, subject to applicable law.\n\nOrders and Payments: All orders are subject to acceptance and product availability. Please provide accurate contact, billing, and shipping information. Orders may be cancelled where necessary for legitimate reasons, including suspected fraud, pricing errors, or stock unavailability, subject to applicable law.\n\nProduct Use: Customers are responsible for selecting suitable sizes, styles, and products. Please review product information and care instructions before use.\n\nIntellectual Property: Website content, photographs, logos, designs, text, and branding may not be copied, reproduced, or commercially used without permission.\n\nWebsite Availability: We aim to maintain reliable access but cannot guarantee uninterrupted service or error-free operation.\n\nLimitation of Liability: Nothing in these terms excludes rights or remedies that cannot legally be excluded under applicable law.\n\nGoverning Law: These terms are governed by the laws of India, subject to applicable consumer protection laws and jurisdictional requirements.\n\nWe reserve the right to update these terms when necessary. Continued website use after changes constitutes acceptance where legally permitted.",
+      "privacy": "We respect your privacy and are committed to protecting the personal information you share when using our online store.\n\nInformation We Collect: When you browse our website or place an order, we may collect information such as your name, phone number, email address, shipping address, billing details, order history, and information necessary to provide customer support.\n\nHow We Use Your Information: Your information may be used to process orders, arrange deliveries, confirm payments, provide order updates, respond to enquiries, manage returns and exchanges, prevent fraudulent activity, and improve our services.\n\nPayments: Online payments may be processed by third-party payment providers. We do not intend to store complete payment card details on our own systems.\n\nSharing of Information: We may share relevant information with delivery partners, payment processors, technology providers, and service providers when necessary to fulfil orders or operate our business. We do not sell personal information to third parties.\n\nCookies and Security: Our website may use cookies or similar technologies to improve functionality and understand website usage. We take reasonable measures to protect information, although no online system can guarantee absolute security.\n\nYour Choices: You may contact us to request access, correction, or deletion of personal information, subject to legal obligations and applicable law. You may also opt out of promotional communications where available.\n\nWe may update this policy from time to time. For privacy-related questions or requests, please contact our customer support team through the contact details provided on our website.",
+      "returns": "We want you to feel confident shopping with us. Please review our returns and exchanges policy before placing your order.\n\nEligibility: Returns or exchanges may be accepted for products that are unused, unworn, unwashed, undamaged, and returned with their original tags, packaging, and proof of purchase. Products showing signs of use or damage caused after delivery may not qualify.\n\nRequest Period: Please contact our customer support team within 7 days of receiving your order to request a return or exchange. Requests submitted after this period may not be accepted.\n\nWrong, Damaged, or Defective Products: If you receive an incorrect, damaged, or defective item, contact us promptly with your order number and clear photographs of the product and packaging.\n\nExchange Availability: Exchanges are subject to stock availability. If the requested size, colour, or product is unavailable, alternative arrangements may be discussed.\n\nRefunds: Approved refunds will be processed to the original payment method where possible. Processing times may vary depending on your payment provider. Shipping charges may be non-refundable unless applicable law requires otherwise.\n\nNon-Returnable Items: Certain products, including items clearly marked as non-returnable for valid reasons, may be excluded from returns.\n\nTo initiate a request, contact our support team with your order details. All requests will be reviewed fairly and handled in accordance with applicable consumer protection laws in India.",
+      "shipping": "Thank you for shopping with us! We aim to deliver your clothing and footwear orders safely, securely, and as quickly as possible.\n\nOrder Processing: Orders are generally processed within 1â3 business days after successful payment or order confirmation. Orders placed on Sundays, public holidays, or during promotional sales may require additional processing time.\n\nDelivery Time: Estimated delivery times depend on your location, courier availability, and the shipping method selected. Most orders are expected to arrive within 3â7 business days after dispatch. Remote locations may require additional time.\n\nShipping Charges: Applicable shipping charges, if any, will be displayed during checkout before you complete your order. Free shipping may be offered on selected products or qualifying orders.\n\nOrder Tracking: Once your order is dispatched, tracking details may be shared through SMS, email, WhatsApp, or another available communication channel.\n\nDelivery Issues: Please ensure that your shipping address, phone number, and other order details are accurate. We are not responsible for delays caused by incorrect addresses, courier disruptions, weather conditions, or circumstances beyond our control.\n\nIf your order is delayed, damaged during delivery, or marked delivered but not received, please contact our customer support team with your order details.\n\nWe appreciate your trust and look forward to delivering a great shopping experience."
+    },
+    "shipping": {
+      "fee": 99,
+      "note": "Delivery in 6-7 days",
+      "freeOver": 3499
+    },
+    "showSale": false,
+    "template": "1",
+    "abandonWa": true,
+    "brandName": "",
+    "heroTitle": "",
+    "sizeGuide": {
+      "head": [
+        "Size",
+        "Chest (in)",
+        "Waist (in)"
+      ],
+      "note": "",
+      "rows": []
+    },
+    "heroImages": [
+      "https://api.auzslab.in/uploads/site/demo/style/1792613343911-x148i.jpg"
+    ]
+  },
+  "styles": [
+    {
+      "id": "fced6388-b5ef-462c-a968-4cd712b7245a",
+      "mrp": 16000,
+      "code": "LB-101",
+      "name": "Leather bag",
+      "badge": "limited",
+      "brand": "Minimal",
+      "price": 12000,
+      "fabric": "Leather",
+      "gender": "Unisex",
+      "photos": [
+        "https://api.auzslab.in/uploads/site/demo/style/1792650278624-1ehvt.jpg"
+      ],
+      "season": "",
+      "details": "Colour: Black\nMaterial: Leather-look (confirm material)\nClosure: Zipper\nPockets: Multiple\nStyle: Minimal\nUsage: Everyday, Office & Travel",
+      "weightG": 750,
+      "category": "Bag",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792650269584-passa.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "a139f8d0-aeae-4daa-a250-7fab463262db",
+          "left": 9,
+          "size": "",
+          "price": 12000,
+          "colour": "Black"
+        }
+      ],
+      "washcare": "Wipe with a soft damp cloth. Do not machine wash, bleach, or expose to direct heat. Air-dry naturally.",
+      "createdAt": "2026-10-22T06:09:42.397404+00:00",
+      "collection": "",
+      "description": "Minimal design. Maximum utility. A sleek black backpack with multiple compartments for everyday essentials. Perfect for college, work, and travel.",
+      "subcategory": "Casual",
+      "colourPhotos": {}
+    },
+    {
+      "id": "1bb962ae-a2c3-4fe9-8529-378ae33b184f",
+      "mrp": 899,
+      "code": null,
+      "name": "Classic Polo Tee",
+      "badge": null,
+      "brand": "",
+      "price": 599,
+      "fabric": "",
+      "gender": "Men",
+      "photos": [
+        "https://api.auzslab.in/uploads/site/demo/style/1792603931038-w5e3s.jpg"
+      ],
+      "season": "",
+      "details": "",
+      "weightG": null,
+      "category": "T-shirts",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792603925368-emeyt.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "a60bcbbc-5cc9-473a-96f3-bf11d2bc919d",
+          "left": 3,
+          "size": "L",
+          "price": 599,
+          "colour": "Grey"
+        },
+        {
+          "id": "28f26dfd-5083-499d-99ed-644e7470bc62",
+          "left": 6,
+          "size": "M",
+          "price": 599,
+          "colour": "Grey"
+        },
+        {
+          "id": "7d23f01c-2d40-4706-a35a-6ddc885f4d9d",
+          "left": 6,
+          "size": "S",
+          "price": 599,
+          "colour": "Grey"
+        },
+        {
+          "id": "307af68c-badd-49c9-a2e2-56ad06df354f",
+          "left": 5,
+          "size": "XL",
+          "price": 599,
+          "colour": "Grey"
+        },
+        {
+          "id": "af2e8eb0-52ec-4bdd-aa72-420a135c1e16",
+          "left": 6,
+          "size": "L",
+          "price": 599,
+          "colour": "Navy"
+        },
+        {
+          "id": "713c54cc-44e9-41eb-9dc4-af8ee5d8193a",
+          "left": 5,
+          "size": "M",
+          "price": 599,
+          "colour": "Navy"
+        },
+        {
+          "id": "46ad0618-3743-4e02-bc35-e3067067fc72",
+          "left": 6,
+          "size": "S",
+          "price": 599,
+          "colour": "Navy"
+        },
+        {
+          "id": "580a1f71-4174-4e09-83fd-22eba5360474",
+          "left": 6,
+          "size": "XL",
+          "price": 599,
+          "colour": "Navy"
+        },
+        {
+          "id": "62f3db78-a17c-4051-b75a-5b7d00273aa0",
+          "left": 6,
+          "size": "L",
+          "price": 599,
+          "colour": "Red"
+        },
+        {
+          "id": "51f051db-3add-47df-8abf-40140aaa7b49",
+          "left": 6,
+          "size": "M",
+          "price": 599,
+          "colour": "Red"
+        },
+        {
+          "id": "da50b13e-a71b-4f4a-96f9-e0e9061f19b6",
+          "left": 6,
+          "size": "S",
+          "price": 599,
+          "colour": "Red"
+        },
+        {
+          "id": "65ffe6fd-9901-4ebd-9353-a6a727ad4b98",
+          "left": 6,
+          "size": "XL",
+          "price": 599,
+          "colour": "Red"
+        }
+      ],
+      "washcare": "",
+      "createdAt": "2026-10-21T16:39:00.705104+00:00",
+      "collection": "",
+      "description": "",
+      "subcategory": "Cotton",
+      "colourPhotos": {}
+    },
+    {
+      "id": "3acdb817-4a77-43b2-9126-4f5bc1e03adf",
+      "mrp": 1299,
+      "code": null,
+      "name": "Blue Slim Shirt",
+      "badge": "limited",
+      "brand": "",
+      "price": 899,
+      "fabric": "",
+      "gender": "Men",
+      "photos": [],
+      "season": "",
+      "details": "",
+      "weightG": 250,
+      "category": "Shirts",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792603906483-pkrvs.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "14a2f5f5-23c1-4257-9507-ba7ef32606b8",
+          "left": 4,
+          "size": "L",
+          "price": 899,
+          "colour": "Blue"
+        },
+        {
+          "id": "529bfb33-b3ec-47f9-ae24-bd5294b6325c",
+          "left": 4,
+          "size": "M",
+          "price": 899,
+          "colour": "Blue"
+        },
+        {
+          "id": "15738da5-df52-4f3f-984f-3cb0d3f18aea",
+          "left": 7,
+          "size": "S",
+          "price": 899,
+          "colour": "Blue"
+        },
+        {
+          "id": "8b50865c-6c83-46d9-ae8c-8c6c70783f2e",
+          "left": 5,
+          "size": "XL",
+          "price": 899,
+          "colour": "Blue"
+        },
+        {
+          "id": "634f94a5-5d91-4519-b641-1447afc2cf9a",
+          "left": 6,
+          "size": "L",
+          "price": 899,
+          "colour": "White"
+        },
+        {
+          "id": "4eb73b59-d5a6-4f44-93e5-531ca61031b2",
+          "left": 6,
+          "size": "M",
+          "price": 899,
+          "colour": "White"
+        },
+        {
+          "id": "cfcfa479-949b-4102-9a3b-90e6be3d83f1",
+          "left": 6,
+          "size": "S",
+          "price": 899,
+          "colour": "White"
+        },
+        {
+          "id": "14fa59fd-fc3a-45f6-a757-d7a8ec024d8c",
+          "left": 6,
+          "size": "XL",
+          "price": 899,
+          "colour": "White"
+        }
+      ],
+      "washcare": "",
+      "createdAt": "2026-10-21T16:39:00.705104+00:00",
+      "collection": "",
+      "description": "",
+      "subcategory": "Cotton",
+      "colourPhotos": {}
+    },
+    {
+      "id": "feb39b53-661f-4140-b83c-482dd057d10e",
+      "mrp": 2499,
+      "code": null,
+      "name": "White Sneakers",
+      "badge": null,
+      "brand": "",
+      "price": 1799,
+      "fabric": "",
+      "gender": "Unisex",
+      "photos": [],
+      "season": "",
+      "details": "",
+      "weightG": null,
+      "category": "Footwear",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792603984831-3qotu.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "e8c8703c-ba95-4396-a0a5-789292cb9d11",
+          "left": 3,
+          "size": "10",
+          "price": 1799,
+          "colour": "White"
+        },
+        {
+          "id": "ea090f84-6a7a-4c17-a6dc-ab72c7351a46",
+          "left": 2,
+          "size": "6",
+          "price": 1799,
+          "colour": "White"
+        },
+        {
+          "id": "19f4c14b-39b0-4d4a-a89d-ff1a9c024919",
+          "left": 2,
+          "size": "7",
+          "price": 1799,
+          "colour": "White"
+        },
+        {
+          "id": "c41006cc-27af-41a7-a994-0c341ab26c3e",
+          "left": 2,
+          "size": "8",
+          "price": 1799,
+          "colour": "White"
+        },
+        {
+          "id": "8531d1d2-74c7-4912-b026-76445ef1b01b",
+          "left": 2,
+          "size": "9",
+          "price": 1799,
+          "colour": "White"
+        }
+      ],
+      "washcare": "",
+      "createdAt": "2026-10-21T16:39:00.705104+00:00",
+      "collection": "",
+      "description": "",
+      "subcategory": "Casual",
+      "colourPhotos": {}
+    },
+    {
+      "id": "df5e227c-9957-44c2-99b8-32ec09c297d3",
+      "mrp": 1499,
+      "code": null,
+      "name": "Leather Sandals",
+      "badge": null,
+      "brand": "",
+      "price": 999,
+      "fabric": "",
+      "gender": "Men",
+      "photos": [],
+      "season": "",
+      "details": "",
+      "weightG": null,
+      "category": "Footwear",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792605534973-ofnqz.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "2872bdef-4d27-4366-b147-f95c425faa5e",
+          "left": 5,
+          "size": "10",
+          "price": 999,
+          "colour": "Black"
+        },
+        {
+          "id": "cb7ae87f-ec35-4430-964e-4642ca99174e",
+          "left": 6,
+          "size": "7",
+          "price": 999,
+          "colour": "Black"
+        },
+        {
+          "id": "385670d5-5fa2-4292-b71d-198d84a5ce0e",
+          "left": 5,
+          "size": "8",
+          "price": 999,
+          "colour": "Black"
+        },
+        {
+          "id": "500c9262-d3a1-429a-a19b-0ac5688a0880",
+          "left": 4,
+          "size": "9",
+          "price": 999,
+          "colour": "Black"
+        },
+        {
+          "id": "0e191bc8-7f2b-42e4-815f-959b877762e3",
+          "left": 6,
+          "size": "10",
+          "price": 999,
+          "colour": "Tan"
+        },
+        {
+          "id": "570bd818-d66b-47f3-b075-5a20bac86e7e",
+          "left": 6,
+          "size": "7",
+          "price": 999,
+          "colour": "Tan"
+        },
+        {
+          "id": "d65ea996-6046-4128-a426-2524c8e4fee0",
+          "left": 6,
+          "size": "8",
+          "price": 999,
+          "colour": "Tan"
+        },
+        {
+          "id": "ad5f30a6-d87b-408d-a34b-a3bf4ddabf28",
+          "left": 6,
+          "size": "9",
+          "price": 999,
+          "colour": "Tan"
+        }
+      ],
+      "washcare": "",
+      "createdAt": "2026-10-21T16:39:00.705104+00:00",
+      "collection": "",
+      "description": "",
+      "subcategory": "Sandals",
+      "colourPhotos": {}
+    },
+    {
+      "id": "a91f61b7-8d1b-4b73-bb8e-6b310504af9f",
+      "mrp": 1999,
+      "code": "BD 1",
+      "name": "Black denim",
+      "badge": null,
+      "brand": "",
+      "price": 1299,
+      "fabric": "Denim",
+      "gender": "Men",
+      "photos": [],
+      "season": "",
+      "details": "",
+      "weightG": 278,
+      "category": "Jeans",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792603805720-9idq6.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "bc9d3210-68f3-4c69-9b95-58049296cc1b",
+          "left": 6,
+          "size": "30",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "854e7b4b-2709-4fe1-a999-1bad3f570cac",
+          "left": 4,
+          "size": "32",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "04fa95db-2c29-4e89-b9a2-291fe92de398",
+          "left": 5,
+          "size": "34",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "5b183a62-d85c-4e8f-b8bd-41a526c692bf",
+          "left": 4,
+          "size": "36",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "4f9c2f1a-5517-41f3-88cc-35a881873230",
+          "left": 6,
+          "size": "30",
+          "price": 1299,
+          "colour": "Indigo"
+        },
+        {
+          "id": "e00205df-5195-45dc-a9f3-03fc356a9db4",
+          "left": 6,
+          "size": "32",
+          "price": 1299,
+          "colour": "Indigo"
+        },
+        {
+          "id": "03b12ddd-5f34-4256-8cdc-f78d1888786b",
+          "left": 6,
+          "size": "34",
+          "price": 1299,
+          "colour": "Indigo"
+        },
+        {
+          "id": "5d735d55-1c1c-49af-b105-975f641616bc",
+          "left": 6,
+          "size": "36",
+          "price": 1299,
+          "colour": "Indigo"
+        }
+      ],
+      "washcare": "Do not bleach , Machine wash cold water",
+      "createdAt": "2026-10-21T16:39:00.705104+00:00",
+      "collection": "",
+      "description": "",
+      "subcategory": "Denim",
+      "colourPhotos": {}
+    },
+    {
+      "id": "eecc0603-2698-419e-9d9f-4421a2ccd4c9",
+      "mrp": 1699,
+      "code": "Ss-01",
+      "name": "Sweet shirt",
+      "badge": "limited",
+      "brand": "Bonkers",
+      "price": 1299,
+      "fabric": "Cotton",
+      "gender": "Men",
+      "photos": [
+        "https://api.auzslab.in/uploads/site/demo/style/1792603972767-oibhh.jpg",
+        "https://api.auzslab.in/uploads/site/demo/style/1792603973002-w8e2h.jpg"
+      ],
+      "season": "",
+      "details": "",
+      "weightG": 120,
+      "category": "T-shirts",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792603968266-9m2zw.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "3aa1af2d-cd4b-4f7e-aa74-51e8ac0c0c51",
+          "left": 5,
+          "size": "L",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "ce65225e-5c6a-4d3c-81bc-88df36aac8b4",
+          "left": 4,
+          "size": "M",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "6bbea70f-dce0-46e6-99d8-f6eb25f249ec",
+          "left": 2,
+          "size": "S",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "2859c0bb-3d5c-494a-9c78-a6a413b9bc09",
+          "left": 4,
+          "size": "XS",
+          "price": 1299,
+          "colour": "Black"
+        },
+        {
+          "id": "3c5fad58-4880-409c-b06b-e28e13081f78",
+          "left": 5,
+          "size": "L",
+          "price": 1299,
+          "colour": "Blue"
+        },
+        {
+          "id": "f11d54b3-9fe2-4741-979b-16d5bf786286",
+          "left": 7,
+          "size": "M",
+          "price": 1299,
+          "colour": "Blue"
+        },
+        {
+          "id": "c2e46920-a10d-45ff-b434-f9f76100c13c",
+          "left": 7,
+          "size": "S",
+          "price": 1299,
+          "colour": "Blue"
+        },
+        {
+          "id": "af43df66-5eb7-4c09-a416-74417cb2aef7",
+          "left": 7,
+          "size": "XS",
+          "price": 1299,
+          "colour": "Blue"
+        },
+        {
+          "id": "90dd6a82-c5e5-4469-95cf-8fede5ae9f3b",
+          "left": 3,
+          "size": "L",
+          "price": 1299,
+          "colour": "Navy"
+        },
+        {
+          "id": "992d2b46-987b-4702-a38a-c8c0d486c160",
+          "left": 3,
+          "size": "M",
+          "price": 1299,
+          "colour": "Navy"
+        },
+        {
+          "id": "877562fb-a218-450e-bf47-d51bf219d7ae",
+          "left": 3,
+          "size": "S",
+          "price": 1299,
+          "colour": "Navy"
+        },
+        {
+          "id": "bb24065e-ce45-47ed-8d0f-3e968de3daab",
+          "left": 3,
+          "size": "XS",
+          "price": 1299,
+          "colour": "Navy"
+        },
+        {
+          "id": "456e28a1-0b25-45ad-82c5-86e99ce47dd1",
+          "left": 7,
+          "size": "L",
+          "price": 1299,
+          "colour": "White"
+        },
+        {
+          "id": "6537b218-7d3c-46db-8d83-d7aeb043858a",
+          "left": 7,
+          "size": "M",
+          "price": 1299,
+          "colour": "White"
+        },
+        {
+          "id": "a96e9cfa-3c34-4759-ac94-1a076ada3527",
+          "left": 7,
+          "size": "S",
+          "price": 1299,
+          "colour": "White"
+        },
+        {
+          "id": "8fd0fa36-f8cf-45ea-89fb-c68fd95ceb7d",
+          "left": 7,
+          "size": "XS",
+          "price": 1299,
+          "colour": "White"
+        }
+      ],
+      "washcare": "",
+      "createdAt": "2026-10-21T15:15:30.323054+00:00",
+      "collection": "Summer 2026",
+      "description": "A casual wear matches your energy",
+      "subcategory": "Slim fit,",
+      "colourPhotos": {}
+    },
+    {
+      "id": "39b26b92-6847-4da7-802f-dbbc5cc37da7",
+      "mrp": 1599,
+      "code": null,
+      "name": "Denim",
+      "badge": "limited",
+      "brand": "Levis",
+      "price": 1199,
+      "fabric": "",
+      "gender": "Men",
+      "photos": [],
+      "season": "Summer",
+      "details": "",
+      "weightG": null,
+      "category": "Jeans",
+      "photoUrl": "https://api.auzslab.in/uploads/site/demo/style/1792603942615-qusqn.jpg",
+      "photoUse": {},
+      "variants": [
+        {
+          "id": "6ba0f0ba-0764-44ce-b809-bfc709f289af",
+          "left": 4,
+          "size": "28",
+          "price": 1199,
+          "colour": "Black"
+        },
+        {
+          "id": "26186ee5-075f-4938-b79c-c0d712346c7d",
+          "left": 5,
+          "size": "30",
+          "price": 1199,
+          "colour": "Black"
+        },
+        {
+          "id": "55b6e7cb-03a4-4f16-a1dd-ea140693e353",
+          "left": 4,
+          "size": "32",
+          "price": 1199,
+          "colour": "Black"
+        },
+        {
+          "id": "a8fce126-24e7-4815-92ff-ba7151905219",
+          "left": 4,
+          "size": "34",
+          "price": 1199,
+          "colour": "Black"
+        },
+        {
+          "id": "e00e986f-7623-43c7-a0a2-8174044ec93f",
+          "left": 5,
+          "size": "28",
+          "price": 1199,
+          "colour": "Blue"
+        },
+        {
+          "id": "9c822cc9-ccfb-43dc-94c8-584ecc82faee",
+          "left": 4,
+          "size": "30",
+          "price": 1199,
+          "colour": "Blue"
+        },
+        {
+          "id": "bed0fdb7-7f75-4f3a-8823-4d0e933fd45f",
+          "left": 5,
+          "size": "32",
+          "price": 1199,
+          "colour": "Blue"
+        },
+        {
+          "id": "3e7f4275-39fa-40fa-850c-1171fa6e959c",
+          "left": 5,
+          "size": "34",
+          "price": 1199,
+          "colour": "Blue"
+        },
+        {
+          "id": "b5a35322-43e5-4ad1-a603-0851f33d8743",
+          "left": 5,
+          "size": "28",
+          "price": 1199,
+          "colour": "White"
+        },
+        {
+          "id": "f76f473f-eaa5-4bca-9ae4-4d1df5af25c0",
+          "left": 5,
+          "size": "30",
+          "price": 1199,
+          "colour": "White"
+        },
+        {
+          "id": "f0a8fc89-eed2-4ac2-a8b1-a42f1ee0f8bf",
+          "left": 5,
+          "size": "32",
+          "price": 1199,
+          "colour": "White"
+        },
+        {
+          "id": "ef43a57b-6def-4e7c-9480-78a0924e1ef9",
+          "left": 5,
+          "size": "34",
+          "price": 1199,
+          "colour": "White"
+        }
+      ],
+      "washcare": "",
+      "createdAt": "2026-10-21T15:11:57.006582+00:00",
+      "collection": "",
+      "description": "",
+      "subcategory": "",
+      "colourPhotos": {}
+    }
+  ],
+  "collections": [
+    {
+      "id": "70751f21-7f7d-46e1-9ae0-30dc4c4a8379",
+      "name": "By Ecrivoire Studios",
+      "note": "Till Octâ26 only",
+      "image": "https://api.auzslab.in/uploads/site/demo/style/1792645668510-of3a2.jpg",
+      "styleIds": [
+        "eecc0603-2698-419e-9d9f-4421a2ccd4c9",
+        "3acdb817-4a77-43b2-9126-4f5bc1e03adf",
+        "39b26b92-6847-4da7-802f-dbbc5cc37da7",
+        "fced6388-b5ef-462c-a968-4cd712b7245a"
+      ]
+    }
+  ]
+}

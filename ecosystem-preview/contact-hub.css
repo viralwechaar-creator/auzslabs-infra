@@ -1,0 +1,76 @@
+.ac-main .contact-hub{width:100%;margin:0;padding:15px 17px;border-radius:22px;background:#2b2b2b;color:#fff;box-shadow:none}
+.contact-hub [hidden]{display:none}
+.contact-hub :is(h2,p){margin:0}
+.contact-hub .ct-role-title,.contact-hub h2{color:#fff;font-size:clamp(17px,2vw,23px);line-height:1.25;letter-spacing:-.02em}
+.ac-side .ct-role-title{margin:4px 4px 11px;color:#e6e6e6;font-size:.81rem;font-weight:600}
+.ct-role-picker{display:grid;gap:0;isolation:isolate}
+.ac .ct-role-picker .ct-path-choice{display:grid;gap:4px;position:relative;padding:13px 15px 21px;min-height:68px;border:1px solid #bcbcbc;border-radius:20px;background:linear-gradient(155deg,#dfdfdc,#bfbfbd);box-shadow:0 -3px 14px #0003;color:#181818;text-decoration:none!important;transition:transform .18s ease,box-shadow .18s ease}
+.ct-path-choice + .ct-path-choice{margin-top:-4px}
+.ac .ct-role-picker .ct-path-choice:nth-child(2){background:linear-gradient(155deg,#c1c1be,#a2a2a0)}
+.ac .ct-role-picker .ct-path-choice:nth-child(3){background:linear-gradient(155deg,#939391,#787876);border-color:#999}
+.ac .ct-role-picker .ct-path-choice:nth-child(4){background:linear-gradient(155deg,#6b6b69,#50504e);border-color:#81817e;color:#fff;padding-bottom:14px}
+.ac .ct-path-choice strong,.ac .ct-path-choice span{color:inherit;line-height:1.25}
+.ct-path-choice strong{font-size:.84rem}.ct-path-choice span{font-size:.73rem}
+.ac .ct-role-picker .ct-path-choice[aria-current]{box-shadow:inset 3px 0 #fff,0 -3px 14px #0004}
+.ct-path-choice:is(:hover,:focus-visible){z-index:1;transform:translateY(-5px)}
+.ct-path-choice:focus-visible{outline:2px solid white;outline-offset:2px}
+.ct-shortcuts{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:9px;border-top:1px solid #505050}
+.ac .ct-shortcuts a,.ac .ct-track{display:inline-flex;align-items:center;min-height:30px;padding:5px 9px;border:1px solid #555;border-radius:999px;font-size:.76rem;color:#ecece9;text-decoration:none!important}
+.ac .ct-shortcuts a:hover,.ac .ct-track:hover{background:#3d3d3d}
+.ac .ct-track{margin-top:9px}
+.ct-choice-prompt{font-size:.86rem;color:#dfdfdf}
+.contact-hub .field-grid,.ct-career fieldset.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.contact-hub .wide{grid-column:1/-1}
+.contact-hub form{margin-top:9px}
+.contact-hub label{display:block;min-width:0;font-size:.79rem;font-weight:600;color:#eee}
+.contact-hub label small{font-weight:400;color:#c5c5c5}
+.contact-hub :is(input,textarea,select){display:block;width:100%;min-height:35px;margin-top:4px;padding:6px 9px;border:1px solid #666;border-radius:9px;background:#3a3a3a;color:white;font:inherit;color-scheme:dark}
+.contact-hub textarea{resize:vertical}
+.ct-form-actions,.ct-career .career-form-actions,.ct-career .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ct-form-actions,.ct-career .career-form-actions{justify-content:space-between}
+.ct-form-actions p,.ct-career :is(p,.career-step-count){color:#c8c8c8;font-size:.8rem}
+.contact-hub .btn{min-height:36px;padding:6px 11px;border:1px solid #747474;border-radius:999px;background:#3a3a3a;color:#fff;font-family:inherit;font-size:.8rem;font-weight:600;line-height:1.2}
+.ac .contact-hub button.btn.primary{background:#ecece9!important;color:#191919!important;border-color:#ecece9!important}
+.contact-hub :is(a,button,input,select,textarea):focus-visible{outline:2px solid #eee;outline-offset:3px}
+.contact-hub output{display:block;font-size:.82rem;color:#e8e8e8;overflow-wrap:anywhere}
+.contact-hub output:empty{display:none}
+.contact-hub output a{text-decoration:underline}
+.ct-career .career-selection{margin-bottom:14px}
+.ct-career .career-role-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.ct-career .career-role{padding:5px 10px;min-height:36px;border:1px solid #666;border-radius:999px;background:#363636;color:#eee;font:inherit;font-size:.81rem}
+.ct-career .career-role[aria-pressed=true]{background:#ecece9;color:#171717;border-color:#ecece9}
+.ct-career .career-role :is(small,[aria-hidden]){display:none}
+.ct-career .career-apply header p{margin-top:5px}
+.ct-career .career-progress{display:flex;gap:7px;flex-wrap:wrap;list-style:none;padding:0;margin:12px 0;color:#c8c8c8;font-size:.79rem}
+.ct-career .career-progress li{border:1px solid #666;border-radius:999px;padding:5px 8px}
+.ct-career .career-progress li[aria-current]{background:#ecece9;color:#171717;border-color:#ecece9}
+.ct-career .career-progress span{margin-right:3px}
+.ct-career fieldset{min-width:0;margin:0 0 10px;padding:10px;border:1px solid #686868;border-radius:12px}
+.ct-career fieldset[hidden]{display:none}
+.ct-career legend{padding:0 5px;color:#ddd;font-size:.82rem}
+.ct-career .career-review{display:grid;gap:7px;margin:0 0 9px;font-size:.85rem}
+.ct-career .career-review div{display:grid;grid-template-columns:minmax(74px,1fr) minmax(0,3fr);gap:8px}
+.ct-career .career-review dt{color:#ccc}
+.ct-career .career-review dd{margin:0;overflow-wrap:anywhere}
+.ac .ac-rail .ct-ch a{display:grid;place-items:center;grid-template:1fr/1fr;width:44px;height:44px;min-width:44px;padding:0;gap:0;border:1px solid #575757;color:#f0f0ed}
+.ac .ac-rail .ct-ch a svg{display:block;width:22px!important;height:22px!important;min-width:22px;min-height:22px;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.ac .ac-rail .ct-ch a:hover{color:#151515}
+.a-contact #toast{position:fixed;z-index:50;bottom:76px;right:14px;max-width:calc(100% - 28px);padding:10px 14px;border:1px solid #777;border-radius:12px;background:#262626;color:white}
+.a-contact #toast:empty{display:none}
+@media(min-width:960px){
+  .ac .ac-side{padding-top:18px}
+  .ac .ac-main{min-width:0}
+}
+@media(max-width:959px){
+  .ac-rail{grid-row:1}
+  .ac-side{grid-row:2}
+  .ac-main{grid-row:3}
+  .ct-role-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .ct-path-choice + .ct-path-choice{margin-top:0}
+  .ac .ct-role-picker .ct-path-choice{padding:9px 11px;min-height:58px;border-radius:14px}
+}
+@media(max-width:620px){
+  .ac-main .contact-hub{padding:14px}
+  .contact-hub .field-grid,.ct-career fieldset.field-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){.ac .ct-role-picker .ct-path-choice{transition:none}}
