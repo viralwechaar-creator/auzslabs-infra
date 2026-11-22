@@ -23,21 +23,28 @@ const LANDING = { salon: '/salon/', custom: '/custom.html' };
 (async () => {
  // Shared addresses are decided from the address itself (not from tenant.js, which a browser may still have cached):
  // app.auzslab.in = every app; auzspos / auzsmob / auzspay / auzsledger open their own app (the sign-in screen finds the user's business).
- const HOME = { auzspos: '/index.html', auzsmob: '/mob.html', auzspay: '/payroll.html', auzsledger: '/accounts.html', auzsscan: '/scan.html', auzsstyle: '/style.html', auzsfinance: '/finance.html' };
+ // auzspos/auzspay/auzsscan/auzsfinance were retired (their apps were deleted) -- removed from
+ // this map rather than left pointing at files that no longer exist.
+ const HOME = { auzsmob: '/mob.html', auzsledger: '/accounts.html', auzsstyle: '/style.html' };
  const first = location.hostname.split('.')[0];
  // app.auzslab.in (the old hub) never actually reaches this file -- the Caddyfile's own @a_hub block
  // redirects it before land.html would ever be served -- but if it ever did, send it to the real
  // sign-in page rather than the start.html hub this file used to open, which no longer exists.
  if (first === 'app') return location.replace('https://' + location.hostname.split('.').slice(-2).join('.') + '/signup.html');
  if (HOME[first]) return location.replace(HOME[first] + location.search);
- if (!TENANT_SLUG) return location.replace('/index.html');
+ // Stopgap: AUZsPOS (the old default front door for a restaurant/cafe/retail/general tenant with
+ // no other niche-specific landing page) was retired and nothing replaces it yet -- that tenant
+ // has no product left to open here. Until the owner decides what these tenants should land on,
+ // send them to sign-in rather than a 404.
+ const FALLBACK = 'https://' + location.hostname.split('.').slice(-2).join('.') + '/signup.html';
+ if (!TENANT_SLUG) return location.replace(FALLBACK);
  const sb = supabase.createClient(CFG.url, CFG.key);
  let bizType = 'restaurant';
  try {
   const { data } = await sb.rpc('public_menu', { tenant_slug: TENANT_SLUG });
   bizType = (data && data.cfg && data.cfg.bizType) || bizType;
- } catch (e) { /* unknown tenant, or offline -- fall through to the POS/login default below */ }
- location.replace((LANDING[bizType] || '/index.html') + location.search);
+ } catch (e) { /* unknown tenant, or offline -- fall through to the default below */ }
+ location.replace((LANDING[bizType] || FALLBACK) + (LANDING[bizType] ? location.search : ''));
 })();
 </script>
 </body></html>
