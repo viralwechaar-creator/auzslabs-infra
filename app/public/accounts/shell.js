@@ -13,6 +13,11 @@ const NAV_LEDGER = [
   { group: 'Stock', items: ['products', 'stock', 'labels'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
   { group: 'Accounts', items: ['books', 'banking', 'drawer', 'assets'] },
+  // Finance: the owner's personal expenses/bills tracker (the retired AUZsFinance app), folded in here as its own
+  // group -- same fin_* data as before, just reached from inside Accounting instead of a separate app. Hidden
+  // whole when the tenant's "finance" feature flag is off (see finOn() below), so tenants that never had it see
+  // nothing new here.
+  { group: 'Finance', items: ['fin-home', 'fin-activity', 'fin-dues', 'fin-owner', 'fin-accounts', 'fin-reports', 'fin-insights', 'fin-settings', 'fin-tools'] },
   { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'ai', 'settings'] },
 ];
 const NAV = SCANAPP ? [
@@ -22,7 +27,10 @@ const NAV = SCANAPP ? [
 ] : NAV_LEDGER;
 const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'scan', 'purchases', 'sales'];
 // AUZsScan only (p-easy.js): a short beginner menu by default; "Show all ledger tools" switches to the whole ledger menu
-const navNow = () => (window.easyOn && easyOn() ? EASY_NAV : SCANAPP && window.easyOn ? SCAN_ALL_NAV : NAV), tabsNow = () => (window.easyOn && easyOn() ? EASY_TABS : TABS);
+// Finance group: shown only once S.dash says this tenant's "finance" feature is on (fin-core.js's finOn() does the
+// same check before a fin-* page's own data loads, so a stale deep link still refuses cleanly instead of 404ing).
+const navNow = () => { const base = window.easyOn && easyOn() ? EASY_NAV : SCANAPP && window.easyOn ? SCAN_ALL_NAV : NAV; return base.filter((g) => g.group !== 'Finance' || (window.finOn && finOn())); };
+const tabsNow = () => (window.easyOn && easyOn() ? EASY_TABS : TABS);
 let route = { id: HOME, args: [], q: new URLSearchParams() };
 let cleanup = [];
 
