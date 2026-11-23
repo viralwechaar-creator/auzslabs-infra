@@ -42,3 +42,20 @@ body.a-choose #storeForm input{background:#232323;border:1px solid #444;color:#f
 body.a-choose #storeForm .tb{border-radius:999px;min-height:44px}
 body.a-choose #storeForm .tb.pri{background:#fff;color:#111;border:1px solid #fff}
 body.a-choose .cp-err{color:#ff8a80}
+/* v3: minimal and small */
+html body.a-choose main.content{padding:clamp(28px,5vw,56px) 0 48px!important}
+body.a-choose .cp-wrap{max-width:720px}
+body.a-choose .cp-head{margin:0 0 22px}
+html body.a-choose main.content h1.cp-h{font-size:clamp(28px,5vw,44px)!important;line-height:1.05!important}
+html body.a-choose main.content .cp-sub{font-size:14px!important;margin:10px 0 0!important}
+body.a-choose .cp-eye{margin:0 0 12px}
+body.a-choose .cp-fork{grid-template-columns:1fr;gap:10px}
+body.a-choose .cp-card{flex-direction:row;align-items:center;justify-content:flex-start;gap:16px;min-height:0;padding:16px 18px;border-radius:16px}
+body.a-choose .cp-card:after{display:none}
+body.a-choose .cp-card:hover,body.a-choose .cp-card:focus-visible{transform:translateY(-2px) rotate(0)}
+body.a-choose .cp-tx{flex:1;min-width:0}
+html body.a-choose main.content .cp-card h3{font-size:17px!important;margin:0 0 3px!important;letter-spacing:-.01em!important}
+html body.a-choose main.content .cp-card p{font-size:13px!important;max-width:none}
+body.a-choose .cp-ar{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#111;font-style:normal;flex:none;transition:transform .25s}
+body.a-choose .cp-card:hover .cp-ar{transform:translateX(4px)}
+body.a-choose .cp-card{display:flex}
