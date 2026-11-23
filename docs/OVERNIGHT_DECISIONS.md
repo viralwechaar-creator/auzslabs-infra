@@ -28,8 +28,20 @@ The owner was asleep and asked for everything to be built without questions. Eac
 - The site pages have no broken file links. The 404s came from the live demo page offering demos of apps that were deleted (AUZsPOS, AUZsPay, AUZsMob, AUZsScan, AUZsFinance). Those cards and the "Explore more apps" button are removed; AUZsLedger, AUZsStyle and Salon remain.
 - Still on the repo (not touched): `app/public/mob.html` and Caddy address entries for removed apps.
 
-## 6. Still open (not done, needs the owner)
-- Sign-in redirect straight to the client's app (the old hub page no longer exists; this belongs in `signup.html` after sign-in) and the new storefront account page for store-only clients.
-- Salon Console Admin tab (see above).
-- Retiring `account.html` (only after every app has the tab and a pilot client has used it).
-- Deploy: `bash tools/migrate.sh apply` (db/385, 386, 387), `docker compose up -d --build api`, `git pull origin main`.
+## 6. Platform admin can log in everywhere
+- **Built:** Admin > Clients: each client card has **Open as owner...** (Style app, Ledger app, Online store hub, Salon console, Account page, only the ones the business has). Server route `POST /admin/login-as` (platform admin only, 60 per hour) calls `admin_login_as_context` (db/388), writes an audit entry, and returns a **limited 8-hour session** for the business owner, handed over in the URL fragment.
+- **Decision:** limited session (cannot be refreshed), always audit-logged, owner account is used because the apps check the owner role. If a business has no owner login yet it says so.
+
+## 7. Sign-in redirect and the storefront account
+- **Built:** after sign-in on the website, an owner or manager is sent straight into their app with their session: AUZsStyle, else AUZsLedger, else Salon console, else the online store hub. Only on auzslab.in addresses (tests and localhost are left alone).
+- **Decision:** the new storefront account experience for store-only clients is the store hub itself (its own Settings, Billing, Team and Domains pages), so no separate account page was built. `account.html` stays reachable and is not retired yet.
+
+## 8. Admin panel links
+- Website section now lists 17 live pages with open links (all exist). The admin panel already offered only the remaining apps (Ledger, Style, Salon) when onboarding.
+
+## 9. Still open (needs the owner)
+- Salon Console Admin tab (see section 1).
+- Retiring `account.html` after the owner has tried the Admin tab on a pilot business.
+- Cleanup of `app/public/mob.html` and Caddy entries for removed apps.
+- Deploy: `bash tools/migrate.sh apply` (db/385 to 388), `docker compose up -d --build api`, `git pull origin main`.
+- Known test failures that were already there on untouched `main`: 5 style-suite checks (till, store, buying intelligence) and 4-5 accounts-suite checks (POS/Mob sales sync, invoice screens, dark mode).
