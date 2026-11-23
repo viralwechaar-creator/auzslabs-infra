@@ -202,4 +202,18 @@ r = await as(A.u, `select sfx_campaign_save(null, '{"name":"Diwali reel","channe
 r = await as(A.u, `select sfx_campaign_save(null, '{"name":"Flat reel","channel":"instagram","discountCode":"flat50","spend":500}'::jsonb) r`); assert(!r.error, r.error);
 r = (await as(A.u, `select sfx_campaign_list() r`)).r; assert(r[0].orders >= 1 && Number(r[0].spend) === 500, JSON.stringify(r)); pass('campaign shows real orders from its code: ' + r[0].orders);
 r = (await as(B.u, `select sfx_campaign_list() r`)).r; assert(r.length === 0); pass('campaigns isolated per tenant');
+
+// ---- custom domains (db/380)
+const site = async (h) => (await admin.query("select sfx_domain_site($1) s", [h])).rows[0].s;
+r = await as(A.u, `select sfx_domain_connect('shop.example.com') r`); assert(!r.error, r.error); const dom = r.r.id;
+assert(await site('shop.example.com') === null); pass('an unverified domain serves nothing');
+await admin.query("update sfx_domains set status='verified' where id=$1", [dom]);
+assert(await site('SHOP.example.com') === 'shopa'); pass('a verified domain resolves to its store (case-insensitive)');
+await admin.query("update sfx_stores set published=false where tenant_id=$1", [A.t]); assert(await site('shop.example.com') === null); await admin.query("update sfx_stores set published=true where tenant_id=$1", [A.t]); pass('an unpublished store is not served');
+await admin.query("update tenant_settings set enabled_features = '{\"storefront\":false}' where tenant_id=$1", [A.t]); assert(await site('shop.example.com') === null); await admin.query("update tenant_settings set enabled_features = '{}' where tenant_id=$1", [A.t]); pass('a switched-off storefront is not served');
+assert(await site('other.example.com') === null && await site('') === null); pass('unknown hosts serve nothing');
+assert((await admin.query("select sfx_domain_hosts() h")).rows[0].h.includes('shop.example.com')); pass('verified hosts are listed for CORS');
+r = await as(B.u, `select sfx_domain_remove($1) r`, [dom]); assert(await site('shop.example.com') === 'shopa'); pass("B cannot disconnect A's domain");
+r = await as(staff.u, `select sfx_domain_remove($1) r`, [dom]); assert(r.error && await site('shop.example.com') === 'shopa'); pass('role without manage cannot disconnect');
+r = await as(A.u, `select sfx_domain_remove($1) r`, [dom]); assert(!r.error && await site('shop.example.com') === null); pass('owner can disconnect; the domain stops serving');
 console.log('ALL', ok, 'passed'); await admin.end(); process.exit(0);

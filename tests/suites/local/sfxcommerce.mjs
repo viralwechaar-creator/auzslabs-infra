@@ -109,5 +109,24 @@ export default async function run({ browser, stack }) {
     await page.locator('[data-action="campaign-new"]').click(); await page.fill('#dialog input[name=name]', 'Reel'); await page.fill('#dialog input[name=spend]', '300'); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(900);
     assert((await q("select count(*)::int n from sfx_campaigns"))[0].n === 1, 'campaign');
   });
+  await s.check('Custom domain: certificate check, host check, tenant script and CORS follow a verified live store', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("insert into sfx_domains (tenant_id, hostname, token, status) values ($1,'shop.example.in','tok','verified') on conflict (hostname) do update set status='verified'", [tid]);
+    await q("insert into sfx_domains (tenant_id, hostname, token, status) values ($1,'pending.example.in','tok2','pending') on conflict (hostname) do nothing", [tid]);
+    const get = (p, h = {}) => fetch(stack.apiBase + p, { headers: h });
+    assert((await get('/site/ask-tls?domain=shop.example.in')).status === 200, 'verified domain not allowed a certificate');
+    assert((await get('/site/ask-tls?domain=pending.example.in')).status === 403, 'unverified domain got a certificate');
+    assert((await get('/site/ask-tls?domain=evil.example.org')).status === 403, 'unknown domain got a certificate');
+    assert((await get('/site/custom-check', { 'x-forwarded-host': 'shop.example.in' })).headers.get('x-site-slug') === 'testcafe', 'host check');
+    assert((await get('/site/custom-check', { 'x-forwarded-host': 'pending.example.in' })).status === 404, 'pending host served');
+    assert((await get('/site/custom-check', { 'x-forwarded-host': 'testcafe.auzslab.in' })).status === 404, 'our own address answered as custom');
+    const js = await (await get('/site/custom-tenant.js', { 'x-forwarded-host': 'shop.example.in' })).text(); assert(js === 'window.TENANT_SLUG="testcafe";', js);
+    await new Promise((r) => setTimeout(r, 3500));
+    const pre = await fetch(stack.apiBase + '/rpc/public_sfx_store', { method: 'OPTIONS', headers: { origin: 'https://shop.example.in', 'access-control-request-method': 'POST' } });
+    const allow = pre.headers.get('access-control-allow-origin');
+    const bad = await fetch(stack.apiBase + '/rpc/public_sfx_store', { method: 'OPTIONS', headers: { origin: 'https://evil.example.org', 'access-control-request-method': 'POST' } });
+    assert(allow === 'https://shop.example.in', 'CORS not allowed for the verified store domain: ' + allow);
+    assert(!bad.headers.get('access-control-allow-origin'), 'CORS allowed for a stranger');
+  }, 'critical');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }
