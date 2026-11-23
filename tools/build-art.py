@@ -4,7 +4,7 @@ Usage: python3 tools/build-art.py [page ...]"""
 import re, os, sys, json
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(R, 'tools', 'art-src'); OUT = os.path.join(R, 'site')
-VER = {'a-home': 4, 'a-prod': 4, 'a-demo': 5}
+VER = {'a-home': 4, 'a-prod': 4, 'a-demo': 5, 'a-contact': 3}
 def rd(p): return open(os.path.join(SRC, p + '.html'), encoding='utf-8').read()
 def wr(p, t): open(os.path.join(OUT, p + '.html'), 'w', encoding='utf-8').write(t)
 
@@ -229,21 +229,20 @@ def _():
 @reg('contact')
 def _():
     h = rd('contact')
-    ch = re.search(r'<div class="ct-ch rv">.*?</div>(?=\s*<div class="ct-three)', h, re.S).group(0)
-    three = re.search(r'<div class="ct-three rv">.*?</div></div>(?=\s*<div class="ct-form)', h, re.S)
-    three = three.group(0) if three else re.search(r'<div class="ct-three rv">.*?</span></div></div>', h, re.S).group(0)
-    form = re.search(r'<div class="ct-form mk-sheet rv">.*?</div></div>(?=</section>)', h, re.S).group(0)
-    faq = re.search(r'<section class="ct-faq rv">.*?</section>', h, re.S).group(0)
+    ch = re.search(r'<div class="ct-ch rv">.*?</div>(?=\s*<div class="ct-three)', h, re.S)
+    ch = ch.group(0) if ch else ''
+    faq = re.search(r'<section class="ct-faq rv">.*?</section>', h, re.S)
+    faq = faq.group(0) if faq else ''
     body = '''
 <div class="ac">
 <section class="ac-tablet">
 <div class="ac-notch"></div>
 <aside class="ac-rail"><span class="ac-star">&#10022;</span>%s</aside>
-<div class="ac-main"><span class="ac-mono">CONTACT</span><h1 class="ac-h">Tell us how your business works.</h1>%s</div>
-<aside class="ac-side">%s</aside>
+<div class="ac-main"><span class="ac-mono">CONTACT</span><h1 class="ac-h">How can we help you?</h1><div class="contact-hub" id="ctHub"><noscript><p>Please email us or call the number at the top.</p></noscript></div></div>
+<aside class="ac-side" id="ctPick"></aside>
 </section>
 %s
-</div>''' % (ch, form, three, faq)
+</div><script src="contact-hub.js?v=1" defer></script>''' % (ch, faq)
     put('contact', body, 'a-dark a-contact', 'a-contact')
 
 @reg('download-apps')

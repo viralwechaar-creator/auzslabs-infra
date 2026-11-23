@@ -36,6 +36,7 @@ export const RPC = {
   admin_set_admin_phone: { params: ['p_phone'], auth: true },
   admin_wa_set_tenant: { params: ['p_tenant', 'p_allow_platform'], auth: true },
   admin_open_counts: { params: [], auth: true },
+  submit_contact: { params: ['p'], jsonb: ['p'], auth: false },
   submit_lead: { params: ['p_name', 'p_contact', 'p_business', 'p_message', 'p_niche', 'p_hp'], auth: false },
   submit_job_application: { params: ['p_name', 'p_email', 'p_phone', 'p_note', 'p_hp'], defaults: { p_hp: '' }, auth: false },
   submit_job_application_resume: { params: ['p_id', 'p_filename'], auth: false },
