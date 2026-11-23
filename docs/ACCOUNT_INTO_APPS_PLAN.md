@@ -5,7 +5,8 @@
 - Everything the old `site/account.html` does (profile, billing and plan, staff and roles, notifications, privacy and data, WhatsApp, AI connectors, help) moves into an **Admin tab inside each app**, in that app's own design.
 - **Only the owner sees Admin.** Staff and managers do not, unless the owner approves it.
 - Clients who chose the online store get the new storefront account page (the Codex dashboard design). The old page is removed only when every app has the Admin tab.
-- Decision made by the owner: add the Admin tab to every app, built once as a shared piece, starting with AUZsStyle, AUZsLedger and Salon Console.
+- **Scope update (owner, 2026-11-23): the other apps (AUZsPOS, AUZsPay, AUZsScan, AUZsFinance, AUZsMob) are deleted from the product.** Only AUZsStyle, AUZsLedger and Salon Console remain, plus the online store (storefront). The Admin tab is built once as a shared piece and mounted in those three apps.
+- Repo note: `app/public/mob.html` and some Caddy address entries for removed apps still exist; clean them up separately, with the owner's go-ahead.
 
 ## Facts that shape the build (checked in the repo)
 1. `site/account.html` (1,306 lines) + `ac5.js`, `ac5-views.js`, `ac4.js`, `ac2/ac4/ac5.css` render the panes and call RPCs (`my_dashboard`, `my_profile`, staff/roles RPCs, `wa_*`, `mcp_*`, privacy/DPDP RPCs, `my_subscription`).
@@ -30,6 +31,5 @@
 ## Suggested order of PRs
 1. Migration + `ds/admin-tab.js` shell with owner-only gating and the Profile and Staff panes; mount in AUZsStyle only; pilot on the demo business.
 2. Remaining panes (Billing, Notifications, Privacy, WhatsApp, Connectors, Help).
-3. AUZsLedger/AUZsScan, then Salon Console.
-4. The other apps.
-5. Hub redirect, then the storefront account page, then retire account.html.
+3. AUZsLedger, then Salon Console.
+4. Hub redirect, then the storefront account page, then retire account.html.
