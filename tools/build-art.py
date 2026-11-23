@@ -4,7 +4,7 @@ Usage: python3 tools/build-art.py [page ...]"""
 import re, os, sys, json
 R = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 SRC = os.path.join(R, 'tools', 'art-src'); OUT = os.path.join(R, 'site')
-VER = {'a-home': 4, 'a-prod': 4, 'a-demo': 5, 'a-contact': 5}
+VER = {'a-home': 4, 'a-prod': 4, 'a-demo': 5, 'a-contact': 6}
 def rd(p): return open(os.path.join(SRC, p + '.html'), encoding='utf-8').read()
 def wr(p, t): open(os.path.join(OUT, p + '.html'), 'w', encoding='utf-8').write(t)
 
@@ -242,7 +242,7 @@ def _():
 <aside class="ac-side" id="ctPick"></aside>
 </section>
 %s
-</div><script src="contact-hub.js?v=4" defer></script>''' % (ch, faq)
+</div><script src="contact-hub.js?v=5" defer></script>''' % (ch, faq)
     put('contact', body, 'a-dark a-contact', 'a-contact')
 
 @reg('download-apps')
