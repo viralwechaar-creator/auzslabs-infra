@@ -70,6 +70,7 @@ export function toOrder(o) {
 export async function refreshProducts() { state.products = (await api('sfx_product_list')).map(toProduct); }
 export async function refreshCollections() { state.collections = (await api('sfx_collection_list')).map(toCollection); }
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
+export async function refreshPlan() { state.plan = await api('sfx_status'); }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
 
 async function blocked(title, message) {
@@ -96,6 +97,6 @@ export async function boot(onReady) {
   let ctx;
   try { ctx = await api('sfx_context'); } catch (e) { return blocked('Could not open your storefront', e.message); }
   applyContext(ctx);
-  try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
+  try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders(), refreshPlan()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
   onReady();
 }

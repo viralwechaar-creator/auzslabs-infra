@@ -60,6 +60,7 @@ export const emptyState = () => ({
   products: [],
   collections: [],
   orders: [],
+  plan: { plan_status: 'trial', blocked: false },
   domains: [],
   notifications: [],
   campaigns: [],

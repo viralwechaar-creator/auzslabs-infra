@@ -71,7 +71,7 @@ create index if not exists idx_payments_sfx_tenant on payments (sfx_tenant_id);
 -- every other product already follows -- see this file's own header comment).
 create function sfx_plan_order_prepare()
 returns jsonb language plpgsql stable security definer set search_path = public as $$
-declare tid uuid; price numeric; tname text; slug text;
+declare tid uuid; price numeric; tname text; tslug text;
 begin
   if (me()->>'role') is distinct from 'owner' then
     raise exception 'owner only';
@@ -84,8 +84,8 @@ begin
   if coalesce(price, 0) <= 0 then
     raise exception 'The storefront plan does not have a price set yet. Ask us to reactivate your store instead.' using errcode = 'SF020';
   end if;
-  select name, slug into tname, slug from tenants where id = tid;
-  return jsonb_build_object('tenant_id', tid, 'amount', price, 'name', tname, 'slug', slug);
+  select name, slug into tname, tslug from tenants where id = tid;
+  return jsonb_build_object('tenant_id', tid, 'amount', price, 'name', tname, 'slug', tslug);
 end;
 $$;
 
