@@ -66,7 +66,10 @@ export default async function run({ browser, stack }) {
     await p.goto(stack.url('', '/live-demo.html#ledger')); await p.waitForTimeout(900);
     const getHref = await p.locator('.dm2-feat a:has-text("Get this app")').getAttribute('href');
     assert(getHref && /cart\.html\?add=accounting&lane=basic/.test(getHref), 'AUZsLedger "Get this app" link is wrong: ' + getHref);
-    await p.goto(stack.url('', '/' + getHref)); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(2000);
+    await p.goto(stack.url('', '/' + getHref)); await p.waitForTimeout(500);
+    // cart.html opens for a signed-out visitor (its own link goes to signup.html?next=cart.html); the choice and lane are already stashed in localStorage
+    await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(2000);
+    await p.goto(stack.url('', '/cart.html')); await p.waitForTimeout(800);
     await p.waitForSelector('#pick input[data-k=accounting]', { timeout: 10000 });
     assert(await p.locator('#pick input[data-k=accounting]').isChecked(), 'AUZsLedger was not preselected on cart.html');
     assert(!errs10.some((x) => /JS error/.test(x)), errs10.join(' | ')); await c10.close();
@@ -98,20 +101,19 @@ export default async function run({ browser, stack }) {
     // SalesOS redirect) use the apps' real https://*.auzslab.in addresses -- not reachable from this
     // sandboxed test run, so route them to the local static server exactly as newCtx/stack.attach()
     // already does for https://api.auzslab.in.
+    const hits11 = [];
     await c11.route('https://*.auzslab.in/**', async (route) => {
       const r = route.request(); const u = new URL(r.url()); const sub = u.hostname.replace(/\.auzslab\.in$/, '');
       // api.auzslab.in already has its own handler from newCtx/stack.attach() -- *.auzslab.in would
       // otherwise shadow it (routes added later take priority), breaking every RPC call on this page.
       if (sub === 'api') return route.fallback();
-      try {
-        const resp = await fetch(stack.url(sub, u.pathname + u.search), { method: r.method(), headers: { ...r.headers(), host: sub + '.localhost' }, body: ['GET', 'HEAD'].includes(r.method()) ? undefined : r.postDataBuffer() });
-        const headers = {}; resp.headers.forEach((v, k) => { if (!['content-encoding', 'content-length', 'transfer-encoding'].includes(k)) headers[k] = v; });
-        await route.fulfill({ status: resp.status, headers, body: Buffer.from(await resp.arrayBuffer()) });
-      } catch (e) { await route.abort(); }
+      // the destination app is not part of this check: record where account.html sent the browser and answer with a stub page
+      hits11.push(String(u));
+      await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>app</title>' });
     });
     await p11.goto(stack.url('', '/signup.html')); await p11.waitForTimeout(500); await p11.click('#modeLogin'); await p11.fill('#email', pathAEmail); await p11.fill('#password', PASSWORD); await p11.click('#submitBtn');
-    await p11.waitForURL((u) => /auzsledger\.auzslab\.in/.test(String(u)) || /accounts\.html/.test(String(u)), { timeout: 10000 }).catch(() => {});
-    assert(/auzsledger\.auzslab\.in|accounts\.html/.test(p11.url()), 'did not redirect straight into AUZsLedger; stayed on ' + p11.url());
+    await p11.waitForURL((u) => /auzsledger\.auzslab\.in/.test(String(u)), { timeout: 10000 }).catch(() => {});
+        assert(hits11.some((h) => /auzsledger\.auzslab\.in\/accounts\.html/.test(h)), 'did not redirect straight into AUZsLedger; went to ' + (hits11.join(', ') || p11.url()));
     await c11.close();
   }, 'critical');
   await s.check('Account page for a customer without a business (but who already made some kind of choice) shows the profile form and a cart link', async () => {
