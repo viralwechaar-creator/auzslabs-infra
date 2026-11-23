@@ -128,5 +128,26 @@ export default async function run({ browser, stack }) {
     assert(allow === 'https://shop.example.in', 'CORS not allowed for the verified store domain: ' + allow);
     assert(!bad.headers.get('access-control-allow-origin'), 'CORS allowed for a stranger');
   }, 'critical');
+  await s.check('Main domain: the store address forwards; refund goes through the store\'s own Razorpay', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("update sfx_domains set is_primary = true where hostname='shop.example.in' and tenant_id=$1", [tid]);
+    const base = new URL(stack.apiBase).host;
+    const r = await fetch(stack.apiBase + '/site/check', { headers: { 'x-forwarded-host': 'testcafe.auzslab.in', 'x-forwarded-uri': '/store.html?p=1' }, redirect: 'manual' });
+    assert(r.status === 302 && r.headers.get('location') === 'https://shop.example.in/store.html?p=1', 'no forward: ' + r.status + ' ' + r.headers.get('location'));
+    const dns = await (await fetch(stack.apiBase + '/site/dns-target?slug=testcafe')).json(); assert(/^testcafe\./.test(dns.cname), JSON.stringify(dns));
+    await q("update sfx_domains set is_primary = false where tenant_id=$1", [tid]);
+    // refund through the store's own Razorpay keys
+    await q("insert into sfx_store_secrets (tenant_id, rzp_key_id, rzp_secret) values ($1,'rzp_store_key','store_secret') on conflict (tenant_id) do update set rzp_key_id='rzp_store_key'", [tid]);
+    const pid = (await q("insert into sfx_products (tenant_id, name, status, price) values ($1,'Refund Tee','active',200) returning id", [tid]))[0].id;
+    const vid = (await q("insert into sfx_variants (tenant_id, product_id, label, price, stock) values ($1,$2,'Default',200,3) returning id", [tid, pid]))[0].id;
+    const oid = (await q("insert into sfx_orders (tenant_id, number, token, status, payment_method, payment_status, rzp_payment_id, customer, lines, subtotal, total) values ($1,'SF-R1','tokr1','fulfilled','online','paid','pay_REF1','{\"name\":\"R\",\"phone\":\"9000000009\"}', $2::jsonb, 200, 200) returning id", [tid, JSON.stringify([{ variantId: vid, name: 'Refund Tee', label: 'Default', price: 200, qty: 1 }])]))[0].id;
+    const ret = (await q("insert into sfx_returns (tenant_id, order_id, lines, status) values ($1,$2,$3::jsonb,'received') returning id", [tid, oid, JSON.stringify([{ variantId: vid, name: 'Refund Tee', qty: 1, price: 200 }])]))[0].id;
+    const tok = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token;
+    const out = await fetch(stack.apiBase + '/payments/sfx/refund/start', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ returnId: ret, amount: 200 }) });
+    const body = await out.json(); assert(out.ok && body.rzpRefundId, JSON.stringify(body));
+    const row = (await q("select status, rzp_refund_id, refund_amount::float a from sfx_returns where id=$1", [ret]))[0]; assert(row.status === 'refunded' && row.rzp_refund_id === body.rzpRefundId && row.a === 200, JSON.stringify(row));
+    const sent = stack.rzp.refunds.find((x) => /pay_REF1/.test(x.url)); assert(sent && sent.amount === 20000 && Buffer.from(sent.auth.replace('Basic ', ''), 'base64').toString().startsWith('rzp_store_key:'), JSON.stringify(sent));
+    const again = await fetch(stack.apiBase + '/payments/sfx/refund/start', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ returnId: ret, amount: 200 }) }); assert(again.status === 400, 'second refund not refused');
+  }, 'critical');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }

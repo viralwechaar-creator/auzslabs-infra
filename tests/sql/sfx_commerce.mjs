@@ -216,4 +216,32 @@ assert((await admin.query("select sfx_domain_hosts() h")).rows[0].h.includes('sh
 r = await as(B.u, `select sfx_domain_remove($1) r`, [dom]); assert(await site('shop.example.com') === 'shopa'); pass("B cannot disconnect A's domain");
 r = await as(staff.u, `select sfx_domain_remove($1) r`, [dom]); assert(r.error && await site('shop.example.com') === 'shopa'); pass('role without manage cannot disconnect');
 r = await as(A.u, `select sfx_domain_remove($1) r`, [dom]); assert(!r.error && await site('shop.example.com') === null); pass('owner can disconnect; the domain stops serving');
+
+// ---- card refunds + primary domain (db/382)
+await admin.query("insert into sfx_store_secrets (tenant_id, rzp_key_id, rzp_secret) values ($1,'rzp_test_k','sec') on conflict (tenant_id) do update set rzp_key_id='rzp_test_k'", [A.t]);
+await as(A.u, `select sfx_stock_adjust($1, 0, 50) r`, [vid]);
+const oRef = await place(2, '9999900071'); const oid2 = (await admin.query("select id from sfx_orders where number=$1", [oRef.r.number])).rows[0].id; await admin.query("update sfx_orders set status='fulfilled' where id=$1", [oid2]);
+const rets = (await as(A.u, `select sfx_return_list() r`)).r; const refunded = rets.find((x) => x.status === 'refunded');
+r = await as(A.u, `select sfx_return_create($1, '[{"variantId":"${vid}","qty":1}]'::jsonb, 'card refund') r`, [oid2]); assert(!r.error, r.error); const rr = r.r.id;
+r = await as(A.u, `select sfx_refund_prepare($1, 100) r`, [rr]); assert(/received/.test(r.error), JSON.stringify(r)); pass('refund needs the goods received first');
+await as(A.u, `select sfx_return_set($1,'approved') r`, [rr]); await as(A.u, `select sfx_return_set($1,'received') r`, [rr]);
+r = await as(A.u, `select sfx_refund_prepare($1, 100) r`, [rr]); assert(/not paid online/.test(r.error), JSON.stringify(r)); pass('a cash-on-delivery order has nothing for Razorpay to refund');
+await admin.query("update sfx_orders set payment_method='online', payment_status='paid', rzp_payment_id='pay_X1' where id=$1", [oid2]);
+r = await as(A.u, `select sfx_refund_prepare($1, 99999) r`, [rr]); assert(/up to/.test(r.error)); pass('refund cannot exceed the returned value');
+r = await as(B.u, `select sfx_refund_prepare($1, 100) r`, [rr]); assert(r.error); pass("B cannot prepare A's refund");
+r = await as(staff.u, `select sfx_refund_prepare($1, 100) r`, [rr]); assert(r.error); pass('role without manage cannot prepare a refund');
+r = await as(A.u, `select sfx_refund_prepare($1, 100) r`, [rr]); assert(r.r.key === 'rzp_test_k' && r.r.paymentId === 'pay_X1' && Number(r.r.amount) === 100); pass("prepare returns the store's own keys and the original payment");
+r = await as(A.u, `select sfx_refund_complete($1, 100, 'rfnd_1') r`, [rr]); assert(!r.error && r.r.status === 'refunded' && r.r.rzpRefundId === 'rfnd_1'); pass('completing the refund records the Razorpay refund id');
+r = await as(A.u, `select sfx_refund_prepare($1, 100) r`, [rr]); assert(r.error); pass('a refunded return cannot be refunded again');
+const d1 = (await as(A.u, `select sfx_domain_connect('www.primary.in') r`)).r.id;
+r = await as(A.u, `select sfx_domain_set_primary($1, true) r`, [d1]); assert(/Verify the domain/.test(r.error)); pass('only a verified domain can be the main address');
+await admin.query("update sfx_domains set status='verified' where id=$1", [d1]);
+r = await as(A.u, `select sfx_domain_set_primary($1, true) r`, [d1]); assert(!r.error);
+assert((await admin.query("select sfx_domain_primary('shopa') h")).rows[0].h === 'www.primary.in'); pass('the store address forwards to the main domain');
+r = await as(B.u, `select sfx_domain_set_primary($1, false) r`, [d1]); assert(r.error); pass("B cannot change A's main domain");
+await admin.query("update sfx_stores set published=false where tenant_id=$1", [A.t]);
+assert((await admin.query("select sfx_domain_primary('shopa') h")).rows[0].h === null); await admin.query("update sfx_stores set published=true where tenant_id=$1", [A.t]); pass('no forwarding while the store is unpublished');
+const d2 = (await as(A.u, `select sfx_domain_connect('shop.second.in') r`)).r.id; await admin.query("update sfx_domains set status='verified' where id=$1", [d2]);
+await as(A.u, `select sfx_domain_set_primary($1, true) r`, [d2]);
+assert((await admin.query("select count(*)::int n from sfx_domains where tenant_id=$1 and is_primary", [A.t])).rows[0].n === 1); pass('only one domain is the main one at a time');
 console.log('ALL', ok, 'passed'); await admin.end(); process.exit(0);

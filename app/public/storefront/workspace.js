@@ -462,6 +462,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_return_create', { p_order: rid, p_lines: lines, p_reason: data.reason }); await refreshReturns(); save('Return created.'); close(); location.hash = '/returns';
       } else if (key === 'return-refund') {
         await api('sfx_return_set', { p_id: rid, p_status: 'refunded', p_amount: Number(data.amount) }); await refreshReturns(); save('Refund recorded.'); close(); rerender(true);
+      } else if (key === 'return-rzp-refund') {
+        await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
       } else if (key === 'checkout-settings') {
         await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);
@@ -504,7 +506,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'draft-delete') return withBusy(async () => { if (!confirm('Delete this draft?')) return; await api('sfx_draft_delete', { p_id: key }); await refreshDrafts(); save('Draft deleted.'); rerender(true); });
   if (a === 'return-new') return dialog('Start a return', returnForm(state.orders.find((o) => o.id === key)));
   if (a === 'return-set') {
-    if (detail === 'refunded') { const r = state.returns.find((x) => x.id === key); return dialog('Record refund', editForm('return-refund', key, '<p class="compact-copy wide">Returned items are worth ' + money(r.value) + '. Refund the customer yourself (cash, UPI or your payment provider), then record it here.</p>' + input('Amount refunded (Rs)', 'amount', r.value, 'number', 'required min="0" step="0.01"'), 'Record refund')); }
+    if (detail === 'refunded') { const r = state.returns.find((x) => x.id === key);
+      if (r.online) return dialog('Refund through Razorpay', editForm('return-rzp-refund', key, '<p class="compact-copy wide">This order was paid online. The refund goes back to the customer\'s card or UPI through your own Razorpay account. Returned items are worth ' + money(r.value) + '.</p>' + input('Amount to refund (Rs)', 'amount', r.value, 'number', 'required min="1" step="0.01"'), 'Refund through Razorpay'));
+      return dialog('Record refund', editForm('return-refund', key, '<p class="compact-copy wide">Returned items are worth ' + money(r.value) + '. Refund the customer yourself (cash, UPI or your payment provider), then record it here.</p>' + input('Amount refunded (Rs)', 'amount', r.value, 'number', 'required min="0" step="0.01"'), 'Record refund')); }
     return withBusy(async () => { await api('sfx_return_set', { p_id: key, p_status: detail }); await refreshReturns(); save('Return updated.'); rerender(true); });
   }
   if (a === 'abandon-toggle') return withBusy(async () => { await api('sfx_checkout_settings_save', { p: { shipping: state.checkout.shipping, abandonCapture: !state.checkout.abandonCapture } }); await refreshCheckout(); save('Saved.'); rerender(true); });

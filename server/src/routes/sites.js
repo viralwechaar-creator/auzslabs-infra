@@ -71,6 +71,16 @@ export async function refreshCustomHosts() {
 }
 if (!globalThis.__sfxHostsTimer) { globalThis.__sfxHostsTimer = setInterval(refreshCustomHosts, 60000); globalThis.__sfxHostsTimer.unref?.(); setTimeout(refreshCustomHosts, 3000).unref?.(); }
 
+// the main custom domain a store's own .auzslab.in address forwards to (db/382), cached 30 s
+const primaryCache = new Map();
+async function primaryFor(slug) {
+  const hit = primaryCache.get(slug); if (hit && Date.now() - hit.at < 30000) return hit.v;
+  let v = '';
+  try { const { rows } = await pool.query('select sfx_domain_primary($1::text) as h', [slug]); v = rows[0]?.h || ''; } catch (e) { v = ''; }
+  if (primaryCache.size > 2000) primaryCache.clear();
+  primaryCache.set(slug, { at: Date.now(), v });
+  return v;
+}
 async function inLegacyWindow() {
   if (Date.now() - legacy.at > 60000) {
     const { rows } = await pool.query("select value from platform_flags where key = 'legacy_shop_addr_until'");
@@ -155,6 +165,12 @@ export async function handle(ctx) {
     if (!slug) return notFound(res);
     res.writeHead(200, { 'X-Site-Slug': slug, 'Cache-Control': 'no-store' }); res.end(); return;
   }
+  // what to point a domain at (the store's own address for a CNAME; the server IP for a bare domain's A record, when configured)
+  if (url.pathname === '/site/dns-target' && req.method === 'GET') {
+    const slug = String(url.searchParams.get('slug') || '').toLowerCase();
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) return reply(400, { error: 'bad address' });
+    return reply(200, { cname: slug + '.' + base(), ip: process.env.SERVER_IPV4 || '' });
+  }
   // /tenant.js on a store's own domain: tells the store page which business it is (the address itself does not say)
   if (url.pathname === '/site/custom-tenant.js' && req.method === 'GET') {
     const host = String(req.headers['x-forwarded-host'] || '').split(',')[0].toLowerCase().replace(/:\d+$/, '');
@@ -169,6 +185,8 @@ export async function handle(ctx) {
     const path = uri.split('?')[0];
     const slug = host.endsWith('.' + base()) ? host.slice(0, -(base().length + 1)) : '';
     if (!slug || slug.includes('.')) return notFound(res);
+    const mainHost = await primaryFor(slug);   // the store has a main custom domain: forward there, same path
+    if (mainHost && (path === '/' || /^\/(store|stybill)\.html$|^\/store\//.test(path) || /^\/b\//.test(path))) return redirect(res, 'https://' + mainHost + uri);
     let a;
     try { a = await access(slug); }
     catch (e) {
