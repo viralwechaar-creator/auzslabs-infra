@@ -163,7 +163,7 @@
     # like AUZsStyle's online store already is (site_access()'s own comment explains why no change was needed).
     @a_shop host auzsshop.{$DOMAIN}
     handle @a_shop {
-        import one_app /storefront.html /storefront.html /storefront/*
+        import one_app /storefront.html /storefront.html /storefront/* /theme-dev.html
     }
     # the hub: also shows a customer's bill (their link is auzslab.in/b/<code>, which forwards here).
     # start.html (the old sign-in hub) is gone -- the bare address and that path now both send people
