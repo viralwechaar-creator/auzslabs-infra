@@ -362,14 +362,19 @@ document.getElementById('pwEyeToggle').onclick = () => {
 
 // ---- after any successful sign-in, by whatever method ----
 // "Sign in to send your request": the cart link here with ?next=<page> and we bring the person back after sign-in
-const NEXT_PAGES = ['cart.html'];
+const NEXT_PAGES = ['cart.html', 'choose-path.html'];
 (function () { try { const n = new URLSearchParams(location.search).get('next'); if (NEXT_PAGES.includes(n)) sessionStorage.setItem('auz.next', n); } catch (e) {} })();
 function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (NEXT_PAGES.includes(n)) { sessionStorage.removeItem('auz.next'); window.location.href = n; return true; } } catch (e) {} return false; }
 async function afterSignIn(user) {
   if (goNext()) return;
   if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
   if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
-  window.location.href = 'index.html';
+  // Two-path onboarding gate: a brand-new signup with no business yet must
+  // choose a path before reaching any dashboard. account.html itself
+  // (bootProspect) sends them on to choose-path.html unless they already
+  // have a request in flight, so this goes through account.html now
+  // instead of straight to the public homepage.
+  window.location.href = 'account.html';
 }
 
 // DPDP: signing up needs a clear yes to the privacy notice (and an optional, separate yes to update emails).
@@ -524,8 +529,9 @@ async function checkSession() {
       window.location.href = 'admin.html';
       return;
     }
-    // Just signed in (Google hand-off): a customer with no business yet starts at the homepage, not the cart.
-    try { if (sessionStorage.getItem('auz.justSignedIn') === '1') { sessionStorage.removeItem('auz.justSignedIn'); window.location.href = 'index.html'; return; } } catch (e) {}
+    // Just signed in (Google hand-off): a customer with no business yet goes through account.html, which
+    // sends a brand-new signup on to the two-path chooser (choose-path.html) itself.
+    try { if (sessionStorage.getItem('auz.justSignedIn') === '1') { sessionStorage.removeItem('auz.justSignedIn'); window.location.href = 'account.html'; return; } } catch (e) {}
     document.querySelector('.auth-seg').style.display = 'none';
     document.getElementById('authSection').style.display = 'none';
     document.getElementById('pageTitle').textContent = 'You\'re in.';
