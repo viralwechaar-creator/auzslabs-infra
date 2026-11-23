@@ -120,6 +120,17 @@ export async function cancelRazorpayAutorenew({ subId }) {
   try { await razorpayApi(`subscriptions/${subId}/cancel`, { cancel_at_cycle_end: 0 }); } catch { /* best effort: the row below still records the owner's choice */ }
 }
 
+// Path B (two-path onboarding gate, db/372): reactivating a paused/trial
+// storefront is NOT wired to an automatic Razorpay charge. db/260
+// (quote_only_no_prices) deliberately removed every fixed online price
+// platform-wide ("AUZslab shows no prices to anyone") -- an auto-priced
+// checkout here would quietly reintroduce exactly that, for one product.
+// Until the owner decides whether the storefront plan is a deliberate
+// exception to that policy, reactivation goes through the same manual
+// admin-approval path Path A itself already relies on
+// (request_storefront_reactivation + approve_addon_request, db/372) --
+// see this change's PR description for the open question.
+
 // Raw-body HMAC-SHA256 verification against Razorpay's published
 // algorithm (https://razorpay.com/docs/webhooks/validate-test/) --
 // the signature MUST be computed over the exact raw bytes Razorpay

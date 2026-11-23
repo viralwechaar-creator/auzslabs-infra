@@ -429,6 +429,22 @@ function bindSignOut() {
 }
 
 async function bootProspect(session) {
+  // Two-path onboarding gate: a signed-in person with no business yet and
+  // no request of any kind already in flight has not made the mandatory
+  // choice between "AUZslab apps" (Path A) and "Build a complete online
+  // store" (Path B) -- send them there instead of this lighter prospect
+  // view, so no brand-new signup can land on any dashboard first. Someone
+  // who already has a pending/declined signup_request, OR an older
+  // client_orders request from before this gate existed, has already made
+  // some kind of choice -- they keep seeing this page as before.
+  try {
+    const [sr, co] = await Promise.all([
+      sb.from('signup_requests').select('id').limit(1),
+      sb.rpc('my_client_orders').catch(() => ({ data: null })),
+    ]);
+    const hasRequest = (sr.data && sr.data.length > 0) || (co.data && co.data.length > 0);
+    if (!hasRequest) { window.location.href = 'choose-path.html'; return; }
+  } catch (e) { /* if the check itself fails, fall through to the normal prospect view rather than get stuck */ }
   bindSignOut();
   document.querySelectorAll('.tenant-only').forEach((e) => { e.style.display = 'none'; });
   $('#pageTitle').textContent = 'Welcome';

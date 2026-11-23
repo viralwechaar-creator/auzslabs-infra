@@ -10,7 +10,7 @@
   var APPDEF = [['pos', 'AUZsPOS', 'Billing, tables, kitchen, QR orders', 'till', 'lavender'], ['payroll', 'AUZsPay', 'Attendance, leave and payslips', 'users', 'mint'], ['accounting', 'AUZsLedger', 'Accounts, GST and banking', 'book', 'peach'], ['mobile', 'AUZsMob', 'Phone shop sales and repairs', 'phone', 'sky'], ['style', 'AUZsStyle', 'Clothing and footwear shop', 'tag', 'lavender'], ['scan', 'AUZsScan', 'Scan to bill', 'scan', 'mint'], ['salon', 'AUZslab Salon', 'Booking, billing, website', 'tag', 'peach'], ['finance', 'AUZsFinance', 'Money in, out and dues', 'book', 'sky']];
   var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], REQS = [], CART = [], PROFILE = { products: [] }, FEAT = {};
   window.AC5 = { ACT: {}, AFTER: {}, ENTER: {}, OWN: {}, VIEWS: null };
-  var S = { mode: 'owner', view: 'home', more: false, nf: 'all' };
+  var S = { mode: 'owner', view: 'home', more: false, nf: 'all', lane: 'full' };
   var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors', 'clockin'];
   var SLOT = { profile: 'profile', security: 'account', services: 'services', staff: 'staff', roles: 'roles', notifications: 'notifications', privacy: 'privacy', connectors: 'connectors', clockin: 'clockin' };
   function profPct() { var P = g('PROFILE') || {}, k = ['name', 'phone', 'contact_email', 'business_name', 'business_type', 'city', 'address'], d = k.filter(function (x) { return P[x]; }).length; return Math.round(d / k.length * 100); }
@@ -18,6 +18,12 @@
     var D = g('DASH'), P = g('PROFILE') || {}, A = g('IS_ADMIN');
     S.mode = D ? (D.my_role === 'owner' ? 'owner' : 'manager') : 'customer';
     var t = (D && D.tenant) || {};
+    // Two-path onboarding gate: a Path-A ("AUZslab apps") approval is tagged
+    // onboarding_path='basic' server-side (db/372, my_dashboard) -- this is
+    // the real, server-checked flag that trims the sidebar below, not a
+    // client-side guess. Every pre-existing tenant defaults to 'full' and is
+    // completely unaffected.
+    S.lane = t.onboarding_path === 'basic' ? 'basic' : 'full';
     BIZ = { name: t.name || '', slug: t.slug || '', plan: t.plan || '', status: t.status || 'active', renewal: t.renewal_date ? new Date(t.renewal_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not set', since: t.created_at ? new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : '' };
     ME = { name: P.name || (D && D.my_email) || 'Welcome', email: (D && D.my_email) || g('LOGIN_EMAIL') || '', phone: P.phone || '' };
     var f = (D && D.features) || {}, en = (D && D.enabled_features) || {}, links = {};
@@ -77,8 +83,26 @@
     { id: 'security', t: 'Account settings', ic: 'shield', g: 'Account', need: ['owner', 'manager', 'admin'], biz: true },
     { id: 'privacy', t: 'Privacy and my data', ic: 'lock', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] },
     { id: 'connectors', t: 'AI connectors', ic: 'connect', g: 'Account', need: ['owner'], biz: true },
-    { id: 'help', t: 'Help and support', ic: 'help', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] }];
-  var can = function (sec) { return sec.need.indexOf(S.mode) > -1 && (!sec.feat || FEAT[sec.feat]); };
+    { id: 'help', t: 'Help and support', ic: 'help', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] },
+    // ---- Basic dashboard "Explore" group (Path A, db/372) -- none of these three exist anywhere
+    // in this codebase yet (confirmed: no custom-domain feature, no builder.html, nothing beyond
+    // AUZsStyle/Salon's own built-in storefront), so each one is a real page that says plainly it
+    // is not available yet, instead of a button that looks like it works and does nothing. "Open
+    // an app" (the 'apps' section above) IS already real and doubles as the apps-redirect entry
+    // the owner asked for -- it just also shows in this group for a basic-lane tenant.
+    { id: 'explore_templates', t: 'Website templates', ic: 'grid', g: 'Explore', need: ['owner', 'manager'], explore: true },
+    { id: 'explore_domain', t: 'Connect your domain', ic: 'connect', g: 'Explore', need: ['owner', 'manager'], explore: true },
+    { id: 'explore_customize', t: 'Customize your website', ic: 'edit', g: 'Explore', need: ['owner', 'manager'], explore: true }];
+  // Basic-lane sidebar/tabs: Business profile, Billing & plan (renewal/status), Staff, Account
+  // settings, the Explore group, and Help -- exactly the trimmed set the owner asked for. 'apps'
+  // ("Open an app") is kept too, both as its own Workspace entry and as the Explore group's
+  // real apps-redirect page.
+  var BASIC_IDS = ['home', 'profile', 'cart', 'staff', 'security', 'apps', 'help'];
+  var can = function (sec) {
+    if (sec.need.indexOf(S.mode) > -1 === false || (sec.feat && !FEAT[sec.feat])) return false;
+    if (S.lane === 'basic') return sec.d || sec.explore || BASIC_IDS.indexOf(sec.id) > -1;
+    return !sec.explore; // the placeholder Explore entries only ever show on the basic lane
+  };
   var isOwner = function () { return S.mode === 'owner'; };
   var hasBiz = function () { return S.mode !== 'customer'; };
   var unread = function () { return NOTIFS.filter(function (n) { return !n.read; }).length; };
@@ -105,8 +129,8 @@
     var parts = innerHTML.split(/(?=<p class="ng-h">)/).filter(Boolean);
     return parts.map(function (p) { return '<div class="ng">' + p + '</div>'; }).join('');
   }
-  var TABS_BIZ = ['profile', 'services', 'notifications'], TABS_CUST = ['profile', 'cart', 'privacy'];
-  function tabIds() { return hasBiz() ? TABS_BIZ : TABS_CUST; }
+  var TABS_BIZ = ['profile', 'services', 'notifications'], TABS_CUST = ['profile', 'cart', 'privacy'], TABS_BASIC = ['profile', 'cart', 'staff'];
+  function tabIds() { return S.lane === 'basic' ? TABS_BASIC : (hasBiz() ? TABS_BIZ : TABS_CUST); }
   function rowBtn(s) { return '<button type="button" data-go="' + s.id + '"' + (S.view === s.id ? ' aria-current="true"' : '') + '>' + ic(s.ic) + '<span class="t">' + esc(s.t) + '</span>' + (s.badge && unread() ? '<span class="badge">' + unread() + '</span>' : '') + '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>'; }
   function restList() { return SECTIONS.filter(function (x) { return !x.d && can(x) && tabIds().indexOf(x.id) < 0; }); }
   function tabBtn(id, label, icn, badge) { var on = S.view === id; return '<button class="tb' + (on ? ' on' : '') + '" data-go="' + id + '" aria-label="' + esc(label) + '">' + ic(icn, 'tbi') + '<span>' + esc(label) + '</span>' + (badge ? '<i class="tbg">' + badge + '</i>' : '') + '</button>'; }
@@ -141,7 +165,7 @@
     var on = apps.filter(function (a) { return ENABLED[a.k] !== false; }).length;
     var banner = biz ?
       '<div class="b-main2"><div class="b-lab"><span></span> YOUR CLIENT WORKSPACE</div><h2>Everything your business needs,<br><em>in one place.</em></h2><p>Manage your services, stay on top of renewals and reach your support team.</p>' +
-      '<div class="b-acts"><button class="btn pri" data-go="apps">Open an app</button><button class="btn" data-go="services">Services</button></div></div>' +
+      '<div class="b-acts"><button class="btn pri" data-go="apps">Open an app</button>' + (S.lane === 'basic' ? '<button class="btn" data-go="profile">Business details</button>' : '<button class="btn" data-go="services">Services</button>') + '</div></div>' +
       '<div class="b-side"><div class="b-symbol">' + ic('building') + '</div><span>CLIENT SINCE</span><strong>' + (BIZ.since ? esc(BIZ.since) : '&mdash;') + '</strong></div>' +
       bannerArt(on, apps.length, STAFF.length) :
       '<div class="b-main2"><div class="b-lab"><span></span> YOUR AUZSLAB ACCOUNT</div><h2>You have an account,<br><em>no business yet.</em></h2><p>Fill in your profile, add what you need to the cart and send a request. We reply with a quote.</p>' +
@@ -159,7 +183,7 @@
     var html = '<section class="view-home">' +
       '<div class="ph"><div><span class="bl">' + (biz ? esc(BIZ.since ? 'MEMBER SINCE ' + BIZ.since.toUpperCase() : 'YOUR ACCOUNT') : 'YOUR ACCOUNT') + '</span><h1>' + (biz ? 'Good to see you, ' + esc((ME.name || 'there').split(' ')[0]) + '.' : 'Welcome, ' + esc((ME.name || 'there').split(' ')[0]) + '.') + '</h1><p>Here&rsquo;s what&rsquo;s happening with your account today.</p></div><button class="btn pri" data-go="help">' + ic('arrow') + ' Contact your team</button></div>' +
       '<div class="banner">' + banner + '</div>' +
-      '<div class="shead"><div><h2>Your account at a glance</h2><p>A quick overview of your active services and account.</p></div>' + (biz ? '<button class="lnk" data-go="services">View all services &rarr;</button>' : '') + '</div>' +
+      '<div class="shead"><div><h2>Your account at a glance</h2><p>A quick overview of your active services and account.</p></div>' + (biz && S.lane !== 'basic' ? '<button class="lnk" data-go="services">View all services &rarr;</button>' : '') + '</div>' +
       '<div class="sgrid">' + stats + '</div>' +
       '<div class="cgrid">' + mainPanel(biz, apps) + nextPanel(biz) + '</div>' +
       '<div class="cgrid lgrid">' + noticesPanel(biz) + detailsPanel(biz) + '</div>' +
@@ -182,9 +206,10 @@
       var o = ENABLED[a.k] !== false;
       return '<div class="srow"><div class="sic ' + a.tone + '">' + ic(a.ic) + '</div><div class="sinfo"><strong>' + esc(a.n) + '</strong><span>' + esc(a.d) + '</span></div><div class="srenew"><small>Renewal date</small><strong>' + (BIZ.renewal === 'Not set' ? '&mdash;' : esc(BIZ.renewal)) + '</strong></div><span class="pill ' + (o ? 'ok' : 'warn') + '"><i></i>' + (o ? 'Active' : 'Off') + '</span><svg class="schev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></div>';
     }).join('') : '';
-    return '<section class="panel services-panel"><div class="phead"><div><h3>Your services</h3><p>What&rsquo;s switched on for this business.</p></div><a class="rlink" data-go="services" href="#">' + ic('arrow') + '</a></div>' +
+    var basic = S.lane === 'basic';
+    return '<section class="panel services-panel"><div class="phead"><div><h3>Your services</h3><p>What&rsquo;s switched on for this business.</p></div>' + (basic ? '' : '<a class="rlink" data-go="services" href="#">' + ic('arrow') + '</a>') + '</div>' +
       (rows ? '<div class="slist">' + rows + '</div>' : '<div class="empty"><b>Nothing switched on yet.</b>Add a service and we will set it up.</div>') +
-      '<button class="pflink" data-go="services">Manage services &rarr;</button></section>';
+      (basic ? '<button class="pflink" data-go="apps">Open an app &rarr;</button>' : '<button class="pflink" data-go="services">Manage services &rarr;</button>') + '</section>';
   }
   function nextPanel(biz) {
     var upc = biz ? '<div class="upc"><div class="udate"><span>' + (BIZ.renewal || '').slice(3, 6).toUpperCase() + '</span><strong>' + (BIZ.renewal || '').slice(0, 2) + '</strong></div><div><strong>' + esc(BIZ.plan || 'Your plan') + '</strong><p>Plan renewal</p></div></div>' : '';
@@ -248,6 +273,16 @@
       '</div><div class="savebar" style="margin-top:14px"><button class="btn pri" data-act="help">Report a problem</button></div>';
   };
   var ringSVG = function (v, sz) { return '<svg class="rg" viewBox="0 0 36 36" width="' + sz + '" height="' + sz + '" aria-hidden="true"><circle class="trk" cx="18" cy="18" r="16" pathLength="100"/><circle class="arc" cx="18" cy="18" r="16" pathLength="100" style="--v:' + v + '"/></svg>'; };
+  // Basic dashboard "Explore" placeholders (db/372) -- each says plainly it is not switched on yet,
+  // per the hard rule that nothing visible is ever a dead no-op button.
+  var COMING = { explore_templates: ['Website templates', 'Pick a look for your website.'], explore_domain: ['Connect your domain', 'Use your own domain name (e.g. www.yourbusiness.com) instead of a auzslab.in address.'], explore_customize: ['Customize your website', 'Edit your website’s pages, colours and text yourself.'] };
+  Object.keys(COMING).forEach(function (id) {
+    VIEWS[id] = function () {
+      return head(COMING[id][0], COMING[id][1]) +
+        '<section class="panel"><div class="phead"><div><h3>Coming soon</h3><p>This is not switched on for your account yet -- talk to us and we will tell you when it is ready.</p></div></div>' +
+        '<div class="savebar"><button class="btn pri" data-go="help">Talk to us &rarr;</button></div></section>';
+    };
+  });
   Object.assign(AC5, { g: g, esc: esc, ic: ic, head: head, F: F, inp: inp, sel: sel, ringSVG: ringSVG, toast: toast, go: go, S: S, $: function (q) { return $(q); }, $$: function (q) { return $$(q); }, render: function () { render(); }, data: function () { return { PROFILE: g('PROFILE') || {}, DASH: g('DASH'), ME: ME, CART: CART, ALL_APPS: ALL_APPS }; }, set: function (n, v) { window.__v = v; (0, eval)(n + '=window.__v'); }, can: can, hasBiz: hasBiz, isOwner: isOwner });
 
   /* ---------- draw ---------- */
