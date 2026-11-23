@@ -12,6 +12,23 @@ import { signLicence, verifyLicence, publicFromPrivate, PRODUCTS } from '../lice
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
 export async function handle(ctx) {
   const { req, res, url, user, ip, meta, reply, origin } = ctx;
+  // ---- admin: open a business's apps as its owner (limited 8 h session, audit-logged) ----
+  if (url.pathname === '/admin/login-as' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'unauthorized');
+    if (rateLimited(`loginas:${user.id}`, 60, 60 * 60_000)) throw new HttpError(429, 'too many requests, try again later');
+    const body = await readJsonBody(req);
+    if (!/^[0-9a-f-]{36}$/i.test(String(body.tenant_id || ''))) throw new HttpError(400, 'tenant_id is required');
+    let ctxRow;
+    try {
+      const { rows } = await withAuth(user.id, (client) => client.query('select admin_login_as_context($1::uuid) as r', [body.tenant_id]));
+      ctxRow = rows[0] && rows[0].r;
+    } catch (e) {
+      if (/not authorized/i.test(e.message)) throw new HttpError(403, 'forbidden -- not a platform admin');
+      throw new HttpError(400, e.message);
+    }
+    const token = await signToken(ctxRow.user, meta, { limited: true });
+    return reply(200, { access_token: token, user: ctxRow.user, slug: ctxRow.slug, name: ctxRow.name, features: ctxRow.features });
+  }
   // ---- admin: provision-owner (was a Supabase Edge Function) ----
   if (url.pathname === '/admin/provision-owner' && req.method === 'POST') {
     if (!user) throw new HttpError(401, 'unauthorized');
