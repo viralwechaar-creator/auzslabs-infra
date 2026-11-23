@@ -18,7 +18,7 @@ function parseHash() {
 }
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 const allowed = (def) => !!def && (!def.perm || (typeof def.perm === 'function' ? def.perm() : can(def.perm)));
-const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['gst', 'GST', 'tag'], ['intel', 'Buying intelligence', 'bolt'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'cash'], ['drawer', 'Cash drawer', 'cash'], ['expenses', 'Expenses', 'book'], ['store', 'Online store', 'globe'], ['ai', 'AI connector', 'swap'], ['settings', 'Settings', 'gear']];
+const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['gst', 'GST', 'tag'], ['intel', 'Buying intelligence', 'bolt'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'cash'], ['drawer', 'Cash drawer', 'cash'], ['expenses', 'Expenses', 'book'], ['store', 'Online store', 'globe'], ['ai', 'AI connector', 'swap'], ['admin', 'Admin', 'user'], ['settings', 'Settings', 'gear']];
 const capOff = (k) => !!(S.ctx && S.ctx.caps && S.ctx.caps[k] === false);
 const navList = () => NAV.filter(([id]) => allowed(PAGES[id]) && !(id === 'store' && capOff('online_store')));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
@@ -196,6 +196,7 @@ async function boot() {
   }
   ctx = overlayRead('sty_context', {}, clone(ctx));   // settings/branches changed with no connection show at once
   S.dash = dash; S.ctx = ctx; S.perms = ctx.perms || {};
+  try { const st = await api('admin_tab_status'); S.adminOk = !!(st && st.allowed); S.adminOwner = !!(st && st.owner); } catch (e) { S.adminOk = false; S.adminOwner = false; }
   restoreQueue();
   S.user = { email: dash.my_email, role: dash.my_role, id: session.user.id };
   const lang = LS.get('lang.' + S.user.id, null) || ctx.settings.language || 'en';

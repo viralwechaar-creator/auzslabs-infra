@@ -22,10 +22,12 @@ const delta = (a, b) => { const d = pct(a, b); return h('span', { class: 'dl ' +
 page('home', {
   title: 'Overview', perm: 'sty_reports',
   async render(v) {
-    const sectionId = v.q.get('view') === 'analytics' ? 'analytics' : 'overview';
-    v.root.append(seg([['overview', t('Overview')], ['analytics', t('Analytics')]], sectionId,
-      (id) => go(id === 'analytics' ? 'home?view=analytics' : 'home'), { full: true }));
+    const view = v.q.get('view');
+    const sectionId = view === 'analytics' ? 'analytics' : view === 'payments' ? 'payments' : 'overview';
+    v.root.append(seg([['overview', t('Overview')], ['payments', t('Payments')], ['analytics', t('Analytics')]], sectionId,
+      (id) => go(id === 'overview' ? 'home' : 'home?view=' + id), { full: true }));
     if (sectionId === 'analytics') return PAGES.analytics.render(v);
+    if (sectionId === 'payments') return paymentsView(v);
     v.header({ title: t('Overview') });
     Object.assign(RU, rangeFor(RU.k, RU.from ? { from: RU.from, to: RU.to } : null));
     const host = h('div', { class: 'grid' });
@@ -279,4 +281,36 @@ function sizeCurveNode(rows) {
     return h('div', { class: 'sc-r' }, h('span', { class: 'sc-z' }, r.size), h('div', { class: 'sc-b' }, h('div', { class: 'sc-s', style: { width: Math.min(100, r.sold_pct) + '%' } }), h('div', { class: 'sc-k', style: { width: Math.min(100, r.stock_pct || 0) + '%' } })),
       h('span', { class: 'sc-n num' }, r.sold_pct + '% / ' + (r.stock_pct || 0) + '%'), gap > 8 ? h('span', { class: 'dl dn' }, t('buy more')) : gap < -8 ? h('span', { class: 'dl up' }, t('enough')) : null);
   })))), h('div', { class: 'muted small' }, t('Top bar = share of sales. Bottom bar = share of stock held.')));
+}
+
+
+// Overview > Payments: what came in as cash and what came in online (UPI, card, bank / online), shown apart.
+// Credit and store credit are not money received, so they sit in their own line under "Not received yet".
+function paymentsView(v) {
+  v.header({ title: t('Overview') });
+  Object.assign(RU, rangeFor(RU.k, RU.from ? { from: RU.from, to: RU.to } : null));
+  const host = h('div', { class: 'grid' });
+  v.root.append(rangePicker(RU, load), host);
+  const ONLINE = ['upi', 'card', 'online', 'bank', 'razorpay', 'netbanking', 'wallet'];
+  async function load() {
+    clear(host).append(h('div', { class: 'spin', style: { color: 'var(--tint)', margin: '24px auto' } }));
+    let d; try { d = await api('sty_dashboard', { p: { from: RU.from, to: RU.to, branchId: S.branch } }); } catch (e) { clear(host).append(h('p', { class: 'muted' }, e.message || t('Could not load.'))); return; }
+    const rows = (d.byPayment || []).map((x) => ({ mode: String(x.mode || '').toLowerCase(), amount: Number(x.amount) || 0 }));
+    const cash = rows.filter((x) => x.mode === 'cash');
+    const online = rows.filter((x) => ONLINE.includes(x.mode));
+    const other = rows.filter((x) => x.mode !== 'cash' && !ONLINE.includes(x.mode));
+    const sum = (a) => a.reduce((n, x) => n + x.amount, 0);
+    const cashT = sum(cash), onT = sum(online), total = cashT + onT;
+    const pct = (n) => (total ? Math.round((n / total) * 100) : 0);
+    const label = (m) => ({ cash: t('Cash'), upi: 'UPI', card: t('Card'), online: t('Online'), bank: t('Bank transfer') }[m] || m.toUpperCase());
+    const list = (a) => a.length ? h('div', { class: 'list' }, ...a.map((x) => liRow({ icon: 'cash', title: label(x.mode), right: h('b', { class: 'num' }, inr(x.amount, 0)) }))) : h('p', { class: 'muted small' }, t('Nothing received this way in this period.'));
+    clear(host).append(
+      h('div', { class: 'hero-k' }, h('div', { class: 'cap' }, t('Received in this period')), h('div', { class: 'big num' }, inr(total, 0)),
+        h('div', { class: 'muted small' }, t('Cash') + ' ' + pct(cashT) + '% · ' + t('Online') + ' ' + pct(onT) + '%')),
+      h('div', { class: 'kpis' }, kpi(t('Cash'), inr(cashT, 0), pct(cashT) + '%', null), kpi(t('Online'), inr(onT, 0), pct(onT) + '%', null)),
+      section(t('Cash'), h('div', { class: 'card' }, list(cash))),
+      section(t('Online (UPI, card, bank)'), h('div', { class: 'card' }, list(online))),
+      other.length ? section(t('Not received yet (credit, store credit)'), h('div', { class: 'card' }, list(other))) : null);
+  }
+  load();
 }

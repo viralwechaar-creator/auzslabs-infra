@@ -62,3 +62,13 @@ html body.a-contact{background:radial-gradient(120% 80% at 50% 0,#3a3a3a,#161616
 @P .ct-path-choice[aria-current]{box-shadow:inset 3px 0 #fff,0 -3px 14px #0004}
 @P .ct-path-choice:hover,@P .ct-path-choice:focus-visible{z-index:1;transform:translateY(-5px)}
 @media(max-width:700px){@P .ct-hubform{grid-template-columns:1fr}}
+/* Rail icons: real size, readable, labelled (matches the Codex contact design) */
+@P .ac-rail .ct-ch a{width:46px!important;height:46px!important;border-radius:14px!important;background:#2f2f2f!important;border:1px solid #4a4a4a}
+@P .ac-rail .ct-ch a:hover,@P .ac-rail .ct-ch a:focus-visible{background:#ecece9!important;border-color:#ecece9}
+@P .ac-rail .ct-ch a:hover svg,@P .ac-rail .ct-ch a:focus-visible svg{stroke:#111!important}
+@P .ac-rail .ct-ch svg{width:22px!important;height:22px!important;min-width:22px;stroke:#e8e8e6!important;fill:none!important;stroke-width:1.7!important;stroke-linecap:round;stroke-linejoin:round}
+@P .ac-star{font-size:22px;opacity:.9}
+@P .ac-h{letter-spacing:-.04em}
+@P .ct-shortcuts{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid #505050}
+@P .ct-shortcuts a{display:inline-flex;align-items:center;min-height:32px;padding:5px 11px;border:1px solid #666;border-radius:999px;font-size:.78rem;color:#ecece9;text-decoration:none}
+@P .ct-shortcuts a:hover{background:#3d3d3d}

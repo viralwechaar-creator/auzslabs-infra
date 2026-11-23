@@ -221,7 +221,7 @@ function editorPage(installId) {
     (idx > 0 ? button('Move up', 'section-up:' + idx + ':' + installId) : '') + (idx < sections.length - 1 ? button('Move down', 'section-down:' + idx + ':' + installId) : '') + button('Remove', 'section-remove:' + idx + ':' + installId) + '</div></form>')).join('') :
     panel('No sections yet', body('<p class="compact-copy">Add a section below -- it shows on your storefront’s home page once published.</p>'));
   const addControls = canWrite() ? '<div class="actions" style="margin-top:12px">' + Object.entries(sectionLabel).map(([type, label]) => button('Add ' + label, 'section-add:' + type + ':' + installId)).join('') + '</div>' : '';
-  return head(esc(i.themeName) + ' -- customize', 'Changes save as a draft; publish to put them live on your storefront.', (dirty ? badge('Unpublished changes', 'warn') : badge('Published')) + (canWrite() ? button('Publish', 'theme-publish:' + installId, 'primary') : ''), ['builder', 'Theme']) +
+  return head(esc(i.themeName) + ' -- customize', 'Changes save as a draft; publish to put them live on your storefront.', (dirty ? badge('Unpublished changes', 'warn') : badge('Published')) + button('Version history', 'theme-history:' + installId) + (canWrite() ? button('Publish', 'theme-publish:' + installId, 'primary') : ''), ['builder', 'Theme']) +
     list + panel('Add a section', body(addControls));
 }
 async function saveDraft(installId, mutate) {
@@ -634,6 +634,17 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     await api('sfx_theme_install_set_active', { p_install_id: key });
     await Promise.all([refreshInstalls()]); const ctx = await api('sfx_context'); applyContext(ctx);
     save('This theme is now active on your storefront.'); rerender();
+  });
+  if (a === 'theme-history') return withBusy(async () => {
+    const rows = await api('sfx_theme_history_list', { p_install_id: key });
+    const fmt = (d) => new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(d));
+    dialog('Version history', rows.length ? '<p class="compact-copy">Each time you publish, that version is kept (the last 20). Restore copies it into your draft; nothing goes live until you publish again.</p>' +
+      table(['Published', 'Sections', ''], rows.map((r) => [esc(fmt(r.publishedAt)), String(r.sections), canWrite() ? button('Restore to draft', 'theme-restore:' + r.id + ':' + key) : ''])) :
+      '<p class="compact-copy">No published versions yet. Publish your theme to start a history.</p>');
+  });
+  if (a === 'theme-restore') return withBusy(async () => {
+    await api('sfx_theme_rollback', { p_install_id: detail, p_history_id: key });
+    await refreshInstalls(); close(); save('Version restored to your draft. Publish to put it live.'); rerender();
   });
   if (a === 'theme-publish') return withBusy(async () => {
     await api('sfx_theme_customize_publish', { p_install_id: key });
