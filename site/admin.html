@@ -1933,7 +1933,7 @@ async function loadLeads() {
       <div class="req-head">
         <div>
           <div class="req-name">${esc(l.name)}${l.business ? ' &middot; ' + esc(l.business) : ''}</div>
-          <div class="req-sub">${esc(l.contact)}${l.niche ? ' &middot; ' + esc(l.niche) : ''}</div>
+          <div class="req-sub">${l.kind && l.kind !== 'business' ? '<b>' + esc({ developer: 'Developer', career: 'Job application', general: 'General' }[l.kind] || l.kind) + '</b> &middot; ' : ''}${esc(l.contact)}${l.niche ? ' &middot; ' + esc(l.niche) : ''}${l.details && (l.details.role || l.details.link || l.details.topic) ? '<br>' + esc([l.details.role, l.details.topic, l.details.link].filter(Boolean).join(' · ')) : ''}</div>
         </div>
         <span class="status-pill ${l.status === 'new' ? 'status-new' : ''}">${esc(l.status)}</span>
       </div>

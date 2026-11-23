@@ -36,3 +36,29 @@ html body.a-contact main.content .ac-h{font-size:clamp(26px,4.4vw,56px)!importan
 .ac-side .ct-three b{display:block;font-size:14px;color:inherit}.ac-side .ct-three span{font-size:11px;color:inherit}
 .ac .ct-faq{max-width:760px;margin:36px auto 0}.ac .ct-faq details{border-bottom:1px solid #444;padding:12px 0;color:#eee}.ac .ct-faq summary{font-size:14px;color:#fff}.ac .ct-faq p{color:#aaa}
 .ac-notch{display:none}
+/* Contact hub (picker + per-audience form) */
+html body.a-contact main.content .contact-hub{width:100%;margin:0;padding:6px 0}
+html body.a-contact main.content .ct-hubform{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;position:relative}
+html body.a-contact main.content .ct-hubform .wide{grid-column:1/-1}
+html body.a-contact main.content .ct-hubform label{display:block;min-width:0;font-size:.79rem;font-weight:600;color:#eee}
+html body.a-contact main.content .ct-hubform label small{font-weight:400;color:#c5c5c5}
+html body.a-contact main.content .ct-hubform :is(input,textarea,select){display:block;width:100%;min-height:38px;margin-top:4px;padding:7px 10px;border:1px solid #666;border-radius:9px;background:#3a3a3a;color:#fff;font:inherit;font-size:16px;color-scheme:dark}
+html body.a-contact main.content .ct-hubform textarea{resize:vertical}
+html body.a-contact main.content .ct-form-actions{display:flex;gap:8px;align-items:center}
+html body.a-contact main.content .contact-hub .btn.primary{min-height:38px;padding:7px 14px;border-radius:999px;background:#ecece9!important;color:#191919!important;border:1px solid #ecece9!important;font-weight:700;cursor:pointer}
+html body.a-contact main.content .contact-hub .btn.primary:disabled{opacity:.6}
+html body.a-contact main.content .contact-hub output{display:block;font-size:.84rem;color:#e8e8e8;overflow-wrap:anywhere}
+html body.a-contact main.content .contact-hub output:empty{display:none}
+html body.a-contact main.content .ct-choice-prompt,html body.a-contact main.content .ct-note{font-size:.88rem;color:#dfdfdf}
+html body.a-contact main.content .ct-note a{text-decoration:underline;color:#fff}
+html body.a-contact main.content .ac-side .ct-role-title{margin:4px 4px 11px;color:#e6e6e6;font-size:.82rem;font-weight:600}
+html body.a-contact main.content .ct-path-choice{display:grid;gap:4px;position:relative;padding:13px 15px 21px;min-height:68px;border:1px solid #bcbcbc;border-radius:20px;background:linear-gradient(155deg,#dfdfdc,#bfbfbd);box-shadow:0 -3px 14px #0003;color:#181818;text-decoration:none;transition:transform .2s}
+html body.a-contact main.content .ct-path-choice+.ct-path-choice{margin-top:-4px}
+html body.a-contact main.content .ct-path-choice:nth-of-type(2){background:linear-gradient(155deg,#c1c1be,#a2a2a0)}
+html body.a-contact main.content .ct-path-choice:nth-of-type(3){background:linear-gradient(155deg,#939391,#787876);border-color:#999}
+html body.a-contact main.content .ct-path-choice:nth-of-type(4){background:linear-gradient(155deg,#6b6b69,#50504e);border-color:#81817e;color:#fff;padding-bottom:14px}
+html body.a-contact main.content .ct-path-choice strong,html body.a-contact main.content .ct-path-choice span{color:inherit;line-height:1.25}
+html body.a-contact main.content .ct-path-choice strong{font-size:.86rem}html body.a-contact main.content .ct-path-choice span{font-size:.74rem}
+html body.a-contact main.content .ct-path-choice[aria-current]{box-shadow:inset 3px 0 #fff,0 -3px 14px #0004}
+html body.a-contact main.content .ct-path-choice:hover,html body.a-contact main.content .ct-path-choice:focus-visible{z-index:1;transform:translateY(-5px)}
+@media(max-width:700px){html body.a-contact main.content .ct-hubform{grid-template-columns:1fr}}
