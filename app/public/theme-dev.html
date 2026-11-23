@@ -174,6 +174,7 @@ function sectionForm(s, i) {
   else if (s.type === 'image') fields = field('Image URL', 'url', p.url) + field('Caption', 'caption', p.caption);
   else if (s.type === 'button') fields = field('Button text', 'text', p.text) + field('Button link', 'href', p.href);
   else if (s.type === 'announcement') fields = field('Text', 'text', p.text);
+  else if (s.type === 'booking') fields = field('Heading', 'heading', p.heading || 'Book an appointment') + field('Note', 'note', p.note) + '<p class="hint">Shows a real booking form on the store: services, dates and times come from the store\'s own settings, using the same booking system as the Salon console.</p>';
   return '<form class="section-form" data-index="' + i + '"><div class="row" style="justify-content:space-between"><strong>' + esc(SECTION_LABEL[s.type] || s.type) + '</strong><button type="button" class="btn sm" data-remove="' + i + '">Remove</button></div>' + fields + '</form>';
 }
 
