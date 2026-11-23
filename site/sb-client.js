@@ -65,6 +65,12 @@
   window.auzAppUrlFor = appUrlFor;
   window.auzAppUrl = (page) => appUrlFor(location.hostname, location.protocol, page, loadSession());
   window.auzGo = (page) => { location.href = window.auzAppUrl(page); };
+  // Any absolute address plus the signed-in session in the fragment (never sent to a server): used to send a person straight into their app.
+  window.auzHandoffUrl = (url) => {
+    const sess = loadSession(); if (!sess || !sess.access_token) return url;
+    const tok = btoa(unescape(encodeURIComponent(JSON.stringify({ t: sess.access_token, u: sess.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return url + '#auz_gt=' + tok;
+  };
   // an ordinary link to another app's page is rewritten at the moment it is used (the token never sits in the page)
   document.addEventListener('click', (e) => {
     const a = e.target && e.target.closest ? e.target.closest('a[href^="/"]') : null; if (!a) return;

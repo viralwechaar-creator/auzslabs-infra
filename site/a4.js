@@ -81,12 +81,12 @@
       b.addEventListener('click', function () { select(id); });
       grid.appendChild(b);
     });
-    more.hidden = expanded || ORDER.every(function (id) { return D[id].primary; });
+    if (more) more.hidden = expanded || ORDER.every(function (id) { return D[id].primary; });
   }
 
   function select(id) { paintFeat(id); paintGrid(id); }
 
-  more.addEventListener('click', function () { expanded = true; paintGrid((location.hash || '#salon').slice(1)); });
+  if (more) more.addEventListener('click', function () { expanded = true; paintGrid((location.hash || '#salon').slice(1)); });
 
   var start = location.hash.slice(1);
   if (!Object.prototype.hasOwnProperty.call(D, start)) start = ORDER[0];

@@ -253,6 +253,26 @@ export default async function run({ browser, stack }) {
     const r2 = await q("select public_app_icon_context('teststyle') c"); assert(!r2[0].c.settings.logo, 'empty logo must not be exposed');
   });
 
+  await s.check('Admin tab: owner sees it, staff only after the owner approves, staff cannot self-approve or list people', async () => {
+    assert((await ok(owner, 'admin_tab_status')).allowed === true, 'owner allowed');
+    assert((await ok(staff, 'admin_tab_status')).allowed === false, 'staff should not see Admin yet');
+    await fails(staff, 'admin_tab_staff', {}, /only the business owner/i);
+    const sid = (await q("select id from auth_users where email=$1", [USERS.styStaff]))[0].id;
+    await fails(staff, 'admin_tab_set', { p_user: sid, p_on: true }, /only the business owner/i);
+    await ok(owner, 'admin_tab_set', { p_user: sid, p_on: true });
+    assert((await ok(staff, 'admin_tab_status')).allowed === true, 'approved staff allowed');
+    const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
+    await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });
+    await page.fill('input[type=email]', USERS.styStaff); await page.fill('input[type=password]', PASSWORD);
+    await page.locator('button:not(.auth-pill):not(.login2-pill)', { hasText: /sign in/i }).last().click(); await page.waitForSelector('.shell', { timeout: 20000 });
+    await page.evaluate(() => { location.hash = '#/admin'; }); await page.waitForTimeout(1500);
+    assert(await page.locator('button', { hasText: 'Profile' }).count() > 0, 'approved staff opens Admin');
+    assert(await page.locator('button', { hasText: 'Staff access' }).count() > 0, 'tabs present');
+    await ok(owner, 'admin_tab_set', { p_user: sid, p_on: false });
+    await page.reload(); await page.waitForSelector('.shell', { timeout: 20000 }); await page.evaluate(() => { location.hash = '#/admin'; }); await page.waitForTimeout(1200);
+    assert(await page.locator('button', { hasText: 'Staff access' }).count() === 0, 'after revoke, Admin does not open');
+    await c.close();
+  }, 'critical');
   await s.check('Simple entry: name, optional variant, price and stock make a style with one barcode variant', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page);
     await page.goto(stack.url('teststyle', '/style.html')); await page.waitForSelector('input[type=password]', { timeout: 20000 });

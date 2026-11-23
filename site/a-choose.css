@@ -116,3 +116,13 @@ body.a-choose .cp-b .cp-cta i{background:#111;color:#fff}
 body.a-choose .cp-card:hover .cp-cta i{transform:translateX(5px)}
 @media(prefers-reduced-motion:reduce){body.a-choose .cp-card,body.a-choose .cp-pv svg,body.a-choose .cp-cta i{transition:none}}
 @media(max-width:520px){html body.a-choose main.content .cp-card h3{font-size:17px!important}body.a-choose .cp-pill{font-size:9px}body.a-choose .cp-card p{font-size:12px!important}}
+/* submit-theme steps */
+body.a-choose .cp-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 22px}
+@media(max-width:700px){body.a-choose .cp-steps{grid-template-columns:1fr}}
+body.a-choose .cp-step{border:1px solid #2e2e2e;border-radius:20px;padding:18px;background:#161616}
+body.a-choose .cp-step .cp-idx{display:block;margin:0 0 10px;font:600 10px/1 'Space Mono',monospace;letter-spacing:.2em;color:#7d7d7b}
+html body.a-choose main.content .cp-step h3{margin:0 0 8px!important;font-size:19px!important;letter-spacing:-.03em!important;color:#fff!important}
+html body.a-choose main.content .cp-step p{margin:0!important;font-size:13px!important;line-height:1.5!important;color:#a8a8a6!important}
+body.a-choose .cp-actions{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}
+body.a-choose .cp-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:999px;background:#ecece9;color:#111;font:600 13px/1 Inter,sans-serif;text-decoration:none}
+body.a-choose .cp-btn.ghost{background:transparent;color:#ecece9;border:1px solid #555}

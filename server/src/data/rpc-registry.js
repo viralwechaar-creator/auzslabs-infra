@@ -238,6 +238,9 @@ export const RPC = {
 
   // --- Client dashboard: own account, staff, feature toggles ---
   my_dashboard: { params: [], auth: true },
+  admin_tab_status: { params: [], auth: true },
+  admin_tab_staff: { params: [], auth: true },
+  admin_tab_set: { params: ['p_user', 'p_on'], auth: true },
   my_profile: { params: [], auth: true },
   is_platform_admin: { params: [], auth: true },
   submit_my_testimonial: { params: ['p'], jsonb: ['p'], auth: true },
@@ -879,6 +882,8 @@ export const RPC = {
   sfx_theme_install_get: { params: ['p_install_id'], auth: true },
   sfx_theme_install_set_active: { params: ['p_install_id'], auth: true },
   sfx_theme_customize_save: { params: ['p_install_id', 'p_content'], jsonb: ['p_content'], auth: true },
+  sfx_theme_history_list: { params: ['p_install_id'], auth: true },
+  sfx_theme_rollback: { params: ['p_install_id', 'p_history_id'], auth: true },
   sfx_theme_customize_publish: { params: ['p_install_id'], auth: true },
 
   // AI connector keys (db/318) -- owner-only, see mcp_api_keys' own comment.

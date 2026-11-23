@@ -153,6 +153,7 @@ a.a-nav-row,a.a-side-btn{text-decoration:none}
 .cc-actions button{background:none;border:none;padding:3px 0;font:600 11.5px var(--font-body);color:var(--ink-dim);cursor:pointer}
 .cc-actions button:hover{color:var(--ink)}
 .cc-actions button.cc-danger{color:var(--accent)}
+.cc-openas{background:none;border:none;font:600 11.5px var(--font-body);color:var(--ink-dim);cursor:pointer;padding:3px 0;max-width:150px}
 .cc-notes{margin-top:8px;font-size:11.5px;color:var(--ink-faint)}
 
 /* ===== Shared minimal components: generic list-card (avatar/icon row, Users/Salesmen/nav-like lists),
@@ -1287,6 +1288,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
 
       <section class="a-page" id="websiteSection" data-title="Website" data-parent="more">
         <p class="p" style="margin:0 0 10px">Change the words and pictures on auzslab.in. Leave a box empty to use the original. Pictures are shrunk automatically.</p>
+        <div class="card" style="margin:0 0 14px"><div class="lbl" style="margin-bottom:8px">Live pages (open in a new tab)</div><a class="btn" href="/index.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Home</a><a class="btn" href="/products.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Services</a><a class="btn" href="/platform.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Why AUZslab</a><a class="btn" href="/live-demo.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Live demo</a><a class="btn" href="/studio.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Studio</a><a class="btn" href="/web-design.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Websites and stores</a><a class="btn" href="/contact.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Contact</a><a class="btn" href="/careers.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Careers</a><a class="btn" href="/submit-theme.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Submit a theme</a><a class="btn" href="/choose-path.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Choose your path</a><a class="btn" href="/cart.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Request page</a><a class="btn" href="/download-apps.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Download apps</a><a class="btn" href="/learn.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Learn</a><a class="btn" href="/themes.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Themes</a><a class="btn" href="/terms.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Terms</a><a class="btn" href="/privacy.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Privacy</a><a class="btn" href="/sitemap.html" target="_blank" rel="noopener" style="margin:0 6px 6px 0;display:inline-block">Sitemap</a></div>
         <div id="webBody">Loading&hellip;</div>
       </section>
 
@@ -2704,6 +2706,7 @@ async function loadClients(preFetched) {
       ${c.notes ? `<div class="cc-notes">${esc(c.notes)}</div>` : ''}
       <div class="cc-actions">
         <button data-edit>Edit</button>
+        <select data-openas class="cc-openas" aria-label="Open as owner"><option value="">Open as owner…</option>${[['style', 'AUZsStyle app'], ['accounting', 'AUZsLedger app'], ['storefront', 'Online store hub'], ['salon', 'Salon console'], ['account', 'Account page']].filter(([k]) => k === 'account' || (c.features || {})[k] === true).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select>
         <button data-pay>Payments</button>
         <button data-reset-pw>Reset password</button>
         <button data-message>Message</button>
@@ -2720,6 +2723,26 @@ async function loadClients(preFetched) {
       if (!chips) return;
       chips.classList.toggle('open');
       btn.textContent = chips.classList.contains('open') ? 'Hide' : 'View all';
+    };
+  });
+  listEl.querySelectorAll('[data-openas]').forEach((sel) => {
+    sel.onchange = async () => {
+      const target = sel.value; sel.value = '';
+      if (!target) return;
+      const id = sel.closest('[data-id]').dataset.id;
+      // open the window inside the click so the browser does not block it, fill it in once the session is ready
+      const w = window.open('about:blank', '_blank');
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        const res = await fetch(CFG.url + '/admin/login-as', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ tenant_id: id }) });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || body.message || 'Could not open it.');
+        const tok = btoa(unescape(encodeURIComponent(JSON.stringify({ t: body.access_token, u: body.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const host = (h) => 'https://' + h + '.auzslab.in';
+        const url = { style: host('auzsstyle') + '/style.html', accounting: host('auzsledger') + '/accounts.html', storefront: host(body.slug) + '/storefront.html', salon: host(body.slug) + '/salon/admin/', account: location.origin + '/account.html' }[target];
+        const dest = url + '#auz_gt=' + tok;
+        if (w) w.location.href = dest; else location.href = dest;
+      } catch (e) { if (w) w.close(); alert(e.message || 'Could not open it.'); }
     };
   });
   listEl.querySelectorAll('[data-edit]').forEach((btn) => {

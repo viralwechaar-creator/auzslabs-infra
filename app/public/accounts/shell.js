@@ -18,7 +18,7 @@ const NAV_LEDGER = [
   // whole when the tenant's "finance" feature flag is off (see finOn() below), so tenants that never had it see
   // nothing new here.
   { group: 'Finance', items: ['fin-home', 'fin-activity', 'fin-dues', 'fin-owner', 'fin-accounts', 'fin-reports', 'fin-insights', 'fin-settings', 'fin-tools'] },
-  { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'ai', 'settings'] },
+  { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'ai', 'admin', 'settings'] },
 ];
 const NAV = SCANAPP ? [
   { group: '', items: ['scan'] },
@@ -196,6 +196,7 @@ async function boot() {
   if (!(SCANAPP ? fOn('accounting') || fOn('scan') : fOn('accounting'))) return blocked('Accounting is not enabled', 'AUZslab Accounting is not part of this business’s plan. You can request it from your account page, or ask the AUZslab team.');
   S.user = { email: dash.my_email, role: dash.my_role }; S.dash = dash;
   try { await loadCtx(); } catch (e) { return blocked('Could not open Accounting', e.message); }
+  try { const st = await api('admin_tab_status'); S.perms.admin_tab = !!(st && st.allowed); S.adminOwner = !!(st && st.owner); } catch (e) { S.perms.admin_tab = false; }
   cacheBoot(); parties().catch(() => {}); products().catch(() => {});     // keep a copy for offline drafts
   window.applyWords && applyWords();
   buildShell();
