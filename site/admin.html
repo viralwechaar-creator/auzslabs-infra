@@ -2739,7 +2739,7 @@ async function loadClients(preFetched) {
         if (!res.ok) throw new Error(body.error || body.message || 'Could not open it.');
         const tok = btoa(unescape(encodeURIComponent(JSON.stringify({ t: body.access_token, u: body.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
         const host = (h) => 'https://' + h + '.auzslab.in';
-        const url = { style: host('auzsstyle') + '/style.html', accounting: host('auzsledger') + '/accounts.html', storefront: host(body.slug) + '/storefront.html', salon: host(body.slug) + '/salon/admin/', account: location.origin + '/account.html' }[target];
+        const url = { style: host('auzsstyle') + '/style.html', accounting: host('auzsledger') + '/accounts.html', storefront: host(body.slug) + '/storefront.html', salon: host(body.slug) + '/salon/admin/', account: location.origin + '/account.html?stay=1' }[target];
         const dest = url + '#auz_gt=' + tok;
         if (w) w.location.href = dest; else location.href = dest;
       } catch (e) { if (w) w.close(); alert(e.message || 'Could not open it.'); }

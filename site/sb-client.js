@@ -66,6 +66,19 @@
   window.auzAppUrl = (page) => appUrlFor(location.hostname, location.protocol, page, loadSession());
   window.auzGo = (page) => { location.href = window.auzAppUrl(page); };
   // Any absolute address plus the signed-in session in the fragment (never sent to a server): used to send a person straight into their app.
+  // Owners and managers go straight into the app they bought (their account features live in the app's Admin tab). Returns true when it redirected.
+  window.auzRouteOwner = (d) => {
+    try {
+      if (!/(^|\.)auzslab\.in$/.test(location.hostname) || !d || !d.tenant || !d.tenant.slug) return false;
+      const f = d.features || {}, en = d.enabled_features || {}, on = (k) => f[k] === true && en[k] !== false, slug = d.tenant.slug;
+      const to = (u) => { location.href = window.auzHandoffUrl ? window.auzHandoffUrl(u) : u; return true; };
+      if (on('style')) return to('https://auzsstyle.auzslab.in/style.html');
+      if (on('accounting')) return to('https://auzsledger.auzslab.in/accounts.html');
+      if (on('salon')) return to('https://' + slug + '.auzslab.in/salon/admin/');
+      if (on('storefront')) return to('https://' + slug + '.auzslab.in/storefront.html');
+    } catch (e) {}
+    return false;
+  };
   window.auzHandoffUrl = (url) => {
     const sess = loadSession(); if (!sess || !sess.access_token) return url;
     const tok = btoa(unescape(encodeURIComponent(JSON.stringify({ t: sess.access_token, u: sess.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
