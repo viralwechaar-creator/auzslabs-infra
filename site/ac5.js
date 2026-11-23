@@ -7,7 +7,7 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   var host, root, ready = false;
   var $ = function (s) { return root.querySelector(s); }, $$ = function (s) { return Array.prototype.slice.call(root.querySelectorAll(s)); };
-  var APPDEF = [['pos', 'AUZsPOS', 'Billing, tables, kitchen, QR orders', 'till', 'lavender'], ['payroll', 'AUZsPay', 'Attendance, leave and payslips', 'users', 'mint'], ['accounting', 'AUZsLedger', 'Accounts, GST and banking', 'book', 'peach'], ['mobile', 'AUZsMob', 'Phone shop sales and repairs', 'phone', 'sky'], ['style', 'AUZsStyle', 'Clothing and footwear shop', 'tag', 'lavender'], ['scan', 'AUZsScan', 'Scan to bill', 'scan', 'mint'], ['salon', 'AUZslab Salon', 'Booking, billing, website', 'tag', 'peach'], ['finance', 'AUZsFinance', 'Money in, out and dues', 'book', 'sky']];
+  var APPDEF = [['pos', 'AUZsPOS', 'Billing, tables, kitchen, QR orders', 'till', 'lavender'], ['payroll', 'AUZsPay', 'Attendance, leave and payslips', 'users', 'mint'], ['accounting', 'AUZsLedger', 'Accounts, GST and banking', 'book', 'peach'], ['mobile', 'AUZsMob', 'Phone shop sales and repairs', 'phone', 'sky'], ['style', 'AUZsStyle', 'Clothing and footwear shop', 'tag', 'lavender'], ['scan', 'AUZsScan', 'Scan to bill', 'scan', 'mint'], ['salon', 'AUZslab Salon', 'Booking, billing, website', 'tag', 'peach'], ['finance', 'AUZsFinance', 'Money in, out and dues', 'book', 'sky'], ['storefront', 'Online store', 'Products, orders, themes and domains', 'tag', 'mint']];
   var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], REQS = [], CART = [], PROFILE = { products: [] }, FEAT = {};
   window.AC5 = { ACT: {}, AFTER: {}, ENTER: {}, OWN: {}, VIEWS: null };
   var S = { mode: 'owner', view: 'home', more: false, nf: 'all' };
@@ -23,6 +23,7 @@
     var f = (D && D.features) || {}, en = (D && D.enabled_features) || {}, links = {};
     FEAT = { payroll: f.payroll === true && en.payroll !== false };
     document.querySelectorAll('#acctNav a[id^=open]').forEach(function (a) { if (a.style.display !== 'none') links[a.textContent.trim().replace(/^Open /, '').replace(/ system$/i, '')] = a.href; });
+    if (t.slug) links['Online store'] = 'https://' + t.slug + '.auzslab.in/storefront.html';
     ALL_APPS = APPDEF.map(function (a) { return { k: a[0], n: a[1], d: a[2], ic: a[3], tone: a[4], href: links[a[1]] || '' }; });
     OWNED = {}; ENABLED = {}; APPDEF.forEach(function (a) { if (f[a[0]] === true) { OWNED[a[0]] = true; ENABLED[a[0]] = en[a[0]] !== false; } });
     STAFF = (g('STAFF') || []).map(function (s) { return { name: s.name || s.email || '', role: s.role }; }); if (!STAFF.length && D) STAFF = [{ name: ME.name, role: 'owner' }];
