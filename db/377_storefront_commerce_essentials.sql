@@ -174,7 +174,7 @@ begin
   if not found or d.status <> 'active' then raise exception 'Invalid discount code' using errcode = 'SF002'; end if;
   if d.expires_at is not null and d.expires_at < now() then raise exception 'This discount code has expired' using errcode = 'SF002'; end if;
   if d.usage_limit is not null and d.used_count >= d.usage_limit then raise exception 'This discount code has reached its usage limit' using errcode = 'SF002'; end if;
-  if d.min_order is not null and p_subtotal < d.min_order then raise exception 'This code needs a minimum order of Rs %s', d.min_order using errcode = 'SF002'; end if;
+  if d.min_order is not null and p_subtotal < d.min_order then raise exception 'This code needs a minimum order of Rs %', d.min_order using errcode = 'SF002'; end if;
   return d;
 end $$;
 
@@ -236,7 +236,7 @@ begin
       where v.id = (l->>'variantId')::uuid and v.tenant_id = tid and pr.status = 'active';
     if not found then raise exception 'One of the items in your bag is no longer available' using errcode = 'SF002'; end if;
     q := greatest(1, least(20, coalesce((l->>'qty')::int, 1)));
-    if q > vstock then raise exception '%s has only %s left', vname, vstock using errcode = 'SF002'; end if;
+    if q > vstock then raise exception '% has only % left', vname, vstock using errcode = 'SF002'; end if;
     lines := lines || jsonb_build_array(jsonb_build_object('productId', vproduct, 'variantId', vid, 'name', vname, 'label', vlabel, 'price', vprice, 'qty', q, 'image', vimage));
     sub := sub + vprice * q;
     update sfx_variants set stock = stock - q where id = vid;
