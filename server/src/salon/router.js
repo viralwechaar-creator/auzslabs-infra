@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { pool, withAuth } from '../db.js';
 import { captureError } from '../errors.js';
-import { staffLogin, verifyToken } from '../auth.js';
+import { staffLogin, verifyToken, signToken } from '../auth.js';
 import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
 import { DEMO_PASSWORD, bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
@@ -239,6 +239,16 @@ export async function handleSalon(req, res, ip) {
       return send(200, { ok: true, role: 'owner' });
     }
     if (method === 'POST' && p === '/admin/logout') { clearSession(res); return send(200, { ok: true }); }
+
+    // Admin tab: a limited AUZslab session for this salon's owner login, only for a console OWNER session (never staff).
+    if (method === 'POST' && p === '/admin/account-token') {
+      await admin();
+      if (limited(`salonacct:${tid}`, 20, 15 * 60_000)) fail(429, 'Too many attempts. Try again later.');
+      const u = (await pool.query('select salon_owner_user($1::uuid) as r', [tid])).rows[0].r;
+      if (!u) fail(404, 'This salon has no owner login yet.');
+      const token = await signToken(u, { ip, userAgent: req.headers['user-agent'] }, { limited: true });
+      return send(200, { token });
+    }
 
     // ---- everything below needs the console session ----
     if (method === 'GET' && p === '/bookings') { await member(); return send(200, { bookings: (await loadDb(tenant)).bookings || [] }); }

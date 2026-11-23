@@ -139,15 +139,15 @@
     go(location.hash.slice(1) in VIEWS && allowed(location.hash.slice(1)) ? location.hash.slice(1) : 'dashboard');
   }
 
-  const TITLES = { dashboard: 'Today', bookings: 'Bookings', checkins: 'Check-ins', billing: 'Billing', clients: 'Clients', packages: 'Packages', cash: 'Cash register', expenses: 'Expenses', analytics: 'Analytics', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Edit website', staff: 'Staff', settings: 'Settings' };
-  const ICONS = { dashboard: 'grid', bookings: 'calendar', checkins: 'wave', billing: 'receipt', clients: 'users', packages: 'star', cash: 'wallet', expenses: 'wallet', analytics: 'chart', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', staff: 'chair', settings: 'gear' };
+  const TITLES = { admin: 'Admin', dashboard: 'Today', bookings: 'Bookings', checkins: 'Check-ins', billing: 'Billing', clients: 'Clients', packages: 'Packages', cash: 'Cash register', expenses: 'Expenses', analytics: 'Analytics', menu: 'Menu and prices', stylists: 'Hairstylists', gallery: 'Gallery', content: 'Edit website', staff: 'Staff', settings: 'Settings' };
+  const ICONS = { admin: 'doc', dashboard: 'grid', bookings: 'calendar', checkins: 'wave', billing: 'receipt', clients: 'users', packages: 'star', cash: 'wallet', expenses: 'wallet', analytics: 'chart', menu: 'list', stylists: 'cut', gallery: 'pics', content: 'doc', staff: 'chair', settings: 'gear' };
   const PRIMARY = ['dashboard', 'bookings', 'billing', 'clients'];
   /* Everything outside PRIMARY is grouped under labelled headers in the side nav
      (desktop) and the More sheet (phone) -- a flat 13-item list was hard to scan. */
   const GROUPS = [
     { label: 'Front desk', keys: ['dashboard', 'bookings', 'checkins', 'billing', 'clients'] },
     { label: 'Business', keys: ['packages', 'cash', 'expenses', 'analytics'] },
-    { label: 'Set up', keys: ['menu', 'stylists', 'gallery', 'content', 'staff', 'settings'] },
+    { label: 'Set up', keys: ['menu', 'stylists', 'gallery', 'content', 'staff', 'admin', 'settings'] },
   ];
   /* Staff logins see the PRIMARY four plus Check-ins (turning one into a bill is
      the same job as billing a walk-in). This is only the UI half: the API refuses
@@ -1208,6 +1208,23 @@
       }
     }]);
   }
+  function viewAdmin() {
+    const host = h('div', { class: 'a-card adm-embed', style: 'max-width:760px' }, h('p', { text: 'Loading...' }));
+    (async () => {
+      try {
+        const r = await api('POST', '/api/admin/account-token', {});
+        const call = async (fn, args) => {
+          const x = await fetch('https://api.auzslab.in/rpc/' + fn, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + r.token }, body: JSON.stringify(args || {}) });
+          const j = await x.json().catch(() => ({}));
+          if (!x.ok) throw new Error(j.error || j.message || 'Something went wrong');
+          return j.data !== undefined ? j.data : j;
+        };
+        host.replaceChildren();
+        window.auzAdminTab.mount(host, { rpc: call, toast, isOwner: true, sb: null });
+      } catch (ex) { host.replaceChildren(h('p', { text: ex.message || 'Could not open Admin.' })); }
+    })();
+    return host;
+  }
   function viewSettings() {
     const S = JSON.parse(JSON.stringify(D.settings)), P = { current: '', next: '' };
     if (!S.bgMusic) S.bgMusic = { mode: 'off', src: '', volume: 15, spotifyUrl: '', spotifyEmbed: '' };
@@ -1430,6 +1447,6 @@
       sticky(btn('Save settings', async () => { if (await saveSection('settings', S)) await load(); })));
   }
 
-  const VIEWS = { staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, checkins: viewCheckins, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, packages: viewPackages, analytics: viewAnalytics };
+  const VIEWS = { admin: viewAdmin, staff: viewStaff, dashboard: viewDashboard, bookings: viewBookings, checkins: viewCheckins, billing: viewBilling, clients: viewClients, menu: viewMenu, stylists: viewStylists, gallery: viewGallery, content: viewContent, settings: viewSettings, expenses: viewExpenses, cash: viewCash, packages: viewPackages, analytics: viewAnalytics };
   boot();
 })();
