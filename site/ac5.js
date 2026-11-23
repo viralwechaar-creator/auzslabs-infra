@@ -11,8 +11,8 @@
   var BIZ = {}, ME = {}, ALL_APPS = [], OWNED = {}, ENABLED = {}, STAFF = [], ROLES = [], NOTIFS = [], REQS = [], CART = [], PROFILE = { products: [] }, FEAT = {};
   window.AC5 = { ACT: {}, AFTER: {}, ENTER: {}, OWN: {}, VIEWS: null };
   var S = { mode: 'owner', view: 'home', more: false, nf: 'all' };
-  var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors', 'clockin'];
-  var SLOT = { profile: 'profile', security: 'account', services: 'services', staff: 'staff', roles: 'roles', notifications: 'notifications', privacy: 'privacy', connectors: 'connectors', clockin: 'clockin' };
+  var PANES = ['profile', 'account', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors', 'whatsapp', 'clockin'];
+  var SLOT = { profile: 'profile', security: 'account', services: 'services', staff: 'staff', roles: 'roles', notifications: 'notifications', privacy: 'privacy', connectors: 'connectors', whatsapp: 'whatsapp', clockin: 'clockin' };
   function profPct() { var P = g('PROFILE') || {}, k = ['name', 'phone', 'contact_email', 'business_name', 'business_type', 'city', 'address'], d = k.filter(function (x) { return P[x]; }).length; return Math.round(d / k.length * 100); }
   function sync() {
     var D = g('DASH'), P = g('PROFILE') || {}, A = g('IS_ADMIN');
@@ -76,6 +76,7 @@
     { id: 'notifications', t: 'Notifications', ic: 'bell', g: 'Account', need: ['owner', 'manager', 'admin'], biz: true, badge: true },
     { id: 'security', t: 'Account settings', ic: 'shield', g: 'Account', need: ['owner', 'manager', 'admin'], biz: true },
     { id: 'privacy', t: 'Privacy and my data', ic: 'lock', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] },
+    { id: 'whatsapp', t: 'WhatsApp', ic: 'bell', g: 'Account', need: ['owner', 'manager'], biz: true },
     { id: 'connectors', t: 'AI connectors', ic: 'connect', g: 'Account', need: ['owner'], biz: true },
     { id: 'help', t: 'Help and support', ic: 'help', g: 'Account', need: ['owner', 'manager', 'customer', 'admin'] }];
   var can = function (sec) { return sec.need.indexOf(S.mode) > -1 && (!sec.feat || FEAT[sec.feat]); };
@@ -216,9 +217,9 @@
 
   var VIEWS = {}; AC5.VIEWS = VIEWS;
   var slot = function (id) { return '<div class="slotwrap"><slot name="p-' + id + '"></slot></div>'; };
-  var TEXT = { profile: 'Your details and business information.', security: 'Your login, devices and safety settings.', services: 'What is switched on for your business.', staff: 'Staff and their sign-in details.', roles: 'Choose what each team member can open.', notifications: 'A simple inbox for your account.', privacy: 'Your consent, your data and your rights under the DPDP Act 2023.', connectors: 'Let your own AI app read and act on your business data.', clockin: 'Clock in and out, and take breaks, from your own login.' };
-  ['profile', 'security', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors', 'clockin'].forEach(function (id) {
-    VIEWS[id] = function () { return head(({ security: 'Account settings', privacy: 'Privacy and my data', connectors: 'AI connectors', clockin: 'Clock in' })[id] || (id.charAt(0).toUpperCase() + id.slice(1)), TEXT[id]) + slot(SLOT[id]); };
+  var TEXT = { profile: 'Your details and business information.', security: 'Your login, devices and safety settings.', services: 'What is switched on for your business.', staff: 'Staff and their sign-in details.', roles: 'Choose what each team member can open.', notifications: 'A simple inbox for your account.', privacy: 'Your consent, your data and your rights under the DPDP Act 2023.', connectors: 'Let your own AI app read and act on your business data.', whatsapp: 'Automatic WhatsApp messages to your customers.', clockin: 'Clock in and out, and take breaks, from your own login.' };
+  ['profile', 'security', 'services', 'staff', 'roles', 'notifications', 'privacy', 'connectors', 'whatsapp', 'clockin'].forEach(function (id) {
+    VIEWS[id] = function () { return head(({ security: 'Account settings', privacy: 'Privacy and my data', connectors: 'AI connectors', whatsapp: 'WhatsApp automation', clockin: 'Clock in' })[id] || (id.charAt(0).toUpperCase() + id.slice(1)), TEXT[id]) + slot(SLOT[id]); };
   });
   VIEWS.apps = function () {
     var mine = ALL_APPS.filter(function (a) { return OWNED[a.k]; });
