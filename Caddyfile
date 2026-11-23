@@ -173,6 +173,14 @@
     handle @a_fin {
         import one_app /finance.html /finance.html /finance/*
     }
+    # the AUZslab storefront platform's owner hub (catalog, collections, orders, theme, domains) -- a new,
+    # separate product from AUZsStyle/Ledger/Salon (db/372). The public storefront it builds is NOT here:
+    # it is served on the tenant's own shop address, by the shared store.html/store/* block below, exactly
+    # like AUZsStyle's online store already is (site_access()'s own comment explains why no change was needed).
+    @a_shop host auzsshop.{$DOMAIN}
+    handle @a_shop {
+        import one_app /storefront.html /storefront.html /storefront/*
+    }
     # the hub: also shows a customer's bill (their link is auzslab.in/b/<code>, which forwards here).
     # start.html (the old sign-in hub) is gone -- the bare address and that path now both send people
     # to the real sign-in page on the main site instead.

@@ -67,7 +67,11 @@ async function shopIcon(d) {
 // small copy of an uploaded picture for cards (see server storage.js makeThumbs); older pictures without one fall back to the original
 const thumb = (u, w) => (u && /\/uploads\/site\//.test(u) ? u.replace(/\.(jpe?g|png|webp)$/i, '.w' + (w || 480) + '.webp') : u);
 document.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.dataset.orig && im.src !== im.dataset.orig) { im.src = im.dataset.orig; return; } if (!im || im.tagName !== 'IMG' || im.dataset.retry || !im.src || im.src.startsWith('data:')) return; im.dataset.retry = '1'; const u = im.src; im.removeAttribute('loading'); setTimeout(() => { im.src = u + (u.includes('?') ? '&' : '?') + 'r=1'; }, 600); }, true);
-let D = null;            // public_sty_store result
+let D = null;            // public_sty_store (or public_sfx_store) result
+// Which product's public RPCs this store talks to: 'sty' (AUZsStyle) or 'sfx' (the AUZslab storefront
+// platform, db/372). Resolved once at boot() from whichever one actually has this tenant (see boot()'s
+// resolveStore()) -- a tenant only ever has one of the two enabled, so this never needs to change mid-session.
+let PFX = 'sty';
 let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
 const toast = (m) => { const t = E('div', { class: 'toast', role: 'status' }, m); document.body.append(t); setTimeout(() => t.remove(), 2200); };
@@ -1009,7 +1013,7 @@ V.p = (v, id) => {
     const msg = E('div', { class: 'tiny', style: { minHeight: '14px', color: '#c0392b' } });
     if (!vsel.options.length) s.variants.forEach((x) => vsel.append(E('option', { value: x.id }, [x.colour, x.size].filter(Boolean).join(' · ') || s.name)));
     const sh = sheet('Tell me when it is back', E('div', { class: 'frm' }, E('div', { class: 'mut tiny' }, 'We will send one WhatsApp message when this piece is available again.'), E('label', { class: 'fld' }, vsel), E('label', { class: 'fld' }, ph), msg,
-      E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sty_notify_me', { p_slug: SLUG, p: { variantId: vsel.value, phone: ph.value, name: ((LS.get('me', {}) || {}).first) || '' } }); sh.close(); toast('Done. We will message you.'); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'Notify me')));
+      E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc(`public_${PFX}_notify_me`, { p_slug: SLUG, p: { variantId: vsel.value, phone: ph.value, name: ((LS.get('me', {}) || {}).first) || '' } }); sh.close(); toast('Done. We will message you.'); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'Notify me')));
   }
   paintGal(); paintInfo();
   try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: s.description || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
@@ -1027,7 +1031,7 @@ V.p = (v, id) => {
   v.append(minimal ? null : E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: destination }, s.category), ' / ', s.name),
     product, related,
     minimal ? (viewed.length ? minimalRecommendations('Recently viewed', viewed) : null) : recentBand(s.id));
-  rpc('public_sty_reviews', { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
+  rpc(`public_${PFX}_reviews`, { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
     const box = E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Reviews'), E('span', { class: 'mut tiny' }, stars(rv.avg) + ' ' + rv.avg + ' · ' + rv.count + (rv.count === 1 ? ' review' : ' reviews'))), E('div', { class: 'frm' }, (rv.items || []).slice(0, 8).map((r) => E('div', { class: 'card' }, E('div', null, E('b', null, stars(r.rating)), r.title ? ' ' + r.title : ''), r.body ? E('div', { class: 'mut' }, r.body) : null, E('div', { class: 'tiny mut' }, (r.name || 'Customer') + ' · verified buyer')))));
     if (related?.isConnected) v.insertBefore(box, related); else if (info.isConnected) v.append(box); }).catch(() => {});
   setMeta(s.name + ' · ' + D.shop.name, (s.description || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
@@ -1096,7 +1100,7 @@ V.checkout = (v) => {
   paintSum();
   const cin = E('input', { placeholder: 'Coupon code', 'aria-label': 'Coupon code', style: { textTransform: 'uppercase' } }); const cmsg = E('div', { class: 'tiny', style: { minHeight: '14px' } });
   const capply = async () => { cmsg.style.color = '#c0392b'; if (coupon) { coupon = null; cin.disabled = false; cin.value = ''; cmsg.textContent = ''; capplyBtn.textContent = 'Apply'; paintSum(); return; } if (!cin.value.trim()) return; capplyBtn.disabled = true;
-    try { const r = await rpc('public_sty_coupon_check', { p_slug: SLUG, p: { code: cin.value, subtotal: t, phone: (F.phone.value || '').trim() } }); if (r && r.ok) { coupon = { code: r.code, discount: +r.discount }; cmsg.style.color = '#1a7f3c'; cin.disabled = true; capplyBtn.textContent = 'Remove'; paintSum(); } cmsg.textContent = (r && r.msg) || ''; } catch (e) { cmsg.textContent = e.message; } capplyBtn.disabled = false; };
+    try { const r = await rpc(`public_${PFX}_coupon_check`, { p_slug: SLUG, p: { code: cin.value, subtotal: t, phone: (F.phone.value || '').trim() } }); if (r && r.ok) { coupon = { code: r.code, discount: +r.discount }; cmsg.style.color = '#1a7f3c'; cin.disabled = true; capplyBtn.textContent = 'Remove'; paintSum(); } cmsg.textContent = (r && r.msg) || ''; } catch (e) { cmsg.textContent = e.message; } capplyBtn.disabled = false; };
   const capplyBtn = E('button', { class: 'btn out sm', type: 'button', onclick: capply }, 'Apply');
   const err = E('div', { class: 'tiny', role: 'alert', style: { color: '#c0392b', minHeight: '14px' } });
   const btn = E('button', { class: 'btn wide' }, 'Place order');
@@ -1113,7 +1117,7 @@ V.checkout = (v) => {
     if (!pay) { err.textContent = 'Choose how you want to pay.'; return; }
     btn.disabled = true; btn.textContent = 'Placing…';
     try {
-      const r = await rpc('public_sty_place_order', { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, coupon: coupon ? coupon.code : '', lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
+      const r = await rpc(`public_${PFX}_place_order`, { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, coupon: coupon ? coupon.code : '', lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
       if (pay === 'online') { await rzpPay(r.token, () => done(r, g), () => { done(r, g); }); return; }
       done(r, g);
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Place order'; }
@@ -1121,7 +1125,7 @@ V.checkout = (v) => {
   // fill city and state from the PIN code (free India Post lookup); if it is unreachable the person just types them
   const pinAuto = async () => { const p = (F.pin.value || '').trim(); if (!/^\d{6}$/.test(p)) return; try { const r = await fetch('https://api.postalpincode.in/pincode/' + p); const j = await r.json(); const po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) { if (!F.city.value) F.city.value = po.District || po.Block || ''; const st = STATES.find((x) => x.toLowerCase() === String(po.State || '').toLowerCase()); if (st) F.state.value = st; } } catch (e) { /* offline or blocked: manual entry */ } };
   // remember the bag against the phone so the shop can remind the customer (only if the shop switched this on)
-  let lastCart = ''; const saveCart = () => { const ph = (F.phone.value || '').replace(/\D/g, ''); if (!cfg().abandonWa || ph.length < 10 || lastCart === ph) return; lastCart = ph; rpc('public_sty_cart_save', { p_slug: SLUG, p: { phone: ph, name: (F.first.value || '').trim(), lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } }).catch(() => {}); };
+  let lastCart = ''; const saveCart = () => { const ph = (F.phone.value || '').replace(/\D/g, ''); if (!cfg().abandonWa || ph.length < 10 || lastCart === ph) return; lastCart = ph; rpc(`public_${PFX}_cart_save`, { p_slug: SLUG, p: { phone: ph, name: (F.first.value || '').trim(), lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } }).catch(() => {}); };
   v.append(E('div', { class: 'shophd' }, E('h1', null, 'Checkout')), E('div', { class: 'two' },
     E('div', { class: 'card frm' }, E('h2', null, 'Contact'), f('phone', 'Phone', { type: 'tel', ac: 'tel', mode: 'tel', max: 14 }), f('email', 'Email', { type: 'email', ac: 'email', opt: true }),
       E('h2', null, 'Delivery'), E('div', { class: 'f2' }, f('first', 'First name', { ac: 'given-name' }), f('last', 'Last name', { ac: 'family-name', opt: true })), f('pin', 'PIN code', { mode: 'numeric', ac: 'postal-code', max: 6 }), f('address', 'Address', { ac: 'street-address' }), f('address2', 'Apartment, suite, etc.', { opt: true }),
@@ -1158,7 +1162,7 @@ function afterSale(o, tok, v) {
       if (reviewed.has(String(l.styleId))) { box.append(E('div', { class: 'mut tiny' }, l.name + ': thank you for your review.')); wrap.append(box); return; }
       let rate = 0; const sb2 = E('div', { class: 'stars' }); const paint = () => { clear(sb2); for (let i = 1; i <= 5; i++) sb2.append(E('button', { type: 'button', 'aria-label': i + ' stars', style: { fontSize: '22px', color: i <= rate ? '#111' : '#c8c5c2' }, onclick: () => { rate = i; paint(); } }, '★')); }; paint();
       const body = E('textarea', { placeholder: 'Tell others about the fit and quality (optional)', 'aria-label': 'Review', style: { height: '64px', borderRadius: '16px', border: '1px solid #dcdad8', padding: '10px 14px', fontSize: '11px', width: '100%' } }); const m = E('div', { class: 'tiny', style: { color: '#c0392b' } });
-      box.append(E('div', { class: 't' }, l.name), sb2, body, m, E('button', { class: 'btn sm', onclick: async (e) => { if (!rate) { m.textContent = 'Choose 1 to 5 stars'; return; } e.target.disabled = true; try { await rpc('public_sty_review_submit', { p_token: tok, p: { styleId: l.styleId, rating: rate, body: body.value } }); clear(box).append(E('div', { class: 'mut tiny' }, 'Thank you for your review.')); } catch (er) { m.textContent = er.message; e.target.disabled = false; } } }, 'Post review'));
+      box.append(E('div', { class: 't' }, l.name), sb2, body, m, E('button', { class: 'btn sm', onclick: async (e) => { if (!rate) { m.textContent = 'Choose 1 to 5 stars'; return; } e.target.disabled = true; try { await rpc(`public_${PFX}_review_submit`, { p_token: tok, p: { styleId: l.styleId, rating: rate, body: body.value } }); clear(box).append(E('div', { class: 'mut tiny' }, 'Thank you for your review.')); } catch (er) { m.textContent = er.message; e.target.disabled = false; } } }, 'Post review'));
       wrap.append(box);
     });
   }
@@ -1171,7 +1175,7 @@ function afterSale(o, tok, v) {
     const kind = { v: 'return' }; const reason = E('input', { placeholder: 'Reason (size, fit, damaged...)', 'aria-label': 'Reason' }); const m = E('div', { class: 'tiny', style: { color: '#c0392b', minHeight: '14px' } });
     const kb = E('div', { class: 'fwrap' }); const kp = () => { clear(kb); ['return', 'exchange'].forEach((k) => kb.append(E('button', { type: 'button', class: 'sz' + (kind.v === k ? ' on' : ''), onclick: () => { kind.v = k; kp(); } }, cap(k)))); }; kp();
     wrap.append(E('h2', { style: { marginTop: '10px' } }, 'Return or exchange'), E('div', { class: 'mut tiny', style: { margin: '2px 0 8px' } }, 'Within ' + o.returnDays + ' days of delivery, tags intact.'), E('div', { class: 'frm' }, kb, E('label', { class: 'fld' }, reason), m,
-      E('button', { class: 'btn sm out', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sty_return_request', { p_token: tok, p: { kind: kind.v, reason: reason.value, items: (o.lines || []).map((l) => ({ name: l.name, size: l.size, colour: l.colour, qty: l.qty })) } }); toast('Request sent'); const y = scrollY; await V.order(v, tok); scrollTo(0, y); } catch (er) { m.textContent = er.message; e.target.disabled = false; } } }, 'Send request')));
+      E('button', { class: 'btn sm out', onclick: async (e) => { e.target.disabled = true; try { await rpc(`public_${PFX}_return_request`, { p_token: tok, p: { kind: kind.v, reason: reason.value, items: (o.lines || []).map((l) => ({ name: l.name, size: l.size, colour: l.colour, qty: l.qty })) } }); toast('Request sent'); const y = scrollY; await V.order(v, tok); scrollTo(0, y); } catch (er) { m.textContent = er.message; e.target.disabled = false; } } }, 'Send request')));
   }
   return wrap.children.length ? wrap : null;
 }
@@ -1179,7 +1183,7 @@ const LIVE_MSG = { new: 'We have your order', confirmed: 'Confirmed, we are gett
 V.order = async (v, tok) => {
   clearInterval(v._ot);
   v.append(E('div', { class: 'spin' }));
-  let o; try { o = await rpc('public_sty_order', { p_token: tok }); } catch (e) { o = null; }
+  let o; try { o = await rpc(`public_${PFX}_order`, { p_token: tok }); } catch (e) { o = null; }
   clear(v);
   if (!o) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Order not found'), E('a', { class: 'btn', href: link('') }, 'Home'))); return; }
   const steps = ['new', 'confirmed', 'packed', 'shipped', 'delivered']; const at = steps.indexOf(o.status);
@@ -1189,7 +1193,7 @@ V.order = async (v, tok) => {
     const utr = E('input', { placeholder: 'UPI reference number (UTR)', 'aria-label': 'UTR' }), msg = E('div', { class: 'tiny', style: { color: '#c0392b' } });
     pbox.append(E('div', { class: 'card', style: { marginTop: '10px' } }, E('h2', null, 'Pay ' + inr(o.total)), E('div', { class: 'mut tiny', style: { margin: '4px 0 10px' } }, 'Scan with any UPI app, or pay to ' + o.upi.id + '.'),
       E('div', { class: 'qrbox' }, img ? E('img', { src: img, alt: 'UPI QR' }) : null, E('div', { class: 'lbl' }, o.upi.id)),
-      o.paymentStatus === 'submitted' ? E('div', { class: 'note', style: { marginTop: '10px' } }, 'Thank you. We have your reference and will confirm the payment shortly.') : E('div', { class: 'frm', style: { marginTop: '10px' } }, E('label', { class: 'fld' }, utr), msg, E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sty_order_paid', { p_token: tok, p_utr: utr.value }); route(); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'I have paid'))));
+      o.paymentStatus === 'submitted' ? E('div', { class: 'note', style: { marginTop: '10px' } }, 'Thank you. We have your reference and will confirm the payment shortly.') : E('div', { class: 'frm', style: { marginTop: '10px' } }, E('label', { class: 'fld' }, utr), msg, E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc(`public_${PFX}_order_paid`, { p_token: tok, p_utr: utr.value }); route(); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'I have paid'))));
   }
   v.append(E('div', { class: 'pg' }, E('div', { class: 'card' }, E('div', { class: 'lbl' }, 'Order ' + o.number), E('h1', { style: { margin: '4px 0' } }, o.status === 'cancelled' ? 'Order cancelled' : 'Thank you, ' + (o.customer.name || '').split(' ')[0]),
     E('div', { class: 'mut' }, o.payment === 'cod' ? 'Pay ' + inr(o.total) + ' in cash when it arrives.' : o.paymentStatus === 'paid' ? 'Payment received.' : 'We will confirm your order once the payment is checked.'),
@@ -1198,7 +1202,7 @@ V.order = async (v, tok) => {
     E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), +o.discount ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon' + (o.coupon ? ' ' + o.coupon : '')), E('span', null, '– ' + inr(o.discount))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
     trackBox(o),
     E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, o.billUrl ? E('div', { class: 'note', style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' } }, E('div', null, E('b', null, 'Invoice'), E('div', { class: 'mut tiny' }, o.billNo ? 'Bill ' + o.billNo : 'Ready')), E('a', { class: 'btn sm', href: o.billUrl, target: '_blank', rel: 'noopener' }, 'View invoice')) : null, o.status === 'delivered' ? afterSale(o, tok, v) : null, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
-  if (!['delivered', 'cancelled'].includes(o.status)) { const last = o.status + '|' + o.paymentStatus; v._ot = setInterval(async () => { if (!document.body.contains(v) || !location.hash.includes(tok)) return clearInterval(v._ot); let n = null; try { n = await rpc('public_sty_order', { p_token: tok }); } catch { return; } if (n && n.status + '|' + n.paymentStatus !== last) { clearInterval(v._ot); const y = scrollY; await V.order(v, tok); scrollTo(0, y); toast('Order update: ' + cap(n.status)); } }, 12000); }
+  if (!['delivered', 'cancelled'].includes(o.status)) { const last = o.status + '|' + o.paymentStatus; v._ot = setInterval(async () => { if (!document.body.contains(v) || !location.hash.includes(tok)) return clearInterval(v._ot); let n = null; try { n = await rpc(`public_${PFX}_order`, { p_token: tok }); } catch { return; } if (n && n.status + '|' + n.paymentStatus !== last) { clearInterval(v._ot); const y = scrollY; await V.order(v, tok); scrollTo(0, y); toast('Order update: ' + cap(n.status)); } }, 12000); }
 };
 
 function mapUrl(st) { return st.mapUrl || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([st.name, st.address].filter(Boolean).join(' ')); }
@@ -1243,7 +1247,7 @@ V.orders = async (v) => {
   const box = E('div', { class: 'ords' });
   const fnum = E('input', { placeholder: 'Order number', 'aria-label': 'Order number' }), fph = E('input', { placeholder: 'Phone used on the order', type: 'tel', inputmode: 'tel', 'aria-label': 'Phone', value: saved.phone || '' }), fmsg = E('div', { class: 'tiny', style: { color: '#c0392b', minHeight: '14px' } });
   const find = E('div', { class: 'card' }, E('h2', null, 'Find an order'), E('div', { class: 'mut tiny', style: { margin: '2px 0 8px' } }, 'On another phone or lost the link? Enter the order number and your phone.'), E('div', { class: 'frm' }, E('label', { class: 'fld' }, fnum), E('label', { class: 'fld' }, fph), fmsg,
-    E('button', { class: 'btn', onclick: async (e) => { e.target.disabled = true; fmsg.textContent = ''; try { const r = await rpc('public_sty_order_find', { p_slug: SLUG, p: { number: fnum.value, phone: fph.value } }); const l = LS.get('orders', []); if (!l.some((x) => x.token === r.token)) { l.unshift({ token: r.token, number: fnum.value.trim().toUpperCase() }); LS.set('orders', l.slice(0, 20)); } go('order/' + r.token); } catch (er) { fmsg.textContent = er.message; } e.target.disabled = false; } }, 'Find my order')));
+    E('button', { class: 'btn', onclick: async (e) => { e.target.disabled = true; fmsg.textContent = ''; try { const r = await rpc(`public_${PFX}_order_find`, { p_slug: SLUG, p: { number: fnum.value, phone: fph.value } }); const l = LS.get('orders', []); if (!l.some((x) => x.token === r.token)) { l.unshift({ token: r.token, number: fnum.value.trim().toUpperCase() }); LS.set('orders', l.slice(0, 20)); } go('order/' + r.token); } catch (er) { fmsg.textContent = er.message; } e.target.disabled = false; } }, 'Find my order')));
   v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, saved.first ? 'Hi, ' + saved.first : 'My account')), prof, E('h2', { style: { padding: '12px 4px 4px' } }, 'My orders'), box, find));
   if (!mine.length) { box.append(E('div', { class: 'card mut' }, 'Orders you place on this phone show here with live status. ', E('a', { href: link('shop'), style: { textDecoration: 'underline' } }, 'Shop now'))); return; }
   const open = new Set(); let state = {};
@@ -1254,7 +1258,7 @@ V.orders = async (v) => {
     const steps = ['new', 'confirmed', 'packed', 'shipped', 'delivered']; const at = steps.indexOf(o.status);
     box.append(E('div', { class: 'card oc' }, E('button', { class: 'oh', onclick: () => { open.has(m.token) ? open.delete(m.token) : open.add(m.token); paint(); } }, E('div', null, E('div', { class: 't' }, o.number), E('div', { class: 'live' }, live ? E('i') : null, E('b', null, cap(o.status)), E('span', null, ' · ' + (STAT_MSG[o.status] || '')))), E('div', { class: 'tr' }, inr(o.total))),
       o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), open.has(m.token) ? det : null)); }); };
-  async function load(quiet) { const rows = await Promise.all(mine.map((m) => rpc('public_sty_order', { p_token: m.token }).catch(() => null))); const nx = {}; let changed = false; mine.forEach((m, i) => { if (rows[i]) { nx[m.token] = rows[i]; const was = state[m.token]; if (was && was.status !== rows[i].status) { changed = true; if (quiet) toast(rows[i].number + ': ' + cap(rows[i].status)); } } }); state = nx; paint(); return changed; }
+  async function load(quiet) { const rows = await Promise.all(mine.map((m) => rpc(`public_${PFX}_order`, { p_token: m.token }).catch(() => null))); const nx = {}; let changed = false; mine.forEach((m, i) => { if (rows[i]) { nx[m.token] = rows[i]; const was = state[m.token]; if (was && was.status !== rows[i].status) { changed = true; if (quiet) toast(rows[i].number + ': ' + cap(rows[i].status)); } } }); state = nx; paint(); return changed; }
   box.append(E('div', { class: 'spin' })); await load(false);
   v._ot = setInterval(() => { if (!document.body.contains(v) || !location.hash.includes('orders')) return clearInterval(v._ot); load(true); }, 12000);
 };
@@ -1381,7 +1385,7 @@ const TR = (() => {
   let ref = ''; try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; if (ref === location.hostname) ref = ''; } catch {}
   const q = []; let page = '', t0 = 0, maxd = 0;
   const push = (k, p, d) => { q.push({ sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret }); if (q.length >= 25) flush(); };
-  function flush() { if (!q.length) return; const ev = q.splice(0, 40); sb.rpc('public_sty_track', { p_slug: SLUG, p: { events: ev } }).then(() => {}, () => {}); }
+  function flush() { if (!q.length) return; const ev = q.splice(0, 40); sb.rpc(`public_${PFX}_track`, { p_slug: SLUG, p: { events: ev } }).then(() => {}, () => {}); }
   function depth() { const h = document.documentElement.scrollHeight - innerHeight; return h > 0 ? Math.min(100, Math.round(scrollY / h * 100)) : 100; }
   addEventListener('scroll', () => { const d = depth(); if (d > maxd) maxd = d; }, { passive: true });
   function leave() { if (page) { push('scroll', page, { max: maxd, s: Math.round((Date.now() - t0) / 1000) }); push('time', page, { s: Math.round((Date.now() - t0) / 1000) }); } }
@@ -1450,12 +1454,27 @@ async function boot() {
   // exists -- must not try to use it; drop the stale cache and fall through to a fresh fetch, which can only
   // ever return '1' or 'minimal' now.
   if (cached && cached.config && cached.config.template === '2') cached = null;
-  const fresh = rpc('public_sty_store', { p_slug: SLUG });
+  // Restore which product's RPCs the cached copy was fetched with, so an interaction fired before the fresh
+  // fetch below resolves (see the cached-first-paint branch) still hits the right public_<prefix>_* functions.
+  if (cached) PFX = cached.__pfx === 'sfx' ? 'sfx' : 'sty';
+  // Tries the AUZsStyle storefront RPC first (unchanged behaviour for every existing AUZsStyle shop), and only
+  // when that tenant doesn't have one (a null result, not a thrown error) falls back to the AUZslab storefront
+  // platform's own public RPC (db/372) -- a tenant only ever has one of the two products enabled, so exactly one
+  // of these ever returns real data. This is this renderer's one generalization point: everything else below
+  // (rendering, cart, checkout) is shared, niche-agnostic code already.
+  const resolveStore = async () => {
+    const sty = await rpc('public_sty_store', { p_slug: SLUG });
+    if (sty) { PFX = 'sty'; return sty; }
+    PFX = 'sfx';
+    return rpc('public_sfx_store', { p_slug: SLUG });
+  };
+  const fresh = resolveStore();
   const fail = (e) => { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Could not open the store'), E('div', { class: 'mut' }, e.message))); };
   const closed = (d) => { clear(app).append(E('div', { class: 'empty' }, E('h1', null, d.name || 'Store'), E('div', { class: 'mut' }, 'Our online store is not open yet. Please check back soon.'))); document.title = d.name || 'Store'; };
+  const remember = (d) => { try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify({ ...d, __pfx: PFX })); } catch (e) { /* storage full */ } };
   if (cached && cached.styles && !cached.closed) {
     ingest(cached); shell(); window.addEventListener('hashchange', route); route();
-    fresh.then((d) => { if (!d || d.closed) return; try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify(d)); } catch (e) { /* storage full */ }
+    fresh.then((d) => { if (!d || d.closed) return; remember(d);
       ingest(d); const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0]; if (!['checkout', 'order', 'orders', 'me'].includes(h) && !document.querySelector('.sheetwrap')) { const y = scrollY; route(); scrollTo(0, y); } }).catch(() => {});
     return;
   }
@@ -1463,7 +1482,7 @@ async function boot() {
   let d; try { d = await fresh; } catch (e) { fail(e); return; }
   if (!d) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'This store was not found'))); return; }
   if (d.closed) { closed(d); return; }
-  try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify(d)); } catch (e) { /* storage full */ }
+  remember(d);
   ingest(d); shell(); window.addEventListener('hashchange', route); route();
 }
 boot();

@@ -768,6 +768,43 @@ export const RPC = {
   mob_share_sale: { params: ['p_sale_id', 'p_enable'], defaults: { p_enable: true }, auth: true },
   public_mob_sale: { params: ['p_token'], auth: false },
 
+  // AUZslab storefront platform (db/372): a new, separate product -- any business builds its own store
+  // (catalog, collections, orders, theme, checkout). Own real tables (sfx_*), gated by sfx_guard() in SQL
+  // exactly like mob_*/sty_* above. The public storefront is rendered by the SAME page AUZsStyle uses
+  // (app/public/store.html + store/store.js, generalized to also call these when a tenant has no AUZsStyle
+  // store), so every public_sfx_* function below mirrors its public_sty_* twin's params on purpose.
+  sfx_context: { params: [], auth: true },
+  sfx_store_save: { params: ['p'], jsonb: ['p'], auth: true },
+  sfx_store_set_razorpay: { params: ['p'], jsonb: ['p'], auth: true },
+  sfx_product_list: { params: [], auth: true },
+  sfx_product_get: { params: ['p_id'], auth: true },
+  sfx_product_save: { params: ['p_id', 'p'], jsonb: ['p'], defaults: { p_id: null }, auth: true },
+  sfx_product_delete: { params: ['p_id'], auth: true },
+  sfx_collection_list: { params: [], auth: true },
+  sfx_collection_get: { params: ['p_id'], auth: true },
+  sfx_collection_save: { params: ['p_id', 'p'], jsonb: ['p'], defaults: { p_id: null }, auth: true },
+  sfx_collection_delete: { params: ['p_id'], auth: true },
+  sfx_order_list: { params: [], auth: true },
+  sfx_order_get: { params: ['p_id'], auth: true },
+  sfx_order_set_status: { params: ['p_id', 'p_status', 'p_tracking'], defaults: { p_tracking: null }, auth: true },
+  sfx_order_note: { params: ['p_id', 'p_note'], auth: true },
+  sfx_domain_list: { params: [], auth: true },
+  sfx_domain_connect: { params: ['p_hostname'], auth: true },
+  public_sfx_store: { params: ['p_slug'], auth: false },
+  public_sfx_reviews: { params: ['p_slug', 'p_style'], auth: false },
+  public_sfx_review_submit: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },
+  public_sfx_notify_me: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
+  public_sfx_coupon_check: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
+  public_sfx_track: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
+  public_sfx_place_order: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
+  public_sfx_order: { params: ['p_token'], auth: false },
+  public_sfx_order_paid: { params: ['p_token', 'p_utr'], auth: false },
+  public_sfx_order_find: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
+  public_sfx_return_request: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },
+  // sfx_online_start / sfx_online_set_order / sfx_online_confirm / sfx_domain_verify_prepare /
+  // sfx_domain_mark_verified are deliberately NOT here: server-only helpers, called directly with pool.query
+  // from server/src/routes/payments.js and server/src/routes/sites.js (same reason sty_online_* isn't here).
+
   // AI connector keys (db/318) -- owner-only, see mcp_api_keys' own comment.
   mcp_create_key: { params: ['p_label', 'p_scope'], defaults: { p_label: 'Connector key', p_scope: 'read' }, auth: true },
   mcp_list_keys: { params: [], auth: true },
