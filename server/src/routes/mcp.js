@@ -433,6 +433,12 @@ const TOOLS = [
     annotations: { readOnlyHint: true },
     inputSchema: { type: 'object', properties: { product_id: { type: 'string' }, warehouse_id: { type: 'string' }, from: { type: 'string', description: 'YYYY-MM-DD' }, to: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string', enum: ['opening', 'purchase', 'sale', 'sale_return', 'purchase_return', 'stock_in', 'stock_out', 'transfer_out', 'transfer_in', 'adjustment', 'reversal'] } } },
   },
+  {
+    name: 'ledger_how_to',
+    description: "A real AuzsLedger user guide (setup, invoices, bills, payments, quotations/orders, credit/debit notes, reports, GST, bank reconciliation, approvals, bulk import, year-end closing, and common errors with their actual fix). Use this to answer a plain question like \"how do I create a credit note\" or \"why can't I post this bill\" with exact, real steps instead of guessing. Pass a question/topic to get the most relevant section(s); omit it to get the whole guide. Read-only.",
+    annotations: { readOnlyHint: true },
+    inputSchema: { type: 'object', properties: { question: { type: 'string', description: 'e.g. "how do I record a payment", "GST filing", "books are locked"' } } },
+  },
   // ---- AuzsFinance: thin wrappers over the already-registered fin_* functions. ----
   {
     name: 'finance_dashboard',
@@ -1472,6 +1478,8 @@ async function runTool(client, name, args) {
           credit_limit: args.credit_limit, credit_days: args.credit_days, category: args.category || null, notes: args.notes || null, active: args.active,
         },
       });
+    case 'ledger_how_to':
+      return searchGuide('ledger', args.question);
 
     case 'finance_dashboard':
       return callRpc(client, 'fin_dashboard', { p_from: args.from || null, p_to: args.to || null });

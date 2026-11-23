@@ -181,7 +181,7 @@ Supersedes PR #1099 entirely — once this is finished and a PR is opened, close
 merging it. This branch reconciles PR #1099's two-path signup gate onto PR #1100's real schema,
 AND incorporates the owner's major mid-task correction that scrapped the "basic dashboard"
 concept. Read `db/373_two_path_onboarding.sql`, `db/374_storefront_plan_pricing.sql`,
-`db/375_path_a_apps_direct.sql` for the real implementation. Summary of the corrected design:
+`db/383_path_a_apps_direct.sql` for the real implementation. Summary of the corrected design:
 
 **Path A ("Get apps")**: `choose-path.html`'s "AUZslab apps" option is now a plain link to
 `live-demo.html`. A new "Get this app" button appears on `live-demo.html`'s featured-app card,
