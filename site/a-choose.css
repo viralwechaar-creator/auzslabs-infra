@@ -59,3 +59,28 @@ html body.a-choose main.content .cp-card p{font-size:13px!important;max-width:no
 body.a-choose .cp-ar{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#fff;color:#111;font-style:normal;flex:none;transition:transform .25s}
 body.a-choose .cp-card:hover .cp-ar{transform:translateX(4px)}
 body.a-choose .cp-card{display:flex}
+/* v4: small tile cards (preview tile, title, pill, one line) */
+body.a-choose .cp-wrap{max-width:640px}
+body.a-choose .cp-fork{grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:520px){body.a-choose .cp-fork{gap:10px}}
+body.a-choose .cp-card{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding:10px 10px 14px;border-radius:20px;min-height:0}
+body.a-choose .cp-card:hover,body.a-choose .cp-card:focus-visible{transform:translateY(-4px)}
+body.a-choose .cp-pv{display:grid;place-items:center;aspect-ratio:16/10;border-radius:14px;margin-bottom:12px}
+body.a-choose .cp-pv svg{width:34%;max-width:70px;height:auto}
+body.a-choose .cp-a{background:#1c1c1c;border-color:#333}
+body.a-choose .cp-a .cp-pv{background:#ecebe7}
+body.a-choose .cp-a .cp-pv svg{fill:#1c1c1c}
+body.a-choose .cp-a .cp-pv svg .o{fill:#800020}
+body.a-choose .cp-b{background:#ecebe7;border-color:#d8d6d0}
+body.a-choose .cp-b .cp-pv{background:#2a2a2a}
+body.a-choose .cp-b .cp-pv svg{fill:#ecebe7}
+body.a-choose .cp-b .cp-pv svg .o{fill:#ecebe7}
+body.a-choose .cp-b .cp-pv svg .k{fill:#2a2a2a}
+html body.a-choose main.content .cp-card h3{padding:0 6px;font-size:15px!important;margin:0 0 6px!important}
+html body.a-choose main.content .cp-b h3{color:#111!important}
+body.a-choose .cp-meta{padding:0 6px;margin:0 0 8px}
+body.a-choose .cp-pill{display:inline-block;font:600 11px/1 Inter,sans-serif;padding:4px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.35);color:#e6e6e4}
+body.a-choose .cp-b .cp-pill{border-color:#222;color:#222}
+html body.a-choose main.content .cp-card p{padding:0 6px;font-size:12.5px!important;line-height:1.4}
+html body.a-choose main.content .cp-b p{color:#444!important}
+body.a-choose .cp-ar,body.a-choose .cp-num{display:none}
