@@ -264,3 +264,11 @@ dialog.a-dialog h2 { font-size: 22px; margin-bottom: 14px; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--plum) 16%, transparent);
 }
 .a-card { box-shadow: var(--shadow-sm, 0 10px 20px -14px rgba(57,29,33,.35)); }
+
+/* Admin tab (shared ds/admin-tab.js) inside the salon console */
+.adm-embed .card{border:1px solid var(--line,#e4dfe6);border-radius:14px;padding:14px;background:#fff;margin-bottom:12px}
+.adm-embed .list{display:grid;gap:8px}.adm-embed .li{border:1px solid var(--line,#e4dfe6);border-radius:12px;background:#fff}
+.adm-embed .btn{border:1px solid var(--line,#cfc7d3);background:#fff;border-radius:999px;padding:8px 14px;font:600 13px inherit;cursor:pointer}
+.adm-embed .btn.fill{background:var(--plum,#3a1f4a);color:#fff;border-color:transparent}
+.adm-embed .input{width:100%;min-height:40px;border:1px solid var(--line,#cfc7d3);border-radius:10px;padding:8px 10px;font:inherit;font-size:16px;background:#fff}
+.adm-embed .muted{opacity:.7}.adm-embed .small{font-size:13px}.adm-embed .seg{margin-bottom:6px}

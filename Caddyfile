@@ -153,25 +153,9 @@
     handle @a_style {
         import one_app /style.html /style.html /style/*
     }
-    @a_mob host auzsmob.{$DOMAIN}
-    handle @a_mob {
-        import one_app /mob.html /mob.html /mob/*
-    }
-    @a_pay host auzspay.{$DOMAIN}
-    handle @a_pay {
-        import one_app /payroll.html /payroll.html /payroll/*
-    }
     @a_ledger host auzsledger.{$DOMAIN}
     handle @a_ledger {
         import one_app /accounts.html /accounts.html /accounts/*
-    }
-    @a_scan host auzsscan.{$DOMAIN}
-    handle @a_scan {
-        import one_app /scan.html /scan.html /accounts/*
-    }
-    @a_fin host auzsfinance.{$DOMAIN}
-    handle @a_fin {
-        import one_app /finance.html /finance.html /finance/*
     }
     # the AUZslab storefront platform's owner hub (catalog, collections, orders, theme, domains) -- a new,
     # separate product from AUZsStyle/Ledger/Salon (db/372). The public storefront it builds is NOT here:
