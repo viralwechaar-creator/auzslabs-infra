@@ -6,7 +6,7 @@
 // preview also routed through this file is a separate, unrelated project and is not part of this build.
 import { menu, icons, emptyState } from './data.js';
 import { workspace } from './workspace.js';
-import { boot, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, boot, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 export const $ = (selector) => document.querySelector(selector);
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -120,6 +120,11 @@ export function rerender(skipRefresh) {
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
   $('#app').innerHTML = '<div class="shell' + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
   $('.work-area').scrollTop = scrollTop;
+  const adminHost = document.querySelector('[data-admin-pane]');
+  if (adminHost && window.auzAdminTab) {
+    const only = adminHost.dataset.adminPane || undefined;
+    window.auzAdminTab.mount(adminHost, { rpc: (fn, args) => api(fn, args), toast: (m, err) => flash(m), isOwner: (state.perms || {}).sfx_manage === true, sb, only });
+  }
   if (inSettings) {
     $('.settings-links [aria-current]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     $('.settings-search').addEventListener('input', (event) => {

@@ -149,6 +149,8 @@
       var bar = el('div', { class: 'seg', role: 'tablist', style: 'display:flex;gap:6px;flex-wrap:wrap' });
       function pick(i) { Array.prototype.forEach.call(bar.children, function (b, j) { b.className = 'btn small' + (i === j ? ' fill' : ''); b.setAttribute('aria-selected', i === j ? 'true' : 'false'); }); panes[i][1](body, o); }
       panes.forEach(function (p, i) { var b = el('button', { type: 'button', role: 'tab', text: p[0] }); b.onclick = function () { pick(i); }; bar.append(b); });
+      var only = o.only && panes.filter(function (x) { return x[0] === o.only; })[0];
+      if (only) { host.replaceChildren(body); only[1](body, o); return; }
       host.replaceChildren(bar, body); pick(0);
     }
   };

@@ -3,7 +3,7 @@
 // standing in for the server (see db/372 for every RPC called here).
 import { state } from './ecosystem.js';
 
-const sb = window.supabase.createClient(CFG.url, CFG.key);
+export const sb = window.supabase.createClient(CFG.url, CFG.key);
 export let perms = { sfx_view: false, sfx_manage: false };
 let busy = 0;
 
