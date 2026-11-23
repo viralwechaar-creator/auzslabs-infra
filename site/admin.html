@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head>
+<head><meta name="robots" content="noindex,nofollow">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- Google tag (gtag.js) -->
@@ -13,7 +13,6 @@
 </script>
 <meta name="theme-color" content="#faf9f7">
 <title>Admin — AUZslab</title>
-<meta name="robots" content="noindex,nofollow">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/admin-manifest.json">
@@ -999,6 +998,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="orders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Client requests<span class="a-row-badge" id="ordersBadge" style="display:none"></span></button>
         <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="themeSubmissions"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11"/></svg>Theme submissions<span class="a-row-badge" id="notifBadgeThemeSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="jobApplications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>Job applications<span class="a-row-badge" id="notifBadgeJobsSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="salesOs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>SalesOS team</button>
         <button class="a-side-btn" data-section="idCards"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="11" r="2.2"/><path d="M5 17c.4-1.8 1.6-2.8 3-2.8s2.6 1 3 2.8M14 9h5M14 13h5"/></svg>Staff ID cards</button>
@@ -1008,6 +1008,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div class="a-side-group-label">Website</div>
 
         <div class="a-side-group-label">Money</div>
+        <button class="a-side-btn" data-section="sfxPricing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg>Storefront plan price</button>
         <button class="a-side-btn" data-section="clientPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Client payments &amp; bills</button>
         <button class="a-side-btn" data-section="billMake"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M12 7v0"/></svg>Make a bill</button>
 
@@ -1075,7 +1076,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <h2 class="h-2">Client requests</h2>
         <p class="p">A visitor sends their details and what they need. Check the business, set the status, build the quote, send the payment link on WhatsApp, confirm the payment, then send the bill.</p>
         <div class="row" style="gap:8px;margin:12px 0;flex-wrap:wrap">
-          <button class="btn btn-primary" data-ordf="open">Open</button><button class="btn btn-ghost" data-ordf="requested">New</button><button class="btn btn-ghost" data-ordf="verifying">Verifying</button><button class="btn btn-ghost" data-ordf="confirmed">Confirmed</button><button class="btn btn-ghost" data-ordf="link_sent">Link sent</button><button class="btn btn-ghost" data-ordf="payment_submitted">To confirm</button><button class="btn btn-ghost" data-ordf="paid">Paid</button><button class="btn btn-ghost" data-ordf="">All</button>
+          <button class="btn btn-primary" data-ordf="open">Open</button><button class="btn btn-ghost" data-ordf="requested">New</button><button class="btn btn-ghost" data-ordf="verifying">Verifying</button><button class="btn btn-ghost" data-ordf="confirmed">Confirmed</button><button class="btn btn-ghost" data-ordf="link_sent">Link sent</button><button class="btn btn-ghost" data-ordf="payment_submitted">To confirm</button><button class="btn btn-ghost" data-ordf="active">Active</button><button class="btn btn-ghost" data-ordf="paid">Paid</button><button class="btn btn-ghost" data-ordf="">All</button>
         </div>
         <div id="ordersList">Loading&hellip;</div>
       </section>
@@ -1090,6 +1091,24 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div class="label">Existing clients</div>
         <h2 class="h-2">Add-on requests</h2>
         <div id="addonRequestsList">Loading&hellip;</div>
+      </section>
+
+      <section class="a-page" id="themeSubmissionsSection" data-title="Theme submissions" data-parent="more">
+        <div class="label">Storefront theme marketplace</div>
+        <h2 class="h-2">Theme submissions</h2>
+        <p class="muted" style="font-size:13px;color:#777;margin:4px 0 14px">Approve or reject a developer's theme before it appears in a store owner's marketplace. Rejecting one requires a reason the developer can see.</p>
+        <div id="themeQueueList">Loading&hellip;</div>
+        <h2 class="h-2" style="margin-top:28px">All themes</h2>
+        <div id="themeAllList">Loading&hellip;</div>
+        <h2 class="h-2" style="margin-top:28px">Developer commission ledger</h2>
+        <p class="muted" style="font-size:13px;color:#777;margin:4px 0 14px">64% developer / 36% AUZslab, calculated automatically on every sale. Payouts are manual -- pay the developer by hand (bank transfer/UPI), then mark the row paid here with a note.</p>
+        <div id="themeLedgerList">Loading&hellip;</div>
+        <h2 class="h-2" style="margin-top:28px">Grant theme developer access</h2>
+        <p class="muted" style="font-size:13px;color:#777;margin:4px 0 14px">Turns on the theme developer portal (/theme-dev.html) for a business's own login -- the same reusable feature-flag mechanism as any other service toggle, not a new auth system.</p>
+        <form id="grantDevForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="grantDevSlug" placeholder="business address (slug)" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;min-width:220px" required>
+          <button type="submit" class="btn btn-primary">Grant developer access</button>
+        </form>
       </section>
 
       <section class="a-page" id="jobApplicationsSection" data-title="Job applications" data-parent="more">
@@ -1284,6 +1303,13 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="bmBody"></div>
         <div class="label" style="margin-top:34px">Recent direct bills</div>
         <div id="bmRecent" style="margin-top:8px">Loading&hellip;</div>
+      </section>
+
+      <section class="a-page" id="sfxPricingSection" data-title="Storefront plan price" data-parent="more">
+        <div class="label">Money</div>
+        <h2 class="h-2">Storefront plan price</h2>
+        <p class="p">The only priced product on AUZslab -- a deliberate, scoped exception (every other product stays quote-only). Starts at &#8377;0 ("not priced yet"); a Path-B store's trial just pauses writes until a real price is set here, with no charge. Once you set a real number, a paused/trial store can pay online (Razorpay) to reactivate itself instead of waiting for you to approve a reactivation request by hand.</p>
+        <div id="sfxPricingBody">Loading&hellip;</div>
       </section>
 
       <section class="a-page" id="clientPaySection" data-title="Client payments" data-parent="more">
@@ -1734,9 +1760,10 @@ function resetMainScroll() {
 // Each section loads when it is opened (and again if its data is older than 20 seconds), not all at once at sign-in:
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
-  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), jobApplications: () => loadJobApplications(), salesOs: () => loadSalesOsAdmin(),
+  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), themeSubmissions: () => loadThemeSubmissions(), jobApplications: () => loadJobApplications(), salesOs: () => loadSalesOsAdmin(),
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(), domains: () => loadDomains(),
+  sfxPricing: () => loadSfxPricing(),
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -1999,6 +2026,73 @@ async function loadSignupRequests() {
     tr.querySelector('[data-del]').onclick = async () => { if (await permanentDelete('signup_request', id, req.business_name)) loadSignupRequests(); };
   });
 }
+
+async function loadThemeSubmissions() {
+  const queueEl = document.getElementById('themeQueueList');
+  const allEl = document.getElementById('themeAllList');
+  const ledgerEl = document.getElementById('themeLedgerList');
+  const badge = document.getElementById('notifBadgeThemeSide');
+  try {
+    const [{ data: queue, error: qErr }, { data: all, error: aErr }, { data: ledger, error: lErr }] = await Promise.all([
+      sb.rpc('sfx_admin_theme_queue'), sb.rpc('sfx_admin_theme_list'), sb.rpc('sfx_admin_ledger_list'),
+    ]);
+    if (qErr) throw qErr; if (aErr) throw aErr; if (lErr) throw lErr;
+    if (badge) { const n = (queue || []).length; badge.style.display = n ? '' : 'none'; badge.textContent = n || ''; }
+    queueEl.innerHTML = (queue || []).length ? (queue || []).map((t) => `
+      <div class="req-card" data-id="${t.id}">
+        <div class="req-head"><div><div class="req-name">${esc(t.name)}</div><div class="req-sub">${esc(t.developerTenant || 'Unknown developer')} &middot; ${t.priceCents > 0 ? '₹' + (t.priceCents / 100).toLocaleString('en-IN') : 'Free'}</div></div></div>
+        <div class="req-section">${esc(t.description || '')}${t.previewImageUrl ? `<div style="margin-top:6px"><img src="${esc(t.previewImageUrl)}" style="max-width:220px;border-radius:8px" alt=""></div>` : ''}<div class="req-body" style="margin-top:4px">${(t.pendingVersion?.content?.sections || []).length} section(s) submitted</div></div>
+        <div class="req-actions"><button class="req-primary" data-approve>Approve</button><button data-reject>Reject</button></div>
+      </div>`).join('') : emptyDoodle('No theme submissions waiting for review.');
+    queueEl.querySelectorAll('[data-id]').forEach((card) => {
+      const id = card.dataset.id;
+      card.querySelector('[data-approve]').onclick = async () => {
+        const { error } = await sb.rpc('sfx_admin_theme_approve', { p_theme_id: id });
+        if (error) { alert(error.message); return; }
+        loadThemeSubmissions();
+      };
+      card.querySelector('[data-reject]').onclick = async () => {
+        const reason = prompt('Reason for rejecting this theme (the developer will see this):');
+        if (!reason || !reason.trim()) return;
+        const { error } = await sb.rpc('sfx_admin_theme_reject', { p_theme_id: id, p_reason: reason.trim() });
+        if (error) { alert(error.message); return; }
+        loadThemeSubmissions();
+      };
+    });
+    allEl.innerHTML = (all || []).length ? `<table class="admin-table"><thead><tr><th>Theme</th><th>Developer</th><th>Status</th><th>Price</th><th>Installs</th></tr></thead><tbody>${
+      (all || []).map((t) => `<tr><td data-label="Theme">${esc(t.name)}${t.isBuiltin ? ' <span class="feature-tag">Built-in</span>' : ''}</td><td data-label="Developer">${esc(t.developerTenant || '&mdash;')}</td><td data-label="Status">${esc(t.status)}</td><td data-label="Price">${t.priceCents > 0 ? '₹' + (t.priceCents / 100).toLocaleString('en-IN') : 'Free'}</td><td data-label="Installs">${t.installs}</td></tr>`).join('')
+    }</tbody></table>` : emptyDoodle('No themes yet.');
+    ledgerEl.innerHTML = (ledger || []).length ? `<table class="admin-table"><thead><tr><th>Developer</th><th>Theme</th><th>Sale</th><th>Developer share</th><th>AUZslab share</th><th>Status</th><th></th></tr></thead><tbody>${
+      (ledger || []).map((l) => `<tr data-id="${l.id}"><td data-label="Developer">${esc(l.developerTenant || '')}</td><td data-label="Theme">${esc(l.themeName)}</td><td data-label="Sale">₹${(l.saleAmountCents / 100).toLocaleString('en-IN')}</td><td data-label="Developer share">₹${(l.developerShareCents / 100).toLocaleString('en-IN')}</td><td data-label="AUZslab share">₹${(l.platformShareCents / 100).toLocaleString('en-IN')}</td><td data-label="Status">${l.paidOut ? `Paid${l.paidOutNote ? ' · ' + esc(l.paidOutNote) : ''}` : 'Owed'}</td><td>${l.paidOut ? '' : '<button class="btn btn-ghost" data-mark-paid style="font-size:11px;padding:5px 10px;min-height:0">Mark paid</button>'}</td></tr>`).join('')
+    }</tbody></table>` : emptyDoodle('No sales recorded yet.');
+    ledgerEl.querySelectorAll('[data-mark-paid]').forEach((btn) => {
+      btn.onclick = async () => {
+        const note = prompt('Optional note (e.g. UTR / UPI reference):') || null;
+        const { error } = await sb.rpc('sfx_admin_ledger_mark_paid', { p_id: btn.closest('tr').dataset.id, p_note: note });
+        if (error) { alert(error.message); return; }
+        loadThemeSubmissions();
+      };
+    });
+  } catch (e) {
+    queueEl.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('grantDevForm');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const slug = document.getElementById('grantDevSlug').value.trim().toLowerCase();
+    if (!slug) return;
+    const { data: tenant, error: findErr } = await sb.from('tenants').select('id').eq('slug', slug).maybeSingle();
+    if (findErr || !tenant) { alert('No business found at that address.'); return; }
+    const { error } = await sb.rpc('admin_set_tenant_features', { p_tenant_id: tenant.id, p_features: { storefront_developer: true } });
+    if (error) { alert(error.message); return; }
+    alert(slug + ' can now open the theme developer portal at /theme-dev.html.');
+    document.getElementById('grantDevSlug').value = '';
+  });
+});
 
 async function loadAddonRequests() {
   const listEl = document.getElementById('addonRequestsList');
@@ -3161,6 +3255,29 @@ document.getElementById('payForm').onsubmit = async (e) => {
   e.target.reset(); document.getElementById('payDate').value = new Date().toISOString().slice(0, 10);
   loadPayModalList(); sectionLoadedAt.clientPay = 0;
 };
+// ---------- Storefront plan price (db/374): the one scoped exception to quote-only pricing ----------
+async function loadSfxPricing() {
+  const body = document.getElementById('sfxPricingBody');
+  const { data, error } = await sb.rpc('public_product_prices', {});
+  if (error) { body.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const row = (data || []).find((p) => p.key === 'storefront') || { monthly_price: 0 };
+  const priced = Number(row.monthly_price) > 0;
+  body.innerHTML = `<div class="t6" style="max-width:420px">
+    <label class="lbl">Monthly price (&#8377;)<input id="sfxPriceInput" class="inp" type="number" min="0" step="1" value="${esc(String(row.monthly_price))}"></label>
+    <div class="savebar" style="margin-top:10px"><button class="btn pri" id="sfxPriceSave">Save price</button></div>
+    <div id="sfxPriceErr" class="err"></div>
+    <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">${priced ? 'Priced -- a paused or trial store can now pay online to reactivate.' : 'Not priced yet (&#8377;0) -- paused/trial stores can only be reactivated by you, by hand.'}</p>
+  </div>`;
+  document.getElementById('sfxPriceSave').onclick = async () => {
+    const errEl = document.getElementById('sfxPriceErr'); errEl.textContent = '';
+    const v = Number(document.getElementById('sfxPriceInput').value);
+    if (!(v >= 0)) { errEl.textContent = 'Enter a price of 0 or more'; return; }
+    const { error: e2 } = await sb.rpc('admin_set_product_price', { p_key: 'storefront', p_monthly_price: v });
+    if (e2) { errEl.textContent = e2.message; return; }
+    loadSfxPricing();
+  };
+}
+
 async function loadClientPay() {
   const listEl = document.getElementById('clientPayList');
   const { data, error } = await sb.rpc('admin_list_client_payments', {});
@@ -3255,14 +3372,14 @@ document.getElementById('mkForm').onsubmit = async (e) => {
   g('mkOverlay').classList.remove('open'); sectionLoadedAt.clientPay = 0; if (mkReload) mkReload(); loadBills();
 };
 // ---------- Client requests: verify, quote, payment link, confirm payment, bill (db/155) ----------
-const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', rejected: 'Rejected' };
+const ORD_STATUS = { requested: 'New request', verifying: 'Under verification', confirmed: 'Confirmed', link_sent: 'Payment link sent', payment_submitted: 'Payment to confirm', paid: 'Paid', active: 'Active (no bill yet)', rejected: 'Rejected' };
 const ORD_PRODUCTS = [['accounting', 'AUZsLedger'], ['mobile', 'AUZsMob'], ['style', 'AUZsStyle'], ['salon', 'AUZslab Salon']];
 const ORD_NICHES = [['cafe', 'Cafe / restaurant'], ['retail', 'Retail / General'], ['salon', 'Salon / spa'], ['mobile', 'Mobile shop']];
 const ORD_STATES = { '01': 'Jammu and Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal', '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat', '26': 'Dadra and Nagar Haveli and Daman and Diu', '27': 'Maharashtra', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman and Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh' };
 const SETUP_DEFAULT = 0;
 const ONBOARDING_DEFAULT = 1360; // flat one-time onboarding fee for every new client; there is no separate setup fee any more
 let ordFilter = 'open', ordCur = null, ordQ = null, ordPrices = null, ordProofUrl = null;
-const ordPill = (s) => `<span class="status-pill ${s === 'paid' ? 'status-active' : s === 'rejected' ? 'status-suspended' : ''}">${esc(ORD_STATUS[s] || s)}</span>`;
+const ordPill = (s) => `<span class="status-pill ${s === 'paid' || s === 'active' ? 'status-active' : s === 'rejected' ? 'status-suspended' : ''}">${esc(ORD_STATUS[s] || s)}</span>`;
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const money2 = (n) => '&#8377;' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const PROD_NAME = Object.fromEntries(ORD_PRODUCTS.concat([['addon_hardware', 'Hardware integration'], ['addon_website', 'Website'], ['addon_whatsapp', 'WhatsApp automation']]));
@@ -3384,6 +3501,10 @@ function renderOrder() {
   ${o.requirement ? `<p class="p" style="margin-top:10px"><b>What they need:</b> ${esc(o.requirement)}</p>` : ''}${o.notes ? `<p class="p"><b>Notes:</b> ${esc(o.notes)}</p>` : ''}
   ${(o.products || []).length ? `<p class="p"><b>Picked:</b> ${(o.products || []).map((k) => esc(PROD_NAME[k] || k)).join(', ')}</p>` : ''}
   ${locked ? '' : `<div class="row-actions" style="margin-top:8px"><button class="btn btn-ghost" id="odSave" type="button">Save details</button></div>`}
+  ${['requested', 'verifying', 'confirmed', 'link_sent', 'payment_submitted'].includes(o.status) ? `
+  <div class="row-actions" style="margin-top:14px"><button class="btn btn-primary" id="odApprove" type="button">Approve &amp; activate</button></div>
+  <p class="p" style="font-size:12px;color:var(--ink-faint);margin-top:4px">Switches on the picked products for this client right away. No bill is made here -- collect payment yourself and log it under Client payments &amp; bills (or build a formal GST bill below any time).</p>` : ''}
+  ${o.status === 'active' ? `<p class="p" style="margin-top:14px;color:var(--ink-faint)">Active since ${esc(String(o.updated_at || '').slice(0, 10))}${o.tenant_slug ? ' &middot; access: <b>' + esc(o.tenant_slug) + '.auzslab.in</b>' : ''}. Log payment under Client payments &amp; bills, or build a formal GST bill below.</p>` : ''}
   ${o.status === 'rejected' ? '' : `
   <div class="label" style="margin-top:20px">${o.status === 'paid' ? 'Bill' : 'Quote: products, price, GST, discount'}</div>
   ${o.status === 'paid' ? '' : `<div id="qItems">${(ordQ.items || []).map(prodRow).join('')}</div>
@@ -3399,11 +3520,11 @@ function renderOrder() {
   <label class="lbl" style="margin-top:10px">Note on the bill (optional)<input id="qNote" class="inp" value="${esc(ordQ.note || '')}"></label>`}
   <div class="ord-tot" id="qTot"></div>
   ${o.status === 'paid' ? '' : `<div class="row-actions" style="margin-top:10px"><button class="btn btn-primary" id="qSend" type="button">${o.status === 'link_sent' || o.status === 'payment_submitted' ? 'Save changes' : 'Save and send to client on WhatsApp'}</button><button class="btn btn-ghost" id="qSave" type="button">Save as draft only</button></div><p class="p" style="margin-top:6px;font-size:12px">Sending uses the AUZslab WhatsApp number and puts the quote on the client's payment page. A repeat send is not possible once the link has gone.</p>`}`}
-  ${(['confirmed', 'link_sent', 'payment_submitted'].includes(o.status) && o.totals) ? `
+  ${(['confirmed', 'link_sent', 'payment_submitted', 'active'].includes(o.status) && o.totals) ? `
   <div class="label" style="margin-top:20px">Payment link</div>
   <label class="lbl">Message to send on WhatsApp<textarea id="waPay" class="inp" rows="9">${esc(payMessage(o))}</textarea></label>
   <div class="row-actions" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-primary" id="waSendPay" type="button">Send payment link on WhatsApp</button><button class="btn btn-ghost" id="copyPay" type="button">Copy link</button></div>` : ''}
-  ${(['link_sent', 'payment_submitted', 'confirmed'].includes(o.status) && o.totals) ? `
+  ${(['link_sent', 'payment_submitted', 'confirmed', 'active'].includes(o.status) && o.totals) ? `
   <div class="label" style="margin-top:20px">Payment</div>
   <p class="p">${o.payment && o.payment.method === 'cash' ? `The client chose <b>cash in hand</b>. Confirm the payment when you have received the cash.` : o.payment && o.payment.submitted_at ? `The client says they paid. Terms accepted ${esc(String(o.payment.terms_accepted_at || '').slice(0, 16).replace('T', ' '))}.${o.payment.utr ? ' UTR: <b>' + esc(o.payment.utr) + '</b>.' : ''}` : 'Nothing submitted by the client yet.'}</p>
   <div id="proofBox">${proof ? 'Loading screenshot&hellip;' : (o.payment && o.payment.method === 'cash' ? '' : '<p class="p" style="color:var(--ink-faint)">No screenshot yet.</p>')}</div>
@@ -3446,6 +3567,11 @@ async function reloadOrder() { await openOrder(ordCur.id); sectionLoadedAt.order
 function wireOrder() {
   const o = ordCur, g = (id) => document.getElementById(id);
   document.querySelectorAll('[data-ost]').forEach((b) => { b.onclick = async () => { if (b.dataset.ost === 'rejected' && !confirm('Reject this request?')) return; await ordAct('admin_set_order_status', { p_id: o.id, p_status: b.dataset.ost }, reloadOrder); }; });
+  if (g('odApprove')) g('odApprove').onclick = async () => {
+    if (!confirm('Switch on ' + (PROD_NAME[(o.products || [])[0]] ? (o.products || []).map((k) => PROD_NAME[k] || k).join(', ') : 'these products') + ' for ' + (o.business_name || 'this client') + ' right now?\n\nNo bill is made here. Collect payment yourself and log it under Client payments & bills.')) return;
+    const r = await ordAct('admin_approve_order', { p_id: o.id }, reloadOrder);
+    if (r) { sectionLoadedAt.clientPay = 0; refreshOrdersBadge(); }
+  };
   if (g('odSave')) g('odSave').onclick = () => ordAct('admin_update_client_order', { p_id: o.id, p: { contact_name: g('odName').value, phone: g('odPhone').value, email: g('odEmail').value, business_name: g('odBiz').value, gstin: g('odGstin').value, state_code: g('odState').value, niche: g('odNiche').value, slug: g('odSlug') ? g('odSlug').value : undefined, address: g('odAddr').value } }, reloadOrder);
   if (g('odGstin')) g('odGstin').addEventListener('input', () => { const v = g('odGstin').value.trim().toUpperCase(); if (/^\d{2}/.test(v) && ORD_STATES[v.slice(0, 2)]) { g('odState').value = v.slice(0, 2); paintTotals(); } });
   if (g('odState')) g('odState').addEventListener('change', paintTotals);

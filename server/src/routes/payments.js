@@ -1,5 +1,5 @@
 import { pool, withAuth } from '../db.js';
-import { paymentConfig, gstPct, createClientOrderPayment, createRenewalOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
+import { paymentConfig, gstPct, createClientOrderPayment, createRenewalOrder, createStorefrontPlanOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from '../cashfree.js';
 import { requireVerifiedEmail } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
@@ -73,6 +73,52 @@ export async function handle(ctx) {
       .catch((e) => { throw new HttpError(400, 'Razorpay refunded ' + k.amount + ' (refund id ' + body.id + ') but the request could not be marked refunded here: ' + (e.message || 'unknown error') + '. The money has already moved -- fix the record by hand.'); });
     return reply(200, { ok: true, rzpRefundId: body.id, amount: k.amount });
   }
+  // AUZslab storefront: refund a returned, online-paid order through the STORE'S OWN Razorpay account (same shape as the AUZsStyle route
+  // above). Nothing changes unless Razorpay confirms; the return then moves to "refunded" through sfx_return_set's own stage rules.
+  if (url.pathname === '/payments/sfx/refund/start' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxrzpr:${ip}`, 15, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { returnId, amount } = await readJsonBody(req);
+    const prep = await withAuth(user.id, (client) => client.query('select sfx_refund_prepare($1, $2) as r', [String(returnId || ''), Number(amount) || null]))
+      .catch((e) => { throw new HttpError(400, e.message || 'could not start the refund'); });
+    const k = prep.rows[0].r;
+    const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/payments/${encodeURIComponent(k.paymentId)}/refund`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Basic ' + Buffer.from(`${k.key}:${k.secret}`).toString('base64') },
+      body: JSON.stringify({ amount: Math.round(Number(k.amount) * 100) }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.id) throw new HttpError(400, (body && body.error && body.error.description) || 'Razorpay could not process this refund. Nothing was changed.');
+    await withAuth(user.id, (client) => client.query('select sfx_refund_complete($1, $2, $3) as r', [String(returnId), k.amount, body.id]))
+      .catch((e) => { throw new HttpError(400, 'Razorpay refunded ' + k.amount + ' (refund id ' + body.id + ') but the return could not be marked refunded here: ' + (e.message || 'unknown error') + '. The money has already moved; record it manually.'); });
+    return reply(200, { ok: true, rzpRefundId: body.id, amount: k.amount });
+  }
+  // AUZslab storefront platform: card/UPI/net banking with the STORE'S OWN Razorpay keys (db/372) -- the
+  // exact same shape as AUZsStyle's /payments/sty/start+verify above, for the exact same reason (a signed
+  // HMAC confirm, not a webhook, because this product also lets each store use its own Razorpay account).
+  if (url.pathname === '/payments/sfx/start' && req.method === 'POST') {
+    if (rateLimited(`sfxrzp:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { token } = await readJsonBody(req);
+    const { rows } = await pool.query('select sfx_online_start($1) as r', [String(token || '')]).catch((e) => { throw new HttpError(400, e.message || 'could not start payment'); });
+    const k = rows[0].r;
+    const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/orders`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Basic ' + Buffer.from(`${k.key}:${k.secret}`).toString('base64') },
+      body: JSON.stringify({ amount: Math.round(Number(k.total) * 100), currency: 'INR', receipt: String(k.number).slice(0, 40) }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.id) throw new HttpError(400, 'The store\'s card payment is not working right now. Please choose another way to pay.');
+    await pool.query('select sfx_online_set_order($1, $2)', [String(token), body.id]);
+    return reply(200, { key: k.key, orderId: body.id, amount: body.amount, name: k.name, phone: k.phone, email: k.email, number: k.number });
+  }
+  if (url.pathname === '/payments/sfx/verify' && req.method === 'POST') {
+    if (rateLimited(`sfxrzpv:${ip}`, 30, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const b = await readJsonBody(req);
+    const { rows } = await pool.query('select sfx_online_confirm($1, $2, $3, $4) as r', [String(b.token || ''), String(b.razorpay_order_id || ''), String(b.razorpay_payment_id || ''), String(b.razorpay_signature || '')])
+      .catch((e) => { throw new HttpError(400, e.message || 'could not verify payment'); });
+    return reply(200, rows[0].r);
+  }
+
   // ---- Renewals and auto-renewal (db/201): provider-agnostic front door for the apps' "Plan & account" sheet.
   // Razorpay Subscriptions when Razorpay is configured, else the older Cashfree code. Owner-only, gated in the SQL/route. ----
   if (url.pathname === '/payments/autorenew/config' && req.method === 'GET') {
@@ -84,6 +130,16 @@ export async function handle(ctx) {
     if (!razorpayConfigured()) throw new HttpError(400, 'Online payment is not switched on yet.');
     try { return reply(200, await createRenewalOrder({ userId: user.id })); }
     catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start the renewal'); }
+  }
+  // Storefront plan: pay AUZslab (its own platform keys, not the store's own) to reactivate a paused/trial
+  // store once a real price is set (db/374) -- throws (and this becomes a plain error) while the price is
+  // still ₹0/unset, same "dormant until configured" discipline as every other product.
+  if (url.pathname === '/payments/sfx/plan/create' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxplanpay:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    if (!razorpayConfigured()) throw new HttpError(400, 'Online payment is not switched on yet. Please ask us to reactivate your store.');
+    try { return reply(200, await createStorefrontPlanOrder({ userId: user.id })); }
+    catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start payment'); }
   }
   if (url.pathname === '/payments/autorenew/start' && req.method === 'POST') {
     if (!user) throw new HttpError(401, 'authentication required');

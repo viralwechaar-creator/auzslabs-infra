@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="robots" content="noindex,nofollow">
+<title>Choose your path — AUZslab</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script src="theme.js?v=101"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="u.css?v=6"><link rel="stylesheet" href="t.css?v=2"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="c.css?v=6">
+<meta name="theme-color" content="#efeeed">
+<link rel="stylesheet" href="menu-old.css?v=2">
+<style>
+.cp-wrap{max-width:920px;margin:0 auto}
+.cp-head{text-align:center;margin:0 0 28px}
+.cp-head h1{margin:6px 0 8px}
+.cp-fork{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:10px}
+@media (max-width:760px){.cp-fork{grid-template-columns:1fr}}
+.cp-card{border:1px solid var(--line);border-radius:18px;padding:24px;background:var(--bg-raised);cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:10px;min-height:44px;transition:border-color .15s,transform .15s}
+.cp-card:hover,.cp-card:focus-visible{border-color:var(--accent);transform:translateY(-2px)}
+.cp-card h3{margin:0;font-size:18px}
+.cp-card p{margin:0;font-size:13.5px;color:var(--ink-dim);line-height:1.5}
+.cp-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent);padding:3px 9px;border-radius:999px;align-self:flex-start}
+.cp-trial-note{font-size:12.5px;color:var(--ink-dim);background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:12px 0}
+.cp-err{color:#c0392b;font-size:13px;min-height:18px}
+</style>
+</head>
+<body class="mk-page">
+<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
+<div class="shell">
+  <header class="u-top">
+    <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Services</a><a href="contact.html">Contact</a></nav>
+    <div class="u-r">
+      <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
+      <button class="u-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false"><i></i><span class="menu-btn-label">Menu</span></button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="tl cp-wrap">
+      <div class="cp-head"><span class="tl-eye">Before you start</span><h1 class="tl-h">What do you want to do?</h1><p class="tl-sub">Pick one -- you can always talk to us about changing later.</p></div>
+
+      <div id="step1" class="cp-fork">
+        <!-- "Get apps" is a destination, not a form here: live-demo.html already shows every sellable app
+             with real credentials and a "Get this app" button on each one, which carries the business-
+             details request forward (cart.html's existing request-first flow, db/155) -- no second,
+             separate bundle picker is built here for the same thing. -->
+        <a href="live-demo.html" class="cp-card" id="pickApps">
+          <span class="cp-tag">Request &amp; approval</span>
+          <h3>AUZslab apps</h3>
+          <p>AUZsLedger, AUZsStyle with its own website, or Salon Console with its own website. See each one live, then tell us your business details -- we check it, send a quote, and set you up once it's paid.</p>
+        </a>
+        <button type="button" class="cp-card" id="pickStore">
+          <span class="cp-tag">Instant &middot; 3-day free trial</span>
+          <h3>Build a complete online store</h3>
+          <p>Like Shopify -- get instant access and build your store right away. Free for 3 days, then choose a plan to keep it live.</p>
+        </button>
+      </div>
+
+      <section class="tl-card" id="storeForm" style="display:none;max-width:640px;margin:0 auto">
+        <span class="tl-cap">Build a complete online store</span>
+        <div class="cp-trial-note">Free for 3 days from the moment you start. After that, pick a plan to keep your store live -- if you don't, it pauses until you do (nothing is deleted).</div>
+        <div id="signedOutStore" style="display:none"><p class="tl-note">Sign in first -- we'll bring you right back here.</p><a class="tb pri wide" href="signup.html?next=choose-path.html">Sign in or create account</a></div>
+        <form id="storeReqForm" style="display:none">
+          <label class="tf"><span>Store name</span><input id="sqBiz" autocomplete="organization" required></label>
+          <label class="tf"><span>Subdomain you'd like</span><input id="sqSlug" autocomplete="off" placeholder="yourstore" required></label>
+          <div class="tl-actions"><button class="tb pri wide" id="sqSend" type="submit">Start my free trial</button></div>
+          <div class="cp-err" id="sqErr"></div>
+        </form>
+        <button type="button" class="tb" id="storeBack" style="margin-top:8px">&larr; Back</button>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="/sb-client.js?v=109"></script>
+<script src="site.js?v=113"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+const sb = supabase.createClient(CFG.url, CFG.key);
+const $ = (id) => document.getElementById(id);
+
+function show(id) { ['step1', 'storeForm'].forEach((x) => { $(x).style.display = x === id ? (id === 'step1' ? 'grid' : 'block') : 'none'; }); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+$('pickStore').onclick = () => show('storeForm');
+$('storeBack').onclick = () => show('step1');
+
+const slugify = (s) => String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 30);
+$('sqSlug').addEventListener('input', () => { $('sqSlug').value = slugify($('sqSlug').value); });
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  $('signedOutStore').style.display = session ? 'none' : 'block';
+  $('storeReqForm').style.display = session ? 'block' : 'none';
+  if (session) {
+    const { data: pr } = await sb.rpc('my_profile').catch(() => ({ data: null }));
+    const P = (pr && pr.profile) || null;
+    if (P && P.business_name) { $('sqBiz').value = P.business_name; }
+  }
+}
+
+$('storeReqForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = $('sqErr'); err.textContent = '';
+  const biz = $('sqBiz').value.trim(), slug = $('sqSlug').value.trim();
+  if (!biz) { err.textContent = 'Please enter your store name.'; return; }
+  if (!slug) { err.textContent = 'Please choose a subdomain.'; return; }
+  const btn = $('sqSend'); btn.disabled = true; btn.textContent = 'Starting...';
+  const { data, error } = await sb.rpc('start_storefront_trial', { p_business_name: biz, p_slug: slug });
+  btn.disabled = false; btn.textContent = 'Start my free trial';
+  if (error) { err.textContent = error.message; return; }
+  // Land straight in the real storefront owner hub, on the new tenant's OWN subdomain (Caddyfile serves
+  // /storefront.html and /storefront/* on each tenant's own shop address, same as AUZsStyle's store.html) --
+  // a Path-B tenant's whole point is instant, usable access, not a detour through the generic multi-app
+  // account dashboard first (that dashboard has no storefront app card: APPDEF in ac5.js never listed this
+  // product, same as AUZsStyle/Salon's own hub pages aren't listed there either).
+  const r = data && (data.data || data);
+  const slugOut = (r && r.slug) || slug;
+  window.location.href = 'https://' + slugOut + '.auzslab.in/storefront.html';
+});
+
+checkSession();
+</script>
+</body>
+</html>

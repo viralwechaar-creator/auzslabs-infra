@@ -38,12 +38,102 @@ export default async function run({ browser, stack }) {
     assert(Array.isArray(arr) && arr.some((x) => x.business_name === 'QA Cafe'), 'admin cannot see the profile');
     const denied = await call('admin_list_profiles', {}, tok); assert(denied.status >= 400, 'non-admin could list profiles');
   }, 'critical');
-  await s.check('Account page for a customer without a business shows the profile form and a cart link', async () => {
+  await s.check('Two-path onboarding gate: a brand-new signup with no request of any kind is sent to choose-path.html, not any dashboard', async () => {
+    const c8 = await newCtx(browser, stack); const p = await c8.newPage();
+    const freshEmail = 'fresh-' + Date.now() + '@test.local';
+    const r = await fetch(stack.apiBase + '/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: freshEmail, password: PASSWORD }) });
+    assert(r.status === 200, 'fresh signup ' + r.status);
+    await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', freshEmail); await p.fill('#password', PASSWORD); await p.click('#submitBtn');
+    await p.waitForURL(/choose-path\.html/, { timeout: 10000 });
+    assert(/choose-path\.html/.test(p.url()), 'a brand-new signup was not sent to the chooser: ' + p.url());
+    assert(await p.locator('#pickApps').isVisible() && await p.locator('#pickStore').isVisible(), 'the two paths are not both offered');
+    await c8.close();
+  }, 'critical');
+  await s.check('Path A, corrected design: "Get this app" on live-demo.html only appears for the three sellable apps, never a retired one, and leads into the existing request-first flow (cart.html) with the product preselected', async () => {
+    const c10 = await newCtx(browser, stack); const p = await c10.newPage(); const errs10 = watch(p);
+    await p.goto(stack.url('', '/choose-path.html')); await p.waitForTimeout(500);
+    const appsHref = await p.locator('#pickApps').getAttribute('href');
+    assert(/live-demo\.html/.test(appsHref), '"AUZslab apps" does not lead to live-demo.html: ' + appsHref);
+    // a4.js only reads location.hash once, at load (no hashchange listener) -- so the hash has to be set
+    // before navigation, not via a later location.hash assignment. A plain goto() to the same path with
+    // only the hash changed is a same-document navigation in Chromium (no reload, a4.js never re-runs),
+    // so an about:blank hop in between forces a real reload each time.
+    await p.goto(stack.url('', '/live-demo.html#pos')); await p.waitForTimeout(900);
+    // retired products (AUZsPOS/AUZsPay/AUZsScan/AUZsFinance, CLAUDE.md) and AUZsMob never get the button
+    assert((await p.locator('.dm2-feat a:has-text("Get this app")').count()) === 0, 'a retired product (AUZsPOS) got a "Get this app" button');
+    // AUZsLedger (sellable) gets the button, straight into cart.html with accounting preselected
+    await p.goto('about:blank');
+    await p.goto(stack.url('', '/live-demo.html#ledger')); await p.waitForTimeout(900);
+    const getHref = await p.locator('.dm2-feat a:has-text("Get this app")').getAttribute('href');
+    assert(getHref && /cart\.html\?add=accounting&lane=basic/.test(getHref), 'AUZsLedger "Get this app" link is wrong: ' + getHref);
+    await p.goto(stack.url('', '/' + getHref)); await p.waitForTimeout(500);
+    // cart.html opens for a signed-out visitor (its own link goes to signup.html?next=cart.html); the choice and lane are already stashed in localStorage
+    await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(2000);
+    await p.goto(stack.url('', '/cart.html')); await p.waitForTimeout(800);
+    await p.waitForSelector('#pick input[data-k=accounting]', { timeout: 10000 });
+    assert(await p.locator('#pick input[data-k=accounting]').isChecked(), 'AUZsLedger was not preselected on cart.html');
+    assert(!errs10.some((x) => /JS error/.test(x)), errs10.join(' | ')); await c10.close();
+  }, 'critical');
+  await s.check('Path A end to end (corrected design): request through cart.html, admin quotes and confirms a cash payment, the new owner is tagged onboarding_path=\'basic\' and signing in sends them STRAIGHT into AUZsLedger -- never account.html\'s dashboard', async () => {
+    const pathAEmail = 'patha-' + Date.now() + '@test.local';
+    const su = await (await fetch(stack.apiBase + '/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: pathAEmail, password: PASSWORD }) })).json();
+    const tok = su.access_token;
+    const call = async (fn, args) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(args) }); let d = null; try { d = await r.json(); } catch {} return { status: r.status, data: d && d.data !== undefined ? d.data : d }; };
+    const biz = 'PathA Ledger Co ' + (Date.now() % 100000);
+    const sent = await call('submit_client_order', { p: { contact_name: 'Path A Owner', phone: '9811122233', business_name: biz, niche: 'general', requirement: 'Just AUZsLedger', products: ['accounting'], onboarding_path: 'basic' } });
+    assert(sent.status === 200, 'submit_client_order ' + JSON.stringify(sent));
+    const orderId = sent.data.id;
+    assert((await q("select onboarding_path from client_orders where id=$1", [orderId]))[0].onboarding_path === 'basic', 'onboarding_path not stored on the client_order');
+    const loginAdmin = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
+    const adm = await loginAdmin(USERS.admin);
+    const callAs = async (fn, args, t) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + t }, body: JSON.stringify(args) }); let d = null; try { d = await r.json(); } catch {} return { status: r.status, data: d && d.data !== undefined ? d.data : d, raw: d }; };
+    const quoted = await callAs('admin_save_order_quote', { p_id: orderId, p_quote: { items: [{ key: 'accounting', plan: 'month', rate: 1490, discount: 0, gst: 18 }], setup: { on: false } } }, adm);
+    assert(quoted.status === 200, 'admin_save_order_quote ' + JSON.stringify(quoted.raw));
+    assert((await callAs('admin_set_order_status', { p_id: orderId, p_status: 'link_sent' }, adm)).status === 200, 'link not sent');
+    const confirmed = await callAs('admin_confirm_order_payment', { p_id: orderId, p_utr: 'CASHPATHA1' }, adm);
+    assert(confirmed.status === 200, 'admin_confirm_order_payment ' + JSON.stringify(confirmed.raw));
+    const tenantRow = (await q("select id, onboarding_path from tenants where id=$1", [confirmed.data.tenant_id]))[0];
+    assert(tenantRow && tenantRow.onboarding_path === 'basic', 'new tenant was not tagged onboarding_path=basic: ' + JSON.stringify(tenantRow));
+    const feats = (await q("select features from tenant_settings where tenant_id=$1", [tenantRow.id]))[0].features;
+    assert(feats.accounting === true, 'AUZsLedger was not switched on: ' + JSON.stringify(feats));
+    const c11 = await newCtx(browser, stack); const p11 = await c11.newPage();
+    // account.html's app redirects (AUZsLedger/AUZsStyle/the salon console, same shape as the existing
+    // SalesOS redirect) use the apps' real https://*.auzslab.in addresses -- not reachable from this
+    // sandboxed test run, so route them to the local static server exactly as newCtx/stack.attach()
+    // already does for https://api.auzslab.in.
+    const hits11 = [];
+    await c11.route('https://*.auzslab.in/**', async (route) => {
+      const r = route.request(); const u = new URL(r.url()); const sub = u.hostname.replace(/\.auzslab\.in$/, '');
+      // api.auzslab.in already has its own handler from newCtx/stack.attach() -- *.auzslab.in would
+      // otherwise shadow it (routes added later take priority), breaking every RPC call on this page.
+      if (sub === 'api') return route.fallback();
+      // the destination app is not part of this check: record where account.html sent the browser and answer with a stub page
+      hits11.push(String(u));
+      await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>app</title>' });
+    });
+    await p11.goto(stack.url('', '/signup.html')); await p11.waitForTimeout(500); await p11.click('#modeLogin'); await p11.fill('#email', pathAEmail); await p11.fill('#password', PASSWORD); await p11.click('#submitBtn');
+    await p11.waitForURL((u) => /auzsledger\.auzslab\.in/.test(String(u)), { timeout: 10000 }).catch(() => {});
+        assert(hits11.some((h) => /auzsledger\.auzslab\.in\/accounts\.html/.test(h)), 'did not redirect straight into AUZsLedger; went to ' + (hits11.join(', ') || p11.url()));
+    await c11.close();
+  }, 'critical');
+  await s.check('Account page for a customer without a business (but who already made some kind of choice) shows the profile form and a cart link', async () => {
+    // Give USERS.plain a declined signup_request first -- bootProspect's own documented behaviour is that
+    // anyone with a signup_request of ANY status (not just pending) already made a choice and keeps seeing
+    // this lighter prospect view, never the two-path gate. Without this, 'plain' (used as a fixture
+    // throughout this whole suite as "a customer with no business") would now be redirected to
+    // choose-path.html, since real production brand-new signups never had an old request lying around.
+    const plainId = (await q("select id from auth_users where email=$1", [USERS.plain]))[0].id;
+    await q("insert into signup_requests (user_id, business_name, slug, features, status) values ($1, 'Declined Co', 'declinedco' || substr(md5(random()::text),1,6), '{}'::jsonb, 'declined') on conflict do nothing", [plainId]);
     const c9 = await newCtx(browser, stack); const p = await c9.newPage();
     await p.goto(stack.url('', '/signup.html')); await p.waitForTimeout(500); await p.click('#modeLogin'); await p.fill('#email', USERS.plain); await p.fill('#password', PASSWORD); await p.click('#submitBtn'); await p.waitForTimeout(2500);
     await p.goto(stack.url('', '/account.html')); await p.waitForTimeout(2500);
-    assert(await p.locator('#pfName').isVisible(), 'profile form not shown; url ' + p.url());
-    assert((await p.locator('#pfName').inputValue()) === 'QA Person', 'saved name not loaded');
+    // :visible disambiguates from a pre-existing hidden duplicate: account.html's own light-DOM
+    // #pane-profile (built by renderProfile(), still host-appended for the old slot mechanism) keeps an
+    // unassigned, unrendered #pfName of its own now that ac5-views.js's V.profile renders the real,
+    // visible one straight into the shadow root instead of using a <slot> -- both nodes exist in the DOM
+    // (a pre-existing characteristic of this dual-shell setup, unrelated to this change), only one paints.
+    assert(await p.locator('#pfName:visible').isVisible(), 'profile form not shown; url ' + p.url());
+    assert((await p.locator('#pfName:visible').inputValue()) === 'QA Person', 'saved name not loaded');
     assert(await p.locator('#a5 [data-go=cart]').first().isVisible(), 'cart link missing'); await c9.close();
   }, 'critical');
   await s.check('Admin panel is light: signing in makes few requests, each section loads when opened', async () => {
@@ -56,14 +146,23 @@ export default async function run({ browser, stack }) {
     assert(await p.locator('.a-side-btn[data-section=pricing]').count() === 0 && await p.locator('#pricingSection').count() === 0, 'the Pricing section is still in the admin panel');
     await ca.close();
   }, 'major');
-  await s.check('There is no price list: the price, bundle, plan-tier and add-on-price functions and tables are gone', async () => {
+  await s.check('There is no price list for any product except the storefront plan: bundle/plan-tier/add-on-price functions and tables stay gone; product_prices is back but scoped to exactly one key (db/374)', async () => {
     const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
-    const call = async (fn, args, tok) => (await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: JSON.stringify(args) })).status;
+    const call = async (fn, args, tok) => (await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', ...(tok ? { authorization: 'Bearer ' + tok } : {}) }, body: JSON.stringify(args) }));
+    const status = async (fn, args, tok) => (await call(fn, args, tok)).status;
     const adm = await login(USERS.admin);
-    for (const fn of ['public_product_prices', 'public_bundles', 'public_plan_tiers', 'public_niche_addons', 'public_addon_price_overrides']) assert((await call(fn, { p_niche: 'cafe' })) >= 400, fn + ' still answers');
-    for (const fn of ['admin_set_product_price', 'admin_save_bundle', 'admin_list_bundles', 'admin_save_salon_tier', 'admin_set_product_yearly', 'admin_set_addon_price']) assert((await call(fn, {}, adm)) >= 400, fn + ' still answers for the admin');
-    const t = await q("select count(*)::int n from pg_tables where schemaname='public' and tablename in ('product_prices','bundles','salon_plan_tiers','niche_addons','addon_price_overrides')");
-    assert(t[0].n === 0, 'a price table is still there');
+    for (const fn of ['public_bundles', 'public_plan_tiers', 'public_niche_addons', 'public_addon_price_overrides']) assert((await status(fn, { p_niche: 'cafe' })) >= 400, fn + ' still answers');
+    for (const fn of ['admin_save_bundle', 'admin_list_bundles', 'admin_save_salon_tier', 'admin_set_product_yearly', 'admin_set_addon_price']) assert((await status(fn, {}, adm)) >= 400, fn + ' still answers for the admin');
+    const t = await q("select count(*)::int n from pg_tables where schemaname='public' and tablename in ('bundles','salon_plan_tiers','niche_addons','addon_price_overrides')");
+    assert(t[0].n === 0, 'a price table other than product_prices is still there');
+    // product_prices exists again, but only for the storefront plan (a deliberate, scoped exception, db/374)
+    const rows = await q("select key from product_prices");
+    assert(rows.length === 1 && rows[0].key === 'storefront', 'product_prices has more than just the storefront plan: ' + JSON.stringify(rows));
+    const pub = await (await call('public_product_prices', {})).json();
+    const arr = pub.data || pub;
+    assert(Array.isArray(arr) && arr.length === 1 && arr[0].key === 'storefront', 'public_product_prices leaked another product: ' + JSON.stringify(arr));
+    assert((await status('admin_set_product_price', { p_key: 'pos', p_monthly_price: 999 }, adm)) >= 400, 'admin_set_product_price priced a product other than the storefront plan');
+    assert((await status('admin_set_product_price', { p_key: 'storefront', p_monthly_price: -5 }, adm)) >= 400, 'a negative storefront price was accepted');
   }, 'critical');
   await s.check('Platform admin signing in lands on the admin dashboard', async () => {
     const c3 = await newCtx(browser, stack); const p = await c3.newPage(); const e3 = watch(p);

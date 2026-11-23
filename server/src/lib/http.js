@@ -6,11 +6,14 @@ export class HttpError extends Error {
 // ---- CORS: reflect the request's Origin only when it's this domain,
 // a subdomain of it (every tenant), or localhost (local dev) -- never
 // the wildcard '*' every response used to send unconditionally. ----
+// verified custom store domains (db/380), refreshed by routes/sites.js: a store's own domain may call the API from the browser
+export const customOrigins = new Set();
 export function allowedOrigin(originHeader) {
   if (!originHeader) return null;
   let u;
   try { u = new URL(originHeader); } catch { return null; }
   if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return originHeader;
+  if (u.protocol === 'https:' && customOrigins.has(u.hostname)) return originHeader;
   if (!DOMAIN || u.protocol !== 'https:') return null;
   if (u.hostname === DOMAIN || u.hostname.endsWith('.' + DOMAIN)) return originHeader;
   return null;
@@ -69,7 +72,7 @@ export function httpFromError(err) {
   // Accounting raises ordinary business-rule errors from SQL (locked period, insufficient stock, credit limit,
   // unbalanced journal, ...). Those are the caller's to fix, not server faults: 400 (or 401/403), and no stack in the log.
   if (status === 500 && typeof err.code === 'string') {
-    if (err.code === 'P0001' || /^(AC|PY|MB|ST)\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
+    if (err.code === 'P0001' || /^(AC|PY|MB|ST|SF)\d{3}$/.test(err.code) || /^(22|23)/.test(err.code)) { status = 400; message = err.message; }
     else if (err.code === '42501') { status = 403; message = err.message; }
     else if (err.code === '28000') { status = 401; message = err.message; }
   }

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>AUZslab storefront</title>
+<meta name="theme-color" content="#f5f5f3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Storefront">
+<link rel="manifest" href="/manifest-storefront.json">
+<link rel="icon" type="image/svg+xml" href="/icon-storefront.svg">
+<link rel="apple-touch-icon" href="/icon-storefront.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/storefront/ecosystem.css?v=1">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="app" aria-live="polite"></div>
+<dialog id="dialog"><div id="dialog-body"></div></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript>The AUZslab storefront needs JavaScript.</noscript>
+<script src="/config.js"></script>
+<script src="/tenant.js?v=4"></script>
+<script src="/sb-client.js?v=8"></script>
+<!-- No cache-busting query string on this module: every internal `import './ecosystem.js'` elsewhere in
+     this app resolves WITHOUT one, and a different URL for the "same" ES module is a different module
+     instance (its own top-level state, its own document-level event listeners) -- that duplicate-instance
+     bug is exactly what caused every click/submit here to silently double-fire until this was caught by
+     the Playwright pass (see the PR description). -->
+<script type="module" src="/storefront/ecosystem.js"></script>
+</body>
+</html>

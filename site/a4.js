@@ -5,7 +5,7 @@
   var root = document.getElementById('dm2'); if (!root) return;
   var feat = document.getElementById('dm2Feat'), grid = document.getElementById('dm2Grid'), more = document.getElementById('dm2More');
   var D = JSON.parse(document.getElementById('dm-data').textContent);
-  var ORDER = ['salon', 'pay', 'ledger', 'style', 'pos', 'mob', 'scan', 'finance'];
+  var ORDER = Object.keys(D);
   var expanded = false;
 
   // single-stroke line icons, 24x24 viewBox, scaled up by the caller -- matches the site's no-emoji icon convention
@@ -41,13 +41,21 @@
     var d = D[id];
     feat.classList.add('sw');
     setTimeout(function () {
+      // "Get this app": only on a product AUZslab still sells (d.sell is its tenant feature key) -- never
+      // on a retired product (AUZsPOS/AUZsPay/AUZsScan/AUZsFinance, CLAUDE.md's own "RETIRED PRODUCTS" list)
+      // or AUZsMob, which isn't part of this gate's three apps. Takes the business-details request forward
+      // through cart.html's EXISTING request-first flow (db/155), preselecting this product
+      // (cart.html?add=<key>, already supported) and tagging it as a "Get this app" request
+      // (&lane=basic, db/375) so the resulting tenant lands straight in its own app, never account.html's
+      // dashboard, once AUZslab quotes it and it's paid.
+      var getBtn = d.sell ? '<a class="mk-btn solid" href="cart.html?add=' + encodeURIComponent(d.sell) + '&lane=basic">Get this app &rarr;</a>' : '';
       feat.innerHTML = img(d, 116) +
         '<div class="dm2-feat-body"><span class="mk-eye">' + d.tag + '</span><h2>' + d.name + '</h2><p>' + d.text + '</p>' +
         '<div class="dm-cred">' + d.rows.map(function (r) {
           return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b><button type="button" data-copy="' + encodeURIComponent(r[2] || r[1]) + '">Copy</button></div>';
         }).join('') + '</div>' +
-        '<div class="mk-row">' + d.links.map(function (l, i) {
-          return '<a class="mk-btn' + (i ? '' : ' solid') + '" href="' + l[1] + '" target="_blank" rel="noopener">' + l[0] + '</a>';
+        '<div class="mk-row">' + getBtn + d.links.map(function (l, i) {
+          return '<a class="mk-btn' + (getBtn || i ? '' : ' solid') + '" href="' + l[1] + '" target="_blank" rel="noopener">' + l[0] + '</a>';
         }).join('') + '</div>' +
         (d.note ? '<div class="dm-note">' + d.note + '</div>' : '');
       feat.querySelectorAll('button[data-copy]').forEach(function (c) {
@@ -73,7 +81,7 @@
       b.addEventListener('click', function () { select(id); });
       grid.appendChild(b);
     });
-    more.hidden = expanded;
+    more.hidden = expanded || ORDER.every(function (id) { return D[id].primary; });
   }
 
   function select(id) { paintFeat(id); paintGrid(id); }
@@ -81,7 +89,7 @@
   more.addEventListener('click', function () { expanded = true; paintGrid((location.hash || '#salon').slice(1)); });
 
   var start = location.hash.slice(1);
-  if (!D[start]) start = 'salon';
+  if (!Object.prototype.hasOwnProperty.call(D, start)) start = ORDER[0];
   if (!D[start].primary) expanded = true;
   select(start);
 })();

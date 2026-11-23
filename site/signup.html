@@ -1,10 +1,9 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8">
+<head><meta name="robots" content="noindex,nofollow"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="robots" content="noindex,nofollow">
 <title>Sign in — AUZslab</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=2">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -17,9 +16,9 @@ window.auzTheme(h.getAttribute('data-theme')==='light'?'dark':'light');},true);}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="u.css?v=6"><link rel="stylesheet" href="t.css?v=2"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="c.css?v=6">
+<link rel="stylesheet" href="u.css?v=7"><link rel="stylesheet" href="t.css?v=2"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="c.css?v=6">
 <meta name="theme-color" content="#efeeed">
-<link rel="stylesheet" href="menu-old.css?v=2">
+<link rel="stylesheet" href="menu-old.css?v=3">
 <link rel="stylesheet" href="auth-card.css?v=9"></head>
 <body class="mk-page auth-page">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
@@ -27,7 +26,7 @@ window.auzTheme(h.getAttribute('data-theme')==='light'?'dark':'light');},true);}
   <header class="u-top">
     <button type="button" class="auth-back" id="authBackBtn" aria-label="Back">&larr; Back</button>
     <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="u-nav" aria-label="Main"><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="platform.html">Why AUZslab</a><a href="contact.html">Contact</a></nav>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="themes.html">Themes</a><a href="contact.html">Contact</a></nav>
     <div class="u-r">
       <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
       <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
@@ -51,25 +50,25 @@ window.auzTheme(h.getAttribute('data-theme')==='light'?'dark':'light');},true);}
 
       <div class="nav-group nav-biz">
         <button class="nav-link nav-group-toggle" aria-expanded="false">
-          <span>Business types <sup class="nav-group-count">(+6)</sup></span>
+          <span>What we offer <sup class="nav-group-count">(+6)</sup></span>
           <span class="nav-group-indicator" aria-hidden="true"></span>
         </button>
         <div class="nav-submenu">
-          <div class="nav-submenu-head">Business types</div>
+          <div class="nav-submenu-head">What we offer</div>
           <div class="nav-submenu-inner">
-            <a href="products.html#slab-pos" class="nav-sublink"><span>Caf&eacute;s &amp; restaurants</span></a>
-            <a href="products.html#slab-ind" class="nav-sublink"><span>Salons &amp; studios</span></a>
-            <a href="products.html#slab-acct" class="nav-sublink"><span>Retail &amp; bookstores</span></a>
-            <a href="products.html#slab-ind" class="nav-sublink"><span>Clothing &amp; apparel</span></a>
-            <a href="products.html#slab-ind" class="nav-sublink"><span>Mobile retail &amp; repair</span></a>
-            <a href="studio.html" class="nav-sublink"><span>Custom software (Studio)</span></a>
             <a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a>
+            <a href="products.html#slab-pos" class="nav-sublink"><span>Retail billing &amp; inventory</span></a>
+            <a href="products.html#slab-acct" class="nav-sublink"><span>Accounting &amp; invoicing</span></a>
+            <a href="live-demo.html#salon" class="nav-sublink"><span>Salon Console</span></a>
+            <a href="studio.html" class="nav-sublink"><span>Custom software</span></a>
+            <a href="developers.html" class="nav-sublink"><span>Developer partners</span></a>
           </div>
         </div>
       </div>
 
 
-            <a href="platform.html" class="nav-link">Why AUZslab</a>
+            <a href="themes.html" class="nav-link">Themes</a>
+      <a href="studio.html" class="nav-link">Studio</a>
       <a href="live-demo.html" class="nav-link">Live demo</a>
       <a href="download-apps.html" class="nav-link">Download apps</a>
       <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
@@ -362,14 +361,19 @@ document.getElementById('pwEyeToggle').onclick = () => {
 
 // ---- after any successful sign-in, by whatever method ----
 // "Sign in to send your request": the cart link here with ?next=<page> and we bring the person back after sign-in
-const NEXT_PAGES = ['cart.html'];
+const NEXT_PAGES = ['cart.html', 'choose-path.html'];
 (function () { try { const n = new URLSearchParams(location.search).get('next'); if (NEXT_PAGES.includes(n)) sessionStorage.setItem('auz.next', n); } catch (e) {} })();
 function goNext() { try { const n = sessionStorage.getItem('auz.next'); if (NEXT_PAGES.includes(n)) { sessionStorage.removeItem('auz.next'); window.location.href = n; return true; } } catch (e) {} return false; }
 async function afterSignIn(user) {
   if (goNext()) return;
   if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
   if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
-  window.location.href = 'index.html';
+  // Two-path onboarding gate: a brand-new signup with no business yet must
+  // choose a path before reaching any dashboard. account.html itself
+  // (bootProspect) sends them on to choose-path.html unless they already
+  // have a request in flight, so this goes through account.html now
+  // instead of straight to the public homepage.
+  window.location.href = 'account.html';
 }
 
 // DPDP: signing up needs a clear yes to the privacy notice (and an optional, separate yes to update emails).
@@ -524,8 +528,9 @@ async function checkSession() {
       window.location.href = 'admin.html';
       return;
     }
-    // Just signed in (Google hand-off): a customer with no business yet starts at the homepage, not the cart.
-    try { if (sessionStorage.getItem('auz.justSignedIn') === '1') { sessionStorage.removeItem('auz.justSignedIn'); window.location.href = 'index.html'; return; } } catch (e) {}
+    // Just signed in (Google hand-off): a customer with no business yet goes through account.html, which
+    // sends a brand-new signup on to the two-path chooser (choose-path.html) itself.
+    try { if (sessionStorage.getItem('auz.justSignedIn') === '1') { sessionStorage.removeItem('auz.justSignedIn'); window.location.href = 'account.html'; return; } } catch (e) {}
     document.querySelector('.auth-seg').style.display = 'none';
     document.getElementById('authSection').style.display = 'none';
     document.getElementById('pageTitle').textContent = 'You\'re in.';
