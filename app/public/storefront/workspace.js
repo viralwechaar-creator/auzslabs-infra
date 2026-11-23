@@ -174,7 +174,7 @@ const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['stor
 // hardcoded), alongside any developer theme an admin has approved. "Install" copies the approved
 // listing's content into this store's OWN install row (sfx_theme_installs) -- editing it later can
 // never touch another store's copy of the same theme, or the developer's original listing.
-const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar' };
+const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar', booking: 'Appointment booking' };
 function themeCard(t) {
   const price = t.priceCents > 0 ? money(t.priceCents / 100) : 'Free';
   const buy = t.installed ? badge('Installed') :
@@ -206,6 +206,8 @@ function sectionFieldsFor(s) {
   if (s.type === 'image') return input('Image URL', 'url', p.url, 'url') + input('Caption', 'caption', p.caption);
   if (s.type === 'button') return input('Button text', 'text', p.text) + input('Button link', 'href', p.href, 'url');
   if (s.type === 'announcement') return input('Announcement text', 'text', p.text);
+  if (s.type === 'booking') return input('Heading', 'heading', p.heading || 'Book an appointment') + area('Note', 'note', p.note) +
+    '<p class="compact-copy">Shows a real booking form on your storefront -- services, dates and times come from your own catalog/settings, the same booking system the Salon console uses. If you haven’t set up services yet, this section tells visitors booking isn’t ready.</p>';
   return '';
 }
 function editorPage(installId) {
