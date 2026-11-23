@@ -292,6 +292,8 @@ async function payPlan(out) {
 function management(id) {
   if (id === 'settings') return businessSettings();
   if (id === 'billing') return billingPage();
+  const adminPages = { team: ['Staff and access', 'Staff access', 'Choose who can open Admin. Staff sign-in and roles are managed here.'], notifications: ['Notifications', 'Notifications', 'Your latest alerts.'], security: ['Sign-in and support', '', 'Your details, notifications, privacy, WhatsApp, AI connectors and help.'] };
+  if (adminPages[id]) return head(adminPages[id][0], adminPages[id][2], '', ['settings', 'Settings']) + '<div class="panel"><div class="panel-body" data-admin-pane="' + esc(adminPages[id][1]) + '"></div></div>';
   const titles = { team: 'Staff and access', roles: 'Roles', locations: 'Locations', billing: 'Billing and renewals', security: 'Sign-in and support', notifications: 'Notifications', apps: 'Apps and plans' };
   const notes = {
     team: 'Inviting staff to your storefront account is coming in a later release. Staff who already have an AUZslab login for this business can be given access from your main AUZslab account.',
