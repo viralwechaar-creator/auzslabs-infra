@@ -49,7 +49,7 @@ end $$;
 -- second one (this was previously keyed off o.kind = 'new', which assumed a quick-approve could never happen first)
 create or replace function admin_confirm_order_payment(p_id uuid, p_paid_on date default null, p_utr text default null) returns jsonb
 language plpgsql security definer set search_path = public as $$
-declare o client_orders; v_paid date; v_fy text; v_n int; v_no text; v_items jsonb := '[]'; l jsonb; v_feats jsonb := '{}'; v_tid uuid; v_req uuid; v_slug text; v_min date := null; v_ren date; v_month numeric := 0; q jsonb; t jsonb; v_utr text;
+declare o client_orders; v_paid date; v_fy text; v_n int; v_no text; v_items jsonb := '[]'; l jsonb; v_feats jsonb := '{}'; v_tid uuid; v_req uuid; v_slug text; v_min date := null; v_ren date; v_month numeric := 0; q jsonb; t jsonb; v_utr text; m record;
 begin
   if not is_platform_admin() then raise exception 'not authorized'; end if;
   select * into o from client_orders where id = p_id for update;
@@ -66,19 +66,22 @@ begin
   end loop;
   q := o.quote || jsonb_build_object('items', v_items);
   t := client_order_totals(q, o.state_code);
+  -- access: a new business is created (the account that sent the request becomes its owner); an existing business gets the products added
   if o.tenant_id is null then
     if o.user_id is null then raise exception 'The account that sent this request no longer exists.'; end if;
     v_slug := coalesce(nullif(o.slug, ''), nullif(regexp_replace(lower(coalesce(o.business_name, '')), '[^a-z0-9]', '', 'g'), ''), 'client' || substr(replace(o.id::text, '-', ''), 1, 6));
     v_slug := left(v_slug, 30);
     if exists (select 1 from tenants where slug = v_slug) then v_slug := left(v_slug, 24) || substr(replace(o.id::text, '-', ''), 1, 5); end if;
-    insert into signup_requests (user_id, business_name, slug, features, notes, contact_name, phone, niche, address)
-      values (o.user_id, o.business_name, v_slug, v_feats, 'From client order ' || o.id::text, o.contact_name, o.phone, o.niche, o.address) returning id into v_req;
+    insert into signup_requests (user_id, business_name, slug, features, notes, contact_name, phone, niche, address, onboarding_path)
+      values (o.user_id, o.business_name, v_slug, v_feats, 'From client order ' || o.id::text, o.contact_name, o.phone, o.niche, o.address, coalesce(o.onboarding_path, 'full')) returning id into v_req;
     v_tid := approve_signup_request(v_req, coalesce(nullif(o.niche, ''), 'general'));
   else
     v_tid := o.tenant_id;
+    if v_tid is null then raise exception 'This request has no business attached.'; end if;
     perform admin_set_tenant_features(v_tid, v_feats);
   end if;
   update tenants set renewal_date = v_min, monthly_fee = (select coalesce(monthly_fee, 0) from tenants where id = v_tid) * (case when o.kind = 'addon' then 1 else 0 end) + v_month, status = 'active' where id = v_tid;
+  -- gapless bill number per financial year (April to March)
   v_fy := case when extract(month from v_paid) >= 4 then extract(year from v_paid)::int || '-' || lpad(((extract(year from v_paid)::int + 1) % 100)::text, 2, '0')
                else (extract(year from v_paid)::int - 1) || '-' || lpad((extract(year from v_paid)::int % 100)::text, 2, '0') end;
   insert into client_order_counters (fy, n) values (v_fy, 1) on conflict (fy) do update set n = client_order_counters.n + 1 returning n into v_n;
@@ -86,8 +89,16 @@ begin
   v_utr := nullif(trim(coalesce(p_utr, o.payment->>'utr', '')), '');
   update client_orders set status = 'paid', tenant_id = v_tid, quote = q, totals = t, invoice_no = v_no, invoice_date = v_paid, paid_at = v_paid::timestamptz, updated_at = now(),
     payment = payment || jsonb_build_object('confirmed_at', now(), 'utr', v_utr) where id = p_id;
-  perform admin_add_client_payment(v_tid, (t->>'total')::numeric, v_paid, case when v_utr is null then 'other' else 'upi' end, v_utr, 'Order ' || v_no, 'Client request payment');
+  perform admin_add_client_payment(v_tid, (t->>'total')::numeric, v_paid, case when o.payment->>'mode' = 'cash' then 'cash' when v_utr is null then 'other' else 'upi' end, v_utr, 'Order ' || v_no, 'Client request payment');
   perform admin_log('order_paid', 'client_order', p_id::text, jsonb_build_object('business', o.business_name, 'invoice', v_no, 'total', t->'total'));
+  -- automation rule (c): a welcome task for every active support team member -- never blocks the payment itself
+  begin
+    for m in select id from platform_salesmen where active and role = 'support' loop
+      perform team_auto_task(m.id, 'Send a welcome message to ' || coalesce(o.business_name, 'the new client'), 'auto:payment_welcome',
+        jsonb_build_object('tenant_id', v_tid));
+    end loop;
+  exception when others then null;
+  end;
   return jsonb_build_object('invoice_no', v_no, 'tenant_id', v_tid);
 end $$;
 
