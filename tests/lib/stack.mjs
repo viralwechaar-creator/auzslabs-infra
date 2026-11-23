@@ -52,6 +52,7 @@ export async function startStack({ apiPort, webPort, log = () => {} } = {}) {
       if (/\/plans$/.test(rq.url)) { const id = 'plan_TEST' + rnd; rzp.plans.push({ id, ...body }); return send({ id }); }
       if (/\/subscriptions$/.test(rq.url)) { const id = 'sub_TEST' + rnd; rzp.subs.push({ id, ...body }); return send({ id, short_url: 'https://rzp.io/i/' + id, status: 'created' }); }
       if (/\/subscriptions\/[^/]+\/cancel$/.test(rq.url)) { rzp.cancelled.push(rq.url); return send({ status: 'cancelled' }); }
+      if (/\/payments\/[^/]+\/refund$/.test(rq.url)) { const id = 'rfnd_TEST' + rnd; (rzp.refunds ||= []).push({ id, url: rq.url, auth: rq.headers.authorization, ...body }); return send({ id, amount: body.amount }); }
       const id = 'order_TEST' + (rzp.orders.length + 1) + rnd;
       rzp.orders.push({ id, auth: rq.headers.authorization, ...body });
       send({ id, amount: body.amount, currency: body.currency || 'INR' });

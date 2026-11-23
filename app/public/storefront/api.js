@@ -70,6 +70,18 @@ export function toOrder(o) {
 export async function refreshProducts() { state.products = (await api('sfx_product_list')).map(toProduct); }
 export async function refreshCollections() { state.collections = (await api('sfx_collection_list')).map(toCollection); }
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
+export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
+export async function refreshDiscounts() { state.discounts = await api('sfx_discount_list'); }
+export async function refreshInventory() { const [inv, mv] = await Promise.all([api('sfx_inventory_list'), api('sfx_stock_moves_list', {})]); state.inventory = inv; state.stockMoves = mv; }
+export async function refreshLocations() { const [locs, mv, inv] = await Promise.all([api('sfx_location_list'), api('sfx_stock_moves_list', {}), api('sfx_inventory_list')]); state.locations = locs; state.stockMoves = mv; state.inventory = inv; }
+export async function refreshCategories() { const [c, t] = await Promise.all([api('sfx_category_list'), api('sfx_product_tags')]); state.categories = c; state.productTags = t; }
+export async function refreshDrafts() { const [d, i] = await Promise.all([api('sfx_draft_list'), api('sfx_inventory_list')]); state.drafts = d; state.inventory = i; }
+export async function refreshReturns() { state.returns = await api('sfx_return_list'); }
+export async function refreshAbandoned() { const [a, c] = await Promise.all([api('sfx_abandoned_list'), api('sfx_checkout_settings_get')]); state.abandoned = a; state.checkout = c; }
+export async function refreshCheckout() { state.checkout = await api('sfx_checkout_settings_get'); }
+export async function refreshCompanies() { const [c, cu] = await Promise.all([api('sfx_company_list'), api('sfx_customer_list')]); state.companies = c; state.customers = cu; }
+export async function refreshSegments() { state.segments = await api('sfx_segment_list'); }
+export async function refreshCampaigns() { const [c, d] = await Promise.all([api('sfx_campaign_list'), api('sfx_discount_list')]); state.campaigns = c; state.discounts = d; }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
 // Theme marketplace (db/375): the approved listing (built-ins + developer themes) and this store's own
 // installs (its own draft/published copy of each theme it has installed -- see that migration's own

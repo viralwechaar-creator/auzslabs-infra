@@ -11,7 +11,7 @@ import { analyticsPage } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid } from './ecosystem.js';
-import { api, apiPost, applyContext, refreshCollections, refreshDomains, refreshInstalls, refreshMarketplace, refreshOrders, refreshProducts, toCollection, toOrder, toProduct } from './api.js';
+import { api, apiPost, applyContext, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y) => '<td>' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -51,9 +51,10 @@ function ordersList() {
   ]));
 }
 function ordersPage(id) {
-  if (id !== 'orders') return comingSoon({ drafts: 'Draft orders', returns: 'Returns', shipping: 'Shipping', 'abandoned-checkouts': 'Abandoned checkouts' }[id],
-    id === 'returns' ? 'Returns and exchanges are coming in a later release.' : id === 'shipping' ? 'Delivery methods and rates are coming in a later release.' :
-      id === 'abandoned-checkouts' ? 'Recovering an unfinished checkout is coming in a later release.' : 'Creating a draft order by hand is coming in a later release.', ['orders', 'Orders']);
+  if (id === 'drafts') return draftsPage();
+  if (id === 'returns') return returnsPage();
+  if (id === 'shipping') return shippingPage();
+  if (id === 'abandoned-checkouts') return abandonedPage();
   return head('Orders', 'Orders placed on your storefront.', '') + tabs(id, orderTabs) +
     '<div class="metrics">' + metric('Orders', state.orders.length, 'All time') + metric('To fulfil', state.orders.filter((o) => o.status === 'Unfulfilled').length, '') + metric('Sales', money(state.counts.salesTotal), 'Paid orders') + '</div>' +
     panel('All orders', ordersList());
@@ -63,7 +64,7 @@ function orderDetail(id) {
   if (!o) return head('Order unavailable', 'This order could not be found.', wl('All orders', 'orders'));
   const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
   const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
-  const actions = canWrite() && !['Fulfilled', 'Cancelled', 'Returned'].includes(o.status) ? button('Fulfil order', 'order-fulfill:' + o.id, 'primary') + button('Cancel order', 'order-cancel:' + o.id) : '';
+  const actions = canWrite() && !['Fulfilled', 'Cancelled', 'Returned'].includes(o.status) ? button('Fulfil order', 'order-fulfill:' + o.id, 'primary') + button('Cancel order', 'order-cancel:' + o.id) : (canWrite() && o.status === 'Fulfilled' ? button('Start a return', 'return-new:' + o.id) : '');
   return head('Order #' + esc(o.number), dateValue(o.date), actions, ['orders', 'Orders']) +
     '<div class="record-layout"><div>' + panel('Items', lines) + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfillment</div>' + status(o.status) + (o.tracking ? ' · ' + esc(o.tracking) : '') + '</div></div>')) +
     panel('Timeline', body('<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
@@ -78,9 +79,9 @@ function productsList(query = '') {
   return table(['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => [productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock]));
 }
 function productsPage(id) {
-  if (!['products', 'collections'].includes(id)) return comingSoon({ inventory: 'Inventory', transfers: 'Transfers', categories: 'Categories and tags' }[id],
-    id === 'inventory' ? 'Multi-location stock is coming in a later release. Edit a product’s stock from its own page for now.' :
-      id === 'transfers' ? 'Moving stock between locations is coming in a later release.' : 'Separate categories and tags are coming in a later release.', ['products', 'Products']);
+  if (id === 'inventory') return inventoryPage();
+  if (id === 'transfers') return transfersPage();
+  if (id === 'categories') return categoriesPage();
   const title = productTabs.find(([k]) => k === id)[1];
   if (id === 'collections') {
     return head('Collections', 'Group products to feature on your storefront.', canWrite() ? wl('Create collection', 'collections/new', 'primary') : '') + tabs(id, productTabs) +
@@ -276,6 +277,152 @@ function management(id) {
   return comingSoon(titles[id] || 'Settings', notes[id], id === 'settings' ? '' : ['settings', 'Settings']);
 }
 
+// ---------- Customers ----------
+function customersPage() {
+  const rows = (state.customers || []).map((c) => [
+    esc(c.name), esc(c.phone || '—'), esc(c.email || '—'), c.orderCount, money(c.lifetimeSpend), dateValue(c.lastOrderAt),
+    c.manual && canWrite() ? button('Edit', 'customer-edit:' + c.id, 'compact') + button('Delete', 'customer-delete:' + c.id, 'compact danger') : (canWrite() ? button('Save as customer', 'customer-adopt:' + encodeURIComponent(c.phone || ''), 'compact') : ''),
+  ]);
+  return head('Customers', 'People who ordered from your store, plus customers you add by hand.', canWrite() ? button('Add customer', 'customer-new', 'primary') : '') +
+    panel('All customers', table(['Name', 'Phone', 'Email', 'Orders', 'Total spent', 'Last order', ''], rows));
+}
+function customerForm(c) {
+  return editForm('customer-record', c?.id, input('Name', 'name', c?.name || '', 'text', 'required maxlength="160"') + input('Phone', 'phone', c?.phone || '', 'tel', 'maxlength="20"') +
+    input('Email', 'email', c?.email || '', 'email', 'maxlength="160"') + area('Notes', 'notes', c?.notes || '', 'maxlength="2000"'));
+}
+
+// ---------- Discounts ----------
+const discountValueLabel = (d) => d.kind === 'percent' ? Number(d.value) + '% off' : 'Rs ' + Number(d.value) + ' off';
+function discountsPage() {
+  const rows = (state.discounts || []).map((d) => [
+    '<strong>' + esc(d.code) + '</strong>', discountValueLabel(d), d.minOrder != null ? money(d.minOrder) : '—', d.expiresAt ? dateValue(d.expiresAt) : 'No expiry',
+    d.usedCount + (d.usageLimit ? ' / ' + d.usageLimit : ''), badge(d.status === 'active' ? 'Active' : 'Archived', d.status === 'active' ? '' : 'neutral'),
+    canWrite() ? button('Edit', 'discount-edit:' + d.id, 'compact') + button(d.status === 'active' ? 'Archive' : 'Activate', 'discount-toggle:' + d.id, 'compact') : '',
+  ]);
+  return head('Discounts', 'Codes your customers type at checkout.', canWrite() ? button('Create discount', 'discount-new', 'primary') : '') +
+    panel('All discounts', table(['Code', 'Offer', 'Minimum order', 'Expires', 'Used', 'Status', ''], rows));
+}
+function discountForm(d) {
+  const exp = d?.expiresAt ? String(d.expiresAt).slice(0, 10) : '';
+  return editForm('discount-record', d?.id, input('Code', 'code', d?.code || '', 'text', 'required maxlength="30" pattern="[A-Za-z0-9_\\-]{2,30}" style="text-transform:uppercase"') +
+    select('Type', 'kind', [['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)']], d?.kind || 'percent') +
+    input('Value', 'value', d?.value ?? '', 'number', 'required min="0.01" step="0.01"') +
+    input('Minimum order (Rs, optional)', 'minOrder', d?.minOrder ?? '', 'number', 'min="0" step="0.01"') +
+    input('Expires on (optional)', 'expiresAt', exp, 'date') + input('Usage limit (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"'));
+}
+
+// ---------- Inventory, Transfers, Categories ----------
+const moveLabel = (m) => m.reason === 'transfer' ? 'Moved ' + m.qty + ' from ' + esc(m.from) + ' to ' + esc(m.to) : m.reason === 'cancel_return' ? 'Returned to stock (cancelled order)' : (m.delta > 0 ? 'Added ' : 'Removed ') + Math.abs(m.delta);
+const movesTable = (moves) => table(['When', 'Product', 'What happened', 'Note'], moves.slice(0, 25).map((m) => [dateValue(m.at), esc(m.product + (m.variant && m.variant !== 'Default' ? ' · ' + m.variant : '')), moveLabel(m), esc(m.note || '')]));
+function inventoryPage() {
+  const rows = (state.inventory || []).map((v) => [
+    esc(v.product), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>', v.elsewhere,
+    canWrite() ? button('Adjust', 'stock-adjust:' + v.variantId, 'compact') : '',
+  ]);
+  return head('Inventory', 'Stock your storefront can sell right now, and stock held elsewhere.', '') + tabs('inventory', productTabs) +
+    panel('Stock levels', table(['Product', 'Variant', 'SKU', 'Available online', 'Other locations', ''], rows)) +
+    panel('Recent stock changes', movesTable(state.stockMoves || []));
+}
+function adjustForm(v) {
+  return editForm('stock-adjust', v.variantId, '<p class="compact-copy wide">' + esc(v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '')) + ' has <strong>' + v.online + '</strong> available online.</p>' +
+    select('How', 'mode', [['add', 'Add or remove units'], ['set', 'Set the exact count']], 'add') + input('Number', 'amount', '', 'number', 'required step="1"') + input('Reason (optional)', 'note', '', 'text', 'maxlength="200"'), 'Save stock');
+}
+function transfersPage() {
+  const locs = state.locations || [];
+  const locRows = locs.map((l) => [esc(l.name), l.units, canWrite() ? button('Rename', 'location-edit:' + l.id, 'compact') + button('Delete', 'location-delete:' + l.id, 'compact danger') : '']);
+  const moves = (state.stockMoves || []).filter((m) => m.reason === 'transfer');
+  return head('Transfers', 'Move stock between your online store and other places you keep it.', canWrite() ? button('Add location', 'location-new', 'primary') + button('Move stock', 'transfer-new') : '') + tabs('transfers', productTabs) +
+    panel('Locations', table(['Location', 'Units held', ''], locRows)) + panel('Recent transfers', movesTable(moves));
+}
+function transferForm() {
+  const locs = state.locations || []; const places = [['online', 'Online store']].concat(locs.map((l) => [l.id, l.name]));
+  const variants = (state.inventory || []).map((v) => [v.variantId, v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '') + ' (online ' + v.online + ')']);
+  if (!locs.length) return '<p class="compact-copy">Add a location first (for example a shop or warehouse).</p>';
+  return editForm('transfer', '', select('Product', 'variant', variants, '') + select('From', 'from', places, 'online') + select('To', 'to', places, locs[0].id) + input('Units', 'qty', '', 'number', 'required min="1" step="1"') + input('Note (optional)', 'note', '', 'text', 'maxlength="200"'), 'Move stock');
+}
+function categoriesPage() {
+  const c = state.categories || { categories: [], tags: [] };
+  const catRows = c.categories.map((x) => [esc(x.name), x.count, canWrite() ? button('Rename or merge', 'category-rename:' + encodeURIComponent(x.name), 'compact') : '']);
+  const tagRows = c.tags.map((x) => [esc(x.name), x.count]);
+  const prodRows = state.products.map((p) => [esc(p.name), esc(p.category || '—'), esc((state.productTags[p.id] || []).join(', ') || '—'), canWrite() ? button('Edit tags', 'tags-edit:' + p.id, 'compact') : '']);
+  return head('Categories and tags', 'Organise how products are grouped and found.', '') + tabs('categories', productTabs) +
+    panel('Categories', table(['Category', 'Products', ''], catRows)) + panel('Tags', table(['Tag', 'Products'], tagRows)) + panel('Product tags', table(['Product', 'Category', 'Tags', ''], prodRows));
+}
+
+// ---------- Orders: Drafts, Returns, Shipping, Abandoned checkouts ----------
+const variantOptions = () => (state.inventory || []).map((v) => [v.variantId, v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '') + ' (' + v.online + ' left)']);
+function draftsPage() {
+  const rows = (state.drafts || []).map((d) => [esc(d.customer.name || '—'), (d.lines || []).reduce((s, l) => s + l.qty, 0) + ' items', money(d.total), d.status === 'open' ? badge('Open', 'neutral') : badge('Converted'),
+    d.status === 'open' && canWrite() ? button('Create order', 'draft-convert:' + d.id, 'compact primary') + button('Delete', 'draft-delete:' + d.id, 'compact danger') : '']);
+  return head('Draft orders', 'Create an order by hand for a phone or in-person sale.', canWrite() ? button('Create draft', 'draft-new', 'primary') : '') + tabs('drafts', orderTabs) + panel('All drafts', table(['Customer', 'Items', 'Total', 'Status', ''], rows));
+}
+function draftForm() {
+  const opts = [['', 'Choose a product']].concat(variantOptions());
+  const slot = (i) => '<div class="field-grid wide">' + select('Product ' + (i + 1), 'v' + i, opts, '') + input('Quantity', 'q' + i, i === 0 ? '1' : '', 'number', 'min="1" step="1"') + '</div>';
+  return editForm('draft-record', '', input('Customer name', 'name', '', 'text', 'required maxlength="120"') + input('Phone', 'phone', '', 'tel') + input('Address', 'address') + input('City', 'city') + input('PIN code', 'pin') +
+    slot(0) + slot(1) + slot(2) + area('Note', 'note', '', 'maxlength="1000"'), 'Save draft');
+}
+const RETURN_NEXT = { requested: [['approved', 'Approve', 'primary'], ['rejected', 'Reject', '']], approved: [['received', 'Mark received', 'primary']], received: [['refunded', 'Refund', 'primary']] };
+function returnsPage() {
+  const rows = (state.returns || []).map((r) => ['#' + esc(r.orderNumber), (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), esc(r.reason || '—'), money(r.value),
+    badge({ requested: 'Requested', approved: 'Approved', rejected: 'Rejected', received: 'Received', refunded: 'Refunded' }[r.status], ['rejected'].includes(r.status) ? 'neutral' : ''),
+    canWrite() ? (RETURN_NEXT[r.status] || []).map(([s, label, kind]) => button(label, 'return-set:' + r.id + ':' + s, 'compact ' + kind)).join('') : '']);
+  return head('Returns', 'Return requests for fulfilled orders. Units go back in stock when you mark them received.', '') + tabs('returns', orderTabs) + panel('All returns', table(['Order', 'Items', 'Reason', 'Value', 'Status', ''], rows));
+}
+function returnForm(order) {
+  const rows = (order.lines || []).map((l, i) => '<input type="hidden" name="vid' + i + '" value="' + esc(l.variantId) + '">' + input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (ordered ' + l.qty + ')', 'rq' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1"')).join('');
+  return editForm('return-record', order.id, rows + area('Reason', 'reason', '', 'maxlength="500"'), 'Create return');
+}
+function shippingPage() {
+  const sh = state.checkout.shipping || {};
+  return head('Shipping', 'What customers pay for delivery at checkout.', '') + tabs('shipping', orderTabs) +
+    panel('Delivery charge', body(canWrite() ? editForm('checkout-settings', '', input('Delivery fee (Rs)', 'fee', sh.fee ?? 0, 'number', 'min="0" step="1"') + input('Free delivery above (Rs, 0 = never)', 'freeOver', sh.freeOver ?? 0, 'number', 'min="0" step="1"') + area('Note shown to customers', 'note', sh.note || '', 'maxlength="300"'), 'Save shipping') :
+      '<p class="compact-copy">Fee Rs ' + Number(sh.fee || 0) + (Number(sh.freeOver) > 0 ? ', free above Rs ' + Number(sh.freeOver) : '') + '.</p>'));
+}
+function abandonedPage() {
+  const rows = (state.abandoned || []).map((a) => [esc(a.name || '—'), esc(a.phone), (a.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), money(a.total), dateValue(a.updatedAt), a.recovered ? badge('Recovered') : badge('Not ordered', 'warn'),
+    (a.recovered ? '' : '<a class="btn compact" target="_blank" rel="noopener" href="https://wa.me/' + esc(String(a.phone).replace(/\D/g, '')) + '?text=' + encodeURIComponent('Hi ' + (a.name || '') + ', you left items in your bag. Need any help completing your order?') + '">WhatsApp</a>') + (canWrite() ? button('Remove', 'abandoned-delete:' + a.id, 'compact danger') : '')]);
+  const on = !!state.checkout.abandonCapture;
+  return head('Abandoned checkouts', 'People who typed a phone number at checkout but did not order.', '') + tabs('abandoned-checkouts', orderTabs) +
+    panel('Capture', body('<p class="compact-copy">' + (on ? 'On: a customer\'s phone number and bag are saved once they enter a number at checkout.' : 'Off: nothing is saved. Turn on to see unfinished checkouts. Tell customers in your privacy policy.') + '</p>' + (canWrite() ? button(on ? 'Turn off capture' : 'Turn on capture', 'abandon-toggle', on ? '' : 'primary') : ''))) +
+    panel('Unfinished checkouts', table(['Name', 'Phone', 'Bag', 'Value', 'Last seen', 'Status', ''], rows));
+}
+
+// ---------- Segments, Companies, Growth ----------
+function segmentsPage() {
+  const rows = (state.segments || []).map((s) => [esc(s.name), [s.rule.minOrders != null ? s.rule.minOrders + '+ orders' : '', s.rule.minSpend != null ? 'spent Rs ' + s.rule.minSpend + '+' : '', s.rule.inactiveDays ? 'inactive ' + s.rule.inactiveDays + '+ days' : ''].filter(Boolean).join(', '), s.count,
+    button('View', 'segment-view:' + s.id, 'compact') + (canWrite() ? button('Edit', 'segment-edit:' + s.id, 'compact') + button('Delete', 'segment-delete:' + s.id, 'compact danger') : '')]);
+  return head('Segments', 'Groups of customers that match a rule, built from their orders.', canWrite() ? button('Create segment', 'segment-new', 'primary') : '') + tabs('segments', [['customers', 'Customers'], ['segments', 'Segments'], ['companies', 'Companies']]) + panel('All segments', table(['Segment', 'Rule', 'Customers', ''], rows));
+}
+function segmentForm(s) {
+  const r = s?.rule || {};
+  return editForm('segment-record', s?.id, input('Name', 'name', s?.name || '', 'text', 'required maxlength="80"') + input('At least this many orders', 'minOrders', r.minOrders ?? '', 'number', 'min="0" step="1"') +
+    input('Spent at least (Rs)', 'minSpend', r.minSpend ?? '', 'number', 'min="0" step="1"') + input('No order for at least (days)', 'inactiveDays', r.inactiveDays ?? '', 'number', 'min="1" step="1"'));
+}
+function companiesPage() {
+  const rows = (state.companies || []).map((c) => [esc(c.name), esc(c.gstin || '—'), esc(c.contact || '—'), c.customers, canWrite() ? button('Edit', 'company-edit:' + c.id, 'compact') + button('Delete', 'company-delete:' + c.id, 'compact danger') : '']);
+  const cust = (state.customers || []).filter((c) => c.manual).map((c) => [esc(c.name), esc(c.phone || '—'),
+    canWrite() ? '<select data-action="" data-customer="' + esc(c.id) + '" aria-label="Company for ' + esc(c.name) + '">' + '<option value="">No company</option>' + (state.companies || []).map((co) => '<option value="' + esc(co.id) + '">' + esc(co.name) + '</option>').join('') + '</select>' : '']);
+  return head('Companies', 'Business customers, with their GST number.', canWrite() ? button('Add company', 'company-new', 'primary') : '') + tabs('companies', [['customers', 'Customers'], ['segments', 'Segments'], ['companies', 'Companies']]) +
+    panel('All companies', table(['Company', 'GST number', 'Contact', 'Customers', ''], rows)) + panel('Link customers to a company', table(['Customer', 'Phone', 'Company'], cust));
+}
+function companyForm(c) {
+  return editForm('company-record', c?.id, input('Company name', 'name', c?.name || '', 'text', 'required maxlength="160"') + input('GST number (optional)', 'gstin', c?.gstin || '', 'text', 'maxlength="15" style="text-transform:uppercase"') + input('Contact', 'contact', c?.contact || '', 'text', 'maxlength="160"') + area('Notes', 'notes', c?.notes || '', 'maxlength="1000"'));
+}
+function growthPage() {
+  const totalSpend = state.campaigns.reduce((s, c) => s + Number(c.spend), 0), totalRev = state.campaigns.reduce((s, c) => s + Number(c.revenue), 0);
+  const rows = state.campaigns.map((c) => [esc(c.name), esc(c.channel), esc(c.discountCode || '—'), money(c.spend), c.orders, money(c.revenue), Number(c.spend) > 0 ? (Number(c.revenue) / Number(c.spend)).toFixed(1) + '×' : '—',
+    canWrite() ? button('Edit', 'campaign-edit:' + c.id, 'compact') + button('Delete', 'campaign-delete:' + c.id, 'compact danger') : '']);
+  return head('Growth', 'Track which campaigns bring orders. Link a campaign to a discount code to count its orders.', canWrite() ? button('Add campaign', 'campaign-new', 'primary') : '') +
+    '<div class="metrics">' + metric('Campaigns', state.campaigns.length, '') + metric('Spend', money(totalSpend), 'All campaigns') + metric('Revenue', money(totalRev), 'Paid orders using a campaign code') + '</div>' +
+    panel('Campaigns', table(['Campaign', 'Channel', 'Code', 'Spend', 'Orders', 'Revenue', 'Return', ''], rows));
+}
+function campaignForm(c) {
+  return editForm('campaign-record', c?.id, input('Name', 'name', c?.name || '', 'text', 'required maxlength="120"') +
+    select('Channel', 'channel', ['instagram', 'facebook', 'whatsapp', 'email', 'google', 'influencer', 'other'], c?.channel || 'other') +
+    select('Discount code (optional)', 'discountCode', [['', 'None']].concat((state.discounts || []).map((d) => [d.code, d.code])), c?.discountCode || '') + input('Money spent (Rs)', 'spend', c?.spend ?? 0, 'number', 'min="0" step="1"'));
+}
+
 export function workspace(id, record) {
   if (['analytics', 'reports', 'live-view'].includes(id)) return analyticsPage(id, record);
   let html;
@@ -287,9 +434,11 @@ export function workspace(id, record) {
   else if (productTabs.some(([k]) => k === id)) html = productsPage(id);
   else if (id === 'builder' && record) html = editorPage(record);
   else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages'].includes(id)) html = websitePage(id);
-  else if (id === 'customers') html = comingSoon('Customers', 'A dedicated customer list is coming in a later release. See who ordered on the Orders page for now.');
-  else if (['segments', 'companies'].includes(id)) html = comingSoon(id === 'segments' ? 'Segments' : 'Companies', 'Coming in a later release.');
-  else if (['growth', 'discounts'].includes(id)) html = comingSoon(id === 'discounts' ? 'Discounts' : 'Growth', id === 'discounts' ? 'Discount codes are coming in a later release.' : 'Marketing campaign tracking is coming in a later release.');
+  else if (id === 'customers') html = customersPage();
+  else if (id === 'discounts') html = discountsPage();
+  else if (id === 'segments') html = segmentsPage();
+  else if (id === 'companies') html = companiesPage();
+  else if (id === 'growth') html = growthPage();
   else if (['content', 'pages', 'files', 'data'].includes(id)) html = comingSoon('Content', 'Custom storefront pages, a media library, and custom fields are coming in a later release.');
   else if (id === 'markets') html = comingSoon('Markets', 'Selling in more than one currency or region is coming in a later release.');
   else html = management(id);
@@ -347,6 +496,46 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'store-publish') {
         await api('sfx_store_save', { p: { published: values.has('published') } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Saved.'); rerender();
+      } else if (key === 'customer-record') {
+        await api('sfx_customer_save', { p_id: rid, p: { name: data.name, phone: data.phone, email: data.email, notes: data.notes } });
+        await refreshCustomers(); save(rid ? 'Customer updated.' : 'Customer added.'); close(); rerender(true);
+      } else if (key === 'discount-record') {
+        const expiresAt = data.expiresAt ? new Date(data.expiresAt + 'T23:59:59').toISOString() : '';
+        await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, usageLimit: data.usageLimit } });
+        await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); rerender(true);
+      } else if (key === 'stock-adjust') {
+        const n = Number(data.amount); if (!Number.isInteger(n)) { flash('Enter a whole number.'); return; }
+        await api('sfx_stock_adjust', data.mode === 'set' ? { p_variant: rid, p_delta: 0, p_set: n, p_note: data.note } : { p_variant: rid, p_delta: n, p_note: data.note });
+        await refreshInventory(); save('Stock updated.'); close(); rerender(true);
+      } else if (key === 'location-record') {
+        await api('sfx_location_save', { p_id: rid, p_name: data.name }); await refreshLocations(); save('Location saved.'); close(); rerender(true);
+      } else if (key === 'transfer') {
+        await api('sfx_transfer', { p_variant: data.variant, p_from: data.from, p_to: data.to, p_qty: Number(data.qty), p_note: data.note });
+        await refreshLocations(); save('Stock moved.'); close(); rerender(true);
+      } else if (key === 'category-rename') {
+        await api('sfx_category_rename', { p_old: rid, p_new: data.name }); await Promise.all([refreshCategories(), refreshProducts()]); save('Category updated.'); close(); rerender(true);
+      } else if (key === 'tags-record') {
+        await api('sfx_product_set_tags', { p_id: rid, p_tags: data.tags }); await refreshCategories(); save('Tags saved.'); close(); rerender(true);
+      } else if (key === 'draft-record') {
+        const lines = [0, 1, 2].filter((i) => data['v' + i] && Number(data['q' + i]) > 0).map((i) => ({ variantId: data['v' + i], qty: Number(data['q' + i]) }));
+        await api('sfx_draft_save', { p_id: rid, p: { name: data.name, phone: data.phone, address: data.address, city: data.city, pin: data.pin, note: data.note, lines } });
+        await refreshDrafts(); save('Draft saved.'); close(); rerender(true);
+      } else if (key === 'return-record') {
+        const order = state.orders.find((o) => o.id === rid); const lines = (order?.lines || []).map((l, i) => ({ variantId: data['vid' + i], qty: Number(data['rq' + i] || 0) })).filter((l) => l.qty > 0);
+        await api('sfx_return_create', { p_order: rid, p_lines: lines, p_reason: data.reason }); await refreshReturns(); save('Return created.'); close(); location.hash = '/returns';
+      } else if (key === 'return-refund') {
+        await api('sfx_return_set', { p_id: rid, p_status: 'refunded', p_amount: Number(data.amount) }); await refreshReturns(); save('Refund recorded.'); close(); rerender(true);
+      } else if (key === 'return-rzp-refund') {
+        await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
+      } else if (key === 'checkout-settings') {
+        await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note }, abandonCapture: state.checkout.abandonCapture } });
+        await refreshCheckout(); save('Shipping saved.'); rerender(true);
+      } else if (key === 'company-record') {
+        await api('sfx_company_save', { p_id: rid, p: { name: data.name, gstin: data.gstin, contact: data.contact, notes: data.notes } }); await refreshCompanies(); save('Company saved.'); close(); rerender(true);
+      } else if (key === 'segment-record') {
+        await api('sfx_segment_save', { p_id: rid, p: { name: data.name, minOrders: data.minOrders, minSpend: data.minSpend, inactiveDays: data.inactiveDays } }); await refreshSegments(); save('Segment saved.'); close(); rerender(true);
+      } else if (key === 'campaign-record') {
+        await api('sfx_campaign_save', { p_id: rid, p: { name: data.name, channel: data.channel, discountCode: data.discountCode, spend: data.spend } }); await refreshCampaigns(); save('Campaign saved.'); close(); rerender(true);
       } else if (key === 'razorpay') {
         await api('sfx_store_set_razorpay', { p: { keyId: data.keyId, secret: data.secret } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay connected.'); close(); rerender();
@@ -355,9 +544,48 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     finally { if (submitBtn) submitBtn.disabled = false; }
     return;
   }
+  if (type === 'change' && target.dataset?.customer !== undefined && target.tagName === 'SELECT') {
+    return withBusy(async () => { await api('sfx_customer_set_company', { p_customer: target.dataset.customer, p_company: target.value || null }); await refreshCompanies(); save('Customer linked.'); });
+  }
   if (type !== 'click') return;
   const action = target.dataset.action; if (!action) return;
   const [a, key, detail] = action.split(':');
+  if (a === 'customer-new') return dialog('Add customer', customerForm(null));
+  if (a === 'customer-edit') return dialog('Edit customer', customerForm(state.customers.find((c) => c.id === key)));
+  if (a === 'customer-adopt') { const c = state.customers.find((x) => x.phone === decodeURIComponent(key)); return dialog('Save as customer', customerForm({ ...c, id: null })); }
+  if (a === 'customer-delete') return withBusy(async () => { if (!confirm('Delete this customer record? Their past orders are not affected.')) return; await api('sfx_customer_delete', { p_id: key }); await refreshCustomers(); save('Customer deleted.'); rerender(true); });
+  if (a === 'discount-new') return dialog('Create discount', discountForm(null));
+  if (a === 'discount-edit') return dialog('Edit discount', discountForm(state.discounts.find((d) => d.id === key)));
+  if (a === 'discount-toggle') return withBusy(async () => { const d = state.discounts.find((x) => x.id === key); await api('sfx_discount_set_status', { p_id: key, p_status: d.status === 'active' ? 'archived' : 'active' }); await refreshDiscounts(); save('Discount updated.'); rerender(true); });
+  if (a === 'stock-adjust') return dialog('Adjust stock', adjustForm(state.inventory.find((v) => v.variantId === key)));
+  if (a === 'location-new') return dialog('Add location', editForm('location-record', '', input('Name', 'name', '', 'text', 'required maxlength="80"')));
+  if (a === 'location-edit') return dialog('Rename location', editForm('location-record', key, input('Name', 'name', state.locations.find((l) => l.id === key)?.name || '', 'text', 'required maxlength="80"')));
+  if (a === 'location-delete') return withBusy(async () => { if (!confirm('Delete this location?')) return; await api('sfx_location_delete', { p_id: key }); await refreshLocations(); save('Location deleted.'); rerender(true); });
+  if (a === 'transfer-new') return dialog('Move stock', transferForm());
+  if (a === 'category-rename') { const name = decodeURIComponent(key); return dialog('Rename category', editForm('category-rename', name, input('New name (use an existing name to merge)', 'name', name, 'text', 'required maxlength="80"'))); }
+  if (a === 'tags-edit') return dialog('Edit tags', editForm('tags-record', key, input('Tags (separated by commas)', 'tags', (state.productTags[key] || []).join(', '), 'text', 'maxlength="300"')));
+  if (a === 'draft-new') { await refreshDrafts().catch(() => {}); return dialog('Create draft order', draftForm()); }
+  if (a === 'draft-convert') return withBusy(async () => { const r = await api('sfx_draft_convert', { p_id: key }); await Promise.all([refreshDrafts(), refreshOrders()]); save('Order ' + r.number + ' created.'); rerender(true); });
+  if (a === 'draft-delete') return withBusy(async () => { if (!confirm('Delete this draft?')) return; await api('sfx_draft_delete', { p_id: key }); await refreshDrafts(); save('Draft deleted.'); rerender(true); });
+  if (a === 'return-new') return dialog('Start a return', returnForm(state.orders.find((o) => o.id === key)));
+  if (a === 'return-set') {
+    if (detail === 'refunded') { const r = state.returns.find((x) => x.id === key);
+      if (r.online) return dialog('Refund through Razorpay', editForm('return-rzp-refund', key, '<p class="compact-copy wide">This order was paid online. The refund goes back to the customer\'s card or UPI through your own Razorpay account. Returned items are worth ' + money(r.value) + '.</p>' + input('Amount to refund (Rs)', 'amount', r.value, 'number', 'required min="1" step="0.01"'), 'Refund through Razorpay'));
+      return dialog('Record refund', editForm('return-refund', key, '<p class="compact-copy wide">Returned items are worth ' + money(r.value) + '. Refund the customer yourself (cash, UPI or your payment provider), then record it here.</p>' + input('Amount refunded (Rs)', 'amount', r.value, 'number', 'required min="0" step="0.01"'), 'Record refund')); }
+    return withBusy(async () => { await api('sfx_return_set', { p_id: key, p_status: detail }); await refreshReturns(); save('Return updated.'); rerender(true); });
+  }
+  if (a === 'abandon-toggle') return withBusy(async () => { await api('sfx_checkout_settings_save', { p: { shipping: state.checkout.shipping, abandonCapture: !state.checkout.abandonCapture } }); await refreshCheckout(); save('Saved.'); rerender(true); });
+  if (a === 'abandoned-delete') return withBusy(async () => { await api('sfx_abandoned_delete', { p_id: key }); await refreshAbandoned(); save('Removed.'); rerender(true); });
+  if (a === 'segment-new') return dialog('Create segment', segmentForm(null));
+  if (a === 'segment-edit') return dialog('Edit segment', segmentForm(state.segments.find((s) => s.id === key)));
+  if (a === 'segment-delete') return withBusy(async () => { if (!confirm('Delete this segment?')) return; await api('sfx_segment_delete', { p_id: key }); await refreshSegments(); save('Segment deleted.'); rerender(true); });
+  if (a === 'segment-view') return withBusy(async () => { const m = await api('sfx_segment_members_get', { p_id: key }); dialog('Customers in this segment', table(['Name', 'Phone', 'Orders', 'Spent'], m.map((x) => [esc(x.name || '—'), esc(x.phone), x.orders, money(x.spend)]))); });
+  if (a === 'company-new') return dialog('Add company', companyForm(null));
+  if (a === 'company-edit') return dialog('Edit company', companyForm(state.companies.find((c) => c.id === key)));
+  if (a === 'company-delete') return withBusy(async () => { if (!confirm('Delete this company? Its customers are kept.')) return; await api('sfx_company_delete', { p_id: key }); await refreshCompanies(); save('Company deleted.'); rerender(true); });
+  if (a === 'campaign-new') return dialog('Add campaign', campaignForm(null));
+  if (a === 'campaign-edit') return dialog('Edit campaign', campaignForm(state.campaigns.find((c) => c.id === key)));
+  if (a === 'campaign-delete') return withBusy(async () => { if (!confirm('Delete this campaign?')) return; await api('sfx_campaign_delete', { p_id: key }); await refreshCampaigns(); save('Campaign deleted.'); rerender(true); });
   if (a === 'variant-add') { addVariantRow(target.closest('form')); return; }
   if (a === 'theme-use') return withBusy(async () => { await api('sfx_store_save', { p: { theme: key } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Theme updated.'); rerender(); });
   if (a === 'razorpay-clear') return withBusy(async () => { await api('sfx_store_set_razorpay', { p: { clear: true } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay disconnected.'); rerender(); });

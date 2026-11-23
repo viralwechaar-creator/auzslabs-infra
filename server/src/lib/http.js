@@ -6,11 +6,14 @@ export class HttpError extends Error {
 // ---- CORS: reflect the request's Origin only when it's this domain,
 // a subdomain of it (every tenant), or localhost (local dev) -- never
 // the wildcard '*' every response used to send unconditionally. ----
+// verified custom store domains (db/380), refreshed by routes/sites.js: a store's own domain may call the API from the browser
+export const customOrigins = new Set();
 export function allowedOrigin(originHeader) {
   if (!originHeader) return null;
   let u;
   try { u = new URL(originHeader); } catch { return null; }
   if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return originHeader;
+  if (u.protocol === 'https:' && customOrigins.has(u.hostname)) return originHeader;
   if (!DOMAIN || u.protocol !== 'https:') return null;
   if (u.hostname === DOMAIN || u.hostname.endsWith('.' + DOMAIN)) return originHeader;
   return null;

@@ -328,6 +328,47 @@
     }
 }
 
+# A store's OWN domain (shop.example.com), after the owner proved they control it (TXT record, db/372) and the store is live.
+# Any hostname that reaches this server and is not ours lands here; nothing is served and no certificate is requested unless
+# the API says the host is a verified, live store (/site/ask-tls for the certificate, /site/custom-check for every request).
+# The visitor sees only the storefront: no app page, no salon, no other tenant.
+https:// {
+    tls {
+        on_demand
+    }
+    import security_headers
+    import compress
+    root * /srv/app
+    route {
+        handle /tenant.js {
+            rewrite * /site/custom-tenant.js
+            reverse_proxy api:3000 {
+                header_up X-Forwarded-Host {host}
+            }
+        }
+        handle_path /uploads/* {
+            root * /srv/uploads
+            header Cache-Control "public, max-age=31536000, immutable"
+            file_server
+        }
+        forward_auth api:3000 {
+            uri /site/custom-check
+            copy_headers X-Site-Slug
+        }
+        header /*.html Cache-Control "no-cache"
+        header / Cache-Control "no-cache"
+        @home path /
+        rewrite @home /store.html
+        @storeFiles path /store.html /store/* /config.js /sb-client.js /ds/* /vendor/* /fonts/* /assets/* /icon-* /logo* /offline.html /sw.js /stybill.html /stybill.js
+        handle @storeFiles {
+            file_server
+        }
+        handle {
+            error 404
+        }
+    }
+}
+
 # Monitoring dashboard, kept on its own subdomain
 # tls on_demand: plain `tls {$ACME_EMAIL}` (ordinary automatic HTTPS) never actually obtained a
 # certificate for this hostname -- Caddy kept treating it as covered by the *.{$DOMAIN} wildcard's

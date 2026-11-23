@@ -73,6 +73,26 @@ export async function handle(ctx) {
       .catch((e) => { throw new HttpError(400, 'Razorpay refunded ' + k.amount + ' (refund id ' + body.id + ') but the request could not be marked refunded here: ' + (e.message || 'unknown error') + '. The money has already moved -- fix the record by hand.'); });
     return reply(200, { ok: true, rzpRefundId: body.id, amount: k.amount });
   }
+  // AUZslab storefront: refund a returned, online-paid order through the STORE'S OWN Razorpay account (same shape as the AUZsStyle route
+  // above). Nothing changes unless Razorpay confirms; the return then moves to "refunded" through sfx_return_set's own stage rules.
+  if (url.pathname === '/payments/sfx/refund/start' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxrzpr:${ip}`, 15, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { returnId, amount } = await readJsonBody(req);
+    const prep = await withAuth(user.id, (client) => client.query('select sfx_refund_prepare($1, $2) as r', [String(returnId || ''), Number(amount) || null]))
+      .catch((e) => { throw new HttpError(400, e.message || 'could not start the refund'); });
+    const k = prep.rows[0].r;
+    const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/payments/${encodeURIComponent(k.paymentId)}/refund`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Basic ' + Buffer.from(`${k.key}:${k.secret}`).toString('base64') },
+      body: JSON.stringify({ amount: Math.round(Number(k.amount) * 100) }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || !body.id) throw new HttpError(400, (body && body.error && body.error.description) || 'Razorpay could not process this refund. Nothing was changed.');
+    await withAuth(user.id, (client) => client.query('select sfx_refund_complete($1, $2, $3) as r', [String(returnId), k.amount, body.id]))
+      .catch((e) => { throw new HttpError(400, 'Razorpay refunded ' + k.amount + ' (refund id ' + body.id + ') but the return could not be marked refunded here: ' + (e.message || 'unknown error') + '. The money has already moved; record it manually.'); });
+    return reply(200, { ok: true, rzpRefundId: body.id, amount: k.amount });
+  }
   // AUZslab storefront platform: card/UPI/net banking with the STORE'S OWN Razorpay keys (db/372) -- the
   // exact same shape as AUZsStyle's /payments/sty/start+verify above, for the exact same reason (a signed
   // HMAC confirm, not a webhook, because this product also lets each store use its own Razorpay account).
