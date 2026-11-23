@@ -75,5 +75,39 @@ export default async function run({ browser, stack }) {
     await page.locator('[data-action^="tags-edit:"]').first().click(); await page.fill('#dialog input[name=tags]', 'Gift, New'); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1000);
     assert((await q("select count(*)::int n from sfx_products where 'gift' = any(tags)"))[0].n >= 1, 'tags not saved');
   });
+  await s.check('Shipping, drafts and abandoned-checkout capture work from the hub', async () => {
+    await page.goto(stack.url('testcafe', '/storefront.html#/shipping'), { waitUntil: 'load' }); await page.waitForTimeout(1200);
+    await page.fill('input[name=fee]', '45'); await page.fill('input[name=freeOver]', '900'); await page.locator('form[data-key="checkout-settings"] button.primary').click(); await page.waitForTimeout(900);
+    assert((await q("select config->'shipping'->>'fee' f from sfx_stores s join tenants t on t.id=s.tenant_id where t.slug='testcafe'"))[0].f === '45', 'shipping not saved');
+    await page.goto(stack.url('testcafe', '/storefront.html#/abandoned-checkouts'), { waitUntil: 'load' }); await page.waitForTimeout(1000);
+    await page.locator('[data-action="abandon-toggle"]').click(); await page.waitForTimeout(900);
+    assert((await q("select config->>'abandonCapture' c from sfx_stores s join tenants t on t.id=s.tenant_id where t.slug='testcafe'"))[0].c === 'true', 'capture not on');
+    await page.goto(stack.url('testcafe', '/storefront.html#/drafts'), { waitUntil: 'load' }); await page.waitForTimeout(1200);
+    await page.locator('[data-action="draft-new"]').click(); await page.waitForTimeout(600);
+    await page.fill('#dialog input[name=name]', 'Phone Buyer'); await page.selectOption('#dialog select[name=v0]', { index: 1 }); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1000);
+    assert(/Phone Buyer/.test(await page.locator('body').innerText()), 'draft not listed');
+    await page.locator('[data-action^="draft-convert:"]').first().click(); await page.waitForTimeout(1200);
+    assert((await q("select count(*)::int n from sfx_orders where customer->>'name'='Phone Buyer'"))[0].n === 1, 'order not created');
+  }, 'critical');
+  await s.check('Returns: start from a fulfilled order and walk it to refunded', async () => {
+    const o = (await q("select id from sfx_orders where customer->>'name'='Phone Buyer'"))[0].id;
+    await q("update sfx_orders set status='fulfilled' where id=$1", [o]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(1500);
+    await page.locator('[data-action^="return-new:"]').click(); await page.fill('#dialog input[name=rq0]', '1'); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1200);
+    for (const st of ['approved', 'received']) { await page.locator('[data-action$=":' + st + '"]').first().click(); await page.waitForTimeout(900); }
+    await page.locator('[data-action$=":refunded"]').first().click(); await page.waitForTimeout(500); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1000);
+    assert((await q("select status from sfx_returns"))[0].status === 'refunded', 'not refunded');
+  }, 'critical');
+  await s.check('Segments, companies and growth pages save', async () => {
+    await page.goto(stack.url('testcafe', '/storefront.html#/segments'), { waitUntil: 'load' }); await page.waitForTimeout(1000);
+    await page.locator('[data-action="segment-new"]').click(); await page.fill('#dialog input[name=name]', 'Loyal'); await page.fill('#dialog input[name=minOrders]', '1'); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(900);
+    assert((await q("select count(*)::int n from sfx_segments"))[0].n === 1, 'segment');
+    await page.goto(stack.url('testcafe', '/storefront.html#/companies'), { waitUntil: 'load' }); await page.waitForTimeout(1000);
+    await page.locator('[data-action="company-new"]').click(); await page.fill('#dialog input[name=name]', 'Acme Ltd'); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(900);
+    assert((await q("select count(*)::int n from sfx_companies"))[0].n === 1, 'company');
+    await page.goto(stack.url('testcafe', '/storefront.html#/growth'), { waitUntil: 'load' }); await page.waitForTimeout(1000);
+    await page.locator('[data-action="campaign-new"]').click(); await page.fill('#dialog input[name=name]', 'Reel'); await page.fill('#dialog input[name=spend]', '300'); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(900);
+    assert((await q("select count(*)::int n from sfx_campaigns"))[0].n === 1, 'campaign');
+  });
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }

@@ -75,6 +75,13 @@ export async function refreshDiscounts() { state.discounts = await api('sfx_disc
 export async function refreshInventory() { const [inv, mv] = await Promise.all([api('sfx_inventory_list'), api('sfx_stock_moves_list', {})]); state.inventory = inv; state.stockMoves = mv; }
 export async function refreshLocations() { const [locs, mv, inv] = await Promise.all([api('sfx_location_list'), api('sfx_stock_moves_list', {}), api('sfx_inventory_list')]); state.locations = locs; state.stockMoves = mv; state.inventory = inv; }
 export async function refreshCategories() { const [c, t] = await Promise.all([api('sfx_category_list'), api('sfx_product_tags')]); state.categories = c; state.productTags = t; }
+export async function refreshDrafts() { const [d, i] = await Promise.all([api('sfx_draft_list'), api('sfx_inventory_list')]); state.drafts = d; state.inventory = i; }
+export async function refreshReturns() { state.returns = await api('sfx_return_list'); }
+export async function refreshAbandoned() { const [a, c] = await Promise.all([api('sfx_abandoned_list'), api('sfx_checkout_settings_get')]); state.abandoned = a; state.checkout = c; }
+export async function refreshCheckout() { state.checkout = await api('sfx_checkout_settings_get'); }
+export async function refreshCompanies() { const [c, cu] = await Promise.all([api('sfx_company_list'), api('sfx_customer_list')]); state.companies = c; state.customers = cu; }
+export async function refreshSegments() { state.segments = await api('sfx_segment_list'); }
+export async function refreshCampaigns() { const [c, d] = await Promise.all([api('sfx_campaign_list'), api('sfx_discount_list')]); state.campaigns = c; state.discounts = d; }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
 
 async function blocked(title, message) {

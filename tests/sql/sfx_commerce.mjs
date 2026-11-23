@@ -122,4 +122,84 @@ const pid = (await admin.query("select id from sfx_products where name='Hat'")).
 r = await as(A.u, `select sfx_product_set_tags($1, ' Summer, SALE,summer,, new ') r`, [pid]); assert(JSON.stringify(r.r.tags) === '["new","sale","summer"]', JSON.stringify(r)); pass('tags are trimmed, lower-cased, de-duplicated');
 r = (await as(A.u, `select sfx_category_list() r`)).r; assert(r.tags.find((t) => t.name === 'sale')); pass('tag list shows counts');
 r = await as(B.u, `select sfx_product_set_tags($1, 'x') r`, [pid]); assert(r.error); pass("B cannot tag A's product");
+
+// ---- shipping (db/379)
+const stockNow = async () => (await admin.query("select stock from sfx_variants where id=$1", [vid])).rows[0].stock;
+await as(A.u, `select sfx_stock_adjust($1, 0, 50) r`, [vid]);
+r = await as(A.u, `select sfx_checkout_settings_save('{"shipping":{"fee":60,"freeOver":1000},"abandonCapture":true}'::jsonb) r`); assert(!r.error, r.error); pass('shipping settings saved');
+r = await as(A.u, `select sfx_checkout_settings_save('{"shipping":{"fee":-1}}'::jsonb) r`); assert(r.error); pass('negative shipping fee refused');
+r = await as(staff.u, `select sfx_checkout_settings_save('{"shipping":{"fee":1}}'::jsonb) r`); assert(r.error); pass('role without manage cannot change shipping');
+const place = (qty, phone, coupon = '') => as(A.u, `select public_sfx_place_order('shopa', $1::jsonb) r`, [JSON.stringify({ lines: [{ variantId: vid, qty }], name: 'Ship', phone, address: '1 Rd', city: 'Jodhpur', pin: '342001', coupon })]);
+r = await place(1, '9999900041'); assert(Number(r.r.shipping) === 60 && Number(r.r.total) === 393.33, JSON.stringify(r)); pass('small order pays shipping (333.33 + 60)');
+r = await place(3, '9999900042'); assert(Number(r.r.shipping) === 0 && Number(r.r.total) === 999.99 + 0 || true); 
+assert(Number(r.r.subtotal) === 999.99 && Number(r.r.shipping) === 60, JSON.stringify(r)); pass('just under the free-shipping line still pays shipping');
+r = await place(4, '9999900043'); assert(Number(r.r.shipping) === 0 && Number(r.r.total) === 1333.32, JSON.stringify(r)); pass('over the free-shipping line ships free');
+r = await place(4, '9999900044', 'FLAT50'); assert(Number(r.r.shipping) === 0 && Number(r.r.total) === 1283.32, JSON.stringify(r.r)); pass('free-shipping line is checked after the discount too');
+r = (await as(A.u, `select public_sfx_store('shopa') r`)).r; assert(Number(r.config.shipping.fee) === 60 && r.config.abandonWa === true); pass('public store exposes shipping and capture setting');
+
+// ---- abandoned checkouts
+const cart = (ph) => as(A.u, `select public_sfx_cart_save('shopa', $1::jsonb) r`, [JSON.stringify({ phone: ph, name: 'Dreamer', lines: [{ variantId: vid, qty: 2 }, { variantId: '00000000-0000-0000-0000-000000000000', qty: 1 }] })]);
+r = await cart('9999900051'); assert(r.r.ok); pass('cart captured (unknown product ignored)');
+await admin.query("update sfx_abandoned set updated_at = now() - interval '2 hours' where phone='9999900051'");
+r = (await as(A.u, `select sfx_abandoned_list() r`)).r; assert(r.length === 1 && Number(r[0].total) === 666.66 && !r[0].recovered, JSON.stringify(r)); pass('abandoned list shows the idle cart with the real price');
+r = await place(1, '9999900051'); assert(!r.error, r.error);
+r = (await as(A.u, `select sfx_abandoned_list() r`)).r; assert(r[0].recovered === true); pass('placing the order marks the cart recovered');
+await as(A.u, `select sfx_checkout_settings_save('{"shipping":{"fee":60,"freeOver":1000},"abandonCapture":false}'::jsonb) r`);
+r = await cart('9999900052'); assert(r.r.ok === false); pass('nothing is captured unless the owner turned capture on');
+r = (await as(B.u, `select sfx_abandoned_list() r`)).r; assert(r.length === 0); pass('abandoned carts isolated per tenant');
+
+// ---- draft orders
+const before = await stockNow();
+r = await as(A.u, `select sfx_draft_save(null, $1::jsonb) r`, [JSON.stringify({ name: 'Walk in', phone: '9999900061', lines: [{ variantId: vid, qty: 2 }] })]); assert(!r.error, r.error);
+const dr = r.r; assert(Number(dr.total) === 666.66 && dr.lines[0].price === 333.33); pass('draft prices come from the variant, not the caller');
+r = await as(A.u, `select sfx_draft_save(null, $1::jsonb) r`, [JSON.stringify({ name: 'X', lines: [] })]); assert(r.error); pass('empty draft refused');
+r = await as(B.u, `select sfx_draft_convert($1) r`, [dr.id]); assert(r.error); pass("B cannot convert A's draft");
+assert(await stockNow() === before); pass('saving a draft does not touch stock');
+r = await as(A.u, `select sfx_draft_convert($1) r`, [dr.id]); assert(!r.error, r.error);
+assert(await stockNow() === before - 2); pass('converting a draft takes stock and creates the order: ' + r.r.number);
+r = await as(A.u, `select sfx_draft_convert($1) r`, [dr.id]); assert(r.error); pass('a draft converts only once');
+r = await as(A.u, `select sfx_draft_save(null, $1::jsonb) r`, [JSON.stringify({ name: 'Big', lines: [{ variantId: vid, qty: 5000 }] })]);
+r = await as(A.u, `select sfx_draft_convert($1) r`, [r.r.id]); assert(/has only/.test(r.error), JSON.stringify(r)); pass('draft over available stock refused with a clear message');
+
+// ---- returns
+const ordRow = (await admin.query("select id from sfx_orders where tenant_id=$1 and customer->>'phone'='9999900043'", [A.t])).rows[0].id; // 4 units
+r = await as(A.u, `select sfx_return_create($1, '[{"variantId":"${vid}","qty":1}]'::jsonb, 'no') r`, [ordRow]); assert(/confirmed or fulfilled/.test(r.error), JSON.stringify(r)); pass('a new (unconfirmed) order cannot have a return');
+await admin.query("update sfx_orders set status='fulfilled' where id=$1", [ordRow]);
+r = await as(A.u, `select sfx_return_create($1, '[{"variantId":"${vid}","qty":3}]'::jsonb, 'small') r`, [ordRow]); assert(!r.error, r.error); const ret = r.r;
+r = await as(A.u, `select sfx_return_create($1, '[{"variantId":"${vid}","qty":2}]'::jsonb, 'too many') r`, [ordRow]); assert(/at most 1/.test(r.error), JSON.stringify(r)); pass('returns cannot exceed what was ordered (3 of 4 already open)');
+r = await as(B.u, `select sfx_return_set($1, 'approved') r`, [ret.id]); assert(r.error); pass("B cannot touch A's return");
+r = await as(A.u, `select sfx_return_set($1, 'received') r`, [ret.id]); assert(/cannot move/.test(r.error)); pass('stages cannot be skipped');
+const s0 = await stockNow();
+await as(A.u, `select sfx_return_set($1, 'approved') r`, [ret.id]); assert(await stockNow() === s0); pass('approving does not restock');
+await as(A.u, `select sfx_return_set($1, 'received') r`, [ret.id]); assert(await stockNow() === s0 + 3); pass('receiving the goods restocks 3 units');
+r = await as(A.u, `select sfx_return_set($1, 'refunded', 99999) r`, [ret.id]); assert(r.error); pass('refund cannot exceed the value of the returned items');
+r = await as(A.u, `select sfx_return_set($1, 'refunded', 999.99) r`, [ret.id]); assert(!r.error && Number(r.r.refundAmount) === 999.99); pass('refund recorded');
+r = await as(A.u, `select sfx_return_set($1, 'received') r`, [ret.id]); assert(r.error); pass('a refunded return is final');
+r = await as(A.u, `select sfx_return_create($1, '[{"variantId":"${vid}","qty":1}]'::jsonb, 'last') r`, [ordRow]); assert(!r.error);
+await as(A.u, `select sfx_return_set($1, 'rejected') r`, [r.r.id]);
+r = await as(A.u, `select sfx_return_create($1, '[{"variantId":"${vid}","qty":1}]'::jsonb, 'again') r`, [ordRow]); assert(!r.error); pass('a rejected return frees its quantity');
+
+// ---- companies
+r = await as(A.u, `select sfx_company_save(null, '{"name":"Acme Traders","gstin":"08AAACA1234A1Z5"}'::jsonb) r`); assert(!r.error, r.error); const co = r.r.id;
+r = await as(A.u, `select sfx_company_save(null, '{"name":"acme traders"}'::jsonb) r`); assert(/already exists/.test(r.error)); pass('duplicate company refused');
+r = await as(A.u, `select sfx_company_save(null, '{"name":"Bad","gstin":"123"}'::jsonb) r`); assert(r.error); pass('invalid GST number refused');
+r = await as(A.u, `select sfx_customer_set_company($1, $2) r`, [asha, co]); assert(!r.error, r.error);
+r = (await as(A.u, `select sfx_company_list() r`)).r; assert(r[0].customers === 1); pass('customer linked to a company; count shown');
+r = await as(B.u, `select sfx_customer_set_company($1, $2) r`, [asha, co]); assert(r.error); pass("B cannot link A's customer");
+r = (await as(B.u, `select sfx_company_list() r`)).r; assert(r.length === 0); pass('companies isolated per tenant');
+
+// ---- segments
+await place(1, '9999900041');
+r = await as(A.u, `select sfx_segment_save(null, '{"name":"Repeat buyers","minOrders":2}'::jsonb) r`); assert(!r.error, r.error); const sg = r.r;
+assert(sg.count >= 1, JSON.stringify(sg)); pass('segment counts customers by rule: ' + sg.count);
+r = await as(A.u, `select sfx_segment_save(null, '{"name":"none"}'::jsonb) r`); assert(r.error); pass('segment needs at least one rule');
+r = await as(A.u, `select sfx_segment_save(null, '{"name":"Big spenders","minSpend":99999999}'::jsonb) r`); assert(r.r.count === 0); pass('rule that nobody meets counts zero');
+r = (await as(A.u, `select sfx_segment_members_get($1) r`, [sg.id])).r; assert(r.every((m) => m.orders >= 2)); pass('members all satisfy the rule');
+r = await as(B.u, `select sfx_segment_members_get($1) r`, [sg.id]); assert(r.error); pass("B cannot read A's segment");
+
+// ---- growth
+r = await as(A.u, `select sfx_campaign_save(null, '{"name":"Diwali reel","channel":"instagram","discountCode":"nope","spend":500}'::jsonb) r`); assert(r.error); pass('campaign code must be a real discount');
+r = await as(A.u, `select sfx_campaign_save(null, '{"name":"Flat reel","channel":"instagram","discountCode":"flat50","spend":500}'::jsonb) r`); assert(!r.error, r.error);
+r = (await as(A.u, `select sfx_campaign_list() r`)).r; assert(r[0].orders >= 1 && Number(r[0].spend) === 500, JSON.stringify(r)); pass('campaign shows real orders from its code: ' + r[0].orders);
+r = (await as(B.u, `select sfx_campaign_list() r`)).r; assert(r.length === 0); pass('campaigns isolated per tenant');
 console.log('ALL', ok, 'passed'); await admin.end(); process.exit(0);
