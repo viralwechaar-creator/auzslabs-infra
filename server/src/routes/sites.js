@@ -1,6 +1,7 @@
-import { pool } from '../db.js';
+import { Resolver } from 'node:dns/promises';
+import { pool, withAuth } from '../db.js';
 import { DOMAIN } from '../config.js';
-import { rateLimited, clientIp } from '../lib/http.js';
+import { HttpError, rateLimited, readJsonBody, clientIp } from '../lib/http.js';
 
 // Addresses. Caddy asks this module three things (nothing here is reachable by a browser on purpose: every answer is only useful to Caddy):
 //   GET /site/check        -- for every page request on a SHOP address (shopname.auzslab.in): may this shop have a website address?
@@ -23,6 +24,7 @@ const APP_PAGES = [
   ['auzsledger', /^\/(accounts\.html|accounts\/)/],
   ['auzsscan', /^\/scan\.html/],
   ['auzsfinance', /^\/(finance\.html|finance\/)/],
+  ['auzsshop', /^\/(storefront\.html|storefront\/)/],
   ['app', /^\/(start\.html|my\.html)/],
 ];
 // files a shop's own website / bill pages use: never an app page, whatever folder they live in
@@ -31,7 +33,7 @@ const WEB_SUPPORT = /^\/(mob\/receipt|accounts\/(bill|invoice-templates|taxinv)\
 // api/status/agents have their own Caddyfile blocks (not inside *.{$DOMAIN}'s on_demand wildcard), but Caddy's automatic
 // HTTPS still matches them against the wildcard's on_demand policy for certificate purposes -- without these here, the
 // ask check above silently refused them (no ACME call was ever attempted, no error logged, just a dead TLS handshake).
-const APP_SUBS = new Set(['auzspos', 'auzsstyle', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsfinance', 'app', 'www', 'api', 'status', 'agents']);
+const APP_SUBS = new Set(['auzspos', 'auzsstyle', 'auzsmob', 'auzspay', 'auzsledger', 'auzsscan', 'auzsfinance', 'auzsshop', 'app', 'www', 'api', 'status', 'agents']);
 const appOf = (p) => { if (WEB_SUPPORT.test(p)) return null; for (const [a, re] of APP_PAGES) if (re.test(p)) return a; return null; };
 const base = () => (DOMAIN && DOMAIN !== 'localhost' ? DOMAIN : 'auzslab.in');
 
@@ -101,7 +103,7 @@ async function storeSitemap(req, res) {
 }
 
 export async function handle(ctx) {
-  const { req, res, url } = ctx;
+  const { req, res, url, user, reply } = ctx;
 
   if (url.pathname === '/site/store-sitemap' && req.method === 'GET') return storeSitemap(req, res);
   if (url.pathname === '/site/ask-tls' && req.method === 'GET') {
@@ -159,5 +161,33 @@ export async function handle(ctx) {
     const page = { style: '/stybill.html?t=', ledger: '/bill.html?t=', mob: '/mobbill.html?t=', pos: '/i.html?o=' }[r.k];
     return redirect(res, 'https://app.' + base() + page + encodeURIComponent(r.t));
   }
+
+  // AUZslab storefront platform: bring-your-own-domain, verification half only (db/372) -- actually serving
+  // the storefront ON the domain, the Caddy site-block + TLS side, is phase 2. This is the one thing allowed
+  // to ever flip a domain to "verified": it checks the TXT record over real public DNS itself, server-side,
+  // before telling sfx_domain_mark_verified to flip the row -- a browser can never claim verification on its
+  // own say-so. Same discipline as /site/ask-tls above: never ask Caddy (or anything) to trust an unverified
+  // hostname. sfx_domain_verify_prepare/sfx_domain_mark_verified both re-check sfx_guard('sfx_manage') and
+  // tenant ownership themselves (withAuth), so this route adds no authorization logic of its own.
+  if (url.pathname === '/site/sfx-domain-verify' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxdomver:${clientIp(req)}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { id } = await readJsonBody(req);
+    const prep = await withAuth(user.id, (client) => client.query('select sfx_domain_verify_prepare($1) as r', [String(id || '')]))
+      .catch((e) => { throw new HttpError(400, e.message || 'domain not found'); });
+    const { hostname, token, status } = prep.rows[0].r;
+    if (status === 'verified') return reply(200, { status: 'verified' });
+    let verified = false;
+    try {
+      const records = await new Resolver({ timeout: 2000, tries: 1 }).resolveTxt('_auzslab-verify.' + hostname + '.');
+      verified = records.some((value) => value.join('') === token);
+    } catch (e) {
+      if (!['ENOTFOUND', 'ENODATA', 'NXDOMAIN'].includes(e.code)) throw new HttpError(503, 'Could not check DNS right now. Please try again shortly.');
+    }
+    if (!verified) return reply(200, { status: 'pending', verified: false });
+    const done = await withAuth(user.id, (client) => client.query('select sfx_domain_mark_verified($1) as r', [String(id)]));
+    return reply(200, { status: done.rows[0].r.status, verified: true });
+  }
+
   return false;
 }
