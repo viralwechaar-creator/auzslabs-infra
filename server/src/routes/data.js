@@ -58,7 +58,7 @@ export async function handle(ctx) {
         const cfg = RPC[fnName];
         if (!cfg) throw new HttpError(404, 'unknown function');
         if (!cfg.auth) throw new HttpError(400, 'this function cannot be sent in a batch');
-        if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
+        if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request' || fnName === 'start_storefront_trial') await requireVerifiedEmail(user.id);
         const args = op.args && typeof op.args === 'object' ? op.args : {};
         // AUZsStyle changes carry a phone-made id; the answer is kept so a resend (lost reply) is applied once (db/266)
         const once = fnName.startsWith('sty_') && id;
@@ -102,7 +102,9 @@ export async function handle(ctx) {
     // Anything a visitor can WRITE (orders, bookings, reviews, carts, payment notes) also has a tighter per-address cap than reading the menu.
     if (!cfg.auth && /^(place_order|call_waiter|submit_|public_create_|public_order_|public_sty_(place_order|order_paid|cart_save|review_submit|return_request|notify_me)|public_sfx_(place_order|order_paid|review_submit|return_request|notify_me))/.test(fnName) && rateLimited(`pubwrite:${ip}`, 120, 10 * 60_000)) throw new HttpError(429, 'too many requests, please slow down');
     if (fnName === 'submit_lead' && rateLimited(`lead:${ip}`, 5, 60 * 60_000)) throw new HttpError(429, 'too many requests, try again later');
-    if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request') await requireVerifiedEmail(user.id);
+    // start_storefront_trial provisions a live tenant instantly with no admin review at all (Path B, db/373) --
+    // email verification is the only abuse gate it has, so it needs this at least as much as the request-only RPCs do.
+    if (fnName === 'submit_signup_request' || fnName === 'submit_addon_request' || fnName === 'start_storefront_trial') await requireVerifiedEmail(user.id);
     // Visitors who are not signed in only ever send small forms (an order, a booking, a review): a big body is abuse, not use.
     const args = await readJsonBody(req, user ? 5_000_000 : 200_000);
     const uid = user?.id || null;

@@ -120,6 +120,33 @@ export async function cancelRazorpayAutorenew({ subId }) {
   try { await razorpayApi(`subscriptions/${subId}/cancel`, { cancel_at_cycle_end: 0 }); } catch { /* best effort: the row below still records the owner's choice */ }
 }
 
+// Path B (two-path onboarding gate, db/373/db/374): reactivating a paused/trial storefront. db/260
+// (quote_only_no_prices) removed every fixed online price platform-wide, but the owner has since
+// confirmed a deliberate, scoped exception for the storefront plan alone (db/374) -- so once a real
+// price is set (> 0), this goes through the SAME Razorpay checkout discipline signup/addon/renewal
+// payments already use (AUZslab's own platform keys, a signed webhook, idempotent activation).
+// While the price is still ₹0/unset, sfx_plan_order_prepare() throws and the caller (routes/payments.js)
+// turns that into a plain error telling the owner to use request_storefront_reactivation instead -- the
+// same "dormant until configured" discipline every other product already follows before its first real
+// price is set.
+export async function createStorefrontPlanOrder({ userId }) {
+  if (!razorpayConfigured()) throw new Error('Online payment is not switched on yet. Please ask us to reactivate your store.');
+  const { rows } = await withAuth(userId, (client) => client.query('select sfx_plan_order_prepare() as r'));
+  const p = rows[0].r;
+  const paise = Math.round(Number(p.amount) * 100);
+  const order = await razorpayApi('orders', {
+    amount: paise,
+    currency: 'INR',
+    receipt: `sfxplan_${String(p.tenant_id).replace(/-/g, '').slice(0, 24)}`,
+    notes: { sfx_tenant_id: String(p.tenant_id), business: String(p.name || '').slice(0, 80) },
+  });
+  await pool.query(
+    `insert into payments (razorpay_order_id, user_id, sfx_tenant_id, amount, status, period) values ($1, $2, $3, $4, 'created', 'month')`,
+    [order.id, userId, p.tenant_id, Number(p.amount)],
+  );
+  return { orderId: order.id, amount: order.amount, currency: order.currency, keyId: RAZORPAY_KEY_ID, description: `AUZslab storefront plan: ${p.name || 'your store'}` };
+}
+
 // Raw-body HMAC-SHA256 verification against Razorpay's published
 // algorithm (https://razorpay.com/docs/webhooks/validate-test/) --
 // the signature MUST be computed over the exact raw bytes Razorpay
@@ -160,7 +187,7 @@ export async function handleWebhookEvent(event) {
   const payment = event.payload?.payment?.entity;
   if (!payment?.order_id) return;
 
-  const { rows } = await pool.query('select id, status, signup_request_id, addon_request_id, client_order_id from payments where razorpay_order_id = $1', [payment.order_id]);
+  const { rows } = await pool.query('select id, status, signup_request_id, addon_request_id, client_order_id, sfx_tenant_id from payments where razorpay_order_id = $1', [payment.order_id]);
   const row = rows[0];
   if (!row) return; // an order this server never created, or a test event -- nothing to do
   if (row.status !== 'paid') {
@@ -172,6 +199,7 @@ export async function handleWebhookEvent(event) {
     await pool.query('select online_confirm_order_payment($1, $2, $3)', [row.client_order_id, payment.id, Number(payment.amount) / 100]);
     return;
   }
+  if (row.sfx_tenant_id) { await pool.query('select provision_storefront_from_payment($1)', [row.id]); return; }
   if (row.signup_request_id) await pool.query('select provision_from_payment($1)', [row.id]);
   else await pool.query('select provision_addon_from_payment($1)', [row.id]);
 }

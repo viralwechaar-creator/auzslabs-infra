@@ -429,6 +429,22 @@ function bindSignOut() {
 }
 
 async function bootProspect(session) {
+  // Two-path onboarding gate: a signed-in person with no business yet and
+  // no request of any kind already in flight has not made the mandatory
+  // choice between "AUZslab apps" (Path A) and "Build a complete online
+  // store" (Path B) -- send them there instead of this lighter prospect
+  // view, so no brand-new signup can land on any dashboard first. Someone
+  // who already has a pending/declined signup_request, OR an older
+  // client_orders request from before this gate existed, has already made
+  // some kind of choice -- they keep seeing this page as before.
+  try {
+    const [sr, co] = await Promise.all([
+      sb.from('signup_requests').select('id').limit(1),
+      sb.rpc('my_client_orders').catch(() => ({ data: null })),
+    ]);
+    const hasRequest = (sr.data && sr.data.length > 0) || (co.data && co.data.length > 0);
+    if (!hasRequest) { window.location.href = 'choose-path.html'; return; }
+  } catch (e) { /* if the check itself fails, fall through to the normal prospect view rather than get stuck */ }
   bindSignOut();
   document.querySelectorAll('.tenant-only').forEach((e) => { e.style.display = 'none'; });
   $('#pageTitle').textContent = 'Welcome';
@@ -469,6 +485,22 @@ async function boot() {
   // account-page sign-in instructions (careers.html, the approval flow) all point a new hire
   // here first, so this redirect is the one place that actually gets them to the right app.
   if (DASH.features && DASH.features.salesos) { window.location.href = 'https://' + DASH.tenant.slug + '.auzslab.in/salesos.html'; return; }
+  // Path A ("Get this app", db/373/db/375): a tenant provisioned through live-demo.html's "Get this app" +
+  // cart.html request (never an existing/admin-onboarded tenant -- those keep onboarding_path='full' and
+  // this never fires for them) has exactly one app and no settings/account screens of its own in
+  // account.html at all: everything (business details, renewal/plan, staff) lives inside that app's own
+  // settings. Same redirect-before-any-dashboard-content shape as the SalesOS case just above, generalized
+  // to whichever single app the tenant actually owns.
+  if (DASH.tenant.onboarding_path === 'basic') {
+    const f = DASH.features || {};
+    const dest = f.salon ? 'https://' + DASH.tenant.slug + '.auzslab.in/salon/admin/'
+      : f.style ? 'https://auzsstyle.auzslab.in/style.html'
+      : f.accounting ? 'https://auzsledger.auzslab.in/accounts.html'
+      : null;
+    // No app switched on yet (a Path-A request not yet approved/paid, or paid for an add-on only) --
+    // fall through to the ordinary dashboard rather than redirect nowhere.
+    if (dest) { window.location.href = dest; return; }
+  }
   // Only matters for AUZslab's own tenant (the owner also has a platform_admins row) -- a plain client never
   // sees this card. One extra call, not folded into my_dashboard, so an ordinary client's dashboard load never
   // even touches the admin check.

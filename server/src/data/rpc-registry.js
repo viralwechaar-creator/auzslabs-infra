@@ -145,9 +145,13 @@ export const RPC = {
   list_clients: { params: [], auth: true },
   update_client: { params: ['p_tenant_id', 'p_monthly_fee', 'p_renewal_date', 'p_notes', 'p_status'], auth: true },
   admin_set_tenant_slug: { params: ['p_tenant_id', 'p_slug'], auth: true },
-  submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes', 'p_contact_name', 'p_phone', 'p_niche', 'p_address'], jsonb: ['p_features'], auth: true },
+  submit_signup_request: { params: ['p_business_name', 'p_slug', 'p_features', 'p_notes', 'p_contact_name', 'p_phone', 'p_niche', 'p_address', 'p_onboarding_path'], jsonb: ['p_features'], defaults: { p_onboarding_path: 'full' }, auth: true },
   approve_signup_request: { params: ['p_request_id', 'p_niche'], auth: true },
   decline_signup_request: { params: ['p_request_id'], auth: true },
+  // Two-path onboarding gate (db/373): Path B self-serve storefront trial + status, no admin approval needed.
+  start_storefront_trial: { params: ['p_business_name', 'p_slug'], auth: true },
+  sfx_status: { params: [], auth: true },
+  request_storefront_reactivation: { params: ['p_notes'], auth: true },
 
   // --- Razorpay payments (db/070): dormant until RAZORPAY_KEY_ID/SECRET are set, see payments.js ---
   payment_status: { params: ['p_order_id'], auth: true },
@@ -790,6 +794,10 @@ export const RPC = {
   sfx_order_note: { params: ['p_id', 'p_note'], auth: true },
   sfx_domain_list: { params: [], auth: true },
   sfx_domain_connect: { params: ['p_hostname'], auth: true },
+  // Storefront plan pricing (db/374): a deliberate, scoped exception to db/260's "no prices shown"
+  // policy, for exactly this one product. admin_set_product_price refuses every key but 'storefront'.
+  public_product_prices: { params: [], auth: false },
+  admin_set_product_price: { params: ['p_key', 'p_monthly_price'], auth: true },
   public_sfx_store: { params: ['p_slug'], auth: false },
   public_sfx_reviews: { params: ['p_slug', 'p_style'], auth: false },
   public_sfx_review_submit: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },

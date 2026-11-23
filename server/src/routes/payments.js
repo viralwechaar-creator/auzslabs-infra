@@ -1,5 +1,5 @@
 import { pool, withAuth } from '../db.js';
-import { paymentConfig, gstPct, createClientOrderPayment, createRenewalOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
+import { paymentConfig, gstPct, createClientOrderPayment, createRenewalOrder, createStorefrontPlanOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from '../cashfree.js';
 import { requireVerifiedEmail } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
@@ -110,6 +110,16 @@ export async function handle(ctx) {
     if (!razorpayConfigured()) throw new HttpError(400, 'Online payment is not switched on yet.');
     try { return reply(200, await createRenewalOrder({ userId: user.id })); }
     catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start the renewal'); }
+  }
+  // Storefront plan: pay AUZslab (its own platform keys, not the store's own) to reactivate a paused/trial
+  // store once a real price is set (db/374) -- throws (and this becomes a plain error) while the price is
+  // still ₹0/unset, same "dormant until configured" discipline as every other product.
+  if (url.pathname === '/payments/sfx/plan/create' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxplanpay:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    if (!razorpayConfigured()) throw new HttpError(400, 'Online payment is not switched on yet. Please ask us to reactivate your store.');
+    try { return reply(200, await createStorefrontPlanOrder({ userId: user.id })); }
+    catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start payment'); }
   }
   if (url.pathname === '/payments/autorenew/start' && req.method === 'POST') {
     if (!user) throw new HttpError(401, 'authentication required');
