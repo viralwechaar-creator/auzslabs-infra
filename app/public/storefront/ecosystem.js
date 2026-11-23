@@ -6,7 +6,7 @@
 // preview also routed through this file is a separate, unrelated project and is not part of this build.
 import { menu, icons, emptyState } from './data.js';
 import { workspace } from './workspace.js';
-import { boot, refreshCollections, refreshDomains, refreshOrders, refreshProducts } from './api.js';
+import { boot, refreshCollections, refreshDomains, refreshInstalls, refreshMarketplace, refreshOrders, refreshProducts } from './api.js';
 
 export const $ = (selector) => document.querySelector(selector);
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -66,7 +66,8 @@ export const pathFor = (id) => dashboardPath + '#/' + id;
 // is mid-typing) refetches its own data every time it's opened, the same "show it, then make sure it's
 // current" shape as AUZsStyle's store.js caching -- catches an order placed, or a status changed, from
 // another tab or by a teammate since this page last loaded.
-const LIST_REFRESH = { orders: refreshOrders, products: refreshProducts, collections: refreshCollections, domains: refreshDomains };
+const LIST_REFRESH = { orders: refreshOrders, products: refreshProducts, collections: refreshCollections, domains: refreshDomains,
+  builder: () => Promise.all([refreshMarketplace(), refreshInstalls()]) };
 let lastRefreshedRoute = '';
 
 export function rerender(skipRefresh) {

@@ -71,6 +71,11 @@ export async function refreshProducts() { state.products = (await api('sfx_produ
 export async function refreshCollections() { state.collections = (await api('sfx_collection_list')).map(toCollection); }
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
+// Theme marketplace (db/375): the approved listing (built-ins + developer themes) and this store's own
+// installs (its own draft/published copy of each theme it has installed -- see that migration's own
+// comment on why an install is a copy, never a live reference back to the developer's listing).
+export async function refreshMarketplace() { state.marketplace = await api('sfx_theme_marketplace_list'); }
+export async function refreshInstalls() { state.installs = await api('sfx_theme_install_list'); }
 
 async function blocked(title, message) {
   document.title = title;
@@ -96,6 +101,6 @@ export async function boot(onReady) {
   let ctx;
   try { ctx = await api('sfx_context'); } catch (e) { return blocked('Could not open your storefront', e.message); }
   applyContext(ctx);
-  try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
+  try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders(), refreshMarketplace(), refreshInstalls()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
   onReady();
 }

@@ -741,9 +741,86 @@ function minimalHomeStores(stores) {
         E('div', { class: 'minimal-section-actions' }, controls, E('a', { class: 'minimal-discover', href: link('stores') }, 'All stores')))),
     track);
 }
+// Storefront theme marketplace (phase 2, db/375): additive, data-driven content sections from the
+// store's own active theme install (sfx_public_active_sections, folded into public_sfx_store's config
+// as customSections) -- appended after the existing hero/catalog content, for BOTH the Minimal and
+// Classic chrome (which stay their existing hand-built CSS/markup; see that migration's own comment on
+// why a full per-theme chrome swap is out of scope for this slice). Empty array (every store that never
+// touched the marketplace) renders nothing, so this is a zero-behaviour-change addition by default.
+function customSection(s) {
+  const p = s.props || {};
+  if (s.type === 'hero' && (p.heading || p.sub)) return E('section', { class: 'custom-section custom-hero' },
+    p.heading ? E('h2', null, p.heading) : null, p.sub ? E('p', null, p.sub) : null,
+    p.cta && p.href ? E('a', { class: 'btn', href: p.href }, p.cta) : null);
+  if (s.type === 'text' && (p.heading || p.body)) return E('section', { class: 'custom-section custom-text' },
+    p.heading ? E('h2', null, p.heading) : null, p.body ? E('p', null, p.body) : null);
+  if (s.type === 'image' && p.url) return E('section', { class: 'custom-section custom-image' },
+    E('img', { src: p.url, alt: p.caption || '' }), p.caption ? E('div', { class: 'cap' }, p.caption) : null);
+  if (s.type === 'button' && p.text && p.href) return E('section', { class: 'custom-section custom-button' }, E('a', { class: 'btn', href: p.href }, p.text));
+  if (s.type === 'announcement' && p.text) return E('div', { class: 'custom-section custom-announcement' }, p.text);
+  if (s.type === 'booking') return bookingSection(p);
+  return null;
+}
+// A real appointment-booking widget -- the SAME booking mechanism the Salon Console design
+// (app/public/salon/) already uses (public_salon_page/public_salon_slots/public_create_booking, db/132),
+// not a second booking system invented for the marketplace. Any tenant with services configured as
+// kind='item' records (the same convention Salon Console's own menu management writes) can use a
+// 'booking' section on ANY theme, built-in or third-party; a tenant with none configured yet shows a
+// plain, honest "no services configured" message instead of a broken or fake-looking form.
+function bookingSection(p) {
+  const picked = new Set();
+  const root = E('section', { class: 'custom-section custom-booking' },
+    p.heading ? E('h2', null, p.heading) : E('h2', null, 'Book an appointment'),
+    p.note ? E('p', null, p.note) : null);
+  const body = E('div', { class: 'booking-body' }, E('p', { class: 'hint' }, 'Loading services…'));
+  root.append(body);
+  sb.rpc('public_salon_page', { tenant_slug: SLUG }).then(({ data }) => {
+    const services = (data?.services || []).filter((s) => s && s.id && s.name);
+    if (!services.length) { clear(body).append(E('p', { class: 'hint' }, 'Booking is not set up for this store yet.')); return; }
+    const list = E('div', { class: 'booking-services' }, services.map((svc) => E('label', { class: 'booking-service' },
+      E('input', { type: 'checkbox', value: svc.id, onchange: (e) => { e.target.checked ? picked.add(svc.id) : picked.delete(svc.id); } }),
+      E('span', null, svc.name), svc.price != null ? E('span', { class: 'price' }, inr(svc.price)) : null)));
+    const dateInput = E('input', { type: 'date', min: new Date().toISOString().slice(0, 10) });
+    const timeSelect = E('select', { disabled: true }, E('option', { value: '' }, 'Pick a date first'));
+    const nameInput = E('input', { type: 'text', placeholder: 'Your name', required: true });
+    const phoneInput = E('input', { type: 'tel', placeholder: 'Phone number', required: true });
+    const status = E('p', { class: 'hint' });
+    const submit = E('button', { class: 'btn', type: 'button' }, 'Book');
+    dateInput.onchange = async () => {
+      timeSelect.disabled = true; clear(timeSelect).append(E('option', { value: '' }, 'Checking times…'));
+      if (!dateInput.value) return;
+      try {
+        const { data: slots, error } = await sb.rpc('public_salon_slots', { tenant_slug: SLUG, p_date: dateInput.value });
+        if (error) throw error;
+        clear(timeSelect);
+        if (!slots || !slots.length) { timeSelect.append(E('option', { value: '' }, 'No times left that day')); return; }
+        timeSelect.disabled = false;
+        timeSelect.append(E('option', { value: '' }, 'Choose a time'), ...slots.map((s) => E('option', { value: s.time }, s.time + ' · ' + s.left + ' left')));
+      } catch (e) { clear(timeSelect).append(E('option', { value: '' }, 'Could not load times')); }
+    };
+    submit.onclick = async () => {
+      status.textContent = '';
+      if (!picked.size) { status.textContent = 'Choose at least one service.'; return; }
+      if (!dateInput.value || !timeSelect.value) { status.textContent = 'Choose a date and time.'; return; }
+      if (!nameInput.value.trim() || !phoneInput.value.trim()) { status.textContent = 'Enter your name and phone number.'; return; }
+      submit.disabled = true;
+      try {
+        await sb.rpc('public_create_booking', { tenant_slug: SLUG, p_name: nameInput.value.trim(), p_phone: phoneInput.value.trim(), p_email: '', p_date: dateInput.value, p_time: timeSelect.value, p_service_ids: [...picked] });
+        clear(body).append(E('p', { class: 'hint' }, 'Booked! We’ll confirm your appointment shortly.'));
+      } catch (e) { status.textContent = e.message || 'Could not book that slot. Please try again.'; submit.disabled = false; }
+    };
+    clear(body).append(list, E('div', { class: 'booking-form' }, dateInput, timeSelect, nameInput, phoneInput, submit, status));
+  }).catch(() => { clear(body).append(E('p', { class: 'hint' }, 'Booking is not set up for this store yet.')); });
+  return root;
+}
+function customSections(v) {
+  const sections = cfg().customSections || [];
+  for (const s of sections) { const el = customSection(s); if (el) v.append(el); }
+}
 V.home = (v) => {
   if (cfg().template === 'minimal') {
-    return minimalHome(v);
+    minimalHome(v);
+    return customSections(v);
   }
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
   const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
@@ -778,6 +855,7 @@ V.home = (v) => {
   if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
   // 5. stores
   if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores)));
+  customSections(v);
 };
 
 function facetValues(value) {

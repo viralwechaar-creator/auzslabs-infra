@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AUZslab theme developer portal</title>
+<link rel="icon" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#171717;--mut:#666;--line:#e6e6e3;--accent:#800020;--bg:#f7f7f5}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:inherit}
+.wrap{max-width:980px;margin:0 auto;padding:28px 20px 80px}
+header.top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#fff;border-bottom:1px solid var(--line)}
+header.top h1{font-size:16px;margin:0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:600;font-size:13px;text-decoration:none;cursor:pointer}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.sm{padding:6px 12px;font-size:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:16px}
+.muted{color:var(--mut);font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+td,th{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-size:13px}
+.chip{display:inline-block;padding:3px 9px;border-radius:999px;background:#eee;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.chip.ok{background:#e4f5e8;color:#1c6b36}
+.chip.warn{background:#fdecd2;color:#9a5b00}
+.chip.bad{background:#fde3e3;color:#9a1c1c}
+label{display:block;font-size:12px;font-weight:600;color:var(--mut);margin-bottom:12px}
+input,textarea,select{display:block;width:100%;margin-top:4px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+textarea{min-height:72px}
+.field-grid{display:grid;gap:4px}
+dialog{border:none;border-radius:14px;padding:0;width:min(560px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+.dialog-body{padding:22px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#171717;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+.section-form{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px}
+.empty{color:var(--mut);padding:18px 0;text-align:center}
+.center{display:grid;place-items:center;min-height:100vh;text-align:center;padding:24px}
+</style>
+</head>
+<body>
+<div id="app"><div class="center">Loading&hellip;</div></div>
+<dialog id="dialog"><div class="dialog-body" id="dialog-body"></div></dialog>
+<div id="toast"></div>
+<script src="/config.js"></script>
+<script src="/sb-client.js?v=8"></script>
+<script>
+// Standalone theme developer portal (phase 2, db/375) -- deliberately NOT part of the storefront owner
+// hub's SPA (app/public/storefront/ecosystem.js): that app's boot() refuses to load at all unless the
+// signed-in tenant has the 'storefront' feature on, which a theme developer who only builds/sells
+// themes (and may run no store of their own) would never have. A developer is still just a tenant/role
+// (storefront_developer=true on tenant_settings.features, granted by an admin -- see site/admin.html's
+// "Theme submissions" section) reusing the exact same login every other AUZslab app uses -- this page
+// is a separate, small app, same as e.g. app/public/w.html is its own small renderer.
+const sb = supabase.createClient(CFG.url, CFG.key);
+const app = document.getElementById('app');
+const dlg = document.getElementById('dialog');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 3200); }
+function openDialog(html) { document.getElementById('dialog-body').innerHTML = html; dlg.showModal(); }
+function closeDialog() { if (dlg.open) dlg.close(); }
+async function call(fn, args) {
+  const { data, error } = await sb.rpc(fn, args || {});
+  if (error) throw new Error(error.message || 'Something went wrong');
+  return data;
+}
+const money = (cents) => cents > 0 ? '₹' + (cents / 100).toLocaleString('en-IN') : 'Free';
+const SECTION_LABEL = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar', booking: 'Appointment booking' };
+
+let themes = [];
+let ledger = [];
+
+function statusChip(s) {
+  if (s === 'approved') return '<span class="chip ok">Approved</span>';
+  if (s === 'rejected') return '<span class="chip bad">Rejected</span>';
+  if (s === 'pending_review') return '<span class="chip warn">In review</span>';
+  if (s === 'delisted') return '<span class="chip">Delisted</span>';
+  return '<span class="chip">Draft</span>';
+}
+
+function themeCard(t) {
+  const v = t.latestVersion;
+  const sections = v?.content?.sections || [];
+  return '<div class="card" data-theme="' + t.id + '">' +
+    '<div class="row" style="justify-content:space-between"><h2>' + esc(t.name) + '</h2>' + statusChip(t.status) + '</div>' +
+    '<p class="muted">' + esc(t.description || 'No description yet.') + ' &middot; ' + money(t.priceCents) + ' &middot; ' + t.installs + ' install(s)</p>' +
+    (t.rejectionReason ? '<p class="muted" style="color:#9a1c1c">Rejected: ' + esc(t.rejectionReason) + '</p>' : '') +
+    '<p class="muted">' + sections.length + ' section(s) in the current version.</p>' +
+    '<div class="row">' +
+    (t.status !== 'pending_review' ? '<button class="btn sm" data-edit="' + t.id + '">Edit details</button>' : '') +
+    (t.status !== 'pending_review' ? '<button class="btn sm" data-sections="' + t.id + '">Edit content</button>' : '') +
+    (['draft', 'rejected'].includes(t.status) && sections.length ? '<button class="btn sm primary" data-submit="' + t.id + '">Submit for review</button>' : '') +
+    (t.status === 'approved' ? '<button class="btn sm" data-delist="' + t.id + '">Delist</button>' : '') +
+    '</div></div>';
+}
+
+function ledgerTable() {
+  if (!ledger.length) return '<p class="empty">No sales yet.</p>';
+  return '<table><thead><tr><th>Theme</th><th>Sale</th><th>Your share (64%)</th><th>Status</th></tr></thead><tbody>' +
+    ledger.map((l) => '<tr><td>' + esc(l.themeName) + '</td><td>' + money(l.saleAmountCents) + '</td><td>' + money(l.developerShareCents) + '</td><td>' +
+      (l.paidOut ? '<span class="chip ok">Paid' + (l.paidOutNote ? ' &middot; ' + esc(l.paidOutNote) : '') + '</span>' : '<span class="chip warn">Owed</span>') + '</td></tr>').join('') +
+    '</tbody></table>';
+}
+
+function render() {
+  app.innerHTML = '<header class="top"><h1>Theme developer portal</h1><button class="btn sm" id="signout">Sign out</button></header>' +
+    '<div class="wrap">' +
+    '<div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Your themes</h2><button class="btn primary" id="new-theme">New theme</button></div>' +
+    (themes.length ? themes.map(themeCard).join('') : '<p class="empty">You haven\'t created a theme yet.</p>') +
+    '<div class="card"><h2>Your commission ledger</h2><p class="muted">64% of every sale is yours; 36% goes to AUZslab. Payouts are made by hand (bank transfer / UPI) -- an admin marks a row "Paid" once they\'ve sent it.</p>' + ledgerTable() + '</div>' +
+    '</div>';
+  document.getElementById('signout').onclick = () => sb.auth.signOut().then(() => location.reload());
+  document.getElementById('new-theme').onclick = () => editThemeDialog(null);
+  app.querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => editThemeDialog(themes.find((t) => t.id === b.dataset.edit)));
+  app.querySelectorAll('[data-sections]').forEach((b) => b.onclick = () => sectionsDialog(themes.find((t) => t.id === b.dataset.sections)));
+  app.querySelectorAll('[data-submit]').forEach((b) => b.onclick = () => withBusy(async () => { await call('sfdev_theme_submit', { p_theme_id: b.dataset.submit }); toast('Submitted for review.'); await reload(); }));
+  app.querySelectorAll('[data-delist]').forEach((b) => b.onclick = () => withBusy(async () => { await call('sfdev_theme_delist', { p_theme_id: b.dataset.delist }); toast('Delisted from the marketplace.'); await reload(); }));
+}
+
+async function withBusy(fn) { try { await fn(); } catch (e) { toast(e.message); } }
+
+function editThemeDialog(t) {
+  openDialog('<h2>' + (t ? 'Edit theme' : 'New theme') + '</h2><form id="theme-form" class="field-grid">' +
+    '<label>Name<input name="name" required maxlength="80" value="' + esc(t?.name || '') + '"></label>' +
+    '<label>Description<textarea name="description">' + esc(t?.description || '') + '</textarea></label>' +
+    '<label>Preview image URL<input name="previewImageUrl" type="url" value="' + esc(t?.previewImageUrl || '') + '"></label>' +
+    '<label>Price in &#8377; (0 = free -- paid theme sales are coming soon; a priced theme can be listed now but not bought yet)<input name="priceCents" type="number" min="0" step="1" value="' + Math.round((t?.priceCents || 0) / 100) + '"></label>' +
+    '<div class="row"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="cancel">Cancel</button></div></form>');
+  document.getElementById('cancel').onclick = closeDialog;
+  document.getElementById('theme-form').onsubmit = (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    withBusy(async () => {
+      await call('sfdev_theme_save', { p_id: t?.id || null, p: { name: f.get('name'), description: f.get('description'), previewImageUrl: f.get('previewImageUrl'), priceCents: Math.round(Number(f.get('priceCents') || 0) * 100) } });
+      closeDialog(); toast('Theme saved.'); await reload();
+    });
+  };
+}
+
+function sectionsDialog(t) {
+  const sections = t.latestVersion?.content?.sections || [];
+  openDialog('<h2>Edit content &middot; ' + esc(t.name) + '</h2><p class="muted">The same section types a store owner customizes with once they install your theme.</p>' +
+    '<div id="section-list">' + (sections.length ? sections.map((s, i) => sectionForm(s, i)).join('') : '<p class="empty">No sections yet. Add one below.</p>') + '</div>' +
+    '<div class="row" style="margin-top:12px">' + Object.entries(SECTION_LABEL).map(([type, label]) => '<button class="btn sm" data-add-type="' + type + '">+ ' + label + '</button>').join('') + '</div>' +
+    '<div class="row" style="margin-top:14px"><button class="btn primary" id="save-sections">Save content</button><button class="btn" id="cancel2">Close</button></div>');
+  let working = JSON.parse(JSON.stringify(sections));
+  function refresh() {
+    document.getElementById('section-list').innerHTML = working.length ? working.map((s, i) => sectionForm(s, i)).join('') : '<p class="empty">No sections yet. Add one below.</p>';
+    bindRemove();
+  }
+  function bindRemove() {
+    document.querySelectorAll('[data-remove]').forEach((b) => b.onclick = () => { working.splice(Number(b.dataset.remove), 1); refresh(); });
+  }
+  bindRemove();
+  document.getElementById('cancel2').onclick = closeDialog;
+  document.querySelectorAll('[data-add-type]').forEach((b) => b.onclick = () => { working.push({ id: crypto.randomUUID(), type: b.dataset.addType, props: {} }); refresh(); });
+  document.getElementById('save-sections').onclick = () => withBusy(async () => {
+    document.querySelectorAll('#section-list form').forEach((form, i) => { working[i].props = Object.fromEntries(new FormData(form)); });
+    await call('sfdev_theme_version_save', { p_theme_id: t.id, p_content: { sections: working } });
+    closeDialog(); toast('Content saved.'); await reload();
+  });
+}
+function sectionForm(s, i) {
+  const p = s.props || {};
+  const field = (label, name, value = '') => '<label>' + label + '<input name="' + name + '" value="' + esc(value) + '"></label>';
+  let fields = '';
+  if (s.type === 'hero') fields = field('Heading', 'heading', p.heading) + field('Subtext', 'sub', p.sub) + field('Button text', 'cta', p.cta) + field('Button link', 'href', p.href);
+  else if (s.type === 'text') fields = field('Heading', 'heading', p.heading) + field('Body', 'body', p.body);
+  else if (s.type === 'image') fields = field('Image URL', 'url', p.url) + field('Caption', 'caption', p.caption);
+  else if (s.type === 'button') fields = field('Button text', 'text', p.text) + field('Button link', 'href', p.href);
+  else if (s.type === 'announcement') fields = field('Text', 'text', p.text);
+  return '<form class="section-form" data-index="' + i + '"><div class="row" style="justify-content:space-between"><strong>' + esc(SECTION_LABEL[s.type] || s.type) + '</strong><button type="button" class="btn sm" data-remove="' + i + '">Remove</button></div>' + fields + '</form>';
+}
+
+async function reload() {
+  [themes, ledger] = await Promise.all([call('sfdev_theme_list'), call('sfdev_ledger_list')]);
+  render();
+}
+
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { app.innerHTML = '<div class="center"><div><h1>Sign in required</h1><p class="muted">Sign in with your AUZslab account to open the theme developer portal.</p><a class="btn primary" href="/start.html" style="margin-top:12px">Sign in</a></div></div>'; return; }
+  try {
+    await reload();
+  } catch (e) {
+    app.innerHTML = '<div class="center"><div><h1>Developer access is not enabled</h1><p class="muted">' + esc(e.message) + ' Ask AUZslab to switch on theme developer access for your account.</p></div></div>';
+  }
+}
+boot();
+</script>
+</body>
+</html>
