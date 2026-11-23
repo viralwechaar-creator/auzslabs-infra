@@ -378,7 +378,9 @@
       };
     }
 
-    return { auth, from, rpc, storage, channel, payments };
+    // WhatsApp automation: connecting the shop's own number goes through the server (the token is stored encrypted, never returned).
+    const whatsapp = { async connect(body) { return request('/whatsapp/connect', { method: 'POST', body, auth: true }); } };
+    return { auth, from, rpc, storage, channel, payments, whatsapp };
   }
 
   window.supabase = { createClient };

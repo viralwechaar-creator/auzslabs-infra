@@ -169,6 +169,7 @@ input:disabled+.slider{opacity:.4;cursor:default}
       <button class="acct-nav-btn" data-tab="staff" id="tabStaffBtn" style="display:none"><span>Staff</span></button>
       <button class="acct-nav-btn" data-tab="roles" id="tabRolesBtn" style="display:none"><span>Roles</span></button>
       <button class="acct-nav-btn" data-tab="connectors" id="tabConnectorsBtn" style="display:none"><span>Connectors</span></button>
+      <button class="acct-nav-btn" data-tab="whatsapp" id="tabWhatsappBtn" style="display:none"><span>WhatsApp</span></button>
       <button class="acct-nav-btn tenant-only" data-tab="notifications"><span>Notifications</span><span id="notifBadge"></span></button>
       <span class="ac-sep"></span>
       <a href="#" id="openPosLink" target="_blank" rel="noopener" class="" style="display:none"><span id="openPosLabel">Open POS system</span></a>
@@ -187,17 +188,18 @@ input:disabled+.slider{opacity:.4;cursor:default}
         <div class="section-pane" id="pane-roles"></div>
         <div class="section-pane" id="pane-notifications"></div>
         <div class="section-pane" id="pane-connectors"></div>
+        <div class="section-pane" id="pane-whatsapp"></div>
       </section>
       <div class="ac-foot"><button type="button" class="ac-out" id="signOutBtn">Sign out</button></div>
     </div>
   </main>
 </div>
 <nav class="u-dock" aria-label="Quick"><div class="pill"><a href="index.html" aria-label="Home"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></a><a href="products.html" aria-label="Services"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></a><a href="live-demo.html" aria-label="Live demo"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg></a><a href="signup.html" aria-label="Sign in"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a></div><a class="chat" href="contact.html" aria-label="Talk to us"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg></a></nav>
-<script src="/sb-client.js?v=109"></script>
+<script src="/sb-client.js?v=110"></script>
 <script src="vendor/qrcode.js"></script>
 <script src="tool/lock.js?v=101"></script><script src="tool/mydata.js?v=201"></script><script src="tool/help.js?v=103"></script><script src="tool/twofa.js?v=101"></script>
 <script src="site.js?v=113"></script>
-<script src="ac5.js?v=17"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
+<script src="ac5.js?v=18"></script><script src="ac5-views.js?v=5"></script><script src="ac4.js?v=4"></script>
 <script>document.addEventListener("click", function (e) { if (e.target.closest && e.target.closest("#helpLink")) { try { auzHelp.open(typeof sb !== "undefined" ? sb : null); } catch (x) {} } });</script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -407,6 +409,72 @@ async function renderConnectors() {
     newKey = null; await renderConnectors();
   });
 }
+
+// WhatsApp automation (db/184+): the owner turns automatic customer messages (bills, orders, bookings, reminders) on or off, picks which
+// ones go out, connects their own WhatsApp number, and sees what was sent. Messages use pre-approved templates only, and nothing is sent
+// unless the owner switches it on here. Managers can look but not change.
+const WA_TONE = { queued: '#b7791f', sending: '#b7791f', sent: '#2b6cb0', delivered: '#2f855a', read: '#2f855a', failed: '#c53030', skipped: '#718096' };
+async function renderWhatsapp() {
+  const pane = $('#pane-whatsapp'); pane.innerHTML = '<div class="card"><p class="muted">Loading...</p></div>';
+  const { data: w, error } = await sb.rpc('wa_my_status');
+  if (error) { pane.innerHTML = '<div class="card"><p class="muted">' + esc(error.message) + '</p></div>'; return; }
+  const owner = DASH.my_role === 'owner';
+  const ev = w.events || {};
+  const fmt = (t) => t ? new Date(t).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+  const sender = w.connected ? 'Your own number ' + esc(w.number || '') : w.allow_platform ? 'Sent from the AUZslab number' : 'No number connected yet';
+  const counts = w.counts || {};
+  const sentCount = (counts.sent || 0) + (counts.delivered || 0) + (counts.read || 0);
+  const tpls = (w.templates || []).map((t) => `
+    <label style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line,#e5e5e5)">
+      <input type="checkbox" data-ev="${esc(t.key)}" ${ev[t.key] !== false ? 'checked' : ''} ${owner ? '' : 'disabled'} style="margin-top:4px">
+      <span><b>${esc(t.title)}</b><span class="muted" style="display:block;font-size:13px">${esc(t.body)}</span></span>
+    </label>`).join('');
+  pane.innerHTML = `
+    <div class="card">
+      <h3 class="h-2">WhatsApp automation</h3>
+      <p class="muted">Send bills, order updates, booking confirmations and reminders to your customers on WhatsApp, by themselves. Only the pre-approved messages below can go out, and only to numbers your own sales and bookings give us. Customers who reply STOP are never messaged again.</p>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0">
+        <b>${w.enabled ? 'Automation is ON' : 'Automation is OFF'}</b>
+        ${owner ? `<button class="btn ${w.enabled ? 'btn-ghost' : 'btn-primary'} form-submit" id="waToggle">${w.enabled ? 'Turn off' : 'Turn on'}</button>` : ''}
+      </div>
+      <div class="muted" style="font-size:14px">Sender: ${sender}. ${sentCount} message${sentCount === 1 ? '' : 's'} sent in the last 30 days${counts.failed ? ', ' + counts.failed + ' could not be sent' : ''}.</div>
+      ${!w.connected && !w.allow_platform ? '<p class="muted" style="font-size:13px;margin-top:8px">Messages are held until a number is connected, or AUZslab approves sending from its own number for you. Ask us, or connect your own number below.</p>' : ''}
+      <div id="waMsg" class="muted" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h3 class="h-2">Which messages to send</h3>
+      ${tpls || '<p class="muted">No message types are available yet.</p>'}
+      ${owner && tpls ? '<button class="btn btn-primary form-submit" id="waSave" style="margin-top:12px">Save choices</button>' : ''}
+    </div>
+    ${owner ? `<div class="card">
+      <h3 class="h-2">Your own WhatsApp number</h3>
+      <p class="muted">${w.connected ? 'Connected: ' + esc(w.number || '') + '. Messages go out from your number.' : 'Optional. Connect your own WhatsApp Business number so messages come from you. Get the Phone number ID and a permanent access token from Meta WhatsApp Manager (API setup). The token is stored encrypted and is never shown again.'}</p>
+      ${w.connected ? '<button class="btn btn-ghost sm" id="waDisc">Disconnect</button>' : `
+        <div class="field wide"><label>Phone number ID<input id="waPid" inputmode="numeric" placeholder="e.g. 105873456789012"></label></div>
+        <div class="field wide"><label>Permanent access token<input id="waTok" type="password" autocomplete="off"></label></div>
+        <button class="btn btn-primary form-submit" id="waConn" style="margin-top:8px">Connect my number</button>`}
+    </div>` : ''}
+    <div class="card">
+      <h3 class="h-2">Recent messages</h3>
+      ${(w.recent || []).length ? w.recent.map((m) => `<div style="padding:8px 0;border-top:1px solid var(--line,#e5e5e5);display:flex;justify-content:space-between;gap:10px;font-size:14px">
+        <span><b>${esc(String(m.to_phone || '').replace(/^(.{2}).*(.{3})$/, '$1•••••$2'))}</b> · ${esc(String(m.template || '').replace(/_/g, ' '))}${m.error ? '<span class="muted" style="display:block;font-size:12px">' + esc(m.error) + '</span>' : ''}</span>
+        <span style="white-space:nowrap;color:${WA_TONE[m.status] || 'inherit'}">${esc(m.status)} <span class="muted">${esc(fmt(m.created_at))}</span></span></div>`).join('') : '<p class="muted">Nothing sent yet.</p>'}
+    </div>`;
+  const msg = (t, bad) => { const m = $('#waMsg'); if (m) { m.textContent = t; m.style.color = bad ? 'var(--accent)' : ''; } };
+  const events = () => { const o = {}; pane.querySelectorAll('[data-ev]').forEach((c) => { o[c.dataset.ev] = c.checked; }); return o; };
+  const save = async (enabled) => { const r = await sb.rpc('wa_save_settings', { p: { enabled, events: events() } }); if (r.error) { msg(r.error.message, true); return false; } return true; };
+  if ($('#waToggle')) $('#waToggle').onclick = async () => { if (await save(!w.enabled)) renderWhatsapp(); };
+  if ($('#waSave')) $('#waSave').onclick = async () => { if (await save(w.enabled)) { msg('Saved.'); } };
+  if ($('#waConn')) $('#waConn').onclick = async () => {
+    const pid = ($('#waPid').value || '').trim(), tok = ($('#waTok').value || '').trim();
+    if (!pid || !tok) return msg('Enter the phone number ID and the access token.', true);
+    const b = $('#waConn'); b.disabled = true; msg('Checking with WhatsApp...');
+    const r = await sb.whatsapp.connect({ phone_number_id: pid, token: tok }); b.disabled = false;
+    if (r.error) return msg(r.error.message || 'Could not connect.', true);
+    renderWhatsapp();
+  };
+  if ($('#waDisc')) $('#waDisc').onclick = async () => { if (!confirm('Disconnect this number? Automatic messages stop unless AUZslab sends them for you.')) return; const r = await sb.rpc('wa_disconnect'); if (r.error) return msg(r.error.message, true); renderWhatsapp(); };
+}
 // A one-time notice when the privacy policy changed (or was never confirmed): shown above the tabs on any page of the account.
 function hideConsentBanner() { const b = $('#consentBanner'); if (b) b.remove(); }
 async function checkConsent() {
@@ -478,6 +546,7 @@ async function boot() {
   $('#tabsSection').style.display = 'block';
   $('#acctNav').style.display = 'flex';
   if (DASH.my_role === 'owner') { $('#tabStaffBtn').style.display = ''; $('#tabRolesBtn').style.display = ''; $('#tabConnectorsBtn').style.display = ''; }
+  if (DASH.my_role === 'owner' || DASH.my_role === 'manager') { $('#tabWhatsappBtn').style.display = ''; }
   // Clock in only makes sense once the tenant actually has Payroll (the pay_* functions behind it) --
   // a tenant without it would just see a dead-end "ask your manager to link your login" message.
   if ((DASH.features || {}).payroll === true && (DASH.enabled_features || {}).payroll !== false) { $('#tabClockinBtn').style.display = ''; }
@@ -531,6 +600,7 @@ function showTab(tab) {
   if (tab === 'roles') renderRoles();
   if (tab === 'notifications') renderNotifications();
   if (tab === 'connectors') renderConnectors();
+  if (tab === 'whatsapp') renderWhatsapp();
 }
 
 function renderAccount() {
