@@ -83,7 +83,12 @@ const $ = (id) => document.getElementById(id);
 
 function show(id) { ['step1', 'storeForm'].forEach((x) => { $(x).style.display = x === id ? (id === 'step1' ? 'grid' : 'block') : 'none'; }); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-$('pickStore').onclick = () => show('storeForm');
+let OWN = null;
+$('pickStore').onclick = () => {
+  if (OWN && OWN.store) { window.location.href = 'https://' + OWN.slug + '.auzslab.in/storefront.html'; return; }
+  if (OWN) { $('storeForm').innerHTML = '<span class="tl-cap">Online store</span><p class="tl-note">Your account already has a business' + (OWN.name ? ' (' + OWN.name.replace(/[<>&]/g, '') + ')' : '') + ', so the instant trial is not available. Ask us to add the online store to it and we will switch it on.</p><a class="tb pri wide" href="contact.html?as=business&service=Online%20store">Ask for the online store</a><button type="button" class="tb" id="storeBack" style="margin-top:8px">&larr; Back</button>'; $('storeBack').onclick = () => show('step1'); }
+  show('storeForm');
+};
 $('storeBack').onclick = () => show('step1');
 
 const slugify = (s) => String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '').slice(0, 30);
@@ -94,6 +99,7 @@ async function checkSession() {
   $('signedOutStore').style.display = session ? 'none' : 'block';
   $('storeReqForm').style.display = session ? 'block' : 'none';
   if (session) {
+    try { const { data: d } = await sb.rpc('my_dashboard'); if (d && d.tenant && d.tenant.slug) OWN = { slug: d.tenant.slug, name: d.tenant.name, store: !!(d.features && d.features.storefront) }; } catch (e) {}
     const { data: pr } = await sb.rpc('my_profile').catch(() => ({ data: null }));
     const P = (pr && pr.profile) || null;
     if (P && P.business_name) { $('sqBiz').value = P.business_name; }
