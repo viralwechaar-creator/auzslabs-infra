@@ -72,6 +72,9 @@ export async function refreshCollections() { state.collections = (await api('sfx
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
 export async function refreshDiscounts() { state.discounts = await api('sfx_discount_list'); }
+export async function refreshInventory() { const [inv, mv] = await Promise.all([api('sfx_inventory_list'), api('sfx_stock_moves_list', {})]); state.inventory = inv; state.stockMoves = mv; }
+export async function refreshLocations() { const [locs, mv, inv] = await Promise.all([api('sfx_location_list'), api('sfx_stock_moves_list', {}), api('sfx_inventory_list')]); state.locations = locs; state.stockMoves = mv; state.inventory = inv; }
+export async function refreshCategories() { const [c, t] = await Promise.all([api('sfx_category_list'), api('sfx_product_tags')]); state.categories = c; state.productTags = t; }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
 
 async function blocked(title, message) {

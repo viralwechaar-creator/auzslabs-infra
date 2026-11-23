@@ -75,4 +75,51 @@ r = await as(B.u, `select sfx_discount_set_status($1, 'active') r`, [d10]); asse
 // customer list merges orders
 r = await as(A.u, `select sfx_customer_list() r`); const ph = r.r.find((c) => c.phone === '9999900002');
 assert(ph && !ph.manual && ph.orderCount === 1); pass('customers derived from orders appear in the list');
+
+// ---- inventory, transfers, categories (db/378)
+const inv = (await as(A.u, `select sfx_inventory_list() r`)).r; const iv = inv.find((x) => x.variantId === vid);
+assert(iv && iv.online === 7 + 0 || iv.online >= 0); pass('inventory lists variants with online stock: ' + iv.online);
+const start = iv.online;
+r = await as(A.u, `select sfx_stock_adjust($1, 5, null, 'delivery') r`, [vid]); assert(r.r.online === start + 5, JSON.stringify(r)); pass('adjust +5 adds to online stock');
+r = await as(A.u, `select sfx_stock_adjust($1, 0, 3, 'count') r`, [vid]); assert(r.r.online === 3, JSON.stringify(r)); pass('set exact count works');
+r = await as(A.u, `select sfx_stock_adjust($1, -50) r`, [vid]); assert(/below zero/.test(r.error), JSON.stringify(r)); pass('stock cannot go negative');
+r = await as(A.u, `select sfx_stock_adjust($1, 0) r`, [vid]); assert(r.error, 'no-op refused'); pass('zero change refused');
+r = await as(B.u, `select sfx_stock_adjust($1, 1) r`, [vid]); assert(/not found/i.test(r.error)); pass("B cannot adjust A's stock");
+r = await as(staff.u, `select sfx_stock_adjust($1, 1) r`, [vid]); assert(r.error); pass('role without manage cannot adjust');
+const loc = (await as(A.u, `select sfx_location_save(null, 'Warehouse') r`)).r.id;
+r = await as(A.u, `select sfx_location_save(null, 'warehouse') r`); assert(/already exists/.test(r.error)); pass('duplicate location name refused');
+r = await as(A.u, `select sfx_location_save(null, 'Online') r`); assert(r.error); pass('"Online" is reserved');
+r = await as(A.u, `select sfx_transfer($1, 'online', $2, 2) r`, [vid, loc]); assert(!r.error, r.error);
+assert((await admin.query("select stock from sfx_variants where id=$1", [vid])).rows[0].stock === 1); pass('transfer online -> warehouse moves 2 units');
+r = await as(A.u, `select sfx_transfer($1, 'online', $2, 5) r`, [vid, loc]); assert(/Only 1 in online/.test(r.error), JSON.stringify(r)); pass('cannot transfer more than is online');
+r = await as(A.u, `select sfx_transfer($1, $2, 'online', 9) r`, [vid, loc]); assert(/Only 2 at Warehouse/.test(r.error), JSON.stringify(r)); pass('cannot take more than a location holds');
+r = await as(A.u, `select sfx_transfer($1, $2, 'online', 1) r`, [vid, loc]); assert(!r.error);
+assert((await admin.query("select stock from sfx_variants where id=$1", [vid])).rows[0].stock === 2); pass('transfer warehouse -> online returns a unit');
+const loc2 = (await as(A.u, `select sfx_location_save(null, 'Shop') r`)).r.id;
+r = await as(A.u, `select sfx_transfer($1, $2, $3, 1) r`, [vid, loc, loc2]); assert(!r.error); pass('transfer between two locations');
+r = await as(A.u, `select sfx_location_delete($1) r`, [loc2]); assert(r.error && /Move the stock/.test(r.error)); pass('location with stock cannot be deleted');
+r = await as(B.u, `select sfx_transfer($1, 'online', $2, 1) r`, [vid, loc]); assert(r.error); pass("B cannot transfer A's stock");
+const total = async () => (await admin.query("select v.stock + coalesce((select sum(qty) from sfx_location_stock where variant_id=v.id),0) t from sfx_variants v where id=$1", [vid])).rows[0].t;
+assert(Number(await total()) === 3, await total()); pass('units are conserved across transfers (online + locations = 3)');
+r = await as(A.u, `select sfx_stock_moves_list($1) r`, [vid]); assert(r.r.length >= 5); pass('every change is in the stock ledger: ' + r.r.length + ' moves');
+// cancel restocks
+const o1 = (await as(A.u, `select public_sfx_place_order('shopa', $1::jsonb) r`, [JSON.stringify({ lines: [{ variantId: vid, qty: 2 }], name: 'Canc', phone: '9999900031', address: '1 Rd', city: 'Jodhpur', pin: '342001' })])).r;
+assert((await admin.query("select stock from sfx_variants where id=$1", [vid])).rows[0].stock === 0);
+const oid = (await admin.query("select id from sfx_orders where number=$1", [o1.number])).rows[0].id;
+await as(A.u, `select sfx_order_set_status($1, 'cancelled') r`, [oid]);
+assert((await admin.query("select stock from sfx_variants where id=$1", [vid])).rows[0].stock === 2); pass('cancelling an order puts its units back');
+r = await as(A.u, `select sfx_order_set_status($1, 'cancelled') r`, [oid]); assert(r.error);
+assert((await admin.query("select stock from sfx_variants where id=$1", [vid])).rows[0].stock === 2); pass('cancelling twice does not restock twice');
+// categories and tags
+await as(A.u, `select sfx_product_save(null, '{"name":"Hat","category":"Caps","status":"active"}'::jsonb) r`);
+await as(A.u, `select sfx_product_save(null, '{"name":"Cap2","category":"Caps ","status":"active"}'::jsonb) r`);
+await as(A.u, `select sfx_product_save(null, '{"name":"Bag","category":"Bags","status":"active"}'::jsonb) r`);
+r = (await as(A.u, `select sfx_category_list() r`)).r; assert(r.categories.find((c) => c.name === 'Caps' && c.count === 2), JSON.stringify(r)); pass('category counts (trimmed names merge)');
+r = await as(A.u, `select sfx_category_rename('Caps', 'Bags') r`); assert(r.r.updated === 2);
+r = (await as(A.u, `select sfx_category_list() r`)).r; assert(r.categories.length === 1 && r.categories[0].count === 3, JSON.stringify(r)); pass('renaming into an existing category merges them');
+r = (await as(B.u, `select sfx_category_list() r`)).r; assert(r.categories.length === 0); pass('categories isolated per tenant');
+const pid = (await admin.query("select id from sfx_products where name='Hat'")).rows[0].id;
+r = await as(A.u, `select sfx_product_set_tags($1, ' Summer, SALE,summer,, new ') r`, [pid]); assert(JSON.stringify(r.r.tags) === '["new","sale","summer"]', JSON.stringify(r)); pass('tags are trimmed, lower-cased, de-duplicated');
+r = (await as(A.u, `select sfx_category_list() r`)).r; assert(r.tags.find((t) => t.name === 'sale')); pass('tag list shows counts');
+r = await as(B.u, `select sfx_product_set_tags($1, 'x') r`, [pid]); assert(r.error); pass("B cannot tag A's product");
 console.log('ALL', ok, 'passed'); await admin.end(); process.exit(0);

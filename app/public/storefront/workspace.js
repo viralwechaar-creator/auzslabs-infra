@@ -11,7 +11,7 @@ import { analyticsPage } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid } from './ecosystem.js';
-import { api, apiPost, applyContext, refreshCollections, refreshCustomers, refreshDiscounts, refreshDomains, refreshOrders, refreshProducts, toCollection, toOrder, toProduct } from './api.js';
+import { api, apiPost, applyContext, refreshCollections, refreshCategories, refreshCustomers, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y) => '<td>' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -78,9 +78,9 @@ function productsList(query = '') {
   return table(['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => [productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock]));
 }
 function productsPage(id) {
-  if (!['products', 'collections'].includes(id)) return comingSoon({ inventory: 'Inventory', transfers: 'Transfers', categories: 'Categories and tags' }[id],
-    id === 'inventory' ? 'Multi-location stock is coming in a later release. Edit a product’s stock from its own page for now.' :
-      id === 'transfers' ? 'Moving stock between locations is coming in a later release.' : 'Separate categories and tags are coming in a later release.', ['products', 'Products']);
+  if (id === 'inventory') return inventoryPage();
+  if (id === 'transfers') return transfersPage();
+  if (id === 'categories') return categoriesPage();
   const title = productTabs.find(([k]) => k === id)[1];
   if (id === 'collections') {
     return head('Collections', 'Group products to feature on your storefront.', canWrite() ? wl('Create collection', 'collections/new', 'primary') : '') + tabs(id, productTabs) +
@@ -256,6 +256,44 @@ function discountForm(d) {
     input('Expires on (optional)', 'expiresAt', exp, 'date') + input('Usage limit (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"'));
 }
 
+// ---------- Inventory, Transfers, Categories ----------
+const moveLabel = (m) => m.reason === 'transfer' ? 'Moved ' + m.qty + ' from ' + esc(m.from) + ' to ' + esc(m.to) : m.reason === 'cancel_return' ? 'Returned to stock (cancelled order)' : (m.delta > 0 ? 'Added ' : 'Removed ') + Math.abs(m.delta);
+const movesTable = (moves) => table(['When', 'Product', 'What happened', 'Note'], moves.slice(0, 25).map((m) => [dateValue(m.at), esc(m.product + (m.variant && m.variant !== 'Default' ? ' · ' + m.variant : '')), moveLabel(m), esc(m.note || '')]));
+function inventoryPage() {
+  const rows = (state.inventory || []).map((v) => [
+    esc(v.product), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>', v.elsewhere,
+    canWrite() ? button('Adjust', 'stock-adjust:' + v.variantId, 'compact') : '',
+  ]);
+  return head('Inventory', 'Stock your storefront can sell right now, and stock held elsewhere.', '') + tabs('inventory', productTabs) +
+    panel('Stock levels', table(['Product', 'Variant', 'SKU', 'Available online', 'Other locations', ''], rows)) +
+    panel('Recent stock changes', movesTable(state.stockMoves || []));
+}
+function adjustForm(v) {
+  return editForm('stock-adjust', v.variantId, '<p class="compact-copy wide">' + esc(v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '')) + ' has <strong>' + v.online + '</strong> available online.</p>' +
+    select('How', 'mode', [['add', 'Add or remove units'], ['set', 'Set the exact count']], 'add') + input('Number', 'amount', '', 'number', 'required step="1"') + input('Reason (optional)', 'note', '', 'text', 'maxlength="200"'), 'Save stock');
+}
+function transfersPage() {
+  const locs = state.locations || [];
+  const locRows = locs.map((l) => [esc(l.name), l.units, canWrite() ? button('Rename', 'location-edit:' + l.id, 'compact') + button('Delete', 'location-delete:' + l.id, 'compact danger') : '']);
+  const moves = (state.stockMoves || []).filter((m) => m.reason === 'transfer');
+  return head('Transfers', 'Move stock between your online store and other places you keep it.', canWrite() ? button('Add location', 'location-new', 'primary') + button('Move stock', 'transfer-new') : '') + tabs('transfers', productTabs) +
+    panel('Locations', table(['Location', 'Units held', ''], locRows)) + panel('Recent transfers', movesTable(moves));
+}
+function transferForm() {
+  const locs = state.locations || []; const places = [['online', 'Online store']].concat(locs.map((l) => [l.id, l.name]));
+  const variants = (state.inventory || []).map((v) => [v.variantId, v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '') + ' (online ' + v.online + ')']);
+  if (!locs.length) return '<p class="compact-copy">Add a location first (for example a shop or warehouse).</p>';
+  return editForm('transfer', '', select('Product', 'variant', variants, '') + select('From', 'from', places, 'online') + select('To', 'to', places, locs[0].id) + input('Units', 'qty', '', 'number', 'required min="1" step="1"') + input('Note (optional)', 'note', '', 'text', 'maxlength="200"'), 'Move stock');
+}
+function categoriesPage() {
+  const c = state.categories || { categories: [], tags: [] };
+  const catRows = c.categories.map((x) => [esc(x.name), x.count, canWrite() ? button('Rename or merge', 'category-rename:' + encodeURIComponent(x.name), 'compact') : '']);
+  const tagRows = c.tags.map((x) => [esc(x.name), x.count]);
+  const prodRows = state.products.map((p) => [esc(p.name), esc(p.category || '—'), esc((state.productTags[p.id] || []).join(', ') || '—'), canWrite() ? button('Edit tags', 'tags-edit:' + p.id, 'compact') : '']);
+  return head('Categories and tags', 'Organise how products are grouped and found.', '') + tabs('categories', productTabs) +
+    panel('Categories', table(['Category', 'Products', ''], catRows)) + panel('Tags', table(['Tag', 'Products'], tagRows)) + panel('Product tags', table(['Product', 'Category', 'Tags', ''], prodRows));
+}
+
 export function workspace(id, record) {
   if (['analytics', 'reports', 'live-view'].includes(id)) return analyticsPage(id, record);
   let html;
@@ -326,6 +364,19 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         const expiresAt = data.expiresAt ? new Date(data.expiresAt + 'T23:59:59').toISOString() : '';
         await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, usageLimit: data.usageLimit } });
         await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); rerender(true);
+      } else if (key === 'stock-adjust') {
+        const n = Number(data.amount); if (!Number.isInteger(n)) { flash('Enter a whole number.'); return; }
+        await api('sfx_stock_adjust', data.mode === 'set' ? { p_variant: rid, p_delta: 0, p_set: n, p_note: data.note } : { p_variant: rid, p_delta: n, p_note: data.note });
+        await refreshInventory(); save('Stock updated.'); close(); rerender(true);
+      } else if (key === 'location-record') {
+        await api('sfx_location_save', { p_id: rid, p_name: data.name }); await refreshLocations(); save('Location saved.'); close(); rerender(true);
+      } else if (key === 'transfer') {
+        await api('sfx_transfer', { p_variant: data.variant, p_from: data.from, p_to: data.to, p_qty: Number(data.qty), p_note: data.note });
+        await refreshLocations(); save('Stock moved.'); close(); rerender(true);
+      } else if (key === 'category-rename') {
+        await api('sfx_category_rename', { p_old: rid, p_new: data.name }); await Promise.all([refreshCategories(), refreshProducts()]); save('Category updated.'); close(); rerender(true);
+      } else if (key === 'tags-record') {
+        await api('sfx_product_set_tags', { p_id: rid, p_tags: data.tags }); await refreshCategories(); save('Tags saved.'); close(); rerender(true);
       } else if (key === 'razorpay') {
         await api('sfx_store_set_razorpay', { p: { keyId: data.keyId, secret: data.secret } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay connected.'); close(); rerender();
@@ -344,6 +395,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'discount-new') return dialog('Create discount', discountForm(null));
   if (a === 'discount-edit') return dialog('Edit discount', discountForm(state.discounts.find((d) => d.id === key)));
   if (a === 'discount-toggle') return withBusy(async () => { const d = state.discounts.find((x) => x.id === key); await api('sfx_discount_set_status', { p_id: key, p_status: d.status === 'active' ? 'archived' : 'active' }); await refreshDiscounts(); save('Discount updated.'); rerender(true); });
+  if (a === 'stock-adjust') return dialog('Adjust stock', adjustForm(state.inventory.find((v) => v.variantId === key)));
+  if (a === 'location-new') return dialog('Add location', editForm('location-record', '', input('Name', 'name', '', 'text', 'required maxlength="80"')));
+  if (a === 'location-edit') return dialog('Rename location', editForm('location-record', key, input('Name', 'name', state.locations.find((l) => l.id === key)?.name || '', 'text', 'required maxlength="80"')));
+  if (a === 'location-delete') return withBusy(async () => { if (!confirm('Delete this location?')) return; await api('sfx_location_delete', { p_id: key }); await refreshLocations(); save('Location deleted.'); rerender(true); });
+  if (a === 'transfer-new') return dialog('Move stock', transferForm());
+  if (a === 'category-rename') { const name = decodeURIComponent(key); return dialog('Rename category', editForm('category-rename', name, input('New name (use an existing name to merge)', 'name', name, 'text', 'required maxlength="80"'))); }
+  if (a === 'tags-edit') return dialog('Edit tags', editForm('tags-record', key, input('Tags (separated by commas)', 'tags', (state.productTags[key] || []).join(', '), 'text', 'maxlength="300"')));
   if (a === 'variant-add') { addVariantRow(target.closest('form')); return; }
   if (a === 'theme-use') return withBusy(async () => { await api('sfx_store_save', { p: { theme: key } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Theme updated.'); rerender(); });
   if (a === 'razorpay-clear') return withBusy(async () => { await api('sfx_store_set_razorpay', { p: { clear: true } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay disconnected.'); rerender(); });
