@@ -999,6 +999,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <button class="a-side-btn" data-section="orders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Client requests<span class="a-row-badge" id="ordersBadge" style="display:none"></span></button>
         <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
+        <button class="a-side-btn" data-section="themeSubmissions"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11"/></svg>Theme submissions<span class="a-row-badge" id="notifBadgeThemeSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="jobApplications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>Job applications<span class="a-row-badge" id="notifBadgeJobsSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="salesOs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>SalesOS team</button>
         <button class="a-side-btn" data-section="idCards"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="11" r="2.2"/><path d="M5 17c.4-1.8 1.6-2.8 3-2.8s2.6 1 3 2.8M14 9h5M14 13h5"/></svg>Staff ID cards</button>
@@ -1090,6 +1091,24 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div class="label">Existing clients</div>
         <h2 class="h-2">Add-on requests</h2>
         <div id="addonRequestsList">Loading&hellip;</div>
+      </section>
+
+      <section class="a-page" id="themeSubmissionsSection" data-title="Theme submissions" data-parent="more">
+        <div class="label">Storefront theme marketplace</div>
+        <h2 class="h-2">Theme submissions</h2>
+        <p class="muted" style="font-size:13px;color:#777;margin:4px 0 14px">Approve or reject a developer's theme before it appears in a store owner's marketplace. Rejecting one requires a reason the developer can see.</p>
+        <div id="themeQueueList">Loading&hellip;</div>
+        <h2 class="h-2" style="margin-top:28px">All themes</h2>
+        <div id="themeAllList">Loading&hellip;</div>
+        <h2 class="h-2" style="margin-top:28px">Developer commission ledger</h2>
+        <p class="muted" style="font-size:13px;color:#777;margin:4px 0 14px">64% developer / 36% AUZslab, calculated automatically on every sale. Payouts are manual -- pay the developer by hand (bank transfer/UPI), then mark the row paid here with a note.</p>
+        <div id="themeLedgerList">Loading&hellip;</div>
+        <h2 class="h-2" style="margin-top:28px">Grant theme developer access</h2>
+        <p class="muted" style="font-size:13px;color:#777;margin:4px 0 14px">Turns on the theme developer portal (/theme-dev.html) for a business's own login -- the same reusable feature-flag mechanism as any other service toggle, not a new auth system.</p>
+        <form id="grantDevForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input id="grantDevSlug" placeholder="business address (slug)" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;min-width:220px" required>
+          <button type="submit" class="btn btn-primary">Grant developer access</button>
+        </form>
       </section>
 
       <section class="a-page" id="jobApplicationsSection" data-title="Job applications" data-parent="more">
@@ -1734,7 +1753,7 @@ function resetMainScroll() {
 // Each section loads when it is opened (and again if its data is older than 20 seconds), not all at once at sign-in:
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
-  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), jobApplications: () => loadJobApplications(), salesOs: () => loadSalesOsAdmin(),
+  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), themeSubmissions: () => loadThemeSubmissions(), jobApplications: () => loadJobApplications(), salesOs: () => loadSalesOsAdmin(),
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(), domains: () => loadDomains(),
 };
@@ -1999,6 +2018,73 @@ async function loadSignupRequests() {
     tr.querySelector('[data-del]').onclick = async () => { if (await permanentDelete('signup_request', id, req.business_name)) loadSignupRequests(); };
   });
 }
+
+async function loadThemeSubmissions() {
+  const queueEl = document.getElementById('themeQueueList');
+  const allEl = document.getElementById('themeAllList');
+  const ledgerEl = document.getElementById('themeLedgerList');
+  const badge = document.getElementById('notifBadgeThemeSide');
+  try {
+    const [{ data: queue, error: qErr }, { data: all, error: aErr }, { data: ledger, error: lErr }] = await Promise.all([
+      sb.rpc('sfx_admin_theme_queue'), sb.rpc('sfx_admin_theme_list'), sb.rpc('sfx_admin_ledger_list'),
+    ]);
+    if (qErr) throw qErr; if (aErr) throw aErr; if (lErr) throw lErr;
+    if (badge) { const n = (queue || []).length; badge.style.display = n ? '' : 'none'; badge.textContent = n || ''; }
+    queueEl.innerHTML = (queue || []).length ? (queue || []).map((t) => `
+      <div class="req-card" data-id="${t.id}">
+        <div class="req-head"><div><div class="req-name">${esc(t.name)}</div><div class="req-sub">${esc(t.developerTenant || 'Unknown developer')} &middot; ${t.priceCents > 0 ? '₹' + (t.priceCents / 100).toLocaleString('en-IN') : 'Free'}</div></div></div>
+        <div class="req-section">${esc(t.description || '')}${t.previewImageUrl ? `<div style="margin-top:6px"><img src="${esc(t.previewImageUrl)}" style="max-width:220px;border-radius:8px" alt=""></div>` : ''}<div class="req-body" style="margin-top:4px">${(t.pendingVersion?.content?.sections || []).length} section(s) submitted</div></div>
+        <div class="req-actions"><button class="req-primary" data-approve>Approve</button><button data-reject>Reject</button></div>
+      </div>`).join('') : emptyDoodle('No theme submissions waiting for review.');
+    queueEl.querySelectorAll('[data-id]').forEach((card) => {
+      const id = card.dataset.id;
+      card.querySelector('[data-approve]').onclick = async () => {
+        const { error } = await sb.rpc('sfx_admin_theme_approve', { p_theme_id: id });
+        if (error) { alert(error.message); return; }
+        loadThemeSubmissions();
+      };
+      card.querySelector('[data-reject]').onclick = async () => {
+        const reason = prompt('Reason for rejecting this theme (the developer will see this):');
+        if (!reason || !reason.trim()) return;
+        const { error } = await sb.rpc('sfx_admin_theme_reject', { p_theme_id: id, p_reason: reason.trim() });
+        if (error) { alert(error.message); return; }
+        loadThemeSubmissions();
+      };
+    });
+    allEl.innerHTML = (all || []).length ? `<table class="admin-table"><thead><tr><th>Theme</th><th>Developer</th><th>Status</th><th>Price</th><th>Installs</th></tr></thead><tbody>${
+      (all || []).map((t) => `<tr><td data-label="Theme">${esc(t.name)}${t.isBuiltin ? ' <span class="feature-tag">Built-in</span>' : ''}</td><td data-label="Developer">${esc(t.developerTenant || '&mdash;')}</td><td data-label="Status">${esc(t.status)}</td><td data-label="Price">${t.priceCents > 0 ? '₹' + (t.priceCents / 100).toLocaleString('en-IN') : 'Free'}</td><td data-label="Installs">${t.installs}</td></tr>`).join('')
+    }</tbody></table>` : emptyDoodle('No themes yet.');
+    ledgerEl.innerHTML = (ledger || []).length ? `<table class="admin-table"><thead><tr><th>Developer</th><th>Theme</th><th>Sale</th><th>Developer share</th><th>AUZslab share</th><th>Status</th><th></th></tr></thead><tbody>${
+      (ledger || []).map((l) => `<tr data-id="${l.id}"><td data-label="Developer">${esc(l.developerTenant || '')}</td><td data-label="Theme">${esc(l.themeName)}</td><td data-label="Sale">₹${(l.saleAmountCents / 100).toLocaleString('en-IN')}</td><td data-label="Developer share">₹${(l.developerShareCents / 100).toLocaleString('en-IN')}</td><td data-label="AUZslab share">₹${(l.platformShareCents / 100).toLocaleString('en-IN')}</td><td data-label="Status">${l.paidOut ? `Paid${l.paidOutNote ? ' · ' + esc(l.paidOutNote) : ''}` : 'Owed'}</td><td>${l.paidOut ? '' : '<button class="btn btn-ghost" data-mark-paid style="font-size:11px;padding:5px 10px;min-height:0">Mark paid</button>'}</td></tr>`).join('')
+    }</tbody></table>` : emptyDoodle('No sales recorded yet.');
+    ledgerEl.querySelectorAll('[data-mark-paid]').forEach((btn) => {
+      btn.onclick = async () => {
+        const note = prompt('Optional note (e.g. UTR / UPI reference):') || null;
+        const { error } = await sb.rpc('sfx_admin_ledger_mark_paid', { p_id: btn.closest('tr').dataset.id, p_note: note });
+        if (error) { alert(error.message); return; }
+        loadThemeSubmissions();
+      };
+    });
+  } catch (e) {
+    queueEl.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('grantDevForm');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const slug = document.getElementById('grantDevSlug').value.trim().toLowerCase();
+    if (!slug) return;
+    const { data: tenant, error: findErr } = await sb.from('tenants').select('id').eq('slug', slug).maybeSingle();
+    if (findErr || !tenant) { alert('No business found at that address.'); return; }
+    const { error } = await sb.rpc('admin_set_tenant_features', { p_tenant_id: tenant.id, p_features: { storefront_developer: true } });
+    if (error) { alert(error.message); return; }
+    alert(slug + ' can now open the theme developer portal at /theme-dev.html.');
+    document.getElementById('grantDevSlug').value = '';
+  });
+});
 
 async function loadAddonRequests() {
   const listEl = document.getElementById('addonRequestsList');

@@ -11,7 +11,7 @@ import { analyticsPage } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid } from './ecosystem.js';
-import { api, apiPost, applyContext, refreshCollections, refreshDomains, refreshOrders, refreshProducts, toCollection, toOrder, toProduct } from './api.js';
+import { api, apiPost, applyContext, refreshCollections, refreshDomains, refreshInstalls, refreshMarketplace, refreshOrders, refreshProducts, toCollection, toOrder, toProduct } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y) => '<td>' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -169,12 +169,64 @@ function collectVariants(formEl) {
 
 // ---------- Online store: overview / theme / domains / payments ----------
 const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['domains', 'Domains'], ['checkout', 'Payments']];
+// ---------- Theme marketplace (phase 2, db/375) ----------
+// Real marketplace: built-in Minimal/Classic are now plain rows in sfx_themes (migrated in, not
+// hardcoded), alongside any developer theme an admin has approved. "Install" copies the approved
+// listing's content into this store's OWN install row (sfx_theme_installs) -- editing it later can
+// never touch another store's copy of the same theme, or the developer's original listing.
+const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar' };
+function themeCard(t) {
+  const price = t.priceCents > 0 ? money(t.priceCents / 100) : 'Free';
+  const buy = t.installed ? badge('Installed') :
+    t.priceCents > 0 ? badge('Coming soon', 'neutral') :
+    canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
+  return '<article class="card"><div class="tile-img">' + (image(t.previewImageUrl, t.name) || '<div class="tile-img placeholder"></div>') +
+    '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
+    '<p>' + esc(t.description || (t.isBuiltin ? 'AUZslab first-party theme.' : 'By ' + (t.developerName || 'a theme developer') + '.')) + '</p>' + buy + '</div></article>';
+}
+function installRow(i) {
+  const actions = (canWrite() ? button('Customize', 'theme-customize:' + i.id) : '') +
+    (canWrite() && !i.active ? button('Make active', 'theme-activate:' + i.id, 'primary') : i.active ? badge('Active on your storefront') : '');
+  return '<article class="card"><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
+    '<p class="compact-copy">' + (i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' Installed ' + dateValue(i.installedAt) + '.</p>' + actions + '</div></article>';
+}
 function themePage() {
-  const current = state.store.theme;
-  const cards = templates.map((t) => '<article class="card"><div class="tile-img">' + image(t.image, t.name) + '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(t.name) + '</h3>' + (t.id === current ? badge('Current theme') : '') + '</div><p>' + esc(t.description) + '</p>' + (t.id === current ? '' : (canWrite() ? button('Use this theme', 'theme-use:' + t.id, 'primary') : '')) + '</div></article>').join('');
-  return head('Theme', 'Choose between AUZslab’s two first-party storefront themes.', '') + tabs('builder', websiteTabs) +
-    panel('First-party themes', '<div class="cards">' + cards + '</div>') +
-    panel('Theme marketplace', body('<p class="compact-copy">A full visual theme editor and a marketplace of developer-built themes are coming in a later release. For now, your storefront renders with whichever first-party theme you choose above.</p>'), badge('Coming soon', 'neutral'));
+  const owned = new Set(state.installs.map((i) => i.themeId));
+  const market = state.marketplace.map((t) => ({ ...t, installed: owned.has(t.id) }));
+  return head('Theme', 'Browse the theme marketplace, install a theme, and customize what you install.', '') + tabs('builder', websiteTabs) +
+    panel('Your installed themes', state.installs.length ? '<div class="cards">' + state.installs.map(installRow).join('') + '</div>' : body('<p class="compact-copy">You haven’t installed a theme yet. Install one from the marketplace below.</p>')) +
+    panel('Theme marketplace', '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
+    panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));
+}
+// ---------- Theme editor: a store's own draft for one install (section list, add/edit/remove, publish) ----------
+function sectionFieldsFor(s) {
+  const p = s.props || {};
+  if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + input('Button link', 'href', p.href, 'url');
+  if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
+  if (s.type === 'image') return input('Image URL', 'url', p.url, 'url') + input('Caption', 'caption', p.caption);
+  if (s.type === 'button') return input('Button text', 'text', p.text) + input('Button link', 'href', p.href, 'url');
+  if (s.type === 'announcement') return input('Announcement text', 'text', p.text);
+  return '';
+}
+function editorPage(installId) {
+  const i = state.installs.find((x) => x.id === installId);
+  if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
+  const sections = (i.draftContent?.sections) || [];
+  const dirty = JSON.stringify(i.draftContent) !== JSON.stringify(i.publishedContent);
+  const list = sections.length ? sections.map((s, idx) => panel(esc(sectionLabel[s.type] || s.type), '<form data-form="section" data-install="' + esc(installId) + '" data-index="' + idx + '"><div class="field-grid">' + sectionFieldsFor(s) + '</div><div class="actions"><button class="btn primary">Save section</button>' +
+    (idx > 0 ? button('Move up', 'section-up:' + idx + ':' + installId) : '') + (idx < sections.length - 1 ? button('Move down', 'section-down:' + idx + ':' + installId) : '') + button('Remove', 'section-remove:' + idx + ':' + installId) + '</div></form>')).join('') :
+    panel('No sections yet', body('<p class="compact-copy">Add a section below -- it shows on your storefront’s home page once published.</p>'));
+  const addControls = canWrite() ? '<div class="actions" style="margin-top:12px">' + Object.entries(sectionLabel).map(([type, label]) => button('Add ' + label, 'section-add:' + type + ':' + installId)).join('') + '</div>' : '';
+  return head(esc(i.themeName) + ' -- customize', 'Changes save as a draft; publish to put them live on your storefront.', (dirty ? badge('Unpublished changes', 'warn') : badge('Published')) + (canWrite() ? button('Publish', 'theme-publish:' + installId, 'primary') : ''), ['builder', 'Theme']) +
+    list + panel('Add a section', body(addControls));
+}
+async function saveDraft(installId, mutate) {
+  const i = state.installs.find((x) => x.id === installId);
+  if (!i) return;
+  const content = { ...(i.draftContent || {}), sections: [...((i.draftContent || {}).sections || [])] };
+  mutate(content);
+  i.draftContent = content;
+  await api('sfx_theme_customize_save', { p_install_id: installId, p_content: content });
 }
 function checkoutPage() {
   const connected = state.store.razorpayConnected;
@@ -231,6 +283,7 @@ export function workspace(id, record) {
   else if (id === 'products' && record) html = productDetail(record);
   else if (id === 'collections' && record) html = collectionDetail(record);
   else if (productTabs.some(([k]) => k === id)) html = productsPage(id);
+  else if (id === 'builder' && record) html = editorPage(record);
   else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages'].includes(id)) html = websitePage(id);
   else if (id === 'customers') html = comingSoon('Customers', 'A dedicated customer list is coming in a later release. See who ordered on the Orders page for now.');
   else if (['segments', 'companies'].includes(id)) html = comingSoon(id === 'segments' ? 'Segments' : 'Companies', 'Coming in a later release.');
@@ -248,6 +301,14 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'domains' && domainDispatch(type, target)) return;
   if ((type === 'input' || type === 'change') && ['table-query'].includes(target.id)) { $('#table-results').innerHTML = productsList(target.value); return; }
   if ((type === 'input' || type === 'change') && target.id === 'collection-query') { $('#collection-results').innerHTML = collectionList(target.value); return; }
+  if (type === 'submit' && target.dataset.form === 'section') {
+    const installId = target.dataset.install; const idx = Number(target.dataset.index);
+    const fields = Object.fromEntries(new FormData(target));
+    return withBusy(async () => {
+      await saveDraft(installId, (content) => { content.sections[idx] = { ...content.sections[idx], props: fields }; });
+      save('Section saved.'); rerender();
+    });
+  }
   if (type === 'submit') {
     if (target.dataset.form !== 'edit') return;
     const values = new FormData(target); const data = Object.fromEntries(values); const key = target.dataset.key; const rid = target.dataset.id || null;
@@ -304,4 +365,33 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'order-cancel') {
     return withBusy(async () => { await api('sfx_order_set_status', { p_id: key, p_status: 'cancelled' }); await refreshOrders(); save('Order cancelled.'); rerender(); });
   }
+  if (a === 'theme-install') return withBusy(async () => {
+    const r = await api('sfx_theme_install', { p_theme_id: key });
+    await Promise.all([refreshMarketplace(), refreshInstalls()]);
+    save(r.alreadyInstalled ? 'Already installed.' : 'Theme installed. Customize it, then publish when ready.');
+    rerender();
+  });
+  if (a === 'theme-customize') { location.hash = '/builder/' + key; return; }
+  if (a === 'theme-activate') return withBusy(async () => {
+    await api('sfx_theme_install_set_active', { p_install_id: key });
+    await Promise.all([refreshInstalls()]); const ctx = await api('sfx_context'); applyContext(ctx);
+    save('This theme is now active on your storefront.'); rerender();
+  });
+  if (a === 'theme-publish') return withBusy(async () => {
+    await api('sfx_theme_customize_publish', { p_install_id: key });
+    await refreshInstalls(); save('Published to your storefront.'); rerender();
+  });
+  if (a === 'section-add') return withBusy(async () => {
+    await saveDraft(detail, (content) => { content.sections.push({ id: uid(), type: key, props: {} }); });
+    save('Section added.'); rerender();
+  });
+  if (a === 'section-remove') return withBusy(async () => {
+    await saveDraft(detail, (content) => { content.sections.splice(Number(key), 1); });
+    save('Section removed.'); rerender();
+  });
+  if (a === 'section-up' || a === 'section-down') return withBusy(async () => {
+    const from = Number(key); const to = from + (a === 'section-up' ? -1 : 1);
+    await saveDraft(detail, (content) => { if (content.sections[to]) { const [s] = content.sections.splice(from, 1); content.sections.splice(to, 0, s); } });
+    rerender();
+  });
 }

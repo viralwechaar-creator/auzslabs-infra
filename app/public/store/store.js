@@ -741,9 +741,33 @@ function minimalHomeStores(stores) {
         E('div', { class: 'minimal-section-actions' }, controls, E('a', { class: 'minimal-discover', href: link('stores') }, 'All stores')))),
     track);
 }
+// Storefront theme marketplace (phase 2, db/375): additive, data-driven content sections from the
+// store's own active theme install (sfx_public_active_sections, folded into public_sfx_store's config
+// as customSections) -- appended after the existing hero/catalog content, for BOTH the Minimal and
+// Classic chrome (which stay their existing hand-built CSS/markup; see that migration's own comment on
+// why a full per-theme chrome swap is out of scope for this slice). Empty array (every store that never
+// touched the marketplace) renders nothing, so this is a zero-behaviour-change addition by default.
+function customSection(s) {
+  const p = s.props || {};
+  if (s.type === 'hero' && (p.heading || p.sub)) return E('section', { class: 'custom-section custom-hero' },
+    p.heading ? E('h2', null, p.heading) : null, p.sub ? E('p', null, p.sub) : null,
+    p.cta && p.href ? E('a', { class: 'btn', href: p.href }, p.cta) : null);
+  if (s.type === 'text' && (p.heading || p.body)) return E('section', { class: 'custom-section custom-text' },
+    p.heading ? E('h2', null, p.heading) : null, p.body ? E('p', null, p.body) : null);
+  if (s.type === 'image' && p.url) return E('section', { class: 'custom-section custom-image' },
+    E('img', { src: p.url, alt: p.caption || '' }), p.caption ? E('div', { class: 'cap' }, p.caption) : null);
+  if (s.type === 'button' && p.text && p.href) return E('section', { class: 'custom-section custom-button' }, E('a', { class: 'btn', href: p.href }, p.text));
+  if (s.type === 'announcement' && p.text) return E('div', { class: 'custom-section custom-announcement' }, p.text);
+  return null;
+}
+function customSections(v) {
+  const sections = cfg().customSections || [];
+  for (const s of sections) { const el = customSection(s); if (el) v.append(el); }
+}
 V.home = (v) => {
   if (cfg().template === 'minimal') {
-    return minimalHome(v);
+    minimalHome(v);
+    return customSections(v);
   }
   const c = cfg(); const hi = (c.heroImages || []).filter(Boolean);
   const fallback = hi.length ? hi : [...STY.filter((s) => (s.photoUse || {}).hero), ...newest(5)].filter((s, i, a) => a.indexOf(s) === i).slice(0, 5).map((s) => pickPic(s, 'hero')).filter(Boolean);
@@ -778,6 +802,7 @@ V.home = (v) => {
   if (STY.length > 4) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'All products'), E('a', { class: 'btn sm out', href: link('shop') }, 'Shop all')), gridOf(STY.slice(0, 12), true)));
   // 5. stores
   if ((c.stores || []).length) v.append(E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Visit us'), E('a', { class: 'btn sm out', href: link('stores') }, 'All stores')), storeCards(c.stores)));
+  customSections(v);
 };
 
 function facetValues(value) {

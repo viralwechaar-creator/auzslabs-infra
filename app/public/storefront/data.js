@@ -61,6 +61,8 @@ export const emptyState = () => ({
   collections: [],
   orders: [],
   domains: [],
+  marketplace: [],  // sfx_theme_marketplace_list(): every approved theme (built-in + developer), db/375
+  installs: [],     // sfx_theme_install_list(): this store's own installed copies
   notifications: [],
   campaigns: [],
   analyticsReports: [],

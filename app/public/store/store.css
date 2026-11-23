@@ -1039,3 +1039,15 @@ body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(10
 @media(min-width:900px){body.homehero .zfab.zdesk{display:grid;position:fixed;right:22px;bottom:70px;z-index:30}}
 .top .dview{display:none}body.onlist .top .dview{display:inline-grid}
 @media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not(.bigamt),select,textarea{font-size:16px!important}}
+
+/* Theme marketplace (phase 2, db/375): additive custom content sections from a store's installed
+   theme, appended after the existing home-page content on both Minimal and Classic -- see store.js's
+   customSections() comment. Generic/neutral styling: a third-party theme's own look isn't rendered
+   here (out of scope for this slice), just its content, legibly. */
+.custom-section{max-width:900px;margin:0 auto;padding:36px 22px;text-align:center}
+.custom-section.custom-hero h2{font-size:clamp(24px,5vw,38px);margin:0 0 10px;font-weight:700}
+.custom-section.custom-hero p,.custom-section.custom-text p{color:var(--ink-faint,#666);font-size:16px;line-height:1.6;white-space:pre-wrap}
+.custom-section .btn{display:inline-block;margin-top:14px;padding:11px 24px;border-radius:999px;background:var(--ink,#171717);color:#fff;text-decoration:none;font-weight:600}
+.custom-section.custom-image img{width:100%;border-radius:14px;display:block}
+.custom-section.custom-image .cap{font-size:13px;color:var(--ink-faint,#666);margin-top:8px}
+.custom-section.custom-announcement{background:var(--ink,#171717);color:#fff;padding:10px 16px;font-size:14px;font-weight:600;border-radius:0}

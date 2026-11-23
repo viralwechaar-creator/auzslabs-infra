@@ -805,6 +805,28 @@ export const RPC = {
   // sfx_domain_mark_verified are deliberately NOT here: server-only helpers, called directly with pool.query
   // from server/src/routes/payments.js and server/src/routes/sites.js (same reason sty_online_* isn't here).
 
+  // Storefront theme marketplace (phase 2, db/375) -- developer portal, admin review, store owner side.
+  sfdev_theme_list: { params: [], auth: true },
+  sfdev_theme_get: { params: ['p_id'], auth: true },
+  sfdev_theme_save: { params: ['p_id', 'p'], jsonb: ['p'], defaults: { p_id: null }, auth: true },
+  sfdev_theme_version_save: { params: ['p_theme_id', 'p_content'], jsonb: ['p_content'], auth: true },
+  sfdev_theme_submit: { params: ['p_theme_id'], auth: true },
+  sfdev_theme_delist: { params: ['p_theme_id'], auth: true },
+  sfdev_ledger_list: { params: [], auth: true },
+  sfx_admin_theme_queue: { params: [], auth: true },
+  sfx_admin_theme_list: { params: [], auth: true },
+  sfx_admin_theme_approve: { params: ['p_theme_id'], auth: true },
+  sfx_admin_theme_reject: { params: ['p_theme_id', 'p_reason'], auth: true },
+  sfx_admin_ledger_list: { params: [], auth: true },
+  sfx_admin_ledger_mark_paid: { params: ['p_id', 'p_note'], defaults: { p_note: null }, auth: true },
+  sfx_theme_marketplace_list: { params: [], auth: true },
+  sfx_theme_install: { params: ['p_theme_id'], auth: true },
+  sfx_theme_install_list: { params: [], auth: true },
+  sfx_theme_install_get: { params: ['p_install_id'], auth: true },
+  sfx_theme_install_set_active: { params: ['p_install_id'], auth: true },
+  sfx_theme_customize_save: { params: ['p_install_id', 'p_content'], jsonb: ['p_content'], auth: true },
+  sfx_theme_customize_publish: { params: ['p_install_id'], auth: true },
+
   // AI connector keys (db/318) -- owner-only, see mcp_api_keys' own comment.
   mcp_create_key: { params: ['p_label', 'p_scope'], defaults: { p_label: 'Connector key', p_scope: 'read' }, auth: true },
   mcp_list_keys: { params: [], auth: true },
