@@ -14,24 +14,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="u.css?v=6"><link rel="stylesheet" href="t.css?v=2"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="c.css?v=6">
-<meta name="theme-color" content="#efeeed">
-<link rel="stylesheet" href="menu-old.css?v=2">
-<style>
-.cp-wrap{max-width:920px;margin:0 auto}
-.cp-head{text-align:center;margin:0 0 28px}
-.cp-head h1{margin:6px 0 8px}
-.cp-fork{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:10px}
-@media (max-width:760px){.cp-fork{grid-template-columns:1fr}}
-.cp-card{border:1px solid var(--line);border-radius:18px;padding:24px;background:var(--bg-raised);cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:10px;min-height:44px;transition:border-color .15s,transform .15s}
-.cp-card:hover,.cp-card:focus-visible{border-color:var(--accent);transform:translateY(-2px)}
-.cp-card h3{margin:0;font-size:18px}
-.cp-card p{margin:0;font-size:13.5px;color:var(--ink-dim);line-height:1.5}
-.cp-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent);padding:3px 9px;border-radius:999px;align-self:flex-start}
-.cp-trial-note{font-size:12.5px;color:var(--ink-dim);background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:12px 0}
-.cp-err{color:#c0392b;font-size:13px;min-height:18px}
-</style>
+<meta name="theme-color" content="#0a0a0a">
+<link rel="stylesheet" href="menu-old.css?v=2"><link rel="stylesheet" href="a.css?v=2"><link rel="stylesheet" href="a-choose.css?v=2">
 </head>
-<body class="mk-page">
+<body class="mk-page a-dark a-choose">
 <div id="pageTransition" class="page-transition" aria-hidden="true"></div>
 <div class="shell">
   <header class="u-top">
@@ -44,23 +30,32 @@
   </header>
 
   <main class="content">
-    <div class="tl cp-wrap">
-      <div class="cp-head"><span class="tl-eye">Before you start</span><h1 class="tl-h">What do you want to do?</h1><p class="tl-sub">Pick one -- you can always talk to us about changing later.</p></div>
+    <div class="a-grain" aria-hidden="true"></div>
+    <div class="cp-wrap">
+      <div class="cp-head"><p class="cp-eye">Before you start</p><h1 class="cp-h"><span class="aw"><span style="--i:0">What do you</span></span><span class="aw"><span class="g" style="--i:1">want to do?</span></span></h1><p class="cp-sub">Pick one. You can always talk to us about changing later.</p></div>
 
       <div id="step1" class="cp-fork">
         <!-- "Get apps" is a destination, not a form here: live-demo.html already shows every sellable app
              with real credentials and a "Get this app" button on each one, which carries the business-
              details request forward (cart.html's existing request-first flow, db/155) -- no second,
              separate bundle picker is built here for the same thing. -->
-        <a href="live-demo.html" class="cp-card" id="pickApps">
-          <span class="cp-tag">Request &amp; approval</span>
-          <h3>AUZslab apps</h3>
-          <p>AUZsLedger, AUZsStyle with its own website, or Salon Console with its own website. See each one live, then tell us your business details -- we check it, send a quote, and set you up once it's paid.</p>
+        <a href="live-demo.html" class="cp-card cp-a" id="pickApps">
+          <div><span class="cp-num">01 &middot; Apps</span><br><span class="cp-tag">Request &amp; approval</span></div>
+          <div>
+            <div class="cp-chips"><i>AUZsLedger</i><i>AUZsStyle</i><i>Salon Console</i></div>
+            <h3>AUZslab apps</h3>
+            <p>AUZsLedger, AUZsStyle with its own website, or Salon Console with its own website. See each one live, then tell us your business details. We check it, send a quote, and set you up once it's paid.</p>
+            <span class="cp-go">See them live <i>&rarr;</i></span>
+          </div>
         </a>
-        <button type="button" class="cp-card" id="pickStore">
-          <span class="cp-tag">Instant &middot; 3-day free trial</span>
-          <h3>Build a complete online store</h3>
-          <p>Like Shopify -- get instant access and build your store right away. Free for 3 days, then choose a plan to keep it live.</p>
+        <button type="button" class="cp-card cp-b" id="pickStore">
+          <div><span class="cp-num">02 &middot; Online store</span><br><span class="cp-tag">Instant &middot; free trial</span></div>
+          <div>
+            <div class="cp-big">3<small>days free</small></div>
+            <h3>Build a complete online store</h3>
+            <p>Get instant access and build your store right away. Free for 3 days, then choose a plan to keep it live.</p>
+            <span class="cp-go">Start building <i>&rarr;</i></span>
+          </div>
         </button>
       </div>
 
