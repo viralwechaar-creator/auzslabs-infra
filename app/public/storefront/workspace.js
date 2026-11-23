@@ -11,7 +11,7 @@ import { analyticsPage } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid } from './ecosystem.js';
-import { api, apiPost, applyContext, refreshCollections, refreshDomains, refreshOrders, refreshProducts, toCollection, toOrder, toProduct } from './api.js';
+import { api, apiPost, applyContext, refreshCollections, refreshCustomers, refreshDiscounts, refreshDomains, refreshOrders, refreshProducts, toCollection, toOrder, toProduct } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y) => '<td>' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -222,6 +222,40 @@ function management(id) {
   return comingSoon(titles[id] || 'Settings', notes[id], id === 'settings' ? '' : ['settings', 'Settings']);
 }
 
+// ---------- Customers ----------
+function customersPage() {
+  const rows = (state.customers || []).map((c) => [
+    esc(c.name), esc(c.phone || '—'), esc(c.email || '—'), c.orderCount, money(c.lifetimeSpend), dateValue(c.lastOrderAt),
+    c.manual && canWrite() ? button('Edit', 'customer-edit:' + c.id, 'compact') + button('Delete', 'customer-delete:' + c.id, 'compact danger') : (canWrite() ? button('Save as customer', 'customer-adopt:' + encodeURIComponent(c.phone || ''), 'compact') : ''),
+  ]);
+  return head('Customers', 'People who ordered from your store, plus customers you add by hand.', canWrite() ? button('Add customer', 'customer-new', 'primary') : '') +
+    panel('All customers', table(['Name', 'Phone', 'Email', 'Orders', 'Total spent', 'Last order', ''], rows));
+}
+function customerForm(c) {
+  return editForm('customer-record', c?.id, input('Name', 'name', c?.name || '', 'text', 'required maxlength="160"') + input('Phone', 'phone', c?.phone || '', 'tel', 'maxlength="20"') +
+    input('Email', 'email', c?.email || '', 'email', 'maxlength="160"') + area('Notes', 'notes', c?.notes || '', 'maxlength="2000"'));
+}
+
+// ---------- Discounts ----------
+const discountValueLabel = (d) => d.kind === 'percent' ? Number(d.value) + '% off' : 'Rs ' + Number(d.value) + ' off';
+function discountsPage() {
+  const rows = (state.discounts || []).map((d) => [
+    '<strong>' + esc(d.code) + '</strong>', discountValueLabel(d), d.minOrder != null ? money(d.minOrder) : '—', d.expiresAt ? dateValue(d.expiresAt) : 'No expiry',
+    d.usedCount + (d.usageLimit ? ' / ' + d.usageLimit : ''), badge(d.status === 'active' ? 'Active' : 'Archived', d.status === 'active' ? '' : 'neutral'),
+    canWrite() ? button('Edit', 'discount-edit:' + d.id, 'compact') + button(d.status === 'active' ? 'Archive' : 'Activate', 'discount-toggle:' + d.id, 'compact') : '',
+  ]);
+  return head('Discounts', 'Codes your customers type at checkout.', canWrite() ? button('Create discount', 'discount-new', 'primary') : '') +
+    panel('All discounts', table(['Code', 'Offer', 'Minimum order', 'Expires', 'Used', 'Status', ''], rows));
+}
+function discountForm(d) {
+  const exp = d?.expiresAt ? String(d.expiresAt).slice(0, 10) : '';
+  return editForm('discount-record', d?.id, input('Code', 'code', d?.code || '', 'text', 'required maxlength="30" pattern="[A-Za-z0-9_\\-]{2,30}" style="text-transform:uppercase"') +
+    select('Type', 'kind', [['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)']], d?.kind || 'percent') +
+    input('Value', 'value', d?.value ?? '', 'number', 'required min="0.01" step="0.01"') +
+    input('Minimum order (Rs, optional)', 'minOrder', d?.minOrder ?? '', 'number', 'min="0" step="0.01"') +
+    input('Expires on (optional)', 'expiresAt', exp, 'date') + input('Usage limit (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"'));
+}
+
 export function workspace(id, record) {
   if (['analytics', 'reports', 'live-view'].includes(id)) return analyticsPage(id, record);
   let html;
@@ -232,9 +266,10 @@ export function workspace(id, record) {
   else if (id === 'collections' && record) html = collectionDetail(record);
   else if (productTabs.some(([k]) => k === id)) html = productsPage(id);
   else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages'].includes(id)) html = websitePage(id);
-  else if (id === 'customers') html = comingSoon('Customers', 'A dedicated customer list is coming in a later release. See who ordered on the Orders page for now.');
+  else if (id === 'customers') html = customersPage();
+  else if (id === 'discounts') html = discountsPage();
   else if (['segments', 'companies'].includes(id)) html = comingSoon(id === 'segments' ? 'Segments' : 'Companies', 'Coming in a later release.');
-  else if (['growth', 'discounts'].includes(id)) html = comingSoon(id === 'discounts' ? 'Discounts' : 'Growth', id === 'discounts' ? 'Discount codes are coming in a later release.' : 'Marketing campaign tracking is coming in a later release.');
+  else if (id === 'growth') html = comingSoon('Growth', 'Marketing campaign tracking is coming in a later release.');
   else if (['content', 'pages', 'files', 'data'].includes(id)) html = comingSoon('Content', 'Custom storefront pages, a media library, and custom fields are coming in a later release.');
   else if (id === 'markets') html = comingSoon('Markets', 'Selling in more than one currency or region is coming in a later release.');
   else html = management(id);
@@ -284,6 +319,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'store-publish') {
         await api('sfx_store_save', { p: { published: values.has('published') } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Saved.'); rerender();
+      } else if (key === 'customer-record') {
+        await api('sfx_customer_save', { p_id: rid, p: { name: data.name, phone: data.phone, email: data.email, notes: data.notes } });
+        await refreshCustomers(); save(rid ? 'Customer updated.' : 'Customer added.'); close(); rerender(true);
+      } else if (key === 'discount-record') {
+        const expiresAt = data.expiresAt ? new Date(data.expiresAt + 'T23:59:59').toISOString() : '';
+        await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, usageLimit: data.usageLimit } });
+        await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); rerender(true);
       } else if (key === 'razorpay') {
         await api('sfx_store_set_razorpay', { p: { keyId: data.keyId, secret: data.secret } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay connected.'); close(); rerender();
@@ -295,6 +337,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (type !== 'click') return;
   const action = target.dataset.action; if (!action) return;
   const [a, key, detail] = action.split(':');
+  if (a === 'customer-new') return dialog('Add customer', customerForm(null));
+  if (a === 'customer-edit') return dialog('Edit customer', customerForm(state.customers.find((c) => c.id === key)));
+  if (a === 'customer-adopt') { const c = state.customers.find((x) => x.phone === decodeURIComponent(key)); return dialog('Save as customer', customerForm({ ...c, id: null })); }
+  if (a === 'customer-delete') return withBusy(async () => { if (!confirm('Delete this customer record? Their past orders are not affected.')) return; await api('sfx_customer_delete', { p_id: key }); await refreshCustomers(); save('Customer deleted.'); rerender(true); });
+  if (a === 'discount-new') return dialog('Create discount', discountForm(null));
+  if (a === 'discount-edit') return dialog('Edit discount', discountForm(state.discounts.find((d) => d.id === key)));
+  if (a === 'discount-toggle') return withBusy(async () => { const d = state.discounts.find((x) => x.id === key); await api('sfx_discount_set_status', { p_id: key, p_status: d.status === 'active' ? 'archived' : 'active' }); await refreshDiscounts(); save('Discount updated.'); rerender(true); });
   if (a === 'variant-add') { addVariantRow(target.closest('form')); return; }
   if (a === 'theme-use') return withBusy(async () => { await api('sfx_store_save', { p: { theme: key } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Theme updated.'); rerender(); });
   if (a === 'razorpay-clear') return withBusy(async () => { await api('sfx_store_set_razorpay', { p: { clear: true } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay disconnected.'); rerender(); });

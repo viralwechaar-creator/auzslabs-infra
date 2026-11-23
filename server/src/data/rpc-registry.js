@@ -790,6 +790,13 @@ export const RPC = {
   sfx_order_note: { params: ['p_id', 'p_note'], auth: true },
   sfx_domain_list: { params: [], auth: true },
   sfx_domain_connect: { params: ['p_hostname'], auth: true },
+  // Phase 3 commerce essentials (db/376): customers (manual + derived from orders) and real discount codes.
+  sfx_customer_list: { params: [], auth: true },
+  sfx_customer_save: { params: ['p_id', 'p'], jsonb: ['p'], defaults: { p_id: null }, auth: true },
+  sfx_customer_delete: { params: ['p_id'], auth: true },
+  sfx_discount_list: { params: [], auth: true },
+  sfx_discount_save: { params: ['p_id', 'p'], jsonb: ['p'], defaults: { p_id: null }, auth: true },
+  sfx_discount_set_status: { params: ['p_id', 'p_status'], auth: true },
   public_sfx_store: { params: ['p_slug'], auth: false },
   public_sfx_reviews: { params: ['p_slug', 'p_style'], auth: false },
   public_sfx_review_submit: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },

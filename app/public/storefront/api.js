@@ -70,6 +70,8 @@ export function toOrder(o) {
 export async function refreshProducts() { state.products = (await api('sfx_product_list')).map(toProduct); }
 export async function refreshCollections() { state.collections = (await api('sfx_collection_list')).map(toCollection); }
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
+export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
+export async function refreshDiscounts() { state.discounts = await api('sfx_discount_list'); }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
 
 async function blocked(title, message) {
