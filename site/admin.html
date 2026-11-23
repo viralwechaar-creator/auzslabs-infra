@@ -1009,6 +1009,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div class="a-side-group-label">Website</div>
 
         <div class="a-side-group-label">Money</div>
+        <button class="a-side-btn" data-section="sfxPricing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7"/></svg>Storefront plan price</button>
         <button class="a-side-btn" data-section="clientPay"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>Client payments &amp; bills</button>
         <button class="a-side-btn" data-section="billMake"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7M12 7v0"/></svg>Make a bill</button>
 
@@ -1303,6 +1304,13 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="bmBody"></div>
         <div class="label" style="margin-top:34px">Recent direct bills</div>
         <div id="bmRecent" style="margin-top:8px">Loading&hellip;</div>
+      </section>
+
+      <section class="a-page" id="sfxPricingSection" data-title="Storefront plan price" data-parent="more">
+        <div class="label">Money</div>
+        <h2 class="h-2">Storefront plan price</h2>
+        <p class="p">The only priced product on AUZslab -- a deliberate, scoped exception (every other product stays quote-only). Starts at &#8377;0 ("not priced yet"); a Path-B store's trial just pauses writes until a real price is set here, with no charge. Once you set a real number, a paused/trial store can pay online (Razorpay) to reactivate itself instead of waiting for you to approve a reactivation request by hand.</p>
+        <div id="sfxPricingBody">Loading&hellip;</div>
       </section>
 
       <section class="a-page" id="clientPaySection" data-title="Client payments" data-parent="more">
@@ -1756,6 +1764,7 @@ const SECTION_LOADERS = {
   leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), themeSubmissions: () => loadThemeSubmissions(), jobApplications: () => loadJobApplications(), salesOs: () => loadSalesOsAdmin(),
   users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(), website: () => loadWebsite(),
   postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; }, clientPay: () => { loadClientPay(); loadBills(); }, billMake: () => bmInit(), domains: () => loadDomains(),
+  sfxPricing: () => loadSfxPricing(),
 };
 const sectionLoadedAt = {};
 function ensureSectionLoaded(name) {
@@ -3247,6 +3256,29 @@ document.getElementById('payForm').onsubmit = async (e) => {
   e.target.reset(); document.getElementById('payDate').value = new Date().toISOString().slice(0, 10);
   loadPayModalList(); sectionLoadedAt.clientPay = 0;
 };
+// ---------- Storefront plan price (db/374): the one scoped exception to quote-only pricing ----------
+async function loadSfxPricing() {
+  const body = document.getElementById('sfxPricingBody');
+  const { data, error } = await sb.rpc('public_product_prices', {});
+  if (error) { body.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
+  const row = (data || []).find((p) => p.key === 'storefront') || { monthly_price: 0 };
+  const priced = Number(row.monthly_price) > 0;
+  body.innerHTML = `<div class="t6" style="max-width:420px">
+    <label class="lbl">Monthly price (&#8377;)<input id="sfxPriceInput" class="inp" type="number" min="0" step="1" value="${esc(String(row.monthly_price))}"></label>
+    <div class="savebar" style="margin-top:10px"><button class="btn pri" id="sfxPriceSave">Save price</button></div>
+    <div id="sfxPriceErr" class="err"></div>
+    <p class="p" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">${priced ? 'Priced -- a paused or trial store can now pay online to reactivate.' : 'Not priced yet (&#8377;0) -- paused/trial stores can only be reactivated by you, by hand.'}</p>
+  </div>`;
+  document.getElementById('sfxPriceSave').onclick = async () => {
+    const errEl = document.getElementById('sfxPriceErr'); errEl.textContent = '';
+    const v = Number(document.getElementById('sfxPriceInput').value);
+    if (!(v >= 0)) { errEl.textContent = 'Enter a price of 0 or more'; return; }
+    const { error: e2 } = await sb.rpc('admin_set_product_price', { p_key: 'storefront', p_monthly_price: v });
+    if (e2) { errEl.textContent = e2.message; return; }
+    loadSfxPricing();
+  };
+}
+
 async function loadClientPay() {
   const listEl = document.getElementById('clientPayList');
   const { data, error } = await sb.rpc('admin_list_client_payments', {});

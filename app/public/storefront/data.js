@@ -75,6 +75,7 @@ export const emptyState = () => ({
   stockMoves: [],
   categories: { categories: [], tags: [] },
   productTags: {},
+  plan: { plan_status: 'trial', blocked: false },
   domains: [],
   marketplace: [],  // sfx_theme_marketplace_list(): every approved theme (built-in + developer), db/375
   installs: [],     // sfx_theme_install_list(): this store's own installed copies

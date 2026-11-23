@@ -82,6 +82,7 @@ export async function refreshCheckout() { state.checkout = await api('sfx_checko
 export async function refreshCompanies() { const [c, cu] = await Promise.all([api('sfx_company_list'), api('sfx_customer_list')]); state.companies = c; state.customers = cu; }
 export async function refreshSegments() { state.segments = await api('sfx_segment_list'); }
 export async function refreshCampaigns() { const [c, d] = await Promise.all([api('sfx_campaign_list'), api('sfx_discount_list')]); state.campaigns = c; state.discounts = d; }
+export async function refreshPlan() { state.plan = await api('sfx_status'); }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
 // Theme marketplace (db/375): the approved listing (built-ins + developer themes) and this store's own
 // installs (its own draft/published copy of each theme it has installed -- see that migration's own
@@ -113,6 +114,6 @@ export async function boot(onReady) {
   let ctx;
   try { ctx = await api('sfx_context'); } catch (e) { return blocked('Could not open your storefront', e.message); }
   applyContext(ctx);
-  try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders(), refreshMarketplace(), refreshInstalls()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
+  try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders(), refreshMarketplace(), refreshInstalls(), refreshPlan()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
   onReady();
 }
