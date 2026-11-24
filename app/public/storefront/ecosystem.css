@@ -471,3 +471,24 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
   .mobile-quick-nav :is([aria-current],[aria-expanded=true]){background:color-mix(in srgb,var(--ink) 12%,transparent)}
   .shell.nav-open .mobile-quick-nav .mq-pill,.shell.nav-open .mobile-quick-nav .mq-round{background:rgba(44,44,46,.6);border-color:rgba(255,255,255,.16)}
 }
+
+/* ===== Phone Settings list ===== */
+@media(max-width:900px){
+  .shell:has(.settings-list){--hdr:calc(env(safe-area-inset-top,0px) + 76px)}
+  .shell:has(.settings-list) .m-search,.shell:has(.settings-list) .page-head{display:none}
+  .shell .settings-list{display:grid;gap:6px}
+  .shell .sl-search{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:var(--paper);box-shadow:0 8px 22px -16px rgba(0,0,0,.4);margin-bottom:10px}
+  .shell .sl-search input{border:0!important;background:transparent!important;min-height:0!important;padding:0!important;box-shadow:none!important;flex:1;font-size:1.05rem}
+  .shell .sl-search .ico{width:22px;height:22px;color:var(--muted)}
+  .shell .sl-group[hidden],.shell .sl-row[hidden]{display:none}
+  .shell .sl-group h2{font-size:1.45rem;letter-spacing:-.03em;font-weight:700;margin:18px 4px 8px}
+  .shell .sl-card{display:grid}
+  .shell .sl-row{display:flex;align-items:center;gap:16px;min-height:62px;padding:0 6px;color:var(--ink);text-decoration:none;font-size:1.15rem;font-weight:500}
+  .shell .sl-row:active{background:var(--field);border-radius:14px}
+  .shell .sl-ico{width:34px;display:grid;place-items:center;color:var(--ink)}
+  .shell .sl-ico .ico{width:27px;height:27px}
+  .shell .sl-name{flex:1}
+  .shell .sl-go{font-size:1.9rem;line-height:1;color:var(--muted);font-weight:300}
+  .shell .sl-empty{text-align:center;color:var(--muted);padding:24px}
+}
+@media(max-width:900px){.shell .sl-search input:focus,.shell .sl-search input:focus-visible{outline:0!important;box-shadow:none!important}.shell .sl-search:focus-within{border-color:var(--ink)}}

@@ -268,5 +268,17 @@ export default async function run({ browser, stack }) {
     assert(hrefs.some((h) => /auzsstyle\.auzslab\.in\/style\.html/.test(h)), 'no AUZsStyle switch link: ' + JSON.stringify(hrefs));
     assert(await page.locator('.sidebar-apps a.current').count() === 1, 'current storefront row missing');
   });
+  await s.check('Phone Settings is a grouped list with search; Business profile stays reachable', async () => {
+    const mctx = await newCtx(browser, stack, { w: 390, h: 844 }); const mp = await mctx.newPage();
+    await mp.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await mp.waitForTimeout(800);
+    await mp.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    await mp.goto('about:blank'); await mp.goto(stack.url('testcafe', '/storefront.html#/settings'), { waitUntil: 'load' }); await mp.waitForTimeout(2200);
+    assert(await mp.locator('.settings-list .sl-row').count() >= 10, 'list rows missing');
+    await mp.fill('#settings-query', 'domain'); await mp.waitForTimeout(300);
+    assert(await mp.locator('.sl-row:visible').count() === 1, 'search did not filter');
+    await mp.goto('about:blank'); await mp.goto(stack.url('testcafe', '/storefront.html#/settings?p=1'), { waitUntil: 'load' }); await mp.waitForTimeout(2200);
+    assert(await mp.locator('form input[name=name], input[name=businessName], form').count() > 0 && await mp.locator('.settings-list').count() === 0, 'business profile form missing');
+    await mctx.close();
+  });
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save|x\.test|\/uploads\//i.test(e)).length, errs.filter((e) => !/sentry|fonts|sfx_discount_save|x\.test|\/uploads\//i.test(e)).slice(0, 3).join(' | ')); });
 }

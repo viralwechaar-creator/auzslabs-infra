@@ -10,7 +10,7 @@
 import { analyticsPage } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
-import { $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid } from './ecosystem.js';
+import { $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
 import { sb, api, apiPost, applyContext, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y) => '<td>' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
@@ -849,10 +849,25 @@ async function themeSubmit(key, rid, data) {
   return false;
 }
 
+// ---------- Phone Settings: a grouped list of every settings page (desktop keeps the Business profile form) ----------
+function settingsList() {
+  const href = (id) => id === 'settings' ? pathFor('settings') + '?p=1' : pathFor(id + (settingsRoutes.has(id) ? '' : '?via=settings'));
+  const row = ([id, label, glyph]) => '<a class="sl-row" href="' + href(id) + '" data-label="' + esc(label.toLowerCase()) + '"><span class="sl-ico">' + icon(glyph) + '</span><span class="sl-name">' + esc(label) + '</span><span class="sl-go" aria-hidden="true">›</span></a>';
+  const groups = settingsGroups.map((g) => '<section class="sl-group"><h2>' + esc(g.label) + '</h2><div class="sl-card">' + g.items.map(row).join('') + '</div></section>').join('');
+  const account = '<section class="sl-group"><h2>Account</h2><div class="sl-card"><a class="sl-row" href="#" data-action="sign-out" data-label="sign out logout"><span class="sl-ico">' + icon('logout') + '</span><span class="sl-name">Sign out</span><span class="sl-go" aria-hidden="true">›</span></a></div></section>';
+  return '<div class="settings-list"><label class="sl-search">' + icon('search') + '<input id="settings-query" type="search" placeholder="Search settings" autocomplete="off" aria-label="Search settings"></label>' + groups + account + '<p class="sl-empty" id="sl-empty" hidden>No settings match.</p></div>';
+}
+function settingsFilter(q) {
+  q = q.toLowerCase().trim(); let any = false;
+  document.querySelectorAll('.settings-list .sl-group').forEach((g) => { let n = 0; g.querySelectorAll('.sl-row').forEach((r) => { const ok = !q || r.dataset.label.includes(q); r.hidden = !ok; if (ok) n++; }); g.hidden = !n; if (n) any = true; });
+  const e = document.getElementById('sl-empty'); if (e) e.hidden = any;
+}
+
 export function workspace(id, record) {
   if (['analytics', 'reports', 'live-view'].includes(id)) return analyticsPage(id, record);
   let html;
   if (id === 'home') html = home();
+  else if (id === 'settings' && window.matchMedia('(max-width:900px)').matches && new URLSearchParams(location.hash.split('?')[1] || '').get('p') !== '1') html = settingsList();
   else if (id === 'orders' && record) html = orderDetail(record);
   else if (id === 'returns' && record) html = returnDetail(record);
   else if (orderTabs.some(([k]) => k === id)) html = ordersPage(id);
@@ -876,6 +891,7 @@ export function workspace(id, record) {
 async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); } }
 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
+  if (type === 'input' && target.id === 'settings-query') { settingsFilter(target.value); return; }
   if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
