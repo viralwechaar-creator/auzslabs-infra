@@ -280,6 +280,16 @@ export default async function run({ browser, stack }) {
     const shown = await page.locator('.summary-cell', { hasText: 'Orders' }).first().locator('strong').innerText();
     assert(Number(shown) === n, 'orders shown ' + shown + ' vs ' + n);
   });
+  await s.check('Product page shows Sales in this preview from that product\'s own orders', async () => {
+    const t = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    const pid = (await q("insert into sfx_products (tenant_id, name, status, price) values ($1,'Sales Mug','active',50) returning id", [t]))[0].id;
+    await q("insert into sfx_orders (tenant_id, number, token, status, payment_method, payment_status, customer, lines, subtotal, total) values ($1,'SF-PS1','tokps1','new','online','paid','{\"name\":\"P\",\"phone\":\"9822200009\"}'::jsonb,$2::jsonb,100,100)", [t, JSON.stringify([{ productId: pid, name: 'Sales Mug', qty: 2, price: 50 }])]);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/products/' + pid), { waitUntil: 'load' }); await page.waitForTimeout(1800);
+    const panel = page.locator('.panel', { hasText: 'Sales in this preview' });
+    assert(await panel.count() >= 1, 'panel missing');
+    const txt = (await panel.first().innerText()).replace(/\s+/g, ' ');
+    assert(/Units sold 2/.test(txt) && /Orders 1/.test(txt) && /100/.test(txt), 'wrong numbers: ' + txt);
+  });
   await s.check('Settings -> Switch apps lets the owner open the other apps they own', async () => {
     await q("update tenant_settings set features = features || '{\"style\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/switch-apps'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
