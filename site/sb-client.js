@@ -18,6 +18,15 @@
 
   // Google sign-in happens on https://auzslab.in/signin.html (Google cannot allow every shop subdomain). It sends the user back
   // here with the session in the URL fragment (#auz_gt=...), which never reaches any server or log. Take it once, then remove it.
+  // A sign-out from an app lands here with ?signout=1 so this address forgets the session too (sessions are per address).
+  (function takeSignout() {
+    try {
+      const u = new URL(location.href);
+      if (u.searchParams.get('signout') !== '1') return;
+      saveSession(null); u.searchParams.delete('signout');
+      history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+    } catch {}
+  })();
   (function takeHandoff() {
     try {
       const m = /[#&]auz_gt=([^&]+)/.exec(location.hash || ''); if (!m) return;
