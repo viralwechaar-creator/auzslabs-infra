@@ -56,7 +56,7 @@ const switchApps = () => {
   if (on('style')) apps.push(['AUZsStyle', 'https://auzsstyle.auzslab.in/style.html', 'shirt']);
   if (on('accounting')) apps.push(['AUZsLedger', 'https://auzsledger.auzslab.in/accounts.html', 'ledger']);
   if (on('salon') && state.tenant?.slug) apps.push(['Salon console', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/', 'scissors']);
-  if (!apps.length) return '';
+  apps.push(['Account and apps', 'https://auzslab.in/account.html', 'accountCircle']);
   return '<div class="sidebar-apps"><div class="nav-label">Switch app</div><a class="sidebar-app current" href="' + pathFor('') + '" aria-current="true">' + icon('store') + '<span>Storefront</span></a>' + apps.map(([n, u, ic]) => '<a class="sidebar-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span>' + esc(n) + '</span></a>').join('') + '</div>';
 };
 const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';

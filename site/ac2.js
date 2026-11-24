@@ -139,7 +139,7 @@
       var A = apps();
       head('apps', 'Workspace / Launch', 'Your apps.', 'Open the software your business uses.', '');
       var sp = A.length === 1 ? 's12' : A.length === 2 ? 's6' : 's4';
-      h = A.length ? A.map(function (a, i) { return '<a class="a3-t ' + (i === 0 ? 'dk ' : i % 2 ? 'wh ' : 'sf ') + sp + ' c a3-sm" style="--i:' + (tn++) + '" href="' + esc(a.href) + '" target="_blank" rel="noopener"><div class="a3-l">Open</div><h3>' + esc(a.name) + '</h3><p>Launch workspace ↗</p></a>'; }).join('')
+      h = A.length ? A.map(function (a, i) { return '<a class="a3-t ' + (i === 0 ? 'dk ' : i % 2 ? 'wh ' : 'sf ') + sp + ' c a3-sm" style="--i:' + (tn++) + '" href="' + esc(a.href) + '" data-hand="1"><div class="a3-l">Open</div><h3>' + esc(a.name) + '</h3><p>Launch workspace ↗</p></a>'; }).join('')
         : tile('dk s12 a3-sm', '<div class="a3-l">Apps</div><h3>Nothing switched on yet.</h3><p>Add a service and we will set it up.</p>');
     } else if (id === 'help') {
       head('help', 'Account / Support', 'We’re here.', 'Ask a question, get help, or report a problem.', '');
