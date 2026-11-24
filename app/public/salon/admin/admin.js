@@ -1219,8 +1219,34 @@
           if (!x.ok) throw new Error(j.error || j.message || 'Something went wrong');
           return j.data !== undefined ? j.data : j;
         };
+        const raw = async (method, path, body) => {
+          try {
+            const x = await fetch('https://api.auzslab.in' + path, { method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + r.token }, body: method === 'GET' ? undefined : JSON.stringify(body || {}) });
+            const j = await x.json().catch(() => ({}));
+            if (!x.ok) return { data: null, error: { message: j.error || j.message || 'Something went wrong' } };
+            return { data: j.data !== undefined ? j.data : j, error: null };
+          } catch (e) { return { data: null, error: { message: e.message || 'Network error' } }; }
+        };
+        const post = (path, body) => raw('POST', path, body);
+        const sb = {
+          rpc: async (fn, args) => { try { return { data: await call(fn, args), error: null }; } catch (e) { return { data: null, error: { message: e.message } }; } },
+          auth: {
+            keepPage: true,
+            signOut: async () => { await api('POST', '/api/admin/logout', {}).catch(() => {}); D = null; showLogin(); },
+            get2faStatus: () => raw('GET', '/auth/2fa/status'),
+            setup2fa: () => post('/auth/2fa/setup', {}),
+            confirm2faSetup: (code) => post('/auth/2fa/confirm', { code }),
+            disable2fa: (password, code) => post('/auth/2fa/disable', { password, code }),
+            requestEmailChange: (new_email, password) => post('/auth/change-email/request', { new_email, password }),
+            requestRecoveryEmail: (email) => post('/auth/recovery-email/request', { email }),
+            removeRecoveryEmail: () => post('/auth/recovery-email/remove', {}),
+            deleteAccount: (password) => post('/auth/delete-account', { password }),
+            listSessions: async () => { const x = await raw('GET', '/auth/sessions'); return { data: x.data && x.data.sessions || null, error: x.error }; },
+            revokeSession: (jti) => post('/auth/sessions/' + encodeURIComponent(jti) + '/revoke', {}),
+          },
+        };
         host.replaceChildren();
-        window.auzAdminTab.mount(host, { rpc: call, toast, isOwner: true, sb: null });
+        window.auzAdminTab.mount(host, { rpc: call, toast, isOwner: true, sb });
       } catch (ex) { host.replaceChildren(h('p', { text: ex.message || 'Could not open Admin.' })); }
     })();
     return host;
