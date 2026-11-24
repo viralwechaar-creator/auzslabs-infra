@@ -377,9 +377,47 @@ if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
   if (e.data.type === 'auz-ready') edPost();
   if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.snapped = false; edRefresh('lrb'); }
 });
+// ---------- Studs theme: settings editor with a live preview of the DRAFT (nothing here changes the live store) ----------
+let sd = null; // { id, settings, saved }
+const lines2 = (list, a, b) => (list || []).map((x) => (x[a] || '') + (x[b] ? ' | ' + x[b] : '')).join('\n');
+const parse2 = (text, a, b) => String(text || '').split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 12).map((l) => { const [x, ...rest] = l.split('|'); const o = {}; o[a] = x.trim(); if (rest.length) o[b] = rest.join('|').trim(); return o; });
+function studsRead() {
+  const f = document.querySelector('#studs-form'); if (!f || !sd) return;
+  const v = (n) => (f.elements[n] ? f.elements[n].value.trim() : '');
+  const out = {};
+  ['heroImage', 'heroHref', 'heroLabel', 'heroAlt', 'dropCollection', 'dropTitle', 'moreTitle', 'quoteImage', 'quoteText', 'closingImage', 'closingText', 'closingHref'].forEach((k) => { if (v(k)) out[k] = v(k); });
+  const ann = parse2(f.elements.announcements.value, 'text', 'href'); if (ann.length) out.announcements = ann;
+  const cam = parse2(f.elements.campaigns.value, 'image', 'collection'); if (cam.length) out.campaigns = cam;
+  const ft = parse2(f.elements.footerLinks.value, 'label', 'href'); if (ft.length) out.footerLinks = ft;
+  const ch = parse2(f.elements.channels.value, 'label', 'href'); if (ch.length) out.channels = ch;
+  sd.settings = out; studsPush();
+}
+function studsPush() { const fr = document.querySelector('#studs-frame'); if (fr && fr.contentWindow && sd) { try { fr.contentWindow.postMessage({ type: 'studs-settings', settings: sd.settings }, location.origin); } catch (e) { /* frame not ready */ } } }
+window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'studs-ready') studsPush(); });
+function studsEditor(i) {
+  if (!sd || sd.id !== i.id) { const s0 = structuredClone(i.draftContent?.settings || {}); sd = { id: i.id, settings: s0, saved: JSON.stringify(s0) }; }
+  const S = sd.settings, w = canWrite();
+  const cols = (state.collections || []).map((c) => [c.name, c.name]);
+  const dis = w ? '' : 'disabled';
+  const form = '<form id="studs-form" data-form="studs" class="stack">' +
+    panel('Announcement bar', body('<div class="field-grid">' + area('Messages, one per line: text | link', 'announcements', lines2(S.announcements, 'text', 'href'), dis + ' rows="3"') + '</div>')) +
+    panel('Home hero', body('<div class="field-grid">' + input('Hero image address', 'heroImage', S.heroImage || '', 'text', dis) + input('Hero link', 'heroHref', S.heroHref || '', 'text', dis) + input('Button label', 'heroLabel', S.heroLabel || '', 'text', dis) + input('Image description', 'heroAlt', S.heroAlt || '', 'text', dis) + '</div>')) +
+    panel('Drop and collections', body('<div class="field-grid">' + select('Drop products come from', 'dropCollection', [['', 'Newest products']].concat(cols), S.dropCollection || '', dis) + input('Drop heading', 'dropTitle', S.dropTitle || '', 'text', dis) + input('Second grid heading', 'moreTitle', S.moreTitle || '', 'text', dis) +
+      area('Shop all campaign slides, one per line: image address | collection name', 'campaigns', lines2(S.campaigns, 'image', 'collection'), dis + ' rows="4"') + '</div>')) +
+    panel('Quote and closing banners', body('<div class="field-grid">' + input('Quote banner image', 'quoteImage', S.quoteImage || '', 'text', dis) + area('Quote text', 'quoteText', S.quoteText || '', dis + ' rows="2"') + input('Closing banner image', 'closingImage', S.closingImage || '', 'text', dis) + input('Closing banner text', 'closingText', S.closingText || '', 'text', dis) + input('Closing banner link', 'closingHref', S.closingHref || '', 'text', dis) + '</div>')) +
+    panel('Footer', body('<div class="field-grid">' + area('Footer links, one per line: label | link', 'footerLinks', lines2(S.footerLinks, 'label', 'href'), dis + ' rows="3"') + area('Social channels, one per line: label | link', 'channels', lines2(S.channels, 'label', 'href'), dis + ' rows="3"') + '</div><p class="compact-copy">Leave any field empty to use the default built from your own products and collections. Images must be https addresses or files under Content.</p>')) +
+    '</form>';
+  const live = i.active ? badge('Live on your storefront') : badge('Draft, not live', 'warn');
+  const actions = w ? button('Save draft', 'studs-save') + button(i.active ? 'Publish changes' : 'Publish and make live', 'studs-publish', 'primary') + (i.active ? button('Go back to my previous theme', 'studs-revert', 'danger') : '') : '';
+  return head(esc(i.themeName), 'Edit Studs and see your draft in the preview. Your live store keeps its current theme until you publish.', '<span class="te-actions">' + live + actions + '</span>', ['builder', 'Theme']) +
+    '<div class="te studs-te"><div class="te-left" style="min-width:0">' + form + '</div><div class="te-mid"><div class="te-bar"><div class="seg" role="group" aria-label="Device">' +
+    ['desktop', 'mobile'].map((d) => '<button type="button" class="btn compact" data-action="studs-device:' + d + '">' + d[0].toUpperCase() + d.slice(1) + '</button>').join('') + '</div></div>' +
+    '<div class="te-stage"><iframe id="studs-frame" class="te-frame desktop" src="/store.html?preview=studs&shop=' + encodeURIComponent(state.tenant?.slug || '') + '#/" title="Preview of your Studs draft"></iframe></div></div></div>';
+}
 function editorPage(installId) {
   const i = state.installs.find((x) => x.id === installId);
   if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
+  if (i.draftContent?.kind === 'studs') return studsEditor(i);
   if (!ed || ed.id !== installId) { const sections = structuredClone(i.draftContent?.sections || []); ed = { id: installId, sections, sel: sections.length ? 0 : -1, undo: [], redo: [], saved: JSON.stringify(sections), device: 'desktop', snapped: false }; }
   const w = canWrite();
   const types = Object.entries(sectionLabel).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
@@ -390,7 +428,7 @@ function editorPage(installId) {
     '<p class="compact-copy te-soon">More page templates, header and footer blocks are coming in a later release.</p></div></aside>' +
     '<div class="te-mid"><div class="te-bar"><label>Page<select disabled aria-label="Page template"><option>Home page</option></select></label><div class="seg" role="group" aria-label="Device">' +
     ['desktop', 'tablet', 'mobile'].map((d) => '<button type="button" class="btn compact' + (ed.device === d ? ' primary' : '') + '" data-action="te-device:' + d + '">' + d[0].toUpperCase() + d.slice(1) + '</button>').join('') + '</div></div>' +
-    '<div class="te-stage"><iframe id="te-frame" class="te-frame ' + ed.device + '" src="/store.html?preview=draft#/" title="Live preview of your store"></iframe></div></div>' +
+    '<div class="te-stage"><iframe id="te-frame" class="te-frame ' + ed.device + '" src="/store.html?preview=draft&shop=' + encodeURIComponent(state.tenant?.slug || '') + '#/" title="Live preview of your store"></iframe></div></div>' +
     '<aside class="panel te-right" id="te-right">' + edRightHtml() + '</aside></div>';
 }
 function edHandle(a, key) {
@@ -941,6 +979,7 @@ async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (type === 'input' && target.id === 'settings-query') { settingsFilter(target.value); return; }
   if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
+  if (id === 'builder' && sd && (type === 'input' || type === 'change') && target.closest && target.closest('#studs-form')) { studsRead(); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
@@ -1139,7 +1178,19 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     rerender();
   });
   if (a === 'theme-customize') { location.hash = '/builder/' + key; return; }
+  if (a === 'studs-save') return withBusy(async () => { studsRead(); const r = await api('sfx_studs_settings_save', { p_install_id: sd.id, p: sd.settings }); sd.settings = r.settings; sd.saved = JSON.stringify(r.settings); await refreshInstalls(); save('Studs draft saved. Your live store has not changed.'); rerender(); });
+  if (a === 'studs-publish') return withBusy(async () => {
+    if (!confirm('Publish Studs and make it live on your storefront? Your products, prices, links and checkout stay the same. You can go back to your previous theme afterwards.')) return;
+    studsRead(); await api('sfx_studs_settings_save', { p_install_id: sd.id, p: sd.settings }); await api('sfx_studs_publish', { p_install_id: sd.id });
+    await refreshInstalls(); const ctx = await api('sfx_context'); applyContext(ctx); save('Studs is live on your storefront.'); rerender();
+  });
+  if (a === 'studs-revert') return withBusy(async () => {
+    if (!confirm('Go back to the theme you used before Studs? Studs stays saved as a draft.')) return;
+    await api('sfx_theme_revert_active', {}); await refreshInstalls(); const ctx = await api('sfx_context'); applyContext(ctx); save('Your previous theme is live again.'); rerender();
+  });
+  if (a === 'studs-device') { const f = document.querySelector('#studs-frame'); if (f) f.className = 'te-frame ' + key; return; }
   if (a === 'theme-activate') return withBusy(async () => {
+    const inst = state.installs.find((x) => x.id === key); if (inst?.draftContent?.kind === 'studs' && !confirm('Make Studs live on your storefront? Your products, prices, links and checkout stay the same, and you can go back to your previous theme.')) return;
     await api('sfx_theme_install_set_active', { p_install_id: key });
     await Promise.all([refreshInstalls()]); const ctx = await api('sfx_context'); applyContext(ctx);
     save('This theme is now active on your storefront.'); rerender();

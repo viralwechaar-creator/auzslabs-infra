@@ -102,6 +102,8 @@ const q$ = () => { const m = {}; for (const [k, v] of new URLSearchParams((locat
 const go = (p) => { location.hash = '#/' + p; };
 const link = (p) => '#/' + p;
 const cfg = () => D.config || {};
+// Studs (db/398) reuses the Minimal behaviour for every page it does not draw itself (checkout, account, orders, policies).
+const isMin = () => { const t = cfg().template; return t === 'minimal' || t === 'studs'; };
 const COURIERS = { 'Delhivery': 'https://www.delhivery.com/track-v2/package/', 'India Post': 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx?', 'DTDC': 'https://www.dtdc.in/tracking.asp?', 'Blue Dart': 'https://www.bluedart.com/tracking?trackfor=', 'Ecom Express': 'https://ecomexpress.in/tracking/?awb_field=', 'XpressBees': 'https://www.xpressbees.com/shipment/tracking?awb=', 'Shiprocket': 'https://shiprocket.co/tracking/' };
 function trackBox(o) {
   if (!o.trackingNo && !o.courier) return null;
@@ -127,7 +129,7 @@ function card(s, opt) {
   opt = opt || {};
   const ims = withFirst(photos(s), pickPic(s, 'card')), gone = isGone(s), on = wish.includes(s.id);
   const sc = E('div', { class: 'sc' });
-  const cardZoom = cfg().template === 'minimal' && Number(s.cardZoom);
+  const cardZoom = isMin() && Number(s.cardZoom);
   const dt = E('div', { class: 'dt' });
   const list = ims.length ? ims.slice(0, 6) : [null];
   list.forEach((u, i) => { sc.append(E('a', { href: link('p/' + s.id) }, u ? E('img', { src: thumb(u, 480), 'data-orig': u, style: cardZoom > 1 && cardZoom <= 1.4 ? { '--card-zoom': cardZoom } : null, alt: s.name, loading: i === 0 ? 'eager' : 'lazy', decoding: 'async' }) : placeholder(s.name))); if (list.length > 1) dt.append(E('i', { class: i === 0 ? 'on' : '' })); });
@@ -143,7 +145,7 @@ function card(s, opt) {
 }
 function toggleWish(id) { try { TR.push('wish', null, { id }); } catch {} const i = wish.indexOf(id); if (i >= 0) wish.splice(i, 1); else wish.push(id); saveWish(); }
 function quickAdd(s) {
-  const minimal = cfg().template === 'minimal';
+  const minimal = isMin();
   const modelOptions = minimal && /phone case/i.test(s.category || '');
   const first = s.variants.find((variant) => variant.left > 0);
   let colour = minimal ? first?.colour || colours(s)[0] || '' : colours(s)[0] || '';
@@ -247,7 +249,7 @@ function toggleDense() {
 function shell() {
   counts = [];
   const name = D.shop.name;
-  const minimal = cfg().template === 'minimal';
+  const minimal = isMin();
   const brandEl = E('a', { class: 'brand', href: link(''), 'aria-label': name }, E('span', null, name));
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
@@ -284,7 +286,7 @@ function scheduleWelcome(toContact) {
   const key = 'st.wel.' + SLUG;
   try { if (sessionStorage.getItem(key)) return; } catch {}
   welcomeTimer = setTimeout(() => {
-    const minimal = cfg().template === 'minimal';
+    const minimal = isMin();
     if (minimal && !document.body.classList.contains('homehero')) return;
     try { sessionStorage.setItem(key, '1'); } catch {}
     const name = D.shop.name;
@@ -329,7 +331,7 @@ const blogsOn = () => (cfg().blogs || []).some((x) => x && x.title);
 const mediaOn = () => (cfg().media || []).some((x) => x && (x.title || x.image));
 const jobsOn = () => (cfg().jobs || []).some((x) => x && x.title) || !!(cfg().hiring && (cfg().hiring.email || cfg().hiring.text));
 function openMenu() {
-  if (cfg().template === 'minimal') return openMinimalMenu();
+  if (isMin()) return openMinimalMenu();
   const m = $('#menu'); clear(m); m.classList.add('on');
   const close = () => { m.classList.remove('on'); document.body.classList.remove('menuopen'); };
   document.body.classList.add('menuopen');
@@ -386,7 +388,7 @@ function openMinimalMenu() {
   close.focus();
 }
 function openSearch() {
-  if (cfg().template === 'minimal') return openMinimalSearch();
+  if (isMin()) return openMinimalSearch();
   const s = $('#srch'); clear(s); s.classList.add('on');
   const close = () => s.classList.remove('on');
   const body = E('div', { style: { maxWidth: '1100px', margin: '0 auto' } });
@@ -841,7 +843,7 @@ if (PREVIEW) {
   window.addEventListener('load', () => { try { parent.postMessage({ type: 'auz-ready' }, location.origin); } catch (err) { /* not in a frame */ } });
 }
 V.home = (v) => {
-  if (cfg().template === 'minimal') {
+  if (isMin()) {
     minimalHome(v);
     return customSections(v);
   }
@@ -889,15 +891,15 @@ function facetValues(value) {
 }
 function filterSet(q) {
   let list = STY.slice();
-  if (cfg().template === 'minimal' && Object.hasOwn(minimalCategoryGroups, q.group)) list = minimalGroupProducts(q.group, list);
+  if (isMin() && Object.hasOwn(minimalCategoryGroups, q.group)) list = minimalGroupProducts(q.group, list);
   if (q.cat) list = list.filter((s) => s.category === q.cat);
   if (q.col) { const cl = D.collections.find((x) => x.id === q.col); list = cl ? list.filter((s) => cl.styleIds.includes(s.id)) : []; }
   if (q.colour) list = list.filter((s) => colours(s).includes(q.colour));
   if (q.fam) list = list.filter((s) => colours(s).some((c) => famOf(c) === q.fam));
   if (q.size) list = list.filter((s) => s.variants.some((x) => x.size === q.size &&
-    (!q.colour || cfg().template !== 'minimal' || x.colour === q.colour) &&
+    (!q.colour || !isMin() || x.colour === q.colour) &&
     (q.stock === 'sold-out' || x.left > 0)));
-  if (cfg().template === 'minimal') {
+  if (isMin()) {
     const sizes = facetValues(q.sizes), selectedColours = facetValues(q.colours);
     if (sizes.length || selectedColours.length) list = list.filter((style) => style.variants.some((variant) =>
       (!sizes.length || sizes.includes(variant.size)) && (!selectedColours.length || selectedColours.includes(variant.colour)) &&
@@ -932,7 +934,7 @@ function refine(anchor) {
     live();
   };
   paint();
-  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); if (cfg().template === 'minimal') setQ({ cat: '', size: '', sizes: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', stock: '', gender: '' }); else location.hash = '#/shop'; } }, 'Clear all'));
+  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); if (isMin()) setQ({ cat: '', size: '', sizes: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', stock: '', gender: '' }); else location.hash = '#/shop'; } }, 'Clear all'));
   const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
   sh.el.setAttribute('aria-label', 'Filter products');
   sh.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') { sh.close(); anchor?.focus(); } });
@@ -952,12 +954,12 @@ V.shop = (v) => {
   let dens = false; try { dens = localStorage.getItem('st.dens') === '1'; } catch (x) {}
   const gw = E('div', { class: 'gw' + (dens ? ' dense' : '') });
   const colName = q.col ? (cols.find((x) => x.id === q.col) || {}).name : '';
-  const groupName = cfg().template === 'minimal' && Object.hasOwn(minimalCategoryGroups, q.group) ? minimalCategoryGroups[q.group].label : '';
+  const groupName = isMin() && Object.hasOwn(minimalCategoryGroups, q.group) ? minimalCategoryGroups[q.group].label : '';
   const title = colName || q.cat || groupName || (q.new ? 'New arrivals' : 'All products');
   for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? (q[k] === 'sold-out' ? 'Out of stock' : 'In stock') : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
   if (groupName) act.push(['group', groupName]);
-  if (cfg().template === 'minimal') {
+  if (isMin()) {
     const selectedSizes = facetValues(q.sizes), selectedColours = facetValues(q.colours);
     if (selectedSizes.length) act.push(['sizes', 'Size: ' + selectedSizes.join(', ')]);
     if (selectedColours.length) act.push(['colours', 'Colour: ' + selectedColours.join(', ')]);
@@ -1009,7 +1011,7 @@ V.wishlist = (v) => {
 V.p = (v, id) => {
   const s = BYID[id];
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
-  const minimal = cfg().template === 'minimal';
+  const minimal = isMin();
   const modelOptions = minimal && /phone case/i.test(s.category || '');
   const hasSizeGuide = !minimal || sizesOf(s).some((size) => /^(?:X{0,3}[SL]|M|[2-5]XL)$/i.test(size));
   let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
@@ -1080,7 +1082,7 @@ V.p = (v, id) => {
       chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
       gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
       E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
-        if (need(chosen) && addBag(chosen.id, qty) && cfg().template === 'minimal') openMinimalBag();
+        if (need(chosen) && addBag(chosen.id, qty) && isMin()) openMinimalBag();
       } }, 'Add to bag'), E('button', { class: 'btn', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
         if (need(chosen) && addBag(chosen.id, qty)) go('checkout');
       } }, 'Buy now')),
@@ -1138,7 +1140,7 @@ V.p = (v, id) => {
   setMeta(s.name + ' · ' + D.shop.name, (s.description || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
   // on a wide screen the details card folds up by itself when you scroll down to the other products, so it never covers them
   const bands = [...v.querySelectorAll('.band')];
-  if (cfg().template !== 'minimal' && bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
+  if (!isMin() && bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
     const io = new IntersectionObserver((es) => { const on = es.some((e) => e.isIntersecting); if (on && !pinned) { folded = true; info.classList.add('fold'); } else if (!on) { pinned = false; folded = false; info.classList.remove('fold'); } }, { threshold: 0.12 });
     bands.forEach((b) => io.observe(b));
   }
@@ -1233,7 +1235,7 @@ V.checkout = (v) => {
       E('div', { class: 'f2' }, f('city', 'City'), f('state', 'State', { select: STATES, def: 'Rajasthan' })), f('country', 'Country', { select: ['India'], def: 'India' }), f('note', 'Notes for the store (optional)', { area: true }),
       E('label', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, save, 'Save this information for next time'),
       E('h2', null, 'Shipping method'), E('div', { class: 'note' }, shipLine(t)), E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
-    E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't checkout-line' }, cfg().template === 'minimal' ? E('div', { class: 'checkout-line-thumb' }, pickPic(l.s) ? E('img', { src: pickPic(l.s), alt: '' }) : placeholder(l.s.name)) : null, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
+    E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't checkout-line' }, isMin() ? E('div', { class: 'checkout-line-thumb' }, pickPic(l.s) ? E('img', { src: pickPic(l.s), alt: '' }) : placeholder(l.s.name)) : null, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
       E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, E('label', { class: 'fld', style: { flex: 1 } }, cin), capplyBtn), cmsg, sumBox, err, btn,
       E('div', { class: 'mut tiny' }, 'By placing the order you agree to the ', E('a', { href: link('policy/terms'), style: { textDecoration: 'underline' } }, 'terms'), ' and the ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'returns policy'), '.'))));
   F.pin.addEventListener('input', pinAuto); F.pin.addEventListener('change', pinAuto); F.phone.addEventListener('blur', saveCart); F.phone.addEventListener('change', saveCart);
@@ -1375,7 +1377,7 @@ V.blog = (v, which) => {
     if (!b) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Article not found'), E('a', { class: 'btn', href: link('blog') }, 'All articles'))); return; }
     const articleView = 'blog/' + slugOf(b.title);
     setMeta(b.title + ' · ' + D.shop.name, b.excerpt || String(b.body || '').slice(0, 150), b.image,
-      cfg().template === 'minimal' ? storeViewUrl(articleView) : location.origin + location.pathname + '#/' + articleView);
+      isMin() ? storeViewUrl(articleView) : location.origin + location.pathname + '#/' + articleView);
     const others = list.filter((x, k) => k !== i).slice(0, 2);
     v.append(E('div', { class: 'pg' }, E('div', { class: 'crumbs' }, E('a', { href: link('') }, 'Home'), ' / ', E('a', { href: link('blog') }, 'Journal')),
       E('article', { class: 'card art' }, b.image ? E('img', { src: b.image, alt: '', class: 'artimg' }) : null, b.date ? E('div', { class: 'lbl' }, dateTxt(b.date)) : null, E('h1', null, b.title), para(b.body || b.excerpt)),
@@ -1391,7 +1393,7 @@ function blogGrid(list) {
 }
 V.media = (v, which) => {
   const list = (cfg().media || []).filter((item) => item && (item.title || item.image));
-  if (cfg().template === 'minimal' && which) {
+  if (isMin() && which) {
     const item = list.find((entry) => slugOf(entry.title) === which);
     if (!item) return v.append(E('div', { class: 'empty' }, E('h1', null, 'Feature not found'), E('a', { class: 'btn', href: link('media') }, 'All features')));
     const target = item.link || '';
@@ -1402,7 +1404,7 @@ V.media = (v, which) => {
       item.image ? E('img', { src: item.image, alt: item.title || '' }) : null, item.place ? E('p', null, item.place) : null,
       external || internal ? E('a', { class: 'btn', href: external ? target : internal, rel: external ? 'noopener' : null, target: external ? '_blank' : null }, item.cta || 'Explore') : null));
   }
-  if (cfg().template === 'minimal') {
+  if (isMin()) {
     return v.append(E('section', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Collaborations & media')),
       list.length ? E('div', { class: 'bgrid' }, list.map((item) => E('a', { class: 'bcard', href: link('media/' + slugOf(item.title)) },
         E('div', { class: 'im' }, item.image ? E('img', { src: item.image, alt: '', loading: 'lazy' }) : placeholder(item.title)),
@@ -1475,7 +1477,7 @@ function footer() {
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), blogsOn() ? E('a', { href: link('blog') }, 'Journal') : null, mediaOn() ? E('a', { href: link('media') }, 'Media & gallery') : null, jobsOn() ? E('a', { href: link('careers') }, 'Careers') : null, E('a', { href: link('contact') }, 'Contact')),
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
-    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), cfg().template === 'minimal' ? E('a', { href: link('sitemap') }, 'Sitemap') : null, E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
+    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), isMin() ? E('a', { href: link('sitemap') }, 'Sitemap') : null, E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
   tog.onclick = () => { const on = wrap.classList.toggle('open'); tog.setAttribute('aria-expanded', String(on)); tog.querySelector('.pl').textContent = on ? '\u2013' : '+'; };
   return wrap;
 }
@@ -1501,10 +1503,19 @@ const TR = (() => {
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
   const id = parts[0] || 'home'; const view = $('#view'); if (!view) return;
+  if (cfg().template === 'studs' && window.StudsTheme) {
+    if (window.StudsTheme.owns(id)) {
+      document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
+      window.StudsTheme.show(parts);
+      TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
+      return;
+    }
+    window.StudsTheme.hide();
+  }
   view._disconnectProduct?.();
   view._disconnectProduct = null;
   clear(view);
-  const minimal = cfg().template === 'minimal';
+  const minimal = isMin();
   document.body.classList.toggle('minimal-store', minimal);
   view.dataset.page = id;
   view.classList.toggle('minimal-home', id === 'home' && minimal);
@@ -1539,6 +1550,32 @@ function ingest(d) {
   STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
 }
+const PREVIEW_STUDS = new URLSearchParams(location.search).get('preview') === 'studs' && window.parent !== window;
+function waitStudsPreview() {
+  return new Promise((resolve) => {
+    let done = false; const finish = (v) => { if (!done) { done = true; resolve(v); } };
+    window.addEventListener('message', (e) => {
+      if (e.origin !== location.origin || !e.data || e.data.type !== 'studs-settings' || typeof e.data.settings !== 'object') return;
+      if (!done) { finish(e.data.settings); return; }
+      if (D && D.config) { D.config.studs = e.data.settings; if (window.StudsTheme) window.StudsTheme.refresh(); }
+    });
+    try { parent.postMessage({ type: 'studs-ready' }, location.origin); } catch (err) { finish(null); }
+    setTimeout(() => finish(null), 3500);
+  });
+}
+// What the Studs theme (studs.js) may use from this file: read the catalogue, use the shared bag. Nothing else.
+window.StoreHost = {
+  get D() { return D; }, STY: () => STY, get bag() { return bag; }, cfg, photos, thumb, isGone, leftOf, sizesOf, colours,
+  saveBag, addBag, bagLines, bagTotal, bagCount,
+};
+function loadStuds() {
+  if (window.StudsTheme) return window.StudsTheme.ready();
+  return new Promise((resolve) => {
+    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=3';
+    sc.onload = () => resolve(window.StudsTheme ? window.StudsTheme.ready() : null); sc.onerror = () => resolve(null);
+    document.head.append(sc);
+  });
+}
 async function boot() {
   const app = $('#app');
   if (!location.hash) {
@@ -1555,6 +1592,9 @@ async function boot() {
   // exists -- must not try to use it; drop the stale cache and fall through to a fresh fetch, which can only
   // ever return '1' or 'minimal' now.
   if (cached && cached.config && cached.config.template === '2') cached = null;
+  // Studs draws its own page chrome from the live data, so it never uses the instant first paint from the last visit.
+  if (cached && cached.config && cached.config.template === 'studs') cached = null;
+  if (PREVIEW_STUDS) cached = null;
   // Restore which product's RPCs the cached copy was fetched with, so an interaction fired before the fresh
   // fetch below resolves (see the cached-first-paint branch) still hits the right public_<prefix>_* functions.
   if (cached) PFX = cached.__pfx === 'sfx' ? 'sfx' : 'sty';
@@ -1576,6 +1616,7 @@ async function boot() {
   if (cached && cached.styles && !cached.closed) {
     ingest(cached); shell(); window.addEventListener('hashchange', route); route();
     fresh.then((d) => { if (!d || d.closed) return; remember(d);
+      if (d.config && d.config.template === 'studs') { location.reload(); return; }
       ingest(d); const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0]; if (!['checkout', 'order', 'orders', 'me'].includes(h) && !document.querySelector('.sheetwrap')) { const y = scrollY; route(); scrollTo(0, y); } }).catch(() => {});
     return;
   }
@@ -1584,6 +1625,12 @@ async function boot() {
   if (!d) { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'This store was not found'))); return; }
   if (d.closed) { closed(d); return; }
   remember(d);
-  ingest(d); shell(); window.addEventListener('hashchange', route); route();
+  // Owner dashboard preview of an UNPUBLISHED Studs draft: only when the page is framed by the dashboard on the same address and
+  // it sends the draft settings. Anyone opening ?preview=studs directly gets the normal store, so a store never shows Studs to the
+  // public until the merchant publishes it.
+  if (PREVIEW_STUDS && d.config) { const settings = await waitStudsPreview(); if (settings) d.config = { ...d.config, template: 'studs', studs: settings }; }
+  ingest(d);
+  if (cfg().template === 'studs') await loadStuds();
+  shell(); window.addEventListener('hashchange', route); route();
 }
 boot();
