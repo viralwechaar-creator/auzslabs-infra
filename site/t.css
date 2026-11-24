@@ -215,3 +215,40 @@ a.tl-row{color:inherit}
 
 /* u.css cuts marketing paragraphs to two lines; tool and legal pages show their full text */
 main.content .tl .p,main.content .tl .lede,main.content .tl .card>p,main.content .tl li,main.content .tl p{display:block;-webkit-line-clamp:unset;overflow:visible}
+
+/* ===== Minimal and premium: white page, hairlines instead of shadows, smaller cards and type ===== */
+body:has(.tl){background:var(--card)}
+.tl{padding-top:10px}
+.tl-head{padding:6px 0 12px}
+.tl-h{font-size:22px;font-weight:650;letter-spacing:-.025em;margin-top:6px}
+.tl-sub{font-size:12px;line-height:1.5;margin-top:6px}
+@media(min-width:900px){.tl-h{font-size:30px}.tl-sub{font-size:13px}}
+.tl-card{border:1px solid var(--line);box-shadow:none;border-radius:14px;padding:14px}
+.tl-card+.tl-card{margin-top:10px}
+.tl-card h2{font-size:13px}
+.tl-cap{font-size:8px;margin-bottom:8px}
+/* steps: a quiet inline row */
+.tl-steps{gap:0;margin:0 0 12px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tl-steps li{background:transparent;box-shadow:none;border-radius:0;padding:8px 10px;font-size:10px;gap:6px;flex-direction:row;align-items:center}
+.tl-steps li+li{border-left:1px solid var(--line)}
+.tl-steps li::before{width:16px;height:16px;font-size:9px}
+@media(max-width:520px){.tl-steps li{flex-direction:row;align-items:center;gap:6px;padding:8px 8px;line-height:1.2}}
+/* service options: hairline rows, no grey fill */
+.tl-pick{gap:6px}
+.tl-opt{padding:10px 11px;border-radius:11px;background:transparent;border:1px solid var(--line);gap:10px}
+.tl-opt:hover{border-color:var(--mut)}
+.tl-opt .bx{width:16px;height:16px;border-radius:5px}
+.tl-opt .bx svg{width:9px;height:9px}
+.tl-opt b{font-size:12px;font-weight:600}
+.tl-opt small{font-size:10px;margin-top:1px}
+.tl-opt:has(input:checked){background:var(--soft);border-color:var(--ink);box-shadow:none}
+.tl-notice{border-radius:10px;padding:9px 11px;font-size:11px}
+/* form */
+.tf{margin-top:10px}
+.tf>span{font-size:8px;margin-bottom:4px}
+.tf input,.tf select,.tf textarea{padding:10px 12px;border-radius:10px;border-width:1px}
+.tf textarea{min-height:64px}
+.tl .tb{min-height:38px;padding:8px 16px;font-size:12px}
+body:has(.tl) .u-top{background:var(--card);border-bottom:1px solid var(--line)}
+.tl-steps li::before{flex:none}
+@media(max-width:520px){.tl-steps li{display:flex;flex-flow:row nowrap}}
