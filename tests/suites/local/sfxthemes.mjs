@@ -30,4 +30,29 @@ export default async function run({ browser, stack }) {
     const src = await dev.content(); assert(/Appointment booking/.test(src), 'booking label missing');
     assert(!e3.filter((x) => !/sentry|fonts|sfdev_/i.test(x)).length, e3.slice(0, 3).join(' | '));
   });
+  await s.check('Theme editor: sections, live preview, settings, undo, save draft, publish', async () => {
+    const pg = await ctx.newPage(); const e4 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await pg.waitForTimeout(800);
+    const made = await pg.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p });
+      const r = await c.rpc('sfx_theme_install_create', { p: { name: 'Editor theme', starter: 'shop', base: 'classic' } }); return r.error ? { error: r.error.message } : r.data; }, [USERS.cafeOwner, PASSWORD]);
+    assert(made.installId, JSON.stringify(made));
+    await pg.goto('about:blank'); await pg.goto(stack.url('testcafe', '/storefront.html#/builder/' + made.installId), { waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    assert(await pg.locator('.te-left').count() === 1 && await pg.locator('#te-frame').count() === 1 && await pg.locator('#te-right').count() === 1, 'three panes missing: ' + (await pg.locator('body').innerText()).slice(0, 200));
+    const before = await pg.locator('.te-item').count();
+    await pg.selectOption('#te-add-type', 'text'); await pg.locator('[data-action="te-add"]').click(); await pg.waitForTimeout(400);
+    assert(await pg.locator('.te-item').count() === before + 1, 'section not added');
+    await pg.fill('#te-right input[name=heading]', 'Live heading check'); await pg.waitForTimeout(1500);
+    const fr = pg.frameLocator('#te-frame');
+    assert(/Live heading check/.test(await fr.locator('body').innerText()), 'preview did not update live');
+    // a real mouse click straight after typing must still work (the field blur must not replace the buttons)
+    await pg.locator('[data-action="te-undo"]').click(); await pg.waitForTimeout(600);
+    assert(!/Live heading check/.test(await fr.locator('body').innerText()) && await pg.locator('.te-item').count() === before, 'undo did not remove the section');
+    await pg.locator('[data-action="te-redo"]').click(); await pg.waitForTimeout(600);
+    assert(await pg.locator('.te-item').count() === before + 1, 'redo did not restore it');
+    await pg.fill('#te-right input[name=heading]', 'Saved heading'); await pg.waitForTimeout(300);
+    await pg.locator('[data-action="te-save"]').click(); await pg.waitForTimeout(1500);
+    const row = (await q("select draft_content from sfx_theme_installs where id=$1", [made.installId]))[0].draft_content;
+    assert(row.sections.some((x) => (x.props || {}).heading === 'Saved heading'), JSON.stringify(row.sections.map((x) => x.type)));
+    assert(!e4.filter((x) => !/sentry|fonts|\/uploads\//i.test(x)).length, e4.slice(0, 3).join(' | ').slice(0, 400));
+  }, 'major');
 }
