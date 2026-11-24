@@ -45,8 +45,8 @@ Permissions: `sfx_view` read, `sfx_manage` write (owner, manager, or a role that
 | Marketplace list, install, set active | themePage | BUILT |
 | Draft customise, publish | editorPage: add / move / remove sections and edit fields, save draft, publish | BUILT (list form) |
 | Version history + restore to draft | db/387 | BUILT |
-| New theme from a starter, rename, duplicate | none | MISSING (needs new RPCs) |
-| Validated ZIP import | `theme-dev.html` developer submission only | MISSING in the owner hub |
+| New theme from a starter, rename, duplicate, delete | db/395 | BUILT |
+| Validated ZIP import | `auzslab-theme.json` in a ZIP (own format, not the Codex page-template format), checked in the browser and again in the database | BUILT |
 | Page-template canvas, desktop/tablet/mobile preview, click-to-select editing | none | MISSING (needs a preview renderer that reads the draft) |
 | Section and block controls, alternate page templates, navigation, footer, Stores page and cards | sections only | MISSING (needs a richer draft schema, `draftContent`) |
 | Choose which products show in each homepage section, order, how many | none | MISSING (needs a draft field per section + public store reading it) |

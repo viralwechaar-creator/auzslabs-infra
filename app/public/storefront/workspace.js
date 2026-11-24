@@ -195,14 +195,15 @@ function themeCard(t) {
 }
 function installRow(i) {
   const actions = (canWrite() ? button('Customize', 'theme-customize:' + i.id) : '') +
-    (canWrite() && !i.active ? button('Make active', 'theme-activate:' + i.id, 'primary') : i.active ? badge('Active on your storefront') : '');
+    (canWrite() && !i.active ? button('Make active', 'theme-activate:' + i.id, 'primary') : i.active ? badge('Active on your storefront') : '') +
+    (canWrite() ? button('Rename', 'theme-rename:' + i.id, 'compact') + button('Duplicate', 'theme-duplicate:' + i.id, 'compact') + (i.custom && !i.active ? button('Delete', 'theme-delete:' + i.id, 'compact danger') : '') : '');
   return '<article class="card"><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
-    '<p class="compact-copy">' + (i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' Installed ' + dateValue(i.installedAt) + '.</p>' + actions + '</div></article>';
+    '<p class="compact-copy">' + (i.custom ? 'Your own theme.' : i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' ' + (i.custom ? 'Created' : 'Installed') + ' ' + dateValue(i.installedAt) + '.</p>' + actions + '</div></article>';
 }
 function themePage() {
-  const owned = new Set(state.installs.map((i) => i.themeId));
+  const owned = new Set(state.installs.filter((i) => !i.custom).map((i) => i.themeId));
   const market = state.marketplace.map((t) => ({ ...t, installed: owned.has(t.id) }));
-  return head('Theme', 'Browse the theme marketplace, install a theme, and customize what you install.', '') + tabs('builder', websiteTabs) +
+  return head('Theme', 'Browse the theme marketplace, install a theme, and customize what you install.', canWrite() ? button('Import ZIP', 'theme-import') + button('New theme', 'theme-new', 'primary') : '') + tabs('builder', websiteTabs) +
     panel('Your installed themes', state.installs.length ? '<div class="cards">' + state.installs.map(installRow).join('') + '</div>' : body('<p class="compact-copy">You haven’t installed a theme yet. Install one from the marketplace below.</p>')) +
     panel('Theme marketplace', '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
     panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));
@@ -628,6 +629,64 @@ function homeExtras() {
   return '<div class="cols">' + panel('Acquisition by campaign', body(acq), wl('Growth', 'growth', 'compact')) + panel('Website sessions', body('<p class="compact-copy">Visit counts are not recorded for online stores yet. Orders and campaigns above are real; sessions will appear when visit tracking is added.</p>')) + '</div>' + panel('Your apps', body(shortcuts));
 }
 
+// ---------- Theme library actions: new from a starter, import a ZIP package, rename, duplicate, delete (db/395) ----------
+const ZIP_LIMIT = 2 * 1024 * 1024, MANIFEST_LIMIT = 256 * 1024, MANIFEST_NAME = 'auzslab-theme.json';
+// Reads auzslab-theme.json from the root of a ZIP in the browser. Only that one file is read; nothing is run or stored.
+async function readThemeZip(file) {
+  if (!file) throw new Error('Choose a .zip file.');
+  if (file.size > ZIP_LIMIT) throw new Error('The package is larger than 2 MB.');
+  const buf = new DataView(await file.arrayBuffer()), u8 = new Uint8Array(buf.buffer);
+  let eof = -1; for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) { if (buf.getUint32(i, true) === 0x06054b50) { eof = i; break; } }
+  if (eof < 0) throw new Error('This is not a ZIP file.');
+  if (buf.getUint16(eof + 10, true) !== 1) throw new Error('The ZIP must contain only ' + MANIFEST_NAME + ' at its root.');
+  const cd = buf.getUint32(eof + 16, true); if (cd + 46 > eof || buf.getUint32(cd, true) !== 0x02014b50) throw new Error('Invalid ZIP directory.');
+  const nameLen = buf.getUint16(cd + 28, true), name = new TextDecoder().decode(u8.subarray(cd + 46, cd + 46 + nameLen));
+  if (name !== MANIFEST_NAME) throw new Error('Expected ' + MANIFEST_NAME + ' at the root of the ZIP.');
+  const flags = buf.getUint16(cd + 8, true), method = buf.getUint16(cd + 10, true), csize = buf.getUint32(cd + 20, true), usize = buf.getUint32(cd + 24, true), local = buf.getUint32(cd + 42, true);
+  if ((flags & 1) || usize > MANIFEST_LIMIT || local + 30 > cd || buf.getUint32(local, true) !== 0x04034b50) throw new Error('Invalid or oversized theme manifest.');
+  const start = local + 30 + buf.getUint16(local + 26, true) + buf.getUint16(local + 28, true);
+  if (start + csize > cd || ![0, 8].includes(method)) throw new Error('Unsupported ZIP compression.');
+  let bytes = u8.subarray(start, start + csize);
+  if (method === 8) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot open ZIP files. Use a current Chrome, Edge or Safari.');
+    const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader(); const parts = []; let total = 0;
+    for (;;) { const { done, value } = await reader.read(); if (done) break; total += value.length; if (total > MANIFEST_LIMIT) { reader.cancel(); throw new Error('Invalid or oversized theme manifest.'); } parts.push(value); }
+    bytes = new Uint8Array(total); let o = 0; parts.forEach((p) => { bytes.set(p, o); o += p.length; });
+  }
+  if (bytes.length !== usize) throw new Error('Invalid theme manifest size.');
+  try { return JSON.parse(new TextDecoder().decode(bytes)); } catch (e) { throw new Error(MANIFEST_NAME + ' is not valid JSON.'); }
+}
+function themeNewForm() {
+  return editForm('theme-create', '', input('Theme name', 'name', '', 'text', 'required maxlength="80"') + select('Start from', 'starter', [['blank', 'Blank (one banner)'], ['shop', 'Shop (announcement, banner, story)'], ['landing', 'Landing page (banner, picture, button)']], 'blank') +
+    select('Based on', 'base', [['minimal', 'Minimal'], ['classic', 'Classic']], 'minimal'), 'Create theme');
+}
+const THEME_EXAMPLE = '{\n  "version": 1,\n  "name": "My theme",\n  "base": "minimal",\n  "accent": "#800020",\n  "sections": [\n    { "type": "hero", "props": { "heading": "Hello", "sub": "Welcome", "cta": "Shop", "href": "/" } },\n    { "type": "text", "props": { "heading": "About", "body": "Our story" } }\n  ]\n}';
+function themeImportForm() {
+  return '<div class="stack"><p class="compact-copy">Choose a .zip that holds one file named <code>auzslab-theme.json</code> at its root (up to 2 MB). Sections allowed: hero, text, image, button, announcement, booking. Links must start with https:// or /. Nothing in the package can run code. The theme is added as an unpublished draft.</p>' +
+    '<pre class="compact-copy" style="overflow:auto;max-height:180px">' + esc(THEME_EXAMPLE) + '</pre>' +
+    '<label>Theme package<input id="theme-zip" type="file" accept=".zip,application/zip"></label><div class="actions">' + button('Import theme', 'theme-import-go', 'primary') + button('Cancel', 'close-dialog') + '</div></div>';
+}
+async function themeAction(a, key) {
+  if (a === 'theme-new') { dialog('New theme', themeNewForm()); return true; }
+  if (a === 'theme-import') { dialog('Import a theme package', themeImportForm()); return true; }
+  if (a === 'theme-import-go') {
+    try {
+      const pkg = await readThemeZip(document.getElementById('theme-zip')?.files?.[0]);
+      const r = await api('sfx_theme_import', { p: pkg }); await Promise.all([refreshInstalls(), refreshMarketplace()]); save('Theme imported as a draft.'); close(); location.hash = '/builder/' + r.installId;
+    } catch (e) { flash(e.message); }
+    return true;
+  }
+  if (a === 'theme-rename') { const i = state.installs.find((x) => x.id === key); dialog('Rename theme', editForm('theme-rename', key, input('Name', 'name', i?.themeName || '', 'text', 'required maxlength="80"'), 'Rename')); return true; }
+  if (a === 'theme-duplicate') { try { await api('sfx_theme_install_duplicate', { p_install_id: key }); await refreshInstalls(); save('Theme duplicated.'); rerender(true); } catch (e) { flash(e.message); } return true; }
+  if (a === 'theme-delete') { if (!confirm('Delete this theme? Its draft is lost. Your live store is not affected.')) return true; try { await api('sfx_theme_install_delete', { p_install_id: key }); await refreshInstalls(); save('Theme deleted.'); rerender(true); } catch (e) { flash(e.message); } return true; }
+  return false;
+}
+async function themeSubmit(key, rid, data) {
+  if (key === 'theme-create') { const r = await api('sfx_theme_install_create', { p: { name: data.name, starter: data.starter, base: data.base } }); await refreshInstalls(); save('Theme created.'); close(); location.hash = '/builder/' + r.installId; return true; }
+  if (key === 'theme-rename') { await api('sfx_theme_install_rename', { p_install_id: rid, p_name: data.name }); await refreshInstalls(); save('Renamed.'); close(); rerender(true); return true; }
+  return false;
+}
+
 export function workspace(id, record) {
   if (['analytics', 'reports', 'live-view'].includes(id)) return analyticsPage(id, record);
   let html;
@@ -745,6 +804,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'bulk-apply') {
         const ids = bulkIds(); const patch = { status: data.status || undefined, category: data.category || undefined, pricePct: data.pricePct || undefined };
         const r = await api('sfx_product_bulk', { p_ids: ids, p: patch }); await refreshProducts(); save(r.updated + ' products updated.'); close(); rerender(true);
+      } else if (await themeSubmit(key, rid, data)) {
+        /* saved */
       } else if (await settingsSubmit(key, data)) {
         /* saved */
       } else if (await roleSubmit(key, data)) {
@@ -808,6 +869,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
   if (a === 'bulk-open') { const n = bulkIds().length; if (!n) { flash('Tick the products you want to change first.'); return; } return dialog('Bulk edit', bulkForm(n)); }
   if (a === 'products-csv') return downloadProductsCsv();
+  if (await themeAction(a, key)) return;
   if (await roleAction(a, key)) return;
   if (await contentAction(a, key)) return;
   if (a === 'campaign-new') return dialog('Add campaign', campaignForm(null));
