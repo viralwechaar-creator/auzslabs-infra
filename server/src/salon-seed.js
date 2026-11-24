@@ -244,6 +244,7 @@ function makeDemo(today) {
   db.settings.address = 'This is a demo: nothing you enter here is real';
   db.settings.phone = '98290 00000';
   db.settings.whatsapp = '9829000000';
+  db.settings.heroPhoto = '/salon/assets/hero-photo.jpg';   // the salon hero picture (same one the original salon site uses), not the grey placeholder
   db.settings.instagram = 'auzslab';
   db.stylists = [
     { id: 'st-demo-1', name: 'Priya', role: 'Senior hair stylist', bio: 'Colour and cutting specialist.', photo: '', visible: true },
