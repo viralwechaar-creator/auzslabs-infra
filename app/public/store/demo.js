@@ -24,9 +24,13 @@
         styles, collections,
         config: { template: theme === 'minimal' ? 'minimal' : '1', brandName: 'GenX Clothing', tagline: 'Streetwear, made loud', announce: 'Template preview: ordering is switched off', heroImages: ['denim-wide', 'street-wide', 'field-wide', 'essentials-wide'].map((n) => '/store/demo-banners/' + n + '.jpg'), heroTitle: 'GenX Clothing', heroCta: 'Shop now',
           stores: [
-            { name: 'GenX Studio, Jodhpur', address: 'Sardarpura, Jodhpur, Rajasthan', hours: 'Daily 11:00 to 21:00', phone: '', photo: img(rows[0].files[1] || rows[0].files[0]) },
-            { name: 'GenX Pop-up, Jaipur', address: 'C-Scheme, Jaipur, Rajasthan', hours: 'Fri to Sun 12:00 to 20:00', phone: '', photo: img(rows[3].files[1] || rows[3].files[0]) },
-          ],
+            ['GenX Studio, Jodhpur', 'Sardarpura, Jodhpur, Rajasthan 342003', 'Daily 11:00 to 21:00'],
+            ['GenX Pop-up, Jaipur', 'C-Scheme, Jaipur, Rajasthan 302001', 'Daily 11:00 to 21:30'],
+            ['GenX Store, Udaipur', 'Hiran Magri Sector 4, Udaipur, Rajasthan 313002', 'Daily 11:00 to 21:00'],
+            ['GenX Store, Delhi', 'Hauz Khas Village, New Delhi 110016', 'Daily 12:00 to 22:00'],
+            ['GenX Store, Mumbai', 'Linking Road, Bandra West, Mumbai 400050', 'Daily 12:00 to 22:00'],
+            ['GenX Store, Bengaluru', 'Indiranagar 100 Feet Road, Bengaluru 560038', 'Daily 11:00 to 21:30'],
+          ].map(([name, address, hours]) => ({ name, address, hours, phone: '', photo: '/store/store-architecture.jpg' })),
           shipping: { fee: 0, freeOver: 0 }, pay: { cod: true }, policies: {}, faqs: [], founders: [] },
       };
     },
