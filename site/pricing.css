@@ -1,54 +1,82 @@
-html body main.content .pr{max-width:1320px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px)) 60px;color:#16181d}
-html body main.content .pr h1,html body main.content .pr h2{color:#16181d;letter-spacing:-.045em;font-weight:600;margin:0;text-align:left}
-html body main.content .pr-hero{text-align:center;padding:clamp(90px,14vh,150px) 0 40px}
-html body main.content .pr-hero h1{font-size:clamp(40px,8vw,104px)!important;line-height:.98;text-align:center}
-html body main.content .pr-hero p{font-size:clamp(14px,1.6vw,18px);color:#4a4f58;margin:18px 0}
-.pr-jump{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.pr-jump a{border:1px solid #d9dbe0;background:#fff;border-radius:999px;padding:9px 16px;font-weight:600;font-size:13px;color:#16181d;text-decoration:none}
-.pr-plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start;margin-top:20px}
-.pr-plan{display:flex;flex-direction:column;border:1px solid #dcdfe4;background:#fff;border-radius:22px;padding:22px}
-.pr-plan.hi{border:1.5px solid #16181d}
-.pr-plan.dark{background:#16181d;color:#f4f4f2;border-color:#16181d}
-html body main.content .pr-plan h2{font-size:24px!important}
-html body main.content .pr-plan.dark h2{color:#fff}
-.pr-plan .sub{font-size:13px;color:#6a6f78;margin:4px 0 14px}.pr-plan.dark .sub,.pr-plan.dark .gst{color:#b9bcc4}
-.pr-plan .amt{font-size:38px;font-weight:700;letter-spacing:-.04em}.pr-plan .amt.big{font-size:30px}.pr-plan .amt small{font-size:14px;font-weight:500;letter-spacing:0;color:#6a6f78}.pr-plan.dark .amt small{color:#b9bcc4}
-.pr-plan .gst{font-size:13px;color:#6a6f78;margin:4px 0 14px}
-.pr-plan ul{list-style:none;padding:0;margin:0 0 20px;flex:1}.pr-plan li{font-size:13.5px;padding:10px 0 10px 0;border-top:1px solid #e6e8ec;position:relative}.pr-plan.dark li{border-color:#33363d}
-.pr-plan li:before{content:none}
-.pr-btn{display:block;text-align:center;border:1px solid #16181d;background:#16181d;color:#fff;border-radius:12px;padding:14px;font:600 15px Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer}
-.pr-btn.ghost{background:transparent;color:inherit;border-color:#c9ccd2}.pr-plan.dark .pr-btn.ghost{border-color:#555;color:#fff}
-.pr-cmp,.pr-quote,.pr-faq{margin-top:56px;border:1px solid #e1e3e7;background:#fbfbfc;border-radius:24px;padding:clamp(18px,3vw,40px)}
-.pr-cmp h2,.pr-quote h2,.pr-faq h2{font-size:clamp(28px,4.4vw,52px)!important}
-.pr-tw{overflow-x:auto;margin-top:22px}.pr-tw table{width:100%;min-width:760px;border-collapse:collapse;font-size:14px}
-.pr-tw th,.pr-tw td{text-align:left;padding:14px 12px;border-top:1px solid #e1e3e7}
-.pr-tw thead th{font:700 11px "Space Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:#6a6f78;border-top:0}
-.pr-tw tbody th{font:700 11px "Space Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:#6a6f78;width:22%}
-.pr-quote,.pr-faq{display:grid;grid-template-columns:1fr 1.7fr;gap:30px}
-.pr-quote p{color:#4a4f58;font-size:14px}
-.pr-quote form{display:grid;gap:14px}.pr-quote label,.pr-quote legend{font-weight:600;font-size:14px;display:grid;gap:6px}
-.pr-quote em{font-weight:400;font-size:12px;color:#6a6f78;font-style:normal}
-.pr-quote input:not([type=checkbox]),.pr-quote select,.pr-quote textarea{width:100%;border:1px solid #d9dbe0;border-radius:10px;padding:11px 12px;background:#fff;font:15px Inter,system-ui,sans-serif;color:#16181d}
-.pr-quote textarea{min-height:100px}.pr-quote fieldset{border:1px solid #e1e3e7;border-radius:14px;padding:12px}
-.pr-svc{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pr-svc label{display:flex;gap:8px;align-items:center;border:1px solid #e1e3e7;background:#fff;border-radius:10px;padding:10px;font-weight:500}
-.pr-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.pr-quote button.pr-btn{justify-self:start;padding:14px 22px}
-.pr-faq a{font-size:13px;color:#4a4f58}
-.pr-faq details{border-top:1px solid #e1e3e7}.pr-faq summary{cursor:pointer;list-style:none;padding:18px 0;font-weight:500;display:flex;justify-content:space-between;gap:12px}
-.pr-faq summary::-webkit-details-marker{display:none}.pr-faq summary:after{content:"+";font-size:20px}.pr-faq details[open] summary:after{content:"–"}
-.pr-faq details p{margin:0 0 18px;color:#4a4f58;font-size:14px}
-@media(max-width:1000px){.pr-plans{grid-template-columns:repeat(2,minmax(0,1fr))}.pr-quote,.pr-faq{grid-template-columns:1fr}}
-@media(max-width:560px){.pr-plans,.pr-svc,.pr-two{grid-template-columns:1fr}}
-html body.a-pricing main.content .pr .pr-plan.dark,html body.a-pricing main.content .pr .pr-plan.dark li,html body.a-pricing main.content .pr .pr-plan.dark h2{color:#fff!important}
-html body.a-pricing main.content .pr .pr-plan.dark .sub,html body.a-pricing main.content .pr .pr-plan.dark .gst{color:#b9bcc4!important}
-html body.a-pricing main.content .pr .pr-plan li,html body.a-pricing main.content .pr .pr-plan .sub,html body.a-pricing main.content .pr .pr-plan .gst{font-size:13.5px!important;opacity:1!important}
-html body.a-pricing main.content .pr .pr-plan:not(.dark) li{color:#16181d!important}
-html body.a-pricing main.content .pr :is(.pr-cmp,.pr-quote,.pr-faq) h2{font-size:clamp(30px,4.6vw,56px)!important;line-height:1;color:#16181d!important}
-html body.a-pricing main.content .pr-quote :is(label,legend,input,select,textarea,p){opacity:1!important;color:#16181d!important}
-html body.a-pricing main.content .pr-quote p{color:#4a4f58!important;font-size:14px!important}
-html body.a-pricing main.content .pr-quote em{color:#6a6f78!important;font-size:12px!important}
-html body.a-pricing main.content .pr-plans .pr-btn{color:#fff!important}
-html body.a-pricing main.content .pr-plans .pr-btn.ghost{color:#16181d!important}
-html body.a-pricing main.content .pr-plans .dark .pr-btn.ghost{color:#fff!important}
-html body.a-pricing main.content .pr-faq summary{font-size:15px!important;color:#16181d!important}
-html body.a-pricing main.content .pr-faq p{font-size:14px!important;opacity:1!important}
+.price-page{--price-bg:#f5f5f4;--price-card:#fff;--price-ink:#141414;--price-muted:#5f5f5c;--price-line:#dededb;--price-accent:#79213b;--price-btn:#141414;--price-btn-text:#fff;--price-error:#a5272c;background:var(--price-bg);color:var(--price-ink);padding:0 clamp(16px,4vw,58px) clamp(24px,5vw,64px)}
+html[data-theme=dark] .price-page{--price-bg:#151515;--price-card:#202020;--price-ink:#f5f5f4;--price-muted:#b8b8b5;--price-line:#414140;--price-accent:#e5a2b7;--price-btn:#f5f5f4;--price-btn-text:#151515;--price-error:#ffadb0}
+.price-page [hidden]{display:none!important}
+.price-page :is(h1,h2,p,ul){margin:0}
+.price-page :is(h1,h2){color:inherit}
+.price-page a:focus-visible,.price-page :is(button,input,select,textarea,summary,.price-table):focus-visible{outline:2px solid var(--price-accent);outline-offset:3px}
+.price-intro,.price-grid,.price-section{max-width:1180px;margin-inline:auto}
+.price-intro{position:relative;isolation:isolate;text-align:center;padding:clamp(26px,4vw,54px) 14px clamp(20px,2.7vw,34px)}
+.price-intro::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(circle,var(--price-line) 1px,transparent 1.5px) 0 0/16px 16px;mask-image:linear-gradient(90deg,#000,transparent 35%,transparent 65%,#000)}
+.price-intro h1{max-width:760px;margin-inline:auto!important;letter-spacing:-.055em}
+.price-intro .price-soft{display:block;color:var(--price-muted)}
+.price-intro p{max-width:35em;margin:12px auto 0;color:var(--price-muted)}
+.price-jumps{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:18px}
+.price-page .price-jumps a{border:1px solid var(--price-line);border-radius:999px;padding:7px 13px;font-size:12px;color:var(--price-ink);background:var(--price-card);text-decoration:none!important;font-weight:600}
+.price-page .price-jumps a:hover{border-color:var(--price-ink)}
+.price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.price-plan{display:flex;flex-direction:column;min-width:0;border:1px solid var(--price-line);background:var(--price-card);border-radius:20px;padding:clamp(14px,1.6vw,22px);transition:border-color .2s,box-shadow .2s}
+.price-plan:focus-within,.price-plan:hover{border-color:var(--price-muted);box-shadow:0 14px 22px -21px #111}
+.price-plan--pro{border-color:var(--price-accent)}
+.price-plan--enterprise{--price-card:#1c1c1c;--price-ink:#f5f5f4;--price-muted:#c3c3bf;--price-line:#474746;--price-accent:#e5a2b7;color:var(--price-ink)}
+html[data-theme=dark] .price-plan--enterprise{--price-card:#292929}
+.price-plan h2{font-size:19px;font-weight:650;letter-spacing:-.03em}
+.price-plan-top p{font-size:12.5px;color:var(--price-muted);margin-top:6px}
+.price-rate{font:600 clamp(23px,2.6vw,34px)/1.15 Inter,sans-serif;letter-spacing:-.045em;margin-top:14px!important}
+.price-rate small{font:500 12px Inter,sans-serif;letter-spacing:0;white-space:nowrap;color:var(--price-muted)}
+.price-tax{color:var(--price-muted);font-size:12px;margin:4px 0 14px!important}
+.price-page .price-btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 14px;background:var(--price-btn);color:var(--price-btn-text)!important;border:1px solid transparent;border-radius:10px;font:600 13px Inter,sans-serif;text-decoration:none!important;cursor:pointer}
+.price-page .price-btn:hover{opacity:.85}
+.price-page .price-btn:disabled{opacity:.55;cursor:wait}
+.price-plan--basic .price-btn,.price-plan--enterprise .price-btn{background:transparent;border-color:var(--price-line);color:var(--price-ink)!important}
+.price-plan .price-btn{order:1;margin-top:auto}
+.price-plan ul{list-style:none;padding:0;margin:0 0 14px}
+.price-plan li{position:relative;padding:7px 0 7px 14px;border-top:1px solid var(--price-line);font-size:12.5px;line-height:1.4;color:var(--price-ink)}
+.price-plan li::before{content:"";position:absolute;left:2px;top:13px;width:5px;height:5px;border:1px solid var(--price-muted);border-radius:50%}
+.price-section{margin-top:clamp(30px,5.5vw,68px);scroll-margin-top:90px}
+.price-section h2{font:600 clamp(25px,3.3vw,41px)/1.05 Inter,sans-serif;letter-spacing:-.045em}
+.price-table{margin-top:14px;overflow:auto;border:1px solid var(--price-line);border-radius:18px;background:var(--price-card)}
+.price-table table{width:100%;min-width:630px;border-collapse:collapse;text-align:left;font-size:13px}
+.price-table :is(th,td){padding:12px;line-height:1.35;border-bottom:1px solid var(--price-line)}
+.price-table thead,.price-table th[scope=row]{background:var(--price-bg)}
+.price-table th[scope=row]{position:sticky;left:0;min-width:140px}
+.price-table tr:last-child>*{border-bottom:none}
+.price-quote,.price-faq{display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,2fr);gap:clamp(16px,4vw,50px);align-items:start}
+.price-quote,.price-faq{border:1px solid var(--price-line);background:var(--price-card);border-radius:20px;padding:clamp(16px,3vw,34px)}
+.price-quote-intro p,.price-faq>div>p{margin-top:9px;font-size:13px;color:var(--price-muted)}
+#pricing-request{display:grid;min-width:0;gap:9px}
+#pricing-request label,#pricing-request legend{font-size:13px;font-weight:600}
+#pricing-request :is(input:not([type=checkbox]),select,textarea){display:block;width:100%;box-sizing:border-box;min-width:0;border:1px solid var(--price-line);background:var(--price-bg);color:var(--price-ink);border-radius:8px;padding:9px 10px;font:inherit;color-scheme:inherit}
+#pricing-request label small{color:var(--price-muted);font-weight:400}
+#quote-services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 10px;min-width:0;padding:9px 11px;border:1px solid var(--price-line);border-radius:8px}
+#quote-services label{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:40px;padding:5px 8px;border:1px solid var(--price-line);border-radius:8px;font-weight:500;cursor:pointer}
+#quote-services label:has(input:checked){border-color:var(--price-accent);background:var(--price-bg)}
+#quote-services small{font-size:11px}
+#quote-services input{accent-color:var(--price-accent)}
+.price-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.price-fields label{display:block;margin-bottom:5px}
+.price-form-action{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#quote-status{font-size:13px}
+#quote-status[data-error]{color:var(--price-error)}
+.price-faq details{border-top:1px solid var(--price-line)}
+.price-faq details:last-child{border-bottom:1px solid var(--price-line)}
+.price-faq summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;cursor:pointer;list-style:none;font-weight:600;font-size:14px}
+.price-faq summary::-webkit-details-marker{display:none}
+.price-faq summary::after{content:"+";font-size:17px;font-weight:400;color:var(--price-accent)}
+.price-faq details[open] summary::after{content:"−"}
+.price-faq details p{padding:0 18px 14px 0;color:var(--price-muted);font-size:13px;line-height:1.6}
+.price-page a:not(.price-btn,.price-jumps a){color:var(--price-accent)}
+html body.a-pricing main.content .price-intro h1{font-size:clamp(36px,5.6vw,76px)!important;font-weight:500!important;line-height:1!important;color:var(--price-ink)!important}
+html body.a-pricing main.content .price-intro p{font-size:14px!important;line-height:1.5;margin:12px auto 0!important;text-align:center!important;color:var(--price-muted)!important}
+html body.a-pricing main.content .price-plan h2{font-size:19px!important;font-weight:650!important}
+html body.a-pricing main.content .price-plan .price-rate{font-size:clamp(23px,2.6vw,34px)!important;font-weight:650!important;line-height:1.15!important}
+html body.a-pricing main.content .price-plan :is(h2,.price-rate){color:var(--price-ink)!important}
+html body.a-pricing main.content .price-plan :is(.price-tax,.price-plan-top p){color:var(--price-muted)!important}
+html body.a-pricing main.content .price-plan ul{list-style:none!important;padding:0!important;margin:0 0 14px!important}
+html body.a-pricing main.content .price-plan li{list-style:none!important;margin:0!important}
+html body.a-pricing main.content .price-section h2{font-size:clamp(25px,3.3vw,41px)!important;font-weight:600!important;line-height:1.05!important}
+html body.a-pricing main.content #pricing-request :is(label,legend){color:var(--price-ink)!important}
+html body.a-pricing main.content :is(.price-quote-intro p,.price-faq details p,#quote-status:not([data-error])){color:var(--price-muted)!important}
+@media(min-width:760px){.price-quote-intro{position:sticky;top:88px}}
+@media(max-width:950px){.price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.price-quote,.price-faq{grid-template-columns:1fr}}
+@media(max-width:460px){.price-grid,.price-fields,#quote-services{grid-template-columns:1fr}.price-table th[scope=row]{position:static}}
