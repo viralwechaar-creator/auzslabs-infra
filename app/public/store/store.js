@@ -1405,7 +1405,7 @@ V.careers = (v) => {
 const POL = { shipping: ['Shipping', () => (cfg().policies || {}).shipping || 'We ship across India. Orders are packed within 1 to 2 working days and usually arrive in 3 to 7 days. You will get an update on the phone number you gave us.'], returns: ['Returns & exchanges', () => (cfg().policies || {}).returns || 'You can return or exchange a piece within ' + (D.shop.returnDays || 30) + ' days of delivery if it is unworn, unwashed and the tags are intact. Contact the store to arrange it.'], terms: ['Terms', () => (cfg().policies || {}).terms || 'By placing an order you confirm that the details you gave are correct. Prices include taxes. An order is confirmed only after the store accepts it, and the store may cancel an order if an item cannot be supplied.'], privacy: ['Privacy', () => (cfg().policies || {}).privacy || 'We use your name, phone, email and address only to deliver your order and to contact you about it. We do not sell your details.'] };
 V.policy = (v, k) => { const p = POL[k] || POL.terms; v.append(E('div', { class: 'pg' }, E('div', { class: 'shophd' }, E('h1', null, p[0])), E('div', { class: 'card' }, String(p[1]()).split(/\n+/).map((x) => E('p', null, x))))); };
 V.page = (v, slug) => {
-  const page = cfg().template === 'minimal' && minimalPages().find((item) => item.slug === slug);
+  const page = minimalPages().find((item) => item.slug === slug);
   if (!page) return v.append(E('div', { class: 'empty' }, E('h1', null, 'Page not found'), E('a', { class: 'btn', href: link('sitemap') }, 'Browse the sitemap')));
   const href = minimalDestination(page.link);
   v.append(E('article', { class: 'minimal-feature' },
