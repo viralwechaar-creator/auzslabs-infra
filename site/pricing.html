@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KQRQJFT0V0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KQRQJFT0V0');
+</script>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=2"><link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<script src="theme.js?v=101"></script>
+<style>
+/* Studio: deliberately off-grid. Rotation is small and capped so nothing overflows on phones. */
+.st{overflow-x:clip}
+.st .section,.st .st-sec,.st .label,.st .st-big,.st-h1,.st-lede{text-align:left!important;justify-content:flex-start}
+.st .wrap>.section>.label{justify-content:flex-start!important;margin-left:0!important;margin-right:auto!important}
+.st .wrap>.section>.h-1,.st .wrap>.section>.h-2,.st .wrap>.section>.lede{margin-left:0;margin-right:auto}
+.st .st-lede{margin-right:auto!important}
+.st-paper{position:absolute;inset:0;background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:22px 22px;opacity:.55;pointer-events:none;mask-image:linear-gradient(#000 30%,transparent 95%)}
+.st-hero{position:relative;padding-bottom:30px}
+.st-hero>*{position:relative}
+.st-h1{font-size:clamp(40px,11vw,76px);line-height:.98;letter-spacing:-.03em;margin:6px 0 0}
+.st-h1 em{font-style:normal;color:var(--accent);position:relative;white-space:nowrap}
+.st-h1 em svg{position:absolute;left:-2%;bottom:-.22em;width:104%;height:.34em;overflow:visible}
+.st-h1 .off{margin-left:9vw;display:block}
+.st-lede{max-width:520px;margin:20px 0 0 4vw}
+.st-pieces{position:relative;height:250px;margin:26px 0 0}
+.st-piece{position:absolute;border:1.6px solid var(--ink);background:var(--bg);padding:10px;font:700 10px 'Space Mono',monospace;letter-spacing:.05em;text-transform:uppercase;box-shadow:4px 4px 0 var(--ink)}
+.st-piece i{display:block;height:5px;background:var(--ink);opacity:.18;margin-top:6px}
+.st-piece i:nth-child(2){width:70%}.st-piece i:nth-child(3){width:45%}
+.st-p1{left:2%;top:10px;width:46%;transform:rotate(-4deg)}
+.st-p2{left:36%;top:78px;width:40%;transform:rotate(3deg);background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:4px 4px 0 var(--ink)}
+.st-p2 i{background:#fff}
+.st-p3{right:0;top:0;width:34%;transform:rotate(6deg)}
+.st-p4{left:10%;top:158px;width:38%;transform:rotate(2deg)}
+.st-p5{right:6%;top:150px;width:36%;transform:rotate(-3deg)}
+.st-scribble{position:absolute;right:2%;top:46%;width:90px;color:var(--accent);transform:rotate(-12deg)}
+.st-sec{padding:34px 0;position:relative}
+.st-big{font-size:clamp(26px,6.4vw,44px);line-height:1.05;letter-spacing:-.02em;font-weight:700;margin:6px 0 0;max-width:15em}
+.st-box,.st-page{padding:22px;border:1.6px solid var(--ink);position:relative}
+.st-box{width:68%;background:var(--bg-raised);color:var(--ink-dim);transform:rotate(-1.8deg)}
+.st-box h3{text-decoration:line-through;text-decoration-color:var(--accent);text-decoration-thickness:3px;font-size:18px;margin:0 0 8px}
+.st-page{width:80%;margin:-16px 0 0 auto;background:var(--bg);box-shadow:7px 7px 0 var(--accent);transform:rotate(1.2deg);z-index:2}
+.st-page h3{font-size:22px;margin:0 0 8px}
+.st-box p,.st-page p{margin:0;font-size:14.5px;line-height:1.5}
+.st-chips{display:flex;flex-wrap:wrap;gap:10px 8px;margin-top:20px}
+.st-chip{border:1.5px solid var(--ink);padding:7px 14px;font:700 12px 'Space Mono',monospace;text-transform:uppercase;letter-spacing:.04em;background:var(--bg)}
+.st-chip:nth-child(3n){background:var(--accent);color:#fff;border-color:var(--accent);transform:rotate(-3deg)}
+.st-chip:nth-child(3n+1){transform:rotate(2deg);margin-left:6px}
+.st-chip:nth-child(4n){font-size:15px;padding:10px 18px;transform:rotate(-1.5deg)}
+.st-chip:nth-child(5n){border-style:dashed}
+.st-stair{margin-top:22px;display:grid;gap:18px}
+.st-st{position:relative;max-width:310px;padding:4px 0 0 56px}
+.st-st:nth-child(1){margin-left:0}
+.st-st:nth-child(2){margin-left:7%}
+.st-st:nth-child(3){margin-left:14%}
+.st-st:nth-child(4){margin-left:21%}
+.st-st:nth-child(5){margin-left:28%}
+.st-st b{display:block;font-size:18px}
+.st-st span{color:var(--ink-dim);font-size:14.5px;line-height:1.5;display:block;margin-top:3px}
+.st-st>.st-n{position:absolute;left:0;top:-6px;margin:0;font:700 52px/1 'Space Mono',monospace;color:transparent;-webkit-text-stroke:1.5px var(--ink)}
+.st-space{border:2px dashed var(--ink);padding:26px 22px 20px;margin:30px 0 0 6%;position:relative;transform:rotate(.8deg)}
+.st-url{font:700 12px 'Space Mono',monospace;background:var(--ink);color:var(--bg);display:inline-block;padding:5px 11px;position:absolute;top:-14px;right:14px;transform:rotate(-2deg)}
+.st-space ul{list-style:none;padding:0;margin:0;display:grid;gap:9px;font-size:14.5px;color:var(--ink-dim)}
+.st-space li:nth-child(even){margin-left:14px}
+.st-polaroid{background:var(--bg);border:1.6px solid var(--ink);padding:16px 16px 20px;width:84%;transform:rotate(-2deg);box-shadow:6px 6px 0 var(--ink)}
+.st-polaroid .st-pic{height:92px;background:repeating-linear-gradient(135deg,var(--line-soft) 0 8px,transparent 8px 16px);border:1.5px dashed var(--ink-faint);display:grid;place-items:center;font:700 11px 'Space Mono',monospace;color:var(--ink-faint);text-transform:uppercase;margin-bottom:14px}
+.st-ticket{border:1.6px solid var(--ink);padding:24px 22px;margin:0 0 0 12%;position:relative;background:var(--bg-raised);transform:rotate(1.4deg)}
+.st-ticket:before,.st-ticket:after{content:"";position:absolute;top:50%;width:18px;height:18px;border:1.6px solid var(--ink);border-radius:50%;background:var(--bg);margin-top:-9px}
+.st-ticket:before{left:-10px;clip-path:inset(0 0 0 50%)}.st-ticket:after{right:-10px;clip-path:inset(0 50% 0 0)}
+.st-ticket .k{font:700 11px 'Space Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.st-ticket p{margin:4px 0 14px;font-size:14.5px}
+.st-fit{display:grid;gap:16px;margin-top:18px}
+.st-fit>div{border:1.6px solid var(--ink);padding:20px}
+.st-fit>div:first-child{width:86%;box-shadow:6px 6px 0 var(--accent);transform:rotate(-1deg)}
+.st-fit>div:last-child{width:72%;margin-left:auto;border-style:dashed;transform:rotate(1.4deg)}
+.st-fit h3{margin:0 0 8px;font-size:17px}.st-fit ul{margin:0;padding-left:18px;color:var(--ink-dim);font-size:14.5px;line-height:1.55}
+.st-cta{margin:10px 0 0 5%;max-width:560px}
+@media(min-width:900px){
+  .st-h1 .off{margin-left:14%}.st-lede{margin-left:8%}
+  .st-pieces{height:330px;max-width:760px;margin-left:auto}
+  .st-piece{font-size:12px;padding:14px}
+  .st-box{width:46%}.st-page{width:56%;margin-top:-34px}
+  .st-stair{gap:8px}.st-st{max-width:360px}.st-st:nth-child(2){margin-left:12%}.st-st:nth-child(3){margin-left:24%}.st-st:nth-child(4){margin-left:36%}.st-st:nth-child(5){margin-left:48%}
+  .st-space{max-width:640px;margin-left:18%}
+  .st-polaroid{width:min(420px,56%)}
+  .st-ticket{max-width:560px;margin-left:30%}
+  .st-fit{grid-template-columns:1.2fr 1fr;align-items:start}.st-fit>div:first-child,.st-fit>div:last-child{width:auto}
+  .st-fit>div:last-child{margin-top:34px}
+}
+@media(prefers-reduced-motion:no-preference){.st-piece{transition:transform .5s cubic-bezier(.2,.8,.2,1)}.st-hero:hover .st-p1{transform:rotate(-6deg) translate(-4px,-4px)}.st-hero:hover .st-p3{transform:rotate(9deg) translate(4px,-3px)}.st-hero:hover .st-p5{transform:rotate(-6deg) translateY(6px)}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style id="topbar-nav-css">
+.topbar-nav{display:none}
+@media(min-width:900px){
+  .topbar-nav{display:flex;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);gap:26px;margin:0;order:0}
+  .tbn-item{position:relative}
+  .topbar-nav .tbn-top{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);padding:10px 2px;white-space:nowrap;position:relative}
+  .topbar-nav .tbn-top i{font-style:normal;font-size:9px;opacity:.6;transition:transform .15s}
+  .tbn-item:hover .tbn-top i,.tbn-item:focus-within .tbn-top i{transform:rotate(180deg)}
+  .topbar-nav .tbn-top:hover{color:var(--accent)}
+  .topbar-nav .tbn-top[aria-current="page"]{color:var(--accent)}
+  .topbar-nav .tbn-top[aria-current="page"]::before{content:"[ ";white-space:pre}
+  .topbar-nav .tbn-top[aria-current="page"]::after{content:" ]";white-space:pre}
+  .tbn-menu{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);min-width:240px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px -18px rgba(0,0,0,.4);z-index:40}
+  .tbn-menu::before{content:"";position:absolute;left:0;right:0;top:-12px;height:12px}
+  .tbn-item:hover .tbn-menu,.tbn-item:focus-within .tbn-menu{display:block}
+  .tbn-menu a{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:9px 12px;border-radius:10px;font-family:var(--font-body);font-size:13px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);white-space:nowrap}
+  .tbn-menu a small{font:500 10px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint,#8a847f)}
+  .tbn-menu a:hover{background:var(--bg,#f6f4f1);color:var(--accent)}
+  .tbn-menu a.tbn-all{margin-top:4px;border-top:1px dashed var(--line);border-radius:0 0 10px 10px;color:var(--accent)}
+  .topbar-nav.tbn-fixed{display:flex;position:fixed;left:0;right:var(--sidebar-w,280px);top:0;transform:none;height:54px;align-items:center;justify-content:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:24;padding-left:120px}
+  body:not(:has(.sidebar)) .topbar-nav.tbn-fixed{right:0}
+  .tbn-logo{position:absolute;left:20px;top:50%;transform:translateY(-50%);display:block;line-height:0}
+  .tbn-logo img{height:28px;width:auto;display:block}
+  :root[data-theme=dark] .tbn-logo img{filter:invert(1)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tbn-logo img{filter:invert(1)}}
+  body.has-tbn main.content{padding-top:54px}
+}
+@media(min-width:900px){.footer-top{grid-template-columns:1.5fr 1fr 1fr 1fr}}
+</style>
+<link rel="stylesheet" href="u.css?v=7"><link rel="stylesheet" href="e.css?v=6"><link rel="stylesheet" href="fluid.css?v=3"><link rel="stylesheet" href="c.css?v=6">
+<meta name="theme-color" content="#efeeed">
+<link rel="stylesheet" href="menu-old.css?v=3"><link rel="stylesheet" href="a.css?v=2"><link rel="stylesheet" href="a-web.css?v=1"><link rel="stylesheet" href="pricing.css?v=1">
+<title>Pricing and plans | AUZslab</title>
+<meta name="description" content="AUZslab plans for apps and online storefronts: Basic, Pro, Advanced and Enterprise. Compare features and request a quote.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://auzslab.in/pricing.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AUZslab">
+<meta property="og:title" content="Pricing and plans | AUZslab">
+<meta property="og:description" content="AUZslab plans for apps and online storefronts: Basic, Pro, Advanced and Enterprise. Compare features and request a quote.">
+<meta property="og:url" content="https://auzslab.in/pricing.html">
+<meta property="og:image" content="https://auzslab.in/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Pricing and plans | AUZslab">
+<meta name="twitter:description" content="AUZslab plans for apps and online storefronts: Basic, Pro, Advanced and Enterprise. Compare features and request a quote.">
+<meta name="twitter:image" content="https://auzslab.in/og-image.png">
+</head>
+<body class="a-pricing">
+<div id="pageTransition" class="page-transition" aria-hidden="true"></div>
+<div class="shell">
+  <header class="u-top">
+    <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="themes.html">Themes</a><a href="pricing.html">Pricing</a><a href="contact.html">Contact</a></nav>
+    <div class="u-r">
+      <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
+      <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
+      <button class="u-menu" id="menuToggle" aria-label="Open menu" aria-expanded="false"><i></i><span class="menu-btn-label">Menu</span></button>
+    </div>
+  </header>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="sidebar" id="sidebarDrawer">
+    <div class="drawer-topbar">
+      <button class="drawer-close" id="drawerClose" aria-label="Close menu"><span aria-hidden="true">&times;</span> Close</button>
+      <a href="index.html" class="drawer-topbar-logo"><img src="logo.png" alt="AUZslab"></a>
+      <div class="drawer-topbar-icons">
+        <a href="cart.html" class="drawer-icon-link" aria-label="Cart"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 7h12l-1 13H7L6 7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></a>
+        <a href="signup.html" class="drawer-icon-link" aria-label="Account"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a>
+      </div>
+      </div>
+    <nav class="sidebar-nav" aria-label="Primary">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="products.html" class="nav-link">Services</a>
+
+      <div class="nav-group nav-biz">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>What we offer <sup class="nav-group-count">(+6)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-head">What we offer</div>
+          <div class="nav-submenu-inner">
+            <a href="web-design.html" class="nav-sublink"><span>Websites &amp; online stores</span></a>
+            <a href="products.html#slab-pos" class="nav-sublink"><span>Retail billing &amp; inventory</span></a>
+            <a href="products.html#slab-acct" class="nav-sublink"><span>Accounting &amp; invoicing</span></a>
+            <a href="live-demo.html#salon" class="nav-sublink"><span>Salon Console</span></a>
+            <a href="studio.html" class="nav-sublink"><span>Custom software</span></a>
+            <a href="developers.html" class="nav-sublink"><span>Developer partners</span></a>
+          </div>
+        </div>
+      </div>
+
+
+            <a href="themes.html" class="nav-link">Themes</a>
+            <a href="pricing.html" class="nav-link">Pricing</a>
+      <a href="studio.html" class="nav-link">Studio</a>
+      <a href="live-demo.html" class="nav-link">Live demo</a>
+      <a href="download-apps.html" class="nav-link">Download apps</a>
+      <a href="cart.html" class="nav-link">Cart <span class="cart-count"></span></a>
+
+      <div class="nav-group">
+        <button class="nav-link nav-group-toggle" aria-expanded="false">
+          <span>Resources <sup class="nav-group-count">(+5)</sup></span>
+          <span class="nav-group-indicator" aria-hidden="true"></span>
+        </button>
+        <div class="nav-submenu">
+          <div class="nav-submenu-head">Resources</div>
+          <div class="nav-submenu-inner">
+            <a href="resources-getting-started.html" class="nav-sublink"><span>Getting started</span></a>
+            <a href="learn.html" class="nav-sublink"><span>Learn: beginner manual</span></a>
+            <a href="resources-operations.html" class="nav-sublink"><span>Operations &amp; workflows</span></a>
+            <a href="resources-growth.html" class="nav-sublink"><span>Growth &amp; scaling</span></a>
+          </div>
+        </div>
+      </div>
+
+      <a href="contact.html" class="nav-link">Contact</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div style="display:flex;gap:10px">
+        <a href="signup.html" class="btn btn-ghost" data-signin-link style="flex:1;justify-content:center">Get started</a>
+        <button class="btn btn-ghost" data-open-contact style="flex:1;justify-content:center">Let's talk</button>
+      </div>
+      <div class="sidebar-copy">&copy; 2026 AUZslab</div>
+    </div>
+  <div class="drawer-social"><a href="https://www.instagram.com/auzslab.in" aria-label="Instagram" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" aria-label="Facebook" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 8V6.5c0-.8.3-1.2 1.3-1.2H17V2h-2.6C11.6 2 10 3.7 10 6.2V8H8v3.2h2V22h4V11.2h2.7l.4-3.2z"/></svg></a></div></aside>
+
+  <main class="content">
+<div class="aw3"><div class="pr">
+<header class="pr-hero"><h1>Plans for how<br>you do business.</h1><p>Choose the apps you need or get a storefront with the tools to run it.</p><div class="pr-jump"><a href="#compare">Compare features ↓</a><a href="#faq">Pricing FAQs ↓</a></div></header>
+<section class="pr-plans" aria-label="Plans">
+<article class="pr-plan"><h2>Basic</h2><p class="sub">Choose the business apps you need.</p><div class="amt big">Apps by quote</div><p class="gst">Based on selected services</p><ul><li>AUZsLedger, AUZsStyle or Salon Console</li><li>Retail and salon websites quoted separately</li><li>Quote after verification</li></ul><a class="pr-btn ghost" href="#quote" data-plan="Basic">Select apps</a></article>
+<article class="pr-plan hi"><h2>Pro</h2><p class="sub">Launch your online store.</p><div class="amt">₹2,460<small> / month</small></div><p class="gst">+ GST</p><ul><li>1 user account</li><li>Online storefront with theme editor</li><li>Catalog, inventory and order management</li><li>Checkout and shipping settings</li><li>Store sales overview</li></ul><a class="pr-btn" href="#quote" data-plan="Pro">Choose Pro</a></article>
+<article class="pr-plan"><h2>Advanced</h2><p class="sub">Run your store with a team.</p><div class="amt">₹5,320<small> / month</small></div><p class="gst">+ GST</p><ul><li>5 staff accounts included</li><li>Everything in Pro</li><li>Staff roles and permissions</li><li>Sales and traffic analytics</li><li>WhatsApp automation</li></ul><a class="pr-btn" href="#quote" data-plan="Advanced">Choose Advanced</a></article>
+<article class="pr-plan dark"><h2>Enterprise</h2><p class="sub">Scale access across your business.</p><div class="amt">₹12,000<small> / month</small></div><p class="gst">+ GST</p><ul><li>Unlimited user accounts</li><li>Everything in Advanced</li><li>Team roles and access controls</li><li>Reporting and automation setup</li><li>Integration requirements reviewed with you</li></ul><a class="pr-btn ghost" href="#quote" data-plan="Enterprise">Talk to sales</a></article>
+</section>
+<section class="pr-cmp" id="compare"><h2>Compare plans</h2><div class="pr-tw"><table><thead><tr><th>Features</th><th>Basic</th><th>Pro</th><th>Advanced</th><th>Enterprise</th></tr></thead><tbody>
+<tr><th>Monthly price</th><td>Custom quote</td><td>₹2,460 + GST</td><td>₹5,320 + GST</td><td>₹12,000 + GST</td></tr>
+<tr><th>User accounts</th><td>Based on quote</td><td>1 user</td><td>5 staff accounts included</td><td>Unlimited</td></tr>
+<tr><th>Storefront &amp; theme editing</th><td>Quoted separately</td><td>Included</td><td>Included</td><td>Included</td></tr>
+<tr><th>Catalog, inventory &amp; orders</th><td>Depends on selected app</td><td>Included</td><td>Included</td><td>Included</td></tr>
+<tr><th>Checkout &amp; shipping settings</th><td>With website quote</td><td>Included</td><td>Included</td><td>Included</td></tr>
+<tr><th>Sales reporting</th><td>Depends on selected app</td><td>Store sales overview</td><td>Sales and traffic analytics</td><td>Sales and traffic analytics</td></tr>
+<tr><th>WhatsApp automation</th><td>Available by quote</td><td>Available by quote</td><td>Included with provider setup</td><td>Included with provider setup</td></tr>
+<tr><th>Staff roles &amp; permissions</th><td>Depends on selected app</td><td>Owner access</td><td>Included</td><td>Included</td></tr>
+<tr><th>Custom integrations</th><td>Scoped separately</td><td>Scoped separately</td><td>Scoped separately</td><td>Requirements reviewed with you</td></tr>
+</tbody></table></div></section>
+<section class="pr-quote" id="quote"><div><h2>Request a quote</h2><p>Tell us what you need. We’ll review your selection and confirm the scope and pricing before you pay.</p></div>
+<div><form id="prForm"><label>Plan<select id="prPlan"><option>Basic</option><option>Pro</option><option>Advanced</option><option>Enterprise</option></select></label>
+<fieldset><legend>Choose at least one service</legend><div class="pr-svc"><label><input type="checkbox" value="AUZsLedger"> AUZsLedger</label><label><input type="checkbox" value="AUZsStyle"> AUZsStyle</label><label><input type="checkbox" value="Salon Console"> Salon Console</label><label><input type="checkbox" value="Retail storefront"> Retail storefront <em>Quoted separately</em></label><label><input type="checkbox" value="Salon website"> Salon website <em>Quoted separately</em></label></div></fieldset>
+<label>Business name<input name="business" required></label><div class="pr-two"><label>Your name<input name="name" required></label><label>Email or phone<input name="contact" required></label></div>
+<label>What do you need? <em>Optional</em><textarea name="message"></textarea></label>
+<div style="position:absolute;left:-9999px" aria-hidden="true"><input name="hp" tabindex="-1" autocomplete="off"></div>
+<p id="prErr" role="alert" hidden style="color:#b00020;font-size:14px;margin:0"></p><button class="pr-btn" type="submit">Send quote request</button></form><div class="success-view"><div class="success-mark">✓</div><h3>Got it.</h3><p>We’ll reach out to <span class="success-contact">you</span> shortly.</p></div></div></section>
+<section class="pr-faq" id="faq"><div><h2>Pricing FAQs</h2><a href="contact.html">Ask us a question</a></div><div>
+<details><summary>How does Basic pricing work?</summary><p>Basic is for business apps such as AUZsLedger, AUZsStyle or the Salon Console. We quote based on the apps you select, after verifying your business.</p></details>
+<details><summary>Is a website included with a Basic app?</summary><p>No. Retail and salon websites are quoted separately. Pro and Advanced include an online storefront.</p></details>
+<details><summary>How many user accounts come with each storefront plan?</summary><p>Pro includes 1 user account, Advanced includes 5 staff accounts, and Enterprise has unlimited user accounts.</p></details>
+<details><summary>Are GST and other fees included in the displayed prices?</summary><p>No. Displayed prices are per month plus GST. Any onboarding or hardware fees are confirmed in your quote before you pay.</p></details>
+<details><summary>What does WhatsApp automation include?</summary><p>Automated bills and reminders sent from your own business setup. It is included with provider setup in Advanced and Enterprise, and available by quote in Pro and Basic. Message charges from the provider apply.</p></details>
+<details><summary>Can I connect a domain I already own?</summary><p>Yes. You can connect a domain you own to your storefront. We help with the DNS steps during setup.</p></details>
+<details><summary>Can I change or cancel my plan?</summary><p>Yes. Contact us to move between plans or to cancel. Your data stays yours and can be exported.</p></details>
+<details><summary>Can I try the apps before requesting a quote?</summary><p>Yes. Open the <a href="live-demo.html">live demo</a> to try the apps with sample data.</p></details>
+</div></section>
+</div>
+<script>(function(){var p=document.getElementById("prPlan"),f=document.getElementById("prForm"),err=document.getElementById("prErr"),btn=f.querySelector("button[type=submit]");
+document.querySelectorAll("[data-plan]").forEach(function(a){a.addEventListener("click",function(){p.value=a.dataset.plan})});
+f.addEventListener("submit",function(e){e.preventDefault();err.hidden=true;
+var s=[].map.call(f.querySelectorAll("fieldset input:checked"),function(x){return x.value});
+if(p.value==="Basic"&&!s.length){err.textContent="Choose at least one service.";err.hidden=false;return}
+var v=function(n){return(f.querySelector("[name="+n+"]")||{}).value||""};
+var msg="[Pricing page] Plan: "+p.value+(s.length?"; Services: "+s.join(", "):"")+(v("message")?"\n"+v("message"):"");
+btn.disabled=true;btn.textContent="Sending…";
+fetch("https://api.auzslab.in/rpc/submit_lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({p_name:v("name"),p_contact:v("contact"),p_business:v("business"),p_message:msg,p_niche:"",p_hp:v("hp")})})
+.then(function(r){if(!r.ok)throw new Error("failed");f.style.display="none";var sv=f.parentElement.querySelector(".success-view");sv.classList.add("show");sv.querySelector(".success-contact").textContent=v("contact")||"you";f.reset()})
+.catch(function(){err.textContent="We could not send your request. Please try again, or call +91 92512 50829.";err.hidden=false;btn.disabled=false;btn.textContent="Send quote request"})})})()</script>
+<div class="ftwrap" id="ftwrap">
+    <button class="ftt" aria-expanded="false"><span class="ftti"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg></span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
+    <div class="ftinfo">
+      <div class="perks"><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><div><b>Set up with you</b><span>Shaped to your workflow</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><div><b>Run your operations</b><span>Retail, accounting and salon apps</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg><div><b>Your data is yours</b><span>Back up or export any time</span></div></div><div class="perk"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><div><b>Talk to a person</b><span>Call or WhatsApp us</span></div></div></div>
+      <div class="ftstrip"><div class="ftfold" id="ftfold"><p>AUZslab brings together online storefronts, ready-made business tools and custom software. Choose what fits today and add more as your business grows.</p><button class="ftmore" id="ftmore">Read more...</button></div>
+        <div class="ftabs"><button class="ftab" data-i="0">Products</button><button class="ftab" data-i="1">Business types</button><button class="ftab" data-i="2">Resources</button><button class="ftab" data-i="3">Company</button></div><div class="ftpanel" id="ftpanel" data-tabs='[[["products.html#slab-web","Online stores"],["products.html#slab-pos","AUZsStyle"],["products.html#slab-acct","AUZsLedger"],["products.html#slab-salon","Salon Console"],["studio.html","Custom software"]],[["products.html#slab-pos","Retail & bookstores"],["products.html#slab-pos","Clothing & apparel"],["products.html#slab-salon","Salons & spas"],["products.html#slab-acct","Accounting & invoicing"],["studio.html","Custom software"],["web-design.html","Websites & online stores"]],[["resources-getting-started.html","Getting started"],["learn.html","Learn: beginner manual"],["resources-operations.html","Operations & workflows"],["resources-growth.html","Growth & scaling"]],[["themes.html","Themes"],["live-demo.html","Live demo"],["download-apps.html","Download apps"],["sitemap.html","Sitemap"]]]'></div></div>
+    </div>
+    <footer><div class="cols">
+      <div class="col"><span class="lbl">Connect with us</span><a href="tel:+919251250829">Call</a><a href="https://wa.me/919251250829" target="_blank" rel="noopener">Text (WhatsApp)</a><a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener">Instagram</a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener">Facebook</a><a href="mailto:helloauzslab@gmail.com">Email</a></div>
+      <div class="col"><span class="lbl">Explore</span><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="themes.html">Themes</a><a href="pricing.html">Pricing</a></div>
+      <div class="col"><span class="lbl">Company</span><a href="about.html">About AUZslab</a><a href="developers.html">Developer partners</a><a href="careers.html">Careers</a><a href="contact.html">Contact</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
+      <div class="ftbrand"><a class="ft-logo" href="index.html" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab" loading="lazy"></a></div></div>
+      <div class="fin"><span>&copy; 2026 AUZslab. All rights reserved</span><a href="sitemap.html">Sitemap</a></div></footer>
+  </div>
+<nav class="u-dock" aria-label="Quick"><div class="pill"><a href="index.html" aria-label="Home"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></a><a href="products.html" aria-label="Services"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg></a><a href="live-demo.html" aria-label="Live demo"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg></a><a href="signup.html" aria-label="Sign in"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></a></div><button class="chat" data-open-contact aria-label="Talk to us"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg></button></nav>
+
+      </section>
+
+      </div>
+
+    </div>
+  </main>
+
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <form id="formView" data-contact-form>
+        <div class="label" style="margin-bottom:14px">Reach us</div>
+        <h3 class="h-2" style="font-size:24px">Tell us how your business works.</h3>
+        <p class="p" style="margin-top:8px">We'll help you find the right setup, ready to use or shaped to your workflow. We reply within a day.</p>
+        <div class="field">
+          <label for="m-name">Name</label>
+          <input id="m-name" name="name" type="text" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="m-business">Business</label>
+          <input id="m-business" name="business" type="text" placeholder="Business name">
+        </div>
+        <div class="field">
+          <label for="m-contact">Phone or email</label>
+          <input id="m-contact" name="contact" type="text" placeholder="How we reach you" required>
+        </div>
+        <div class="field">
+          <label for="m-niche">What are you running?</label>
+          <select id="m-niche" name="niche">
+            <option value="">Not sure yet</option>
+            <option value="cafe">Café, restaurant, bar & more</option>
+            <option value="salon">Salon / spa</option>
+            <option value="retail">Retail (shoes, clothing, books)</option>
+            <option value="mobile">Mobile retail &amp; repair</option>
+            <option value="general">Something else</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="m-message">Message</label>
+          <textarea id="m-message" name="message" placeholder="What are you running today?"></textarea>
+        </div>
+        <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">
+          <label for="m-hp">Leave this field empty</label>
+          <input id="m-hp" name="hp" type="text" tabindex="-1" autocomplete="off">
+        </div>
+        <button type="submit" class="btn btn-primary form-submit">Send</button>
+      </form>
+      <div class="success-view" id="successView">
+        <div class="success-mark">&check;</div>
+        <h3 class="h-2" style="font-size:22px">Got it.</h3>
+        <p class="p">We'll reach out to <span class="success-contact" id="successContact">you</span> shortly.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/sb-client.js?v=106"></script>
+<script src="site.js?v=114"></script>
+<script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
+<script>
+(function () {
+  var n = AUZcart.get().length;
+  document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n ? '(' + n + ')' : ''; });
+})();
+</script>
+<script src="company.js"></script>
+<script src="ed.js?v=1" defer></script><script src="fold.js?v=1" defer></script><script src="u.js?v=1" defer></script>
+<script src="a2.js?v=1" defer></script></body>
+</html>

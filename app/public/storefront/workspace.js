@@ -51,13 +51,40 @@ function ordersList() {
     link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status),
   ]));
 }
+
+// ---------- order summary strip (KPI cells with sparklines) ----------
+let reportRange = '7';
+const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' });
+function sparkline(values) {
+  const series = values.length > 1 ? values : [0, ...(values.length ? values : [0])];
+  const peak = Math.max(1, ...series);
+  const pts = series.map((v, i) => (i * 64 / (series.length - 1)).toFixed(1) + ',' + (22 - 20 * v / peak).toFixed(1)).join(' ');
+  return '<svg class="sparkline" viewBox="0 0 64 24" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+}
+const summaryCell = (name, value, values) => '<div class="summary-cell"><span>' + name + '</span><strong>' + value + '</strong>' + (values ? sparkline(values) : '') + '</div>';
+function orderMetrics() {
+  const today = dayFmt.format(new Date());
+  const first = reportRange === 'all' ? '0000-00-00' : dayFmt.format(new Date(Date.now() - (Number(reportRange) - 1) * 86400000));
+  const inRange = (d) => d && d >= first && d <= today;
+  const days = (rows) => { const m = new Map(); rows.forEach(([d, v]) => { if (d) m.set(d, (m.get(d) || 0) + Number(v || 0)); }); return [...m.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v); };
+  const cell = (name, rows, currency) => { const vals = days(rows), sum = vals.reduce((a, b) => a + b, 0); return summaryCell(name, currency ? money(sum) : sum, vals); };
+  const orders = state.orders.filter((o) => inRange(o.date));
+  const fulfilledOn = (o) => { const e = (o.timeline || []).find((x) => /fulfil/i.test(x.label || '')); return e ? String(e.at).slice(0, 10) : (o.status === 'Fulfilled' ? o.date : ''); };
+  const fulfilled = state.orders.map((o) => [fulfilledOn(o), 1]).filter(([d]) => inRange(d));
+  const reversed = state.orders.filter((o) => ['Cancelled', 'Returned'].includes(o.status) && inRange(o.date)).map((o) => [o.date, 1]);
+  const opts = [['1', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']].map(([v, l]) => '<option value="' + v + '"' + (v === reportRange ? ' selected' : '') + '>' + l + '</option>').join('');
+  return '<div class="summary-bar"><label class="summary-period">Reporting period<select id="report-range">' + opts + '</select></label>' +
+    cell('Orders', orders.map((o) => [o.date, 1])) + cell('Items ordered', orders.map((o) => [o.date, o.quantity ?? 1])) +
+    cell('Sales (paid)', orders.filter((o) => o.payment === 'Paid').map((o) => [o.date, o.total]), true) +
+    cell('Orders fulfilled', fulfilled) + cell('Cancelled or returned', reversed) + '</div>';
+}
 function ordersPage(id) {
   if (id === 'drafts') return draftsPage();
   if (id === 'returns') return returnsPage();
   if (id === 'shipping') return shippingPage();
   if (id === 'abandoned-checkouts') return abandonedPage();
   return head('Orders', 'Orders placed on your storefront.', '') + tabs(id, orderTabs) +
-    '<div class="metrics">' + metric('Orders', state.orders.length, 'All time') + metric('To fulfil', state.orders.filter((o) => o.status === 'Unfulfilled').length, '') + metric('Sales', money(state.counts.salesTotal), 'Paid orders') + '</div>' +
+    orderMetrics() +
     panel('All orders', ordersList());
 }
 function orderDetail(id) {
@@ -97,6 +124,7 @@ function productsPage(id) {
       panel('All collections', '<div class="filters"><input id="collection-query" type="search" aria-label="Search collections" placeholder="Search collections"><small id="collection-count"></small></div><div id="collection-results">' + collectionList() + '</div>');
   }
   return head(title, 'Your catalog, shared by your storefront’s theme and checkout.', (canWrite() ? button('Bulk edit selected', 'bulk-open') + button('Import from AUZsStyle', 'style-import') : '') + button('Export CSV', 'products-csv') + (canWrite() ? wl('Add product', 'products/new', 'primary') : '')) + tabs(id, productTabs) +
+    '<section class="summary-bar" aria-label="Product summary">' + summaryCell('Products', state.products.length) + summaryCell('Active', state.products.filter((x) => x.status === 'Active').length) + summaryCell('Draft or archived', state.products.filter((x) => x.status !== 'Active').length) + '</section>' +
     panel('All products', '<div class="filters"><input id="table-query" type="search" aria-label="Search products" placeholder="Search products">' + productFilters() + '<small id="table-count"></small></div><div id="table-results">' + productsList() + '</div>');
 }
 function collectionList(query = '') {
@@ -283,17 +311,85 @@ function sectionFieldsFor(s) {
     '<p class="compact-copy">Shows a real booking form on your storefront -- services, dates and times come from your own catalog/settings, the same booking system the Salon console uses. If you haven’t set up services yet, this section tells visitors booking isn’t ready.</p>';
   return '';
 }
+// ---- Theme editor: sections list | live preview of the store | settings of the selected section ----
+const SECTION_DEFAULTS = { hero: { heading: 'New heading', sub: 'A short line about your store.' }, text: { heading: 'About us', body: 'Tell your story here.' }, image: { url: '', caption: '' }, button: { text: 'Shop now', href: '/store.html' }, announcement: { text: 'Free shipping on orders over ₹999' }, booking: { heading: 'Book an appointment', note: '' } };
+let ed = null; // the open editor: { id, sections, sel, undo, redo, saved, device, snapped }
+const edJson = () => JSON.stringify(ed.sections);
+const edDirty = () => edJson() !== ed.saved;
+function edSnapshot() { ed.undo.push(edJson()); if (ed.undo.length > 50) ed.undo.shift(); ed.redo = []; }
+function edPost(scroll) {
+  const f = $('#te-frame'); if (!f?.contentWindow) return;
+  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.sections }, location.origin); if (ed.sel >= 0) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
+}
+function edListHtml() {
+  if (!ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. Sections show on your home page after the store’s own content.</p>';
+  return ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(sectionLabel[x.type] || x.type) + '</span><small>' + esc(String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
+}
+function edRightHtml() {
+  const x = ed.sections[ed.sel];
+  if (!x) return '<div class="panel-title"><h2>Section settings</h2></div><div class="panel-body"><p class="compact-copy">Pick a section on the left, or click it in the preview, to edit it.</p></div>';
+  const w = canWrite();
+  return '<div class="panel-title"><h2>' + esc(sectionLabel[x.type] || x.type) + '</h2></div><div class="panel-body"><form data-form="te-section"><div class="field-grid te-fields">' + sectionFieldsFor(x) + '</div>' +
+    (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Remove section', 'te-remove') + '</div>' : '') + '</form></div>';
+}
+function edBarHtml() {
+  const i = state.installs.find((v) => v.id === ed.id);
+  const w = canWrite();
+  return '<span class="te-status">' + (edDirty() ? badge('Unsaved changes', 'warn') : (i && JSON.stringify(i.draftContent) !== JSON.stringify(i.publishedContent) ? badge('Saved draft, not published', 'warn') : badge('Published'))) + '</span>' +
+    (w ? button('Undo', 'te-undo', ed.undo.length ? '' : 'disabled-look') + button('Redo', 'te-redo', ed.redo.length ? '' : 'disabled-look') : '') + button('Version history', 'theme-history:' + ed.id) +
+    (w ? button('Save design', 'te-save') + button('Review & publish', 'te-publish', 'primary') : '');
+}
+function edRefresh(parts = 'lbr', scroll = false) {
+  if (parts.includes('l')) { const el = $('#te-list'); if (el) el.innerHTML = edListHtml(); }
+  if (parts.includes('r')) { const el = $('#te-right'); if (el) el.innerHTML = edRightHtml(); }
+  if (parts.includes('b')) { const el = $('#te-actions'); if (el) el.innerHTML = edBarHtml(); }
+  edPost(scroll);
+}
+if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
+  if (e.origin !== location.origin || !e.data || !ed) return;
+  if (e.data.type === 'auz-ready') edPost();
+  if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.snapped = false; edRefresh('lrb'); }
+});
 function editorPage(installId) {
   const i = state.installs.find((x) => x.id === installId);
   if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
-  const sections = (i.draftContent?.sections) || [];
-  const dirty = JSON.stringify(i.draftContent) !== JSON.stringify(i.publishedContent);
-  const list = sections.length ? sections.map((s, idx) => panel(esc(sectionLabel[s.type] || s.type), '<form data-form="section" data-install="' + esc(installId) + '" data-index="' + idx + '"><div class="field-grid">' + sectionFieldsFor(s) + '</div><div class="actions"><button class="btn primary">Save section</button>' +
-    (idx > 0 ? button('Move up', 'section-up:' + idx + ':' + installId) : '') + (idx < sections.length - 1 ? button('Move down', 'section-down:' + idx + ':' + installId) : '') + button('Remove', 'section-remove:' + idx + ':' + installId) + '</div></form>')).join('') :
-    panel('No sections yet', body('<p class="compact-copy">Add a section below -- it shows on your storefront’s home page once published.</p>'));
-  const addControls = canWrite() ? '<div class="actions" style="margin-top:12px">' + Object.entries(sectionLabel).map(([type, label]) => button('Add ' + label, 'section-add:' + type + ':' + installId)).join('') + '</div>' : '';
-  return head(esc(i.themeName) + ' -- customize', 'Changes save as a draft; publish to put them live on your storefront.', (dirty ? badge('Unpublished changes', 'warn') : badge('Published')) + button('Version history', 'theme-history:' + installId) + (canWrite() ? button('Publish', 'theme-publish:' + installId, 'primary') : ''), ['builder', 'Theme']) +
-    list + panel('Add a section', body(addControls));
+  if (!ed || ed.id !== installId) { const sections = structuredClone(i.draftContent?.sections || []); ed = { id: installId, sections, sel: sections.length ? 0 : -1, undo: [], redo: [], saved: JSON.stringify(sections), device: 'desktop', snapped: false }; }
+  const w = canWrite();
+  const types = Object.entries(sectionLabel).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
+  const unpublished = !state.store.published ? '<div class="notice te-note">Your store is switched off, so the preview may show “not open yet”. Turn it on under Online store to see it here.</div>' : '';
+  return head(esc(i.themeName), 'Design your home page sections and see them live. Nothing goes public until you review and publish.', '<span id="te-actions" class="te-actions">' + edBarHtml() + '</span>', ['builder', 'Theme']) + unpublished +
+    '<div class="te"><aside class="panel te-left"><div class="panel-title"><h2>Sections</h2></div><div class="panel-body"><div id="te-list" class="te-list">' + edListHtml() + '</div>' +
+    (w ? '<div class="te-add"><select id="te-add-type" aria-label="Section type">' + types + '</select>' + button('Add section', 'te-add', 'primary') + '</div>' : '') +
+    '<p class="compact-copy te-soon">More page templates, header and footer blocks are coming in a later release.</p></div></aside>' +
+    '<div class="te-mid"><div class="te-bar"><label>Page<select disabled aria-label="Page template"><option>Home page</option></select></label><div class="seg" role="group" aria-label="Device">' +
+    ['desktop', 'tablet', 'mobile'].map((d) => '<button type="button" class="btn compact' + (ed.device === d ? ' primary' : '') + '" data-action="te-device:' + d + '">' + d[0].toUpperCase() + d.slice(1) + '</button>').join('') + '</div></div>' +
+    '<div class="te-stage"><iframe id="te-frame" class="te-frame ' + ed.device + '" src="/store.html?preview=draft#/" title="Live preview of your store"></iframe></div></div>' +
+    '<aside class="panel te-right" id="te-right">' + edRightHtml() + '</aside></div>';
+}
+function edHandle(a, key) {
+  if (!ed) return false;
+  if (a === 'te-select') { ed.sel = Number(key); ed.snapped = false; edRefresh('lr', true); return true; }
+  if (a === 'te-device') { ed.device = key; const f = $('#te-frame'); if (f) f.className = 'te-frame ' + key; document.querySelectorAll('[data-action^="te-device:"]').forEach((b) => b.classList.toggle('primary', b.dataset.action === 'te-device:' + key)); return true; }
+  if (!canWrite()) return false;
+  if (a === 'te-add') { const type = $('#te-add-type')?.value || 'text'; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(SECTION_DEFAULTS[type] || {}) } }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-remove') { if (ed.sel < 0) return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
+  if (a === 'te-up' || a === 'te-down') { const to = ed.sel + (a === 'te-up' ? -1 : 1); if (!ed.sections[to]) return true; edSnapshot(); const [x] = ed.sections.splice(ed.sel, 1); ed.sections.splice(to, 0, x); ed.sel = to; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-undo' || a === 'te-redo') { const from = a === 'te-undo' ? ed.undo : ed.redo, to = a === 'te-undo' ? ed.redo : ed.undo; if (!from.length) return true; to.push(edJson()); ed.sections = JSON.parse(from.pop()); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
+  return false;
+}
+function edInput(target) {
+  const form = target.closest('form[data-form="te-section"]'); if (!form || !ed || ed.sel < 0 || !canWrite()) return false;
+  if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
+  ed.sections[ed.sel] = { ...ed.sections[ed.sel], props: Object.fromEntries(new FormData(form)) };
+  const el = $('#te-list'); if (el) el.innerHTML = edListHtml();
+  const b = $('#te-actions'); if (b) { const html = edBarHtml(); if (b.dataset.html !== html) { b.dataset.html = html; b.innerHTML = html; } }
+  edPost(); return true;
+}
+async function edSave() {
+  const i = state.installs.find((x) => x.id === ed.id); if (!i) return;
+  const content = { ...(i.draftContent || {}), sections: ed.sections };
+  await api('sfx_theme_customize_save', { p_install_id: ed.id, p_content: content });
+  i.draftContent = content; ed.saved = edJson(); edRefresh('b');
 }
 async function saveDraft(installId, mutate) {
   const i = state.installs.find((x) => x.id === installId);
@@ -777,6 +873,8 @@ export function workspace(id, record) {
 async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); } }
 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
+  if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
+  if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
   if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'), el = f.querySelector('[data-seo-preview]'); if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
@@ -977,6 +1075,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     await Promise.all([refreshInstalls()]); const ctx = await api('sfx_context'); applyContext(ctx);
     save('This theme is now active on your storefront.'); rerender();
   });
+  if (a && a.startsWith('te-') && a !== 'te-save' && a !== 'te-publish') { if (edHandle(a, key)) return; }
+  if (a === 'te-save') return withBusy(async () => { await edSave(); save('Design saved as a draft.'); });
+  if (a === 'te-publish') return withBusy(async () => { if (!confirm('Publish this design to your live storefront?')) return; await edSave(); await api('sfx_theme_customize_publish', { p_install_id: ed.id }); await refreshInstalls(); save('Published to your storefront.'); rerender(); });
   if (a === 'theme-history') return withBusy(async () => {
     const rows = await api('sfx_theme_history_list', { p_install_id: key });
     const fmt = (d) => new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(d));

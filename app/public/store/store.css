@@ -1061,3 +1061,6 @@ body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(10
 .booking-form input,.booking-form select{padding:10px 12px;border:1px solid var(--line,#e6e6e3);border-radius:8px;font:inherit}
 .booking-form .hint{color:#b23b3b;font-size:13px;margin:0}
 .custom-booking .hint{color:var(--ink-faint,#666);text-align:center}
+
+.custom-section.sel{outline:2px solid #2b6cff;outline-offset:-2px}
+.custom-empty{padding:28px 16px;text-align:center}

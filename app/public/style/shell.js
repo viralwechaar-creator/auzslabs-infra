@@ -18,7 +18,7 @@ function parseHash() {
 }
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 const allowed = (def) => !!def && (!def.perm || (typeof def.perm === 'function' ? def.perm() : can(def.perm)));
-const NAV = [['sell', 'Sell', 'cash'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'tag'], ['home', 'Overview', 'home'], ['gst', 'GST', 'tag'], ['intel', 'Buying intelligence', 'bolt'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'cash'], ['drawer', 'Cash drawer', 'cash'], ['expenses', 'Expenses', 'book'], ['store', 'Online store', 'globe'], ['ai', 'AI connector', 'swap'], ['admin', 'Admin', 'user'], ['settings', 'Settings', 'gear']];
+const NAV = [['sell', 'Sell', 'cart'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'receipt'], ['home', 'Overview', 'home'], ['gst', 'GST', 'percent'], ['intel', 'Buying intelligence', 'bolt'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'moneyIn'], ['drawer', 'Cash drawer', 'drawer'], ['expenses', 'Expenses', 'wallet'], ['store', 'Online store', 'storefront'], ['ai', 'AI connector', 'chip'], ['admin', 'Admin', 'shieldUser'], ['settings', 'Settings', 'gear']];
 const capOff = (k) => !!(S.ctx && S.ctx.caps && S.ctx.caps[k] === false);
 const navList = () => NAV.filter(([id]) => allowed(PAGES[id]) && !(id === 'store' && capOff('online_store')));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);

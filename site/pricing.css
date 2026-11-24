@@ -1,0 +1,54 @@
+html body main.content .pr{max-width:1320px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left,0px)) 60px;color:#16181d}
+html body main.content .pr h1,html body main.content .pr h2{color:#16181d;letter-spacing:-.045em;font-weight:600;margin:0;text-align:left}
+html body main.content .pr-hero{text-align:center;padding:clamp(90px,14vh,150px) 0 40px}
+html body main.content .pr-hero h1{font-size:clamp(40px,8vw,104px)!important;line-height:.98;text-align:center}
+html body main.content .pr-hero p{font-size:clamp(14px,1.6vw,18px);color:#4a4f58;margin:18px 0}
+.pr-jump{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.pr-jump a{border:1px solid #d9dbe0;background:#fff;border-radius:999px;padding:9px 16px;font-weight:600;font-size:13px;color:#16181d;text-decoration:none}
+.pr-plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start;margin-top:20px}
+.pr-plan{display:flex;flex-direction:column;border:1px solid #dcdfe4;background:#fff;border-radius:22px;padding:22px}
+.pr-plan.hi{border:1.5px solid #16181d}
+.pr-plan.dark{background:#16181d;color:#f4f4f2;border-color:#16181d}
+html body main.content .pr-plan h2{font-size:24px!important}
+html body main.content .pr-plan.dark h2{color:#fff}
+.pr-plan .sub{font-size:13px;color:#6a6f78;margin:4px 0 14px}.pr-plan.dark .sub,.pr-plan.dark .gst{color:#b9bcc4}
+.pr-plan .amt{font-size:38px;font-weight:700;letter-spacing:-.04em}.pr-plan .amt.big{font-size:30px}.pr-plan .amt small{font-size:14px;font-weight:500;letter-spacing:0;color:#6a6f78}.pr-plan.dark .amt small{color:#b9bcc4}
+.pr-plan .gst{font-size:13px;color:#6a6f78;margin:4px 0 14px}
+.pr-plan ul{list-style:none;padding:0;margin:0 0 20px;flex:1}.pr-plan li{font-size:13.5px;padding:10px 0 10px 0;border-top:1px solid #e6e8ec;position:relative}.pr-plan.dark li{border-color:#33363d}
+.pr-plan li:before{content:none}
+.pr-btn{display:block;text-align:center;border:1px solid #16181d;background:#16181d;color:#fff;border-radius:12px;padding:14px;font:600 15px Inter,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+.pr-btn.ghost{background:transparent;color:inherit;border-color:#c9ccd2}.pr-plan.dark .pr-btn.ghost{border-color:#555;color:#fff}
+.pr-cmp,.pr-quote,.pr-faq{margin-top:56px;border:1px solid #e1e3e7;background:#fbfbfc;border-radius:24px;padding:clamp(18px,3vw,40px)}
+.pr-cmp h2,.pr-quote h2,.pr-faq h2{font-size:clamp(28px,4.4vw,52px)!important}
+.pr-tw{overflow-x:auto;margin-top:22px}.pr-tw table{width:100%;min-width:760px;border-collapse:collapse;font-size:14px}
+.pr-tw th,.pr-tw td{text-align:left;padding:14px 12px;border-top:1px solid #e1e3e7}
+.pr-tw thead th{font:700 11px "Space Mono",monospace;letter-spacing:.1em;text-transform:uppercase;color:#6a6f78;border-top:0}
+.pr-tw tbody th{font:700 11px "Space Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:#6a6f78;width:22%}
+.pr-quote,.pr-faq{display:grid;grid-template-columns:1fr 1.7fr;gap:30px}
+.pr-quote p{color:#4a4f58;font-size:14px}
+.pr-quote form{display:grid;gap:14px}.pr-quote label,.pr-quote legend{font-weight:600;font-size:14px;display:grid;gap:6px}
+.pr-quote em{font-weight:400;font-size:12px;color:#6a6f78;font-style:normal}
+.pr-quote input:not([type=checkbox]),.pr-quote select,.pr-quote textarea{width:100%;border:1px solid #d9dbe0;border-radius:10px;padding:11px 12px;background:#fff;font:15px Inter,system-ui,sans-serif;color:#16181d}
+.pr-quote textarea{min-height:100px}.pr-quote fieldset{border:1px solid #e1e3e7;border-radius:14px;padding:12px}
+.pr-svc{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pr-svc label{display:flex;gap:8px;align-items:center;border:1px solid #e1e3e7;background:#fff;border-radius:10px;padding:10px;font-weight:500}
+.pr-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pr-quote button.pr-btn{justify-self:start;padding:14px 22px}
+.pr-faq a{font-size:13px;color:#4a4f58}
+.pr-faq details{border-top:1px solid #e1e3e7}.pr-faq summary{cursor:pointer;list-style:none;padding:18px 0;font-weight:500;display:flex;justify-content:space-between;gap:12px}
+.pr-faq summary::-webkit-details-marker{display:none}.pr-faq summary:after{content:"+";font-size:20px}.pr-faq details[open] summary:after{content:"–"}
+.pr-faq details p{margin:0 0 18px;color:#4a4f58;font-size:14px}
+@media(max-width:1000px){.pr-plans{grid-template-columns:repeat(2,minmax(0,1fr))}.pr-quote,.pr-faq{grid-template-columns:1fr}}
+@media(max-width:560px){.pr-plans,.pr-svc,.pr-two{grid-template-columns:1fr}}
+html body.a-pricing main.content .pr .pr-plan.dark,html body.a-pricing main.content .pr .pr-plan.dark li,html body.a-pricing main.content .pr .pr-plan.dark h2{color:#fff!important}
+html body.a-pricing main.content .pr .pr-plan.dark .sub,html body.a-pricing main.content .pr .pr-plan.dark .gst{color:#b9bcc4!important}
+html body.a-pricing main.content .pr .pr-plan li,html body.a-pricing main.content .pr .pr-plan .sub,html body.a-pricing main.content .pr .pr-plan .gst{font-size:13.5px!important;opacity:1!important}
+html body.a-pricing main.content .pr .pr-plan:not(.dark) li{color:#16181d!important}
+html body.a-pricing main.content .pr :is(.pr-cmp,.pr-quote,.pr-faq) h2{font-size:clamp(30px,4.6vw,56px)!important;line-height:1;color:#16181d!important}
+html body.a-pricing main.content .pr-quote :is(label,legend,input,select,textarea,p){opacity:1!important;color:#16181d!important}
+html body.a-pricing main.content .pr-quote p{color:#4a4f58!important;font-size:14px!important}
+html body.a-pricing main.content .pr-quote em{color:#6a6f78!important;font-size:12px!important}
+html body.a-pricing main.content .pr-plans .pr-btn{color:#fff!important}
+html body.a-pricing main.content .pr-plans .pr-btn.ghost{color:#16181d!important}
+html body.a-pricing main.content .pr-plans .dark .pr-btn.ghost{color:#fff!important}
+html body.a-pricing main.content .pr-faq summary{font-size:15px!important;color:#16181d!important}
+html body.a-pricing main.content .pr-faq p{font-size:14px!important;opacity:1!important}
