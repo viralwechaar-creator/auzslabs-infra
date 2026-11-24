@@ -53,19 +53,19 @@ export function close() { if ($('#dialog').open) $('#dialog').close(); }
 const switchApps = () => {
   const f = state.features || {}, on = (k) => f[k];
   const apps = [];
-  if (on('style')) apps.push(['AUZsStyle', 'https://auzsstyle.auzslab.in/style.html']);
-  if (on('accounting')) apps.push(['AUZsLedger', 'https://auzsledger.auzslab.in/accounts.html']);
-  if (on('salon') && state.tenant?.slug) apps.push(['Salon console', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
+  if (on('style')) apps.push(['AUZsStyle', 'https://auzsstyle.auzslab.in/style.html', 'shirt']);
+  if (on('accounting')) apps.push(['AUZsLedger', 'https://auzsledger.auzslab.in/accounts.html', 'ledger']);
+  if (on('salon') && state.tenant?.slug) apps.push(['Salon console', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/', 'scissors']);
   if (!apps.length) return '';
-  return '<div class="sidebar-apps"><div class="nav-label">Switch app</div><a class="sidebar-app current" href="' + pathFor('') + '" aria-current="true">' + icon('store') + '<span>Storefront</span></a>' + apps.map(([n, u]) => '<a class="sidebar-app" href="' + esc(u) + '" data-handoff="1">' + icon('grid') + '<span>' + esc(n) + '</span></a>').join('') + '</div>';
+  return '<div class="sidebar-apps"><div class="nav-label">Switch app</div><a class="sidebar-app current" href="' + pathFor('') + '" aria-current="true">' + icon('store') + '<span>Storefront</span></a>' + apps.map(([n, u, ic]) => '<a class="sidebar-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span>' + esc(n) + '</span></a>').join('') + '</div>';
 };
 const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
 
 const allItems = menu.flatMap((m) => (m.id ? [[m.id, m.name], ...(m.children || [])] : []));
 const settingsGroups = [
-  { label: 'Business', items: [['settings', 'Business profile', 'settings'], ['billing', 'Billing and renewals', 'file'], ['team', 'Staff and access', 'user'], ['roles', 'Roles', 'lock'], ['locations', 'Locations', 'pin']] },
-  { label: 'Store operations', items: [['checkout', 'Payments', 'card'], ['domains', 'Domains', 'globe'], ['builder', 'Theme', 'globe'], ['policies', 'Store policies', 'file']] },
-  { label: 'Preferences', items: [['notifications', 'Notifications', 'bell'], ['privacy-settings', 'Customer privacy', 'lock'], ['security', 'Sign-in and support', 'lock']] },
+  { label: 'Business', items: [['settings', 'Business profile', 'business'], ['billing', 'Billing and renewals', 'receipt'], ['team', 'Staff and access', 'team'], ['roles', 'Roles', 'shield'], ['locations', 'Locations', 'pin']] },
+  { label: 'Store operations', items: [['checkout', 'Payments', 'card'], ['domains', 'Domains', 'link'], ['builder', 'Theme', 'palette'], ['policies', 'Store policies', 'scroll']] },
+  { label: 'Preferences', items: [['notifications', 'Notifications', 'bell'], ['privacy-settings', 'Customer privacy', 'eye'], ['security', 'Sign-in and support', 'key']] },
 ];
 const settingsRoutes = new Set(['settings', ...(menu.find((item) => item.id === 'settings')?.children || []).map(([id]) => id), 'team', 'roles', 'locations', 'billing', 'security']);
 let returnToWorkspace = 'home';
