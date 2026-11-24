@@ -115,12 +115,42 @@ function collectionDetail(id) {
 // ---------- Product detail ----------
 const recordTabs = [['details', 'Details'], ['media', 'Media'], ['variants', 'Variants']];
 function variantEditor(variants) {
-  return variants.length ? table(['Label', 'SKU', 'Price (₹)', 'Stock'], variants.map((v, i) => [
-    esc(v.label) + '<input type="hidden" name="variantLabel' + i + '" value="' + esc(v.label) + '"><input type="hidden" name="variantId' + i + '" value="' + esc(v.id || '') + '">',
-    input('SKU for ' + esc(v.label), 'variantSku' + i, v.sku, 'text', canWrite() ? '' : 'disabled'),
-    input('Price for ' + esc(v.label), 'variantPrice' + i, v.price, 'number', 'required min="0" step="0.01" ' + (canWrite() ? '' : 'disabled')),
-    input('Stock for ' + esc(v.label), 'variantStock' + i, v.stock, 'number', 'required min="0" step="1" ' + (canWrite() ? '' : 'disabled')),
-  ])) : '<p class="compact-copy">This product has no variants yet. Add one below.</p>';
+  const dis = canWrite() ? '' : 'disabled';
+  return variants.length ? table(['Variant', 'SKU', 'Barcode', 'Price (₹)', 'Stock', ''], variants.map((v, i) => [
+    input('Variant name', 'variantLabel' + i, v.label, 'text', 'required maxlength="80" ' + dis) + '<input type="hidden" name="variantId' + i + '" value="' + esc(v.id || '') + '">',
+    input('SKU', 'variantSku' + i, v.sku, 'text', 'maxlength="60" ' + dis),
+    input('Barcode', 'variantBarcode' + i, v.barcode, 'text', 'maxlength="60" ' + dis),
+    input('Price', 'variantPrice' + i, v.price, 'number', 'required min="0" step="0.01" ' + dis),
+    input('Stock', 'variantStock' + i, v.stock, 'number', 'required min="0" step="1" ' + dis),
+    canWrite() ? button('Remove', 'variant-remove:' + i, 'compact danger') : '',
+  ])) : '<p class="compact-copy">This product has no variants yet. Generate them from options above, or add a row.</p>';
+}
+// ---------- Options (for example Material × Finish) -> generated variants ----------
+function optionRows(options) {
+  const rows = [0, 1, 2].map((n) => { const o = (options || [])[n] || {}; return '<div class="field-grid option-row">' + input('Option ' + (n + 1) + ' name', 'optName' + n, o.name || '', 'text', 'maxlength="40" placeholder="' + ['Material', 'Finish', 'Size'][n] + '"') + input('Values, separated by commas', 'optValues' + n, (o.values || []).join(', '), 'text', 'maxlength="400" placeholder="' + ['Silver, Gold', 'Matte, Gloss', 'S, M, L'][n] + '"') + '</div>'; }).join('');
+  return rows;
+}
+function readOptions(formEl) {
+  const data = new FormData(formEl); const out = [];
+  for (let n = 0; n < 3; n++) {
+    const name = String(data.get('optName' + n) || '').trim(); const values = [...new Set(String(data.get('optValues' + n) || '').split(',').map((x) => x.trim()).filter(Boolean))];
+    if (!name && !values.length) continue;
+    if (!name || !values.length) throw new Error('Option ' + (n + 1) + ' needs both a name and at least one value.');
+    if (values.length > 20) throw new Error(name + ' can have up to 20 values.');
+    out.push({ name, values });
+  }
+  return out;
+}
+const combos = (options) => options.reduce((acc, o) => acc.flatMap((a) => o.values.map((v) => a.concat(v))), [[]]).map((c) => c.join(' / '));
+function generateVariants(formEl) {
+  const options = readOptions(formEl); if (!options.length) throw new Error('Add at least one option with values first.');
+  const labels = combos(options); if (labels.length > 100) throw new Error('That makes ' + labels.length + ' variants. The limit is 100. Remove some values.');
+  const current = collectVariants(formEl); const byLabel = new Map(current.map((v) => [v.label.toLowerCase(), v]));
+  const basePrice = current[0]?.price ?? 0; let fresh = 0, kept = 0;
+  const next = labels.map((label) => { const old = byLabel.get(label.toLowerCase()); if (old) { kept++; return { ...old, label }; } fresh++; return { label, sku: '', barcode: '', price: basePrice, stock: 0 }; });
+  const removed = current.filter((v) => !labels.some((l) => l.toLowerCase() === v.label.toLowerCase())).length;
+  formEl.querySelector('.product-variant-grid').innerHTML = variantEditor(next);
+  return { total: labels.length, fresh, kept, removed };
 }
 function productDetail(id) {
   const p = id !== 'new' ? state.products.find((x) => x.id === id) : null;
@@ -151,13 +181,15 @@ function productDetail(id) {
         '<input type="hidden" name="existing" value="' + esc(JSON.stringify(existing)) + '"><div class="field-grid" style="margin-top:12px">' + input('Add an image link (https://...)', 'imageUrl', '', 'url') + '</div><div class="actions"><button class="btn primary">Save images</button></div></form>'
       : (photos ? '<div class="media-grid">' + photos + '</div>' : '<p class="compact-copy">No images yet.</p>')));
   } else if (tab === 'variants') {
-    const intro = '<p class="compact-copy">Each variant has its own SKU, price, and stock. Add a row for every size/colour/edition you sell.</p>';
+    const intro = '<p class="compact-copy">Define options such as Material and Finish, then generate every combination. Each variant has its own SKU, barcode, price and stock.</p>';
     const grid = variantEditor(r.variants || []);
     const editable = canWrite()
-      ? '<form data-form="edit" data-key="product-variants" data-id="' + esc(p.id) + '"><div class="product-variant-grid">' + grid + '</div>' +
-        '<div class="actions" style="margin-top:12px">' + button('Add a variant row', 'variant-add') + '<button class="btn primary">Save variants</button></div></form>'
+      ? '<form data-form="edit" data-key="product-variants" data-id="' + esc(p.id) + '"><div class="stack">' + optionRows(ex.options) + '<div class="actions">' + button('Generate variants from options', 'variant-generate') + '</div></div>' +
+        '<div class="product-variant-grid" style="margin-top:14px">' + grid + '</div>' +
+        '<div class="field-grid" style="margin-top:12px">' + input('Set one price for all variants (₹)', 'bulkPrice', '', 'number', 'min="0" step="0.01"') + input('Set stock for all variants', 'bulkStock', '', 'number', 'min="0" step="1"') + '</div>' +
+        '<div class="actions" style="margin-top:12px">' + button('Apply to all rows', 'variant-fill') + button('Add a variant row', 'variant-add') + '<button class="btn primary">Save variants</button></div></form>'
       : '<div class="product-variant-grid">' + grid + '</div>';
-    view = panel('Variants', body(intro + editable));
+    view = panel('Options and variants', body(intro + editable));
   }
   const quick = p ? panel('Summary', body('<div class="stack">' + status(r.status) + '<strong>' + money(r.price) + '</strong><small>' + esc(r.stock) + ' available</small></div>')) : '';
   const viewLink = p && r.status === 'Active' && state.store.published && state.tenant?.slug ? link('View on storefront', 'https://' + esc(state.tenant.slug) + '.auzslab.in/store.html?view=p&p=' + encodeURIComponent(p.id)) : '';
@@ -172,7 +204,7 @@ function addVariantRow(formEl) {
 }
 function collectVariants(formEl) {
   const data = new FormData(formEl); const out = [];
-  for (let i = 0; data.has('variantLabel' + i); i++) out.push({ id: data.get('variantId' + i) || undefined, label: data.get('variantLabel' + i), sku: data.get('variantSku' + i), price: Number(data.get('variantPrice' + i)) || 0, stock: Number(data.get('variantStock' + i)) || 0 });
+  for (let i = 0; data.has('variantLabel' + i); i++) out.push({ id: data.get('variantId' + i) || undefined, label: data.get('variantLabel' + i), sku: data.get('variantSku' + i), barcode: data.get('variantBarcode' + i), price: Number(data.get('variantPrice' + i)) || 0, stock: Number(data.get('variantStock' + i)) || 0 });
   return out;
 }
 
@@ -748,8 +780,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'product-variants') {
         const variants = collectVariants(target);
         if (!variants.length) { flash('Add at least one variant.'); return; }
+        const dup = (k) => { const seen = new Set(); for (const v of variants) { const x = String(v[k] || '').trim().toLowerCase(); if (!x) continue; if (seen.has(x)) return v[k]; seen.add(x); } return null; };
+        const dl = dup('label'), ds = dup('sku'), db = dup('barcode');
+        if (dl) { flash('Two variants are both called "' + dl + '".'); return; } if (ds) { flash('The SKU "' + ds + '" is used twice.'); return; } if (db) { flash('The barcode "' + db + '" is used twice.'); return; }
+        const options = readOptions(target);
         const p = state.products.find((x) => x.id === rid);
         await api('sfx_product_save', { p_id: rid, p: { ...keepFields(p), variants } });
+        await api('sfx_product_extra_save', { p_id: rid, p: { options } });
         await refreshProducts(); save('Variants saved.'); rerender();
       } else if (key === 'collection-record') {
         if (!data.name?.trim()) { flash('Enter a collection title.'); return; }
@@ -878,6 +915,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'plan-pay') { const out = $('#plan-feedback'); target.disabled = true; out.textContent = 'Starting payment…'; return payPlan(out).catch((e) => { out.textContent = e.message; }).finally(() => { target.disabled = false; }); }
   if (a === 'plan-request') return withBusy(async () => { await api('request_storefront_reactivation', { p_notes: null }); save('Request sent. We will get back to you.'); });
   if (a === 'variant-add') { addVariantRow(target.closest('form')); return; }
+  if (a === 'variant-generate') { try { const r = generateVariants(target.closest('form')); flash(r.total + ' variants: ' + r.fresh + ' new, ' + r.kept + ' kept' + (r.removed ? ', ' + r.removed + ' will be removed when you save' : '') + '. Review the rows, then Save variants.'); } catch (e) { flash(e.message); } return; }
+  if (a === 'variant-remove') { const f = target.closest('form'); const list = collectVariants(f); list.splice(Number(key), 1); f.querySelector('.product-variant-grid').innerHTML = variantEditor(list); return; }
+  if (a === 'variant-fill') { const f = target.closest('form'); const bp = f.querySelector('[name=bulkPrice]').value, bs = f.querySelector('[name=bulkStock]').value; const list = collectVariants(f).map((v) => ({ ...v, price: bp !== '' ? Number(bp) : v.price, stock: bs !== '' ? Number(bs) : v.stock })); f.querySelector('.product-variant-grid').innerHTML = variantEditor(list); flash('Applied. Save variants to keep it.'); return; }
   if (a === 'theme-use') return withBusy(async () => { await api('sfx_store_save', { p: { theme: key } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Theme updated.'); rerender(); });
   if (a === 'razorpay-clear') return withBusy(async () => { await api('sfx_store_set_razorpay', { p: { clear: true } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay disconnected.'); rerender(); });
   if (a === 'order-fulfill') {

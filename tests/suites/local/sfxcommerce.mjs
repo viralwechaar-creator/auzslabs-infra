@@ -208,5 +208,18 @@ export default async function run({ browser, stack }) {
     await call('sfx_theme_install_set_active', { p_install_id: dup.j.installId }); assert(!(await call('sfx_theme_install_delete', { p_install_id: dup.j.installId })).ok, 'live theme cannot be deleted');
     assert((await call('sfx_theme_install_delete', { p_install_id: made.j.installId })).ok, 'delete custom'); assert(!(await call('sfx_theme_install_delete', { p_install_id: inst.j.installId })).ok, 'marketplace install cannot be deleted');
   }, 'major');
+  await s.check('Product options are saved with the product, validated, and generated variants keep SKU, barcode, price and stock (db/396)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    const tok = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token;
+    const call = async (fn, a) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(a) }); const j = await r.json().catch(() => ({})); return { ok: r.ok, j: j.data !== undefined ? j.data : j }; };
+    const pid = (await q("insert into sfx_products (tenant_id, name, handle, status, price) values ($1,'Opt Ring','opt-ring','active',100) returning id", [tid]))[0].id;
+    const save = await call('sfx_product_save', { p_id: pid, p: { name: 'Opt Ring', status: 'active', price: 100, variants: [{ label: 'Silver / Matte', sku: 'S-M', barcode: 'B-1', price: 120, stock: 3 }, { label: 'Gold / Gloss', sku: 'G-G', barcode: 'B-2', price: 150, stock: 0 }] } });
+    assert(save.ok, JSON.stringify(save));
+    assert((await call('sfx_product_extra_save', { p_id: pid, p: { options: [{ name: 'Material', values: ['Silver', 'Gold'] }, { name: 'Finish', values: ['Matte', 'Gloss'] }] } })).ok, 'options saved');
+    const row = (await q("select extra->'options' o from sfx_products where id=$1", [pid]))[0]; assert(row.o.length === 2 && row.o[0].values[1] === 'Gold', JSON.stringify(row));
+    const vs = await q("select label, sku, barcode, price::float, stock from sfx_variants where product_id=$1 order by position", [pid]); assert(vs.length === 2 && vs[0].barcode === 'B-1' && vs[1].price === 150, JSON.stringify(vs));
+    const pub = (await q("select jsonb_path_query_array(public_sfx_store('testcafe')->'styles', '$[*] ? (@.name == \"Opt Ring\").variants[*].size') as v"))[0].v; assert(pub.includes('Silver / Matte'), JSON.stringify(pub));
+    for (const bad of [[{ name: 'A', values: [] }], [{ name: '', values: ['x'] }], [{ name: 'A', values: ['x'] }, { name: 'B', values: ['y'] }, { name: 'C', values: ['z'] }, { name: 'D', values: ['w'] }], [{ name: 'A', values: ['x'.repeat(41)] }]]) assert(!(await call('sfx_product_extra_save', { p_id: pid, p: { options: bad } })).ok, 'bad options accepted ' + JSON.stringify(bad));
+  }, 'major');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }
