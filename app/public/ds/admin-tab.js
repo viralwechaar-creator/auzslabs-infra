@@ -8,6 +8,52 @@
     (kids || []).forEach(function (c) { if (c) n.append(c); });
     return n;
   }
+
+  // One stylesheet for the whole Admin tab, so it looks the same in every app. It only uses the page's own text colour and
+  // mixes it with transparency, so it follows each app's light and dark theme (AUZsStyle, AUZsLedger, Salon console, store hub).
+  function injectCss() {
+    if (document.getElementById('at-css')) return;
+    var st = document.createElement('style'); st.id = 'at-css';
+    st.textContent = [
+      '.at.at{--at-fg:var(--label,var(--ink,#1a1a1a));--at-bg:var(--bg,#fff);--at-ac:var(--accent,var(--plum,var(--at-fg)));',
+      '--at-line:color-mix(in srgb,var(--at-fg) 13%,transparent);--at-soft:color-mix(in srgb,var(--at-fg) 5%,transparent);--at-mut:color-mix(in srgb,var(--at-fg) 58%,transparent);',
+      'display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;align-items:start;color:var(--at-fg);font-size:14px;line-height:1.45}',
+      '.at.at.at-solo{grid-template-columns:minmax(0,1fr)}',
+      '.at.at .at-nav{display:grid;gap:4px;position:sticky;top:12px;padding:8px;border:1px solid var(--at-line);border-radius:18px;background:var(--at-soft)}',
+      '.at.at .at-nav button{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 12px;border-radius:12px;font-weight:600;font-size:14px;color:var(--at-fg);display:block}',
+      '.at.at .at-nav button:hover{background:var(--at-soft)}',
+      '.at.at .at-nav button[aria-selected=true]{background:var(--at-fg);color:var(--at-bg)}',
+      '.at.at .at-nav button:focus-visible{outline:2px solid var(--at-ac);outline-offset:2px}',
+      '.at.at .at-body{min-width:0;display:grid;gap:14px}',
+      '.at.at .at-title{margin:0 0 2px;font-size:20px;font-weight:750;letter-spacing:-.01em}',
+      '.at.at .card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;align-content:start;padding:18px;border:1px solid var(--at-line);border-radius:18px;background:var(--at-soft);box-shadow:none;margin:0}',
+      '.at.at .card>*{grid-column:1/-1;margin:0;min-width:0}',
+      '.at.at .card>label,.at.at .card>input,.at.at .card>select,.at.at .card>textarea{grid-column:auto}',
+      '.at.at .card h3{margin:0;font-size:15px;font-weight:700}',
+      '.at.at .muted,.at.at .small.muted{color:var(--at-mut);font-size:13px;margin:0}',
+      '.at.at label.small{display:grid;gap:5px;margin:0!important;font-size:12.5px;font-weight:600;color:var(--at-mut)}',
+      '.at.at .input,.at.at input:not([type=checkbox]):not([type=radio]),.at.at select,.at.at textarea{box-sizing:border-box;width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--at-line);border-radius:12px;background:var(--at-bg);color:var(--at-fg);font:inherit;box-shadow:none;margin:0}',
+      '.at.at textarea{min-height:84px}',
+      '.at.at input:focus,.at.at select:focus,.at.at textarea:focus{outline:2px solid var(--at-ac);outline-offset:1px}',
+      '.at.at .btn,.at.at button.btn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;justify-self:start;min-height:40px;padding:0 16px;border:1px solid var(--at-line);border-radius:999px;background:var(--at-bg);color:var(--at-fg);font-weight:650;font-size:13.5px;text-decoration:none;width:auto}',
+      '.at.at .btn:hover{background:var(--at-soft)}',
+      '.at.at .btn.fill{background:var(--at-fg);border-color:var(--at-fg);color:var(--at-bg)}',
+      '.at.at .btn.small{min-height:34px;padding:0 12px;font-size:12.5px}',
+      '.at.at .btn[disabled]{opacity:.5;cursor:default}',
+      '.at.at .list{display:grid;gap:8px}',
+      '.at.at .li{border:1px solid var(--at-line);border-radius:14px;background:var(--at-bg);padding:10px 12px}',
+      '.at.at pre,.at.at code{background:var(--at-bg);border:1px solid var(--at-line);border-radius:10px;padding:8px 10px;font-size:12.5px}',
+      '.at.at a:not(.btn){color:var(--at-ac)}',
+      '@media (max-width:899px){',
+      '.at.at{grid-template-columns:minmax(0,1fr);gap:12px}',
+      '.at.at .at-nav{position:static;display:flex;gap:6px;overflow-x:auto;padding:6px;border-radius:999px;scrollbar-width:none}',
+      '.at.at .at-nav button{white-space:nowrap;border-radius:999px;padding:8px 14px}',
+      '.at.at .card{grid-template-columns:minmax(0,1fr);padding:14px}',
+      '}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+
   function field(label, input) { return el('label', { class: 'small', style: 'display:grid;gap:4px;margin-bottom:10px' }, [el('span', { text: label }), input]); }
 
 
@@ -293,14 +339,16 @@
   window.auzAdminTab = {
     status: function (rpc) { return rpc('admin_tab_status').catch(function () { return { owner: false, allowed: false }; }); },
     mount: function (host, o) {
-      var body = el('div', { style: 'margin-top:12px' });
+      injectCss();
+      var body = el('div', { class: 'at-body' });
       var panes = [['Profile', profilePane], ['Account', accountPane], ['Staff access', staffPane], ['Billing', billingPane], ['Notifications', notificationsPane], ['WhatsApp', whatsappPane], ['Privacy', privacyPane], ['Backup', backupPane], ['AI connectors', connectorsPane], ['Help', helpPane]];
-      var bar = el('div', { class: 'seg', role: 'tablist', style: 'display:flex;gap:6px;flex-wrap:wrap' });
-      function pick(i) { Array.prototype.forEach.call(bar.children, function (b, j) { b.className = 'btn small' + (i === j ? ' fill' : ''); b.setAttribute('aria-selected', i === j ? 'true' : 'false'); }); panes[i][1](body, o); }
-      panes.forEach(function (p, i) { var b = el('button', { type: 'button', role: 'tab', text: p[0] }); b.onclick = function () { pick(i); }; bar.append(b); });
       var only = o.only && panes.filter(function (x) { return x[0] === o.only; })[0];
-      if (only) { host.replaceChildren(body); only[1](body, o); return; }
-      host.replaceChildren(bar, body); pick(0);
+      var root = el('div', { class: 'at' + (only ? ' at-solo' : '') });
+      if (only) { root.append(body); host.replaceChildren(root); only[1](body, o); return; }
+      var nav = el('nav', { class: 'at-nav', role: 'tablist', 'aria-label': 'Admin sections' });
+      function pick(i) { Array.prototype.forEach.call(nav.children, function (b, k) { b.setAttribute('aria-selected', i === k ? 'true' : 'false'); }); body.replaceChildren(); panes[i][1](body, o); }
+      panes.forEach(function (p, i) { var b = el('button', { type: 'button', role: 'tab', text: p[0] }); b.onclick = function () { pick(i); }; nav.append(b); });
+      root.append(nav, body); host.replaceChildren(root); pick(0);
     }
   };
 })();
