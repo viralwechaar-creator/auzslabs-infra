@@ -1,11 +1,11 @@
 /* Art direction layer: every page gets its own world. Shared bits only here. */
-body.a-dark{--bg:#0a0a0a;--card:#151515;--ink:#f4f4f2;--mut:#8a8a88;--dim:#b4b4b2;--line:#2a2a2a;--soft:#101010;--cbg:#0a0a0a;--cink:#f4f4f2}
-html body.a-dark{background:#0a0a0a;color:#f4f4f2}
+body.a-dark{--bg:#0a0a0a;--card:#151515;--ink:#f4f4f4;--mut:#8a8a88;--dim:#b4b4b2;--line:#2a2a2a;--soft:#101010;--cbg:#0a0a0a;--cink:#f4f4f4}
+html body.a-dark{background:#0a0a0a;color:#f4f4f4}
 body.a-dark .u-logo img,body.a-dark .u-sheet-top img{filter:invert(1)}
-body.a-dark .u-top{background:#0a0a0a!important;color:#f4f4f2}
-body.a-dark .u-nav a,body.a-dark .u-ic{color:#f4f4f2}
-body.a-dark .u-pill,body.a-dark .u-menu{border-color:rgba(255,255,255,.4);color:#f4f4f2;background:transparent}
-body.a-dark h1,body.a-dark h2,body.a-dark b{color:#f4f4f2}
+body.a-dark .u-top{background:#0a0a0a!important;color:#f4f4f4}
+body.a-dark .u-nav a,body.a-dark .u-ic{color:#f4f4f4}
+body.a-dark .u-pill,body.a-dark .u-menu{border-color:rgba(255,255,255,.4);color:#f4f4f4;background:transparent}
+body.a-dark h1,body.a-dark h2,body.a-dark b{color:#f4f4f4}
 body.a-dark p{color:#b4b4b2}
 .aw{overflow:hidden;display:block}
 .aw>*{display:block;transform:translateY(105%);animation:awUp .9s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--i,0)*.11s + .15s)}

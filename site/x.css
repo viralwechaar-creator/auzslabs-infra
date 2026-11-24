@@ -1,7 +1,7 @@
 /* AUZslab marketing makeover: each page has its own layout and one signature interaction.
    Loaded after u.css and e.css. Everything here is under .mk so older pages are untouched.
    Ground = soft paper, sheets = white rounded surfaces, ink = black, accent = wine (tiny uses only). */
-:root{--mk-sheet:#fff;--mk-ink:#0c0c0c;--mk-soft:#f6f5f3;--mk-line:#dcdad7;--mk-wine:#800020;--mk-ease:cubic-bezier(.2,.7,.2,1)}
+:root{--mk-sheet:#fff;--mk-ink:#0c0c0c;--mk-soft:#f5f5f5;--mk-line:#dcdcdc;--mk-wine:#111111;--mk-ease:cubic-bezier(.2,.7,.2,1)}
 :root[data-theme=dark]{--mk-sheet:#1d1c1b;--mk-ink:#f2f2f0;--mk-soft:#181716;--mk-line:#35332f}
 body.mk-page{background:var(--bg)}
 .mk{max-width:1240px;margin:0 auto;padding:6px var(--pad) 40px}

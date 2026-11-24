@@ -4,7 +4,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap');
 
 :root{
-  --paper:#f6f4f1;
+  --paper:#f5f5f5;
   --pencil:rgba(0,0,0,.055);
   --hand:'Caveat','Bradley Hand','Segoe Script',cursive;
   --ease-out:cubic-bezier(.22,1,.36,1);
@@ -115,7 +115,7 @@ body{overflow-x:clip}
 .sk-cube .sk-f:nth-child(4){transform:rotateY(-90deg) translateZ(75px)}
 .sk-cube .sk-f:nth-child(5){transform:rotateX(90deg) translateZ(75px)}
 .sk-cube .sk-f:nth-child(6){transform:rotateX(-90deg) translateZ(75px)}
-.sk-cube.in .sk-f{border:2px dashed var(--accent);background:rgba(128,0,32,.05);background-image:none}
+.sk-cube.in .sk-f{border:2px dashed var(--accent);background:rgba(0,0,0,.05);background-image:none}
 .sk-cube.in .sk-f:nth-child(n){transform-origin:50% 50%}
 .sk-cube.in .sk-f:nth-child(1){transform:translateZ(35px)}
 .sk-cube.in .sk-f:nth-child(2){transform:rotateY(90deg) translateZ(35px)}
@@ -178,7 +178,7 @@ html.sk-hold [data-sk-t]{opacity:0!important;transition:none!important;animation
 .sk-svg *{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .sk-svg .f{fill:#fff}
 .sk-svg .a{stroke:var(--accent)}
-.sk-svg .a.f{fill:rgba(128,0,32,.07)}
+.sk-svg .a.f{fill:rgba(0,0,0,.07)}
 .sk-svg .h{stroke-width:1.4;opacity:.5}
 .sk-orbit{position:absolute;inset:-6% -4%;width:108%;height:112%;overflow:visible;pointer-events:none;animation:sk-orbit 38s linear infinite}
 .sk-orbit ellipse{fill:none;stroke:var(--ink);stroke-width:1.2;stroke-dasharray:3 7;opacity:.35;vector-effect:non-scaling-stroke}
@@ -231,7 +231,7 @@ html.sk-hold [data-sk-t]{opacity:0!important;transition:none!important;animation
 .sk-divider{display:flex;align-items:center;gap:14px;margin:6px 0}
 .sk-divider i{flex:1;border-top:2px dashed var(--line);filter:url(#sk-rough)}
 .sk-divider svg{width:26px;height:26px;flex:none;overflow:visible;animation:sk-spin-slow 14s linear infinite}
-.sk-divider path{fill:rgba(128,0,32,.1);stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.sk-divider path{fill:rgba(0,0,0,.1);stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
 @keyframes sk-spin-slow{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){
   .sk-orbit,.sk-tilt,.sk-divider svg{animation:none}
