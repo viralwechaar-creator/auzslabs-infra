@@ -88,7 +88,7 @@ function productsPage(id) {
     return head('Collections', 'Group products to feature on your storefront.', canWrite() ? wl('Create collection', 'collections/new', 'primary') : '') + tabs(id, productTabs) +
       panel('All collections', '<div class="filters"><input id="collection-query" type="search" aria-label="Search collections" placeholder="Search collections"><small id="collection-count"></small></div><div id="collection-results">' + collectionList() + '</div>');
   }
-  return head(title, 'Your catalog, shared by your storefront’s theme and checkout.', canWrite() ? wl('Add product', 'products/new', 'primary') : '') + tabs(id, productTabs) +
+  return head(title, 'Your catalog, shared by your storefront’s theme and checkout.', canWrite() ? button('Import from AUZsStyle', 'style-import') + wl('Add product', 'products/new', 'primary') : '') + tabs(id, productTabs) +
     panel('All products', '<div class="filters"><input id="table-query" type="search" aria-label="Search products" placeholder="Search products"><small id="table-count"></small></div><div id="table-results">' + productsList() + '</div>');
 }
 function collectionList(query = '') {
@@ -673,6 +673,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'company-new') return dialog('Add company', companyForm(null));
   if (a === 'company-edit') return dialog('Edit company', companyForm(state.companies.find((c) => c.id === key)));
   if (a === 'company-delete') return withBusy(async () => { if (!confirm('Delete this company? Its customers are kept.')) return; await api('sfx_company_delete', { p_id: key }); await refreshCompanies(); save('Company deleted.'); rerender(true); });
+  if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
   if (await contentAction(a, key)) return;
   if (a === 'campaign-new') return dialog('Add campaign', campaignForm(null));
   if (a === 'campaign-edit') return dialog('Edit campaign', campaignForm(state.campaigns.find((c) => c.id === key)));
