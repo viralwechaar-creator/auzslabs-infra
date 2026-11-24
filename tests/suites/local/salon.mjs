@@ -285,6 +285,15 @@ export default async function run({ browser, stack }) {
     assert(r.status === 200 && !r.headers.get('access-control-allow-origin'), 'unconfigured tenant status/headers wrong');
   }, 'major');
 
+  await s.check('The Live demo salon setup script creates a working demo salon (website and console)', async () => {
+    const sql = (await import('node:fs')).readFileSync(new URL('../../../db_data/salon_demo_setup.sql', import.meta.url), 'utf8');
+    await q(sql); await q(sql);   // safe to run twice
+    const c = salonClient(stack, 'salondemo');
+    const sr = await c.call('GET', '/site'); assert(sr.status === 200 && sr.data && sr.data.menu && sr.data.menu.length, 'site status ' + sr.status + ' ' + JSON.stringify(sr.data).slice(0, 160));
+    assert(!/showoff/i.test(JSON.stringify(sr.data)), 'the demo salon still carries a client name');
+    const good = await c.call('POST', '/admin/login', { password: 'Auzslab@Demo' }); assert(good.status === 200, 'demo console password refused: ' + good.status);
+  }, 'major');
+
   // The live Showoff Salon demo: a demo salon on the records engine keeps its own menu and gets fresh fake activity (never the neutral template).
   await s.check('A demo salon on the records engine keeps its own menu and gets sample bookings dated from today', async () => {
     const [t] = await q(`insert into tenants (slug, name, niche, plan, status, is_demo) values ('testlivedemo', 'Test Live Demo', 'salon', 'pro', 'active', true) returning id`);
