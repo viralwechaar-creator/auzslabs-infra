@@ -50,6 +50,15 @@ export function dialog(title, body, opts = {}) {
   if (!root.open) root.showModal();
 }
 export function close() { if ($('#dialog').open) $('#dialog').close(); }
+const switchApps = () => {
+  const f = state.features || {}, on = (k) => f[k];
+  const apps = [];
+  if (on('style')) apps.push(['AUZsStyle', 'https://auzsstyle.auzslab.in/style.html']);
+  if (on('accounting')) apps.push(['AUZsLedger', 'https://auzsledger.auzslab.in/accounts.html']);
+  if (on('salon') && state.tenant?.slug) apps.push(['Salon console', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
+  if (!apps.length) return '';
+  return '<div class="sidebar-apps"><div class="nav-label">Switch app</div><a class="sidebar-app current" href="' + pathFor('') + '" aria-current="true">' + icon('store') + '<span>Storefront</span></a>' + apps.map(([n, u]) => '<a class="sidebar-app" href="' + esc(u) + '" data-handoff="1">' + icon('grid') + '<span>' + esc(n) + '</span></a>').join('') + '</div>';
+};
 const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
 
 const allItems = menu.flatMap((m) => (m.id ? [[m.id, m.name], ...(m.children || [])] : []));
@@ -100,7 +109,7 @@ export function rerender(skipRefresh) {
     '</div>';
   const bizName = state.business.name || 'Your store';
   const initials = bizName.trim().split(/\s+/).slice(0, 2).map((word) => Array.from(word)[0] || '').join('').toUpperCase();
-  const sidebarBottom = '<div class="sidebar-bottom"><a class="sidebar-settings" href="' + pathFor('settings') + '"' + (inSettings ? ' aria-current="' + (active === 'settings' ? 'page' : 'true') + '"' : '') + '>' + icon('settings') + '<span>Settings</span></a>' +
+  const sidebarBottom = '<div class="sidebar-bottom">' + switchApps() + '<a class="sidebar-settings" href="' + pathFor('settings') + '"' + (inSettings ? ' aria-current="' + (active === 'settings' ? 'page' : 'true') + '"' : '') + '>' + icon('settings') + '<span>Settings</span></a>' +
     '<div class="sidebar-store-row"><a class="workspace-id" href="' + pathFor('website') + '" title="' + esc(bizName) + ' online store"><span class="avatar" aria-hidden="true">' + esc(initials) + '</span><strong>' + esc(bizName) + '</strong></a>' +
     '<a class="sidebar-alerts" href="' + pathFor('notifications') + '" aria-label="Store notifications' + (unread ? ', ' + unread + ' unread' : '') + '" title="Store notifications">' + icon('bell') + (unread ? '<span aria-hidden="true">' + Math.min(unread, 99) + (unread > 99 ? '+' : '') + '</span>' : '') + '</a></div></div>';
   const settingsNav = settingsGroups.map((group) => '<section data-settings-group><div class="nav-label">' + group.label + '</div>' + group.items.map(([id, label, glyph]) => '<a href="' + pathFor(id + (settingsRoutes.has(id) ? '' : '?via=settings')) + '"' + (id === active ? ' aria-current="page"' : '') + '>' + icon(glyph) + '<span>' + label + '</span></a>').join('') + '</section>').join('') + '<section data-settings-group><div class="nav-label">Account</div><a href="#" data-action="sign-out">' + icon('logout') + '<span>Sign out</span></a></section>';
