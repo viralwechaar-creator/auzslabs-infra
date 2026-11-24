@@ -532,3 +532,5 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
   .shell.nav-open .sidebar :is(.sidebar-settings,.workspace-id){min-height:40px;font-size:.95rem}
   .shell.settings-mode.nav-open .settings-sidebar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 }
+/* phone tab bar sits lower, close to the bottom edge (just above the home indicator) */
+@media(max-width:900px){.mobile-quick-nav{padding-bottom:calc(env(safe-area-inset-bottom,0px)*.4 + 4px)!important}}
