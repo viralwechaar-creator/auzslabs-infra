@@ -293,6 +293,10 @@ export default async function run({ browser, stack }) {
     assert(!/showoff/i.test(JSON.stringify(sr.data)), 'the demo salon still carries a client name');
     assert(/hero-photo\.jpg/.test(sr.data.settings.heroPhoto || ''), 'the demo salon does not use the hero picture: ' + sr.data.settings.heroPhoto);
     const good = await c.call('POST', '/admin/login', { password: 'Auzslab@Demo' }); assert(good.status === 200, 'demo console password refused: ' + good.status);
+    // an older demo seeded with the grey placeholder still shows the hero picture
+    await q(`update salon_store set data = jsonb_set(data, '{settings,heroPhoto}', '"/salon/assets/template-hero.svg"') where tenant_id = (select id from tenants where slug = 'salondemo') and key = 'site'`);
+    await new Promise((r) => setTimeout(r, 31000)); // the public site answer is cached for 30 s
+    const again = await c.call('GET', '/site'); assert(/hero-photo\.jpg/.test(again.data.settings.heroPhoto || ''), 'old demo still shows the placeholder hero: ' + again.data.settings.heroPhoto);
   }, 'major');
 
   // The live Showoff Salon demo: a demo salon on the records engine keeps its own menu and gets fresh fake activity (never the neutral template).

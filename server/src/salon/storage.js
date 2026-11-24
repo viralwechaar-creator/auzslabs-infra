@@ -193,6 +193,8 @@ async function loadSiteUncached(tenant) {
     if (!site) site = await initStorage(tenant);
     if (tenant.is_demo && (!site.seededAt || Date.now() - site.seededAt > DEMO_TTL)) site = (await reseedDemo(tenant)).site;
   }
+  // A demo salon seeded before it had a hero photo still shows the grey placeholder: show the salon hero picture instead (display only, nothing is saved).
+  if (tenant.is_demo && site && site.settings && /template-hero\.svg$/.test(site.settings.heroPhoto || '')) site = { ...site, settings: { ...site.settings, heroPhoto: '/salon/assets/hero-photo.jpg' } };
   if (genOf(tid) === g) cacheSet(siteCache, tid, site);
   return site;
 }
