@@ -591,3 +591,25 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
   .shell.nav-open .settings-panel>*{margin-bottom:8px}
   .shell.nav-open .settings-panel .settings-brand{display:none}
 }
+
+/* Phone: list tables become cards (one per row): title on top, the other columns as small label/value pairs */
+@media(max-width:900px){
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)){overflow:visible}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) :is(table,tbody){display:block;width:100%}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) thead{display:none}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;position:relative;padding:11px 14px;border-top:1px solid var(--line)}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) tbody tr:first-child{border-top:0}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td{display:block;border:0;padding:0;min-width:0;font-size:.85rem;overflow-wrap:anywhere;background:transparent!important}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td::before{content:attr(data-label);display:block;font-size:.66rem;font-weight:600;letter-spacing:.02em;color:var(--muted);margin-bottom:1px}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td[data-label=""]::before{display:none}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td:first-child:not([data-label=""]),
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td[data-label=""]:first-child+td,
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td[data-label=""]:last-child:not(:first-child){grid-column:1/-1}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td:first-child:not([data-label=""])::before,
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td[data-label=""]:first-child+td::before{display:none}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td[data-label=""]:first-child:has(input){position:absolute;top:12px;right:14px;z-index:1}
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td:first-child:not([data-label=""]) a,
+  .shell .panel .table-scroll:not(:has(input:not([type=checkbox]),select,textarea)) td[data-label=""]:first-child+td a{font-weight:650;font-size:.95rem}
+  .shell .panel .table-scroll .empty{padding:14px 0}
+  .shell .orders-table .table-scroll{display:none}
+}
