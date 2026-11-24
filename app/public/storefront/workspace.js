@@ -11,7 +11,7 @@ import { analyticsPage } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshRoles, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, apiPost, applyContext, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y) => '<td>' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -75,9 +75,17 @@ function orderDetail(id) {
 // ---------- Products ----------
 const productTabs = [['products', 'All products'], ['collections', 'Collections'], ['inventory', 'Inventory'], ['transfers', 'Transfers'], ['categories', 'Categories and tags']];
 const productLabel = (p) => '<div class="cell-product">' + image(p.image, '', 'thumb') + link(esc(p.name), 'products/' + encodeURIComponent(p.id)) + '</div>';
+let pf = { status: '', category: '', tag: '', stock: '' };
 function productsList(query = '') {
-  const items = state.products.filter((p) => !query || p.name.toLowerCase().includes(query.toLowerCase()));
+  const q = query.toLowerCase(); const tags = state.productTags || {};
+  const items = state.products.filter((p) => (!q || p.name.toLowerCase().includes(q)) && (!pf.status || p.status === pf.status) && (!pf.category || (p.category || '') === pf.category) && (!pf.tag || (tags[p.id] || []).includes(pf.tag))
+    && (!pf.stock || (pf.stock === 'out' ? Number(p.stock) <= 0 : pf.stock === 'low' ? Number(p.stock) > 0 && Number(p.stock) < 5 : Number(p.stock) >= 5)));
   return table(canWrite() ? ['', 'Product', 'Category', 'Status', 'Price', 'Available'] : ['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => (canWrite() ? ['<input type="checkbox" data-bulk="' + esc(p.id) + '" aria-label="Select ' + esc(p.name) + '">'] : []).concat([productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock])));
+}
+function productFilters() {
+  const cats = [...new Set(state.products.map((p) => p.category).filter(Boolean))].sort(); const tagSet = [...new Set(Object.values(state.productTags || {}).flat())].sort();
+  const sel = (id, label, opts, val) => '<select id="' + id + '" aria-label="' + label + '"><option value="">' + label + '</option>' + opts.map(([v, t]) => '<option value="' + esc(v) + '"' + (v === val ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
+  return sel('pf-status', 'All statuses', ['Active', 'Draft', 'Archived'].map((x) => [x, x]), pf.status) + sel('pf-category', 'All categories', cats.map((x) => [x, x]), pf.category) + sel('pf-tag', 'All tags', tagSet.map((x) => [x, x]), pf.tag) + sel('pf-stock', 'Any stock', [['in', 'In stock (5+)'], ['low', 'Low (1 to 4)'], ['out', 'Out of stock']], pf.stock);
 }
 function productsPage(id) {
   if (id === 'inventory') return inventoryPage();
@@ -89,7 +97,7 @@ function productsPage(id) {
       panel('All collections', '<div class="filters"><input id="collection-query" type="search" aria-label="Search collections" placeholder="Search collections"><small id="collection-count"></small></div><div id="collection-results">' + collectionList() + '</div>');
   }
   return head(title, 'Your catalog, shared by your storefront’s theme and checkout.', (canWrite() ? button('Bulk edit selected', 'bulk-open') + button('Import from AUZsStyle', 'style-import') : '') + button('Export CSV', 'products-csv') + (canWrite() ? wl('Add product', 'products/new', 'primary') : '')) + tabs(id, productTabs) +
-    panel('All products', '<div class="filters"><input id="table-query" type="search" aria-label="Search products" placeholder="Search products"><small id="table-count"></small></div><div id="table-results">' + productsList() + '</div>');
+    panel('All products', '<div class="filters"><input id="table-query" type="search" aria-label="Search products" placeholder="Search products">' + productFilters() + '<small id="table-count"></small></div><div id="table-results">' + productsList() + '</div>');
 }
 function collectionList(query = '') {
   return table(['Collection', 'Products'], state.collections.filter((c) => !query || c.name.toLowerCase().includes(query.toLowerCase())).map((c) => [
@@ -152,6 +160,28 @@ function generateVariants(formEl) {
   formEl.querySelector('.product-variant-grid').innerHTML = variantEditor(next);
   return { total: labels.length, fresh, kept, removed };
 }
+function seoPreview(title, handle, desc) {
+  const base = (state.tenant?.slug ? state.tenant.slug + '.auzslab.in' : 'your-store.auzslab.in') + ' › products' + (handle ? ' › ' + handle : '');
+  const t = String(title || 'Product title').slice(0, 70), d = String(desc || 'Add a search description so shoppers know what this product is.').slice(0, 160);
+  return '<div class="seo-card"><span class="seo-url">' + esc(base) + '</span><strong class="seo-title">' + esc(t) + '</strong><span class="seo-desc">' + esc(d) + '</span></div>';
+}
+function customFieldInputs(values) {
+  const defs = cfgList('customFields').filter((f) => (f.appliesTo || 'Products') === 'Products'); if (!defs.length) return '';
+  const dis = canWrite() ? '' : 'disabled';
+  return panel('Custom fields', body('<div class="field-grid">' + defs.map((f) => {
+    const v = values?.[f.id] ?? '', n = 'cf_' + f.id, t = f.valueType;
+    if (t === 'Yes or no') return select(esc(f.name), n, [['', 'Not set'], ['Yes', 'Yes'], ['No', 'No']], v, dis);
+    return input(esc(f.name), n, v, t === 'Number' ? 'number' : t === 'Date' ? 'date' : 'text', 'maxlength="600" ' + (t === 'Number' ? 'step="any" ' : '') + dis);
+  }).join('') + '</div>'));
+}
+function readCustomFields(data) {
+  const out = {}; for (const f of cfgList('customFields').filter((x) => (x.appliesTo || 'Products') === 'Products')) { const v = data['cf_' + f.id]; if (v !== undefined) out[f.id] = String(v); } return out;
+}
+function tagsCollectionsPanel(p, dis) {
+  const tags = ((state.productTags || {})[p?.id] || []).join(', '); const mine = new Set((state.memberships || {})[p?.id] || []);
+  const cols = state.collections.length ? '<fieldset class="check-list"><legend>Collections</legend>' + state.collections.map((c) => '<label class="inline"><input type="checkbox" name="collections" value="' + esc(c.id) + '"' + (mine.has(c.id) ? ' checked' : '') + ' ' + dis + '> ' + esc(c.name) + '</label>').join('') + '</fieldset>' : '<p class="compact-copy">No collections yet. Create one under Products › Collections.</p>';
+  return panel('Tags and collections', body('<div class="field-grid">' + input('Tags (separated by commas)', 'tags', tags, 'text', 'maxlength="300" ' + dis) + '</div>' + cols));
+}
 function productDetail(id) {
   const p = id !== 'new' ? state.products.find((x) => x.id === id) : null;
   if (!p && id !== 'new') return head('Product unavailable', 'This product could not be found.', wl('Back to products', 'products'));
@@ -168,7 +198,8 @@ function productDetail(id) {
       panel('Pricing', body('<div class="field-grid">' + input('Price in ₹', 'price', r.price ?? 0, 'number', 'min="0" step="0.01" required ' + dis) + input('Compare-at price in ₹', 'compareAt', r.compare, 'number', 'min="0" step="0.01" ' + dis) + '</div>')) +
       panel('Pricing details', body('<div class="field-grid">' + input('Cost per unit in ₹', 'cost', ex.cost ?? '', 'number', 'min="0" step="0.01" ' + dis) + input('HSN or tax code', 'hsn', ex.hsn || '', 'text', 'maxlength="20" ' + dis) + '</div>')) +
       panel('Organization', body('<div class="field-grid">' + '<label>Category<input name="category2" list="cat-list" value="' + esc(r.category) + '" ' + dis + '></label><datalist id="cat-list">' + ((state.categories?.categories) || []).map((c) => '<option value="' + esc(c.name) + '">').join('') + '</datalist>' + input('Product type', 'type', ex.type || '', 'text', 'maxlength="80" ' + dis) + input('Vendor or maker', 'vendor', ex.vendor || '', 'text', 'maxlength="80" ' + dis) + input('Weight in grams', 'weight', ex.weight ?? '', 'number', 'min="0" step="0.01" ' + dis) + input('Country of origin', 'origin', ex.origin || '', 'text', 'maxlength="60" ' + dis) + '</div>')) +
-      panel('Search listing', body('<div class="field-grid">' + input('Page title', 'seoTitle', ex.seoTitle || '', 'text', 'maxlength="70" ' + dis) + input('URL handle', 'handle', p ? r.handle : '', 'text', 'pattern="[a-z0-9-]+" placeholder="made-from-title" ' + dis) + area('Search description', 'seoDescription', ex.seoDescription || '', 'maxlength="160" ' + dis) + '</div>')) +
+      tagsCollectionsPanel(p, dis) + customFieldInputs(ex.custom) +
+      panel('Search listing', body('<div class="field-grid">' + input('Page title', 'seoTitle', ex.seoTitle || '', 'text', 'maxlength="70" ' + dis) + input('URL handle', 'handle', p ? r.handle : '', 'text', 'pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="made-from-title" ' + dis) + area('Search description', 'seoDescription', ex.seoDescription || '', 'maxlength="160" ' + dis) + '</div><div data-seo-preview>' + seoPreview(ex.seoTitle || r.name, p ? r.handle : '', ex.seoDescription || r.description) + '</div>')) +
       '</div><aside>' + panel('Status', body('<div class="stack">' + select('Catalog status', 'status', ['Draft', 'Active', 'Archived'], r.status) + (canWrite() ? '' : '<p class="compact-copy">Only an owner or manager can change this.</p>') + '</div>')) +
       (p ? panel('Stock', body('<p>' + esc(r.stock) + ' available across ' + (r.variants || []).length + ' variant(s)</p>')) : '') + '</aside></div>' +
       '<div class="product-save actions">' + (canWrite() ? '<button class="btn primary">' + (p ? 'Save changes' : 'Create product') + '</button>' : '') + wl('Cancel', 'products') + '</div></form>';
@@ -178,7 +209,7 @@ function productDetail(id) {
     const photos = existing.map((src, i) => '<div class="product-photo">' + image(src, 'Product image ' + (i + 1)) + (canWrite() ? '<label class="inline"><input type="radio" name="mainIndex" value="' + i + '"' + (i === (main < existing.length ? main : 0) ? ' checked' : '') + '> Main image</label><label class="inline"><input type="checkbox" name="remove" value="' + i + '"> Remove</label>' : '') + '</div>').join('');
     view = panel('Product media', body(canWrite()
       ? '<form data-form="edit" data-key="product-media" data-id="' + esc(p.id) + '">' + (photos ? '<div class="media-grid">' + photos + '</div>' : '<p class="compact-copy">No images yet. Add up to six. The main image shows on the storefront card.</p>') +
-        '<input type="hidden" name="existing" value="' + esc(JSON.stringify(existing)) + '"><div class="field-grid" style="margin-top:12px">' + input('Add an image link (https://...)', 'imageUrl', '', 'url') + '</div><div class="actions"><button class="btn primary">Save images</button></div></form>'
+        '<input type="hidden" name="existing" value="' + esc(JSON.stringify(existing)) + '"><div class="field-grid" style="margin-top:12px">' + '<label class="wide">Upload photos from this device<input type="file" accept="image/*" multiple></label>' + input('Or add an image link (https://...)', 'imageUrl', '', 'url') + '</div><div class="actions"><button class="btn primary">Save images</button></div></form>'
       : (photos ? '<div class="media-grid">' + photos + '</div>' : '<p class="compact-copy">No images yet.</p>')));
   } else if (tab === 'variants') {
     const intro = '<p class="compact-copy">Define options such as Material and Finish, then generate every combination. Each variant has its own SKU, barcode, price and stock.</p>';
@@ -508,7 +539,7 @@ const storeLink = (path) => state.store.published && state.tenant?.slug ? 'https
 
 function pageForm(pg) {
   const v = pg || { status: 'Hidden' };
-  return editForm('page-record', pg?.id, input('Page title', 'name', v.name || '', 'text', 'required maxlength="120"') + input('URL handle', 'slug', v.slug || '', 'text', 'pattern="[a-z0-9-]+" maxlength="60" placeholder="about-us"') +
+  return editForm('page-record', pg?.id, input('Page title', 'name', v.name || '', 'text', 'required maxlength="120"') + input('URL handle', 'slug', v.slug || '', 'text', 'pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="60" placeholder="about-us"') +
     area('Content', 'content', v.content || '', 'rows="8" maxlength="10000"') + input('Cover image URL', 'image', v.image || '', 'url') +
     select('Visibility', 'status', ['Hidden', 'Visible', 'Scheduled'], v.status || 'Hidden') + input('Publish on (for Scheduled)', 'publishAt', v.publishAt || '', 'datetime-local') +
     input('Search title', 'seoTitle', v.seoTitle || '', 'text', 'maxlength="70"') + area('Search description', 'seoDescription', v.seoDescription || '', 'rows="2" maxlength="160"'), 'Save page');
@@ -747,6 +778,8 @@ async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); 
 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'domains' && domainDispatch(type, target)) return;
+  if (type === 'change' && /^pf-(status|category|tag|stock)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
+  if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'), el = f.querySelector('[data-seo-preview]'); if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
   if ((type === 'input' || type === 'change') && ['table-query'].includes(target.id)) { $('#table-results').innerHTML = productsList(target.value); return; }
   if ((type === 'input' || type === 'change') && target.id === 'collection-query') { $('#collection-results').innerHTML = collectionList(target.value); return; }
   if (type === 'submit' && target.dataset.form === 'section') {
@@ -765,13 +798,19 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       if (key === 'product-record') {
         if (!data.name?.trim()) { flash('Enter a product title.'); return; }
         const p = await api('sfx_product_save', { p_id: rid, p: { name: data.name, description: data.description, price: data.price, compareAt: data.compareAt, category: data.category2 ?? data.category, handle: data.handle || undefined, status: data.status.toLowerCase() } });
-        await api('sfx_product_extra_save', { p_id: rid || p.id, p: { cost: data.cost, hsn: data.hsn, vendor: data.vendor, type: data.type, weight: data.weight, origin: data.origin, seoTitle: data.seoTitle, seoDescription: data.seoDescription } });
-        await refreshProducts(); save(rid ? 'Product updated.' : 'Product created.'); close();
+        await api('sfx_product_extra_save', { p_id: rid || p.id, p: { cost: data.cost, hsn: data.hsn, vendor: data.vendor, type: data.type, weight: data.weight, origin: data.origin, seoTitle: data.seoTitle, seoDescription: data.seoDescription, custom: readCustomFields(data) } });
+        const pid = rid || p.id;
+        await api('sfx_product_set_tags', { p_id: pid, p_tags: data.tags || '' });
+        await api('sfx_product_set_collections', { p_id: pid, p_collections: values.getAll('collections').join(',') });
+        await Promise.all([refreshProducts(), refreshCategories(), refreshMemberships(), refreshCollections()]); save(rid ? 'Product updated.' : 'Product created.'); close();
         if (!rid) location.hash = '/products/' + p.id; else rerender();
       } else if (key === 'product-media') {
         const fd = new FormData(target); const had = JSON.parse(data.existing || '[]'); const drop = new Set(fd.getAll('remove').map(Number));
         let list = had.filter((_, i) => !drop.has(i)); const mainSrc = had[Number(data.mainIndex || 0)];
         if (data.imageUrl && data.imageUrl.trim()) list.push(data.imageUrl.trim());
+        const files = [...(target.querySelector('input[type=file]')?.files || [])];
+        if (list.length + files.length > 6) { flash('Keep up to six images.'); return; }
+        for (const f of files) list.push(await uploadImage(f));
         list = [...new Set(list)];
         if (mainSrc && list.includes(mainSrc)) list = [mainSrc, ...list.filter((x) => x !== mainSrc)];
         if (list.length > 6) { flash('Keep up to six images.'); return; }
