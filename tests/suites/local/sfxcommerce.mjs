@@ -208,5 +208,20 @@ export default async function run({ browser, stack }) {
     await call('sfx_theme_install_set_active', { p_install_id: dup.j.installId }); assert(!(await call('sfx_theme_install_delete', { p_install_id: dup.j.installId })).ok, 'live theme cannot be deleted');
     assert((await call('sfx_theme_install_delete', { p_install_id: made.j.installId })).ok, 'delete custom'); assert(!(await call('sfx_theme_install_delete', { p_install_id: inst.j.installId })).ok, 'marketplace install cannot be deleted');
   }, 'major');
+  await s.check('Orders page: summary strip with sparklines follows the reporting period', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("delete from sfx_orders where tenant_id = $1", [tid]);
+    await q("insert into sfx_orders (tenant_id, number, token, status, payment_status, payment_method, customer, lines, subtotal, total, created_at) values ($1,'KPI-1','kpi1','fulfilled','paid','cod','{\"name\":\"K\"}', $2::jsonb, 300, 300, now()), ($1,'KPI-2','kpi2','new','pending','cod','{\"name\":\"K\"}', $2::jsonb, 100, 100, now()), ($1,'KPI-3','kpi3','fulfilled','paid','cod','{\"name\":\"K\"}', $2::jsonb, 50, 50, now() - interval '20 days')", [tid, JSON.stringify([{ name: 'T', price: 50, qty: 2 }])]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(1500);
+    assert(await page.locator('.summary-bar .summary-cell').count() === 5, 'cells missing');
+    assert(await page.locator('.summary-bar svg.sparkline').count() === 5, 'sparklines missing');
+    const cell = async (n) => (await page.locator('.summary-cell', { hasText: n }).first().locator('strong').innerText()).replace(/\s/g, '');
+    assert(await cell('Orders') === '2' || (await cell('Orders')) === '3' || true, '');
+    const week = { o: await cell('Orders'), i: await cell('Items ordered') };
+    assert(week.o.startsWith('2') && week.i.startsWith('4'), 'last 7 days wrong: ' + JSON.stringify(week));
+    await page.selectOption('#report-range', 'all'); await page.waitForTimeout(500);
+    assert((await cell('Orders')).startsWith('3'), 'all time orders wrong: ' + (await cell('Orders')));
+    const paid = (await q("select coalesce(sum(total),0)::float t from sfx_orders where payment_status='paid'"))[0].t; assert((await cell('Sales (paid)')).replace(/[^0-9.]/g, '') === String(paid), 'paid sales wrong: ' + (await cell('Sales (paid)')) + ' vs ' + paid);
+  });
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }

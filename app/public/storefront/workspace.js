@@ -51,13 +51,40 @@ function ordersList() {
     link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status),
   ]));
 }
+
+// ---------- order summary strip (KPI cells with sparklines) ----------
+let reportRange = '7';
+const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' });
+function sparkline(values) {
+  const series = values.length > 1 ? values : [0, ...(values.length ? values : [0])];
+  const peak = Math.max(1, ...series);
+  const pts = series.map((v, i) => (i * 64 / (series.length - 1)).toFixed(1) + ',' + (22 - 20 * v / peak).toFixed(1)).join(' ');
+  return '<svg class="sparkline" viewBox="0 0 64 24" aria-hidden="true"><polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+}
+const summaryCell = (name, value, values) => '<div class="summary-cell"><span>' + name + '</span><strong>' + value + '</strong>' + (values ? sparkline(values) : '') + '</div>';
+function orderMetrics() {
+  const today = dayFmt.format(new Date());
+  const first = reportRange === 'all' ? '0000-00-00' : dayFmt.format(new Date(Date.now() - (Number(reportRange) - 1) * 86400000));
+  const inRange = (d) => d && d >= first && d <= today;
+  const days = (rows) => { const m = new Map(); rows.forEach(([d, v]) => { if (d) m.set(d, (m.get(d) || 0) + Number(v || 0)); }); return [...m.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v); };
+  const cell = (name, rows, currency) => { const vals = days(rows), sum = vals.reduce((a, b) => a + b, 0); return summaryCell(name, currency ? money(sum) : sum, vals); };
+  const orders = state.orders.filter((o) => inRange(o.date));
+  const fulfilledOn = (o) => { const e = (o.timeline || []).find((x) => /fulfil/i.test(x.label || '')); return e ? String(e.at).slice(0, 10) : (o.status === 'Fulfilled' ? o.date : ''); };
+  const fulfilled = state.orders.map((o) => [fulfilledOn(o), 1]).filter(([d]) => inRange(d));
+  const reversed = state.orders.filter((o) => ['Cancelled', 'Returned'].includes(o.status) && inRange(o.date)).map((o) => [o.date, 1]);
+  const opts = [['1', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['all', 'All time']].map(([v, l]) => '<option value="' + v + '"' + (v === reportRange ? ' selected' : '') + '>' + l + '</option>').join('');
+  return '<div class="summary-bar"><label class="summary-period">Reporting period<select id="report-range">' + opts + '</select></label>' +
+    cell('Orders', orders.map((o) => [o.date, 1])) + cell('Items ordered', orders.map((o) => [o.date, o.quantity ?? 1])) +
+    cell('Sales (paid)', orders.filter((o) => o.payment === 'Paid').map((o) => [o.date, o.total]), true) +
+    cell('Orders fulfilled', fulfilled) + cell('Cancelled or returned', reversed) + '</div>';
+}
 function ordersPage(id) {
   if (id === 'drafts') return draftsPage();
   if (id === 'returns') return returnsPage();
   if (id === 'shipping') return shippingPage();
   if (id === 'abandoned-checkouts') return abandonedPage();
   return head('Orders', 'Orders placed on your storefront.', '') + tabs(id, orderTabs) +
-    '<div class="metrics">' + metric('Orders', state.orders.length, 'All time') + metric('To fulfil', state.orders.filter((o) => o.status === 'Unfulfilled').length, '') + metric('Sales', money(state.counts.salesTotal), 'Paid orders') + '</div>' +
+    orderMetrics() +
     panel('All orders', ordersList());
 }
 function orderDetail(id) {
@@ -782,6 +809,7 @@ export function workspace(id, record) {
 async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); } }
 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
+  if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if ((type === 'input' || type === 'change') && ['table-query'].includes(target.id)) { $('#table-results').innerHTML = productsList(target.value); return; }
