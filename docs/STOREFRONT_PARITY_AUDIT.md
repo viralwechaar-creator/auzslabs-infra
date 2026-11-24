@@ -10,7 +10,7 @@ Status words: BUILT (works against the real API, tested locally) / PARTIAL / MIS
 | Area | Reference | Ours | Status |
 |---|---|---|---|
 | Sidebar, search (Ctrl/Cmd K), active tab and sub-tab, mobile menu, header actions, pinned Settings and store identity | ecosystem.js / ecosystem.css | adapted from the same files; header also has Sign out | BUILT (needs a side-by-side visual check on a real phone) |
-| Settings sub-pages | Payments, Taxes and duties, Languages, Store policies, Customer privacy, Billing | Notifications, Billing, Sign-in and support (real Admin panes) | PARTIAL. Missing: Taxes and duties, Languages, Store policies, Customer privacy (NO BACKEND for each) |
+| Settings sub-pages | Payments, Taxes and duties, Languages, Store policies, Customer privacy, Billing | Notifications, Store policies, Customer privacy, Billing, Sign-in and support (db/394) | PARTIAL. Still missing: Taxes and duties, Languages (NO BACKEND) |
 | `/account.html` for owners | routes to the owner workspace | routes to the app they own; owners with several apps get a chooser (Style, Ledger, Salon, Online store); `?stay=1` keeps the old page | BUILT. Decision needed: always go to the store workspace? |
 
 ## 2. Workflows (route -> API -> permission)

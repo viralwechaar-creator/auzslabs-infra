@@ -117,7 +117,7 @@ export async function boot(onReady) {
   }
   let ctx;
   try { ctx = await api('sfx_context'); } catch (e) { return blocked('Could not open your storefront', e.message); }
-  applyContext(ctx);
+  applyContext(ctx); state.features = dash.features || {};
   try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders(), refreshMarketplace(), refreshInstalls(), refreshPlan()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
   onReady();
 }

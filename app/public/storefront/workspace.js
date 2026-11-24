@@ -41,7 +41,7 @@ function home() {
     '<div class="metrics">' + metric('Products', c.activeProducts + ' active', c.products + ' total') + metric('To fulfil', pending, 'Unfulfilled orders') + metric('Sales', money(c.salesTotal), 'Paid orders, all time') + metric('Stock alerts', c.lowStock, 'Fewer than five available') + '</div>' +
     (state.plan?.blocked ? panel('Your trial has ended', body('<p class="compact-copy">Your store and data are safe, but editing and selling are paused. <a href="' + pathFor('billing') + '">Reactivate your plan</a> to switch it back on.</p>')) : '') +
     (state.store.published ? '' : panel('Your store is not live yet', body('<p class="compact-copy">Turn your store on from <a href="' + pathFor('website') + '">Online store</a> once you have added a product.</p>'))) +
-    panel('Recent orders', recentOrders, wl('All orders', 'orders', 'compact'));
+    panel('Recent orders', recentOrders, wl('All orders', 'orders', 'compact')) + homeExtras();
 }
 
 // ---------- Orders ----------
@@ -297,6 +297,8 @@ async function payPlan(out) {
   out.textContent = 'Payment received. Your plan will switch on within a minute; refresh this page shortly.';
 }
 function management(id) {
+  if (id === 'policies') return policiesPage();
+  if (id === 'privacy-settings') return privacySettingsPage();
   if (id === 'roles') return rolesPage();
   if (id === 'settings') return businessSettings();
   if (id === 'billing') return billingPage();
@@ -585,6 +587,47 @@ function downloadProductsCsv() {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'products.csv'; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
 }
 
+// ---------- Settings: Store policies and Customer privacy (saved in the store config, shown on the public store, db/394) ----------
+const POLICY_DEFAULTS = { shipping: 'We ship across India. Orders are packed within 1 to 2 working days and usually arrive in 3 to 7 days.', returns: 'You can ask for a return or exchange within the period we agree when you order. Items must be unused with tags attached.', privacy: 'We use your details only to process your order and to contact you about it.', terms: 'By placing an order you agree to pay the price shown and to give us correct delivery details.' };
+function policiesPage() {
+  const pol = state.store?.config?.policies || {}; const dis = canWrite() ? '' : 'disabled';
+  const link = (k) => storeLink('policy/' + k);
+  const fields = [['shipping', 'Shipping policy'], ['returns', 'Returns and exchanges'], ['privacy', 'Privacy policy'], ['terms', 'Terms of service']].map(([k, label]) => '<div class="wide">' + area(label + (link(k) ? '' : ''), k, pol[k] || '', 'rows="5" maxlength="8000" placeholder="' + esc(POLICY_DEFAULTS[k]) + '" ' + dis) + '</div>').join('');
+  return head('Store policies', 'Text shown on your public store pages. Leave a box empty to show the standard wording (grey example).', '', ['settings', 'Settings']) +
+    panel('Policies', body(canWrite() ? editForm('policies-save', '', fields, 'Save policies') : '<p class="compact-copy">Only an owner or manager can change policies.</p>')) +
+    (state.store.published && state.tenant?.slug ? panel('Preview', body('<div class="stack">' + ['shipping', 'returns', 'privacy', 'terms'].map((k) => link2(k)).join('') + '</div>')) : '');
+}
+const link2 = (k) => '<a class="btn compact" href="' + esc(storeLink('policy/' + k)) + '" target="_blank" rel="noopener">View ' + k + ' page</a>';
+function privacySettingsPage() {
+  const pr = state.store?.config?.privacy || {}; const dis = canWrite() ? '' : 'disabled';
+  return head('Customer privacy', 'Tell customers who to contact about their data. The address is added to your public Privacy policy page.', '', ['settings', 'Settings']) +
+    panel('Data requests', body(canWrite() ? editForm('privacy-save', '', input('Contact email for privacy questions', 'contactEmail', pr.contactEmail || '', 'email', 'maxlength="160" ' + dis) + area('How long you keep order records (shown to staff only)', 'retention', pr.retention || '', 'rows="3" maxlength="500"'), 'Save') : '<p class="compact-copy">Only an owner or manager can change this.</p>')) +
+    panel('What AUZslab stores', body('<p class="compact-copy">Customer names, phone numbers and addresses are kept with the orders they placed, for your records and for delivery. Cookie and marketing-consent banners are not part of the store yet.</p>'));
+}
+async function settingsSubmit(key, data) {
+  if (key === 'policies-save') {
+    const policies = {}; ['shipping', 'returns', 'privacy', 'terms'].forEach((k) => { if ((data[k] || '').trim()) policies[k] = data[k].trim(); });
+    await saveObj({ policies }); save('Policies saved.'); rerender(true); return true;
+  }
+  if (key === 'privacy-save') {
+    await saveObj({ privacy: { contactEmail: (data.contactEmail || '').trim(), retention: (data.retention || '').trim() } }); save('Saved.'); rerender(true); return true;
+  }
+  return false;
+}
+async function saveObj(patch) { const ctx = await api('sfx_store_save', { p: patch }); applyContext(ctx); }
+
+// ---------- Home extras: acquisition, app shortcuts ----------
+function homeExtras() {
+  const camps = (state.campaigns || []);
+  const acq = camps.length ? table(['Campaign', 'Channel', 'Orders', 'Revenue'], camps.slice(0, 5).map((c) => [esc(c.name), esc(c.channel), c.orders, money(c.revenue)])) : '<p class="compact-copy">No campaigns yet. Add one under Growth to see which source brings orders.</p>';
+  const f = state.features || {}, apps = [];
+  if (f.style) apps.push(['AUZsStyle', 'Billing, stock and shop analytics', 'https://auzsstyle.auzslab.in/style.html']);
+  if (f.accounting) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html']);
+  if (f.salon && state.tenant?.slug) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
+  const shortcuts = apps.length ? '<div class="stack">' + apps.map(([n, d, u]) => '<a class="btn" href="' + esc(u) + '" data-handoff="1"><strong>' + esc(n) + '</strong> · ' + esc(d) + '</a>').join('') + '</div>' : '<p class="compact-copy">Your other AUZslab apps appear here when your plan includes them.</p>';
+  return '<div class="cols">' + panel('Acquisition by campaign', body(acq), wl('Growth', 'growth', 'compact')) + panel('Website sessions', body('<p class="compact-copy">Visit counts are not recorded for online stores yet. Orders and campaigns above are real; sessions will appear when visit tracking is added.</p>')) + '</div>' + panel('Your apps', body(shortcuts));
+}
+
 export function workspace(id, record) {
   if (['analytics', 'reports', 'live-view'].includes(id)) return analyticsPage(id, record);
   let html;
@@ -702,6 +745,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'bulk-apply') {
         const ids = bulkIds(); const patch = { status: data.status || undefined, category: data.category || undefined, pricePct: data.pricePct || undefined };
         const r = await api('sfx_product_bulk', { p_ids: ids, p: patch }); await refreshProducts(); save(r.updated + ' products updated.'); close(); rerender(true);
+      } else if (await settingsSubmit(key, data)) {
+        /* saved */
       } else if (await roleSubmit(key, data)) {
         /* saved */
       } else if (await contentSubmit(key, rid, data)) {

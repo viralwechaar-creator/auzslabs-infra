@@ -183,5 +183,14 @@ export default async function run({ browser, stack }) {
     const row = (await q("select p.price::float pp, p.status, v.price::float vp from sfx_products p join sfx_variants v on v.product_id=p.id where p.id=$1", [pid]))[0]; assert(row.pp === 110 && row.vp === 110 && row.status === 'draft', JSON.stringify(row));
     assert(!(await rpc('sfx_product_bulk', { p_ids: [pid], p: { pricePct: '900' } })).ok, 'absurd change must be refused');
   }, 'major');
+  await s.check('Store policies and privacy contact reach the public store; bad fields are refused (db/394)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    const tok = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token;
+    const save = (p) => fetch(stack.apiBase + '/rpc/sfx_store_save', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ p }) });
+    assert((await save({ policies: { shipping: 'Free shipping' }, privacy: { contactEmail: 'a@b.in' } })).ok, 'save');
+    const c = (await q("select public_sfx_store('testcafe')->'config' as c"))[0].c; assert(c.policies.shipping === 'Free shipping' && c.privacyContact === 'a@b.in', JSON.stringify(c));
+    assert(!(await save({ policies: { hack: 'x' } })).ok, 'unknown policy field must be refused');
+    assert(!(await save({ policies: { terms: 'x'.repeat(9000) } })).ok, 'oversized policy must be refused');
+  }, 'major');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }

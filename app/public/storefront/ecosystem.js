@@ -55,8 +55,8 @@ const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label=
 const allItems = menu.flatMap((m) => (m.id ? [[m.id, m.name], ...(m.children || [])] : []));
 const settingsGroups = [
   { label: 'Business', items: [['settings', 'Business profile', 'settings'], ['billing', 'Billing and renewals', 'file'], ['team', 'Staff and access', 'user'], ['roles', 'Roles', 'lock'], ['locations', 'Locations', 'pin']] },
-  { label: 'Store operations', items: [['checkout', 'Payments', 'card'], ['domains', 'Domains', 'globe'], ['builder', 'Theme', 'globe']] },
-  { label: 'Preferences', items: [['notifications', 'Notifications', 'bell'], ['security', 'Sign-in and support', 'lock']] },
+  { label: 'Store operations', items: [['checkout', 'Payments', 'card'], ['domains', 'Domains', 'globe'], ['builder', 'Theme', 'globe'], ['policies', 'Store policies', 'file']] },
+  { label: 'Preferences', items: [['notifications', 'Notifications', 'bell'], ['privacy-settings', 'Customer privacy', 'lock'], ['security', 'Sign-in and support', 'lock']] },
 ];
 const settingsRoutes = new Set(['settings', ...(menu.find((item) => item.id === 'settings')?.children || []).map(([id]) => id), 'team', 'roles', 'locations', 'billing', 'security']);
 let returnToWorkspace = 'home';
@@ -158,6 +158,8 @@ function search() {
   $('#global-query').addEventListener('input', fill); fill(); $('#global-query').focus();
 }
 document.addEventListener('click', (event) => {
+  const ho = event.target.closest && event.target.closest('a[data-handoff]');
+  if (ho && window.auzHandoffUrl) { event.preventDefault(); location.href = window.auzHandoffUrl(ho.href); return; }
   if (event.target.closest('[data-search-target]')) close();
   if (navOpen && event.target.closest('.sidebar a[href], .mobile-quick-nav a[href]')) setNavOpen(false);
   const target = event.target.closest('[data-action]'); if (!target) return;
