@@ -23,7 +23,7 @@
     var f = (D && D.features) || {}, en = (D && D.enabled_features) || {}, links = {};
     FEAT = { payroll: f.payroll === true && en.payroll !== false };
     document.querySelectorAll('#acctNav a[id^=open]').forEach(function (a) { if (a.style.display !== 'none') links[a.textContent.trim().replace(/^Open /, '').replace(/ system$/i, '')] = a.href; });
-    if (t.slug) links['Online store'] = 'https://auzsshop.auzslab.in/storefront.html';
+    if (t.slug) links['Online store'] = '/storefront.html';
     ALL_APPS = APPDEF.map(function (a) { return { k: a[0], n: a[1], d: a[2], ic: a[3], tone: a[4], href: links[a[1]] || '' }; });
     OWNED = {}; ENABLED = {}; APPDEF.forEach(function (a) { if (f[a[0]] === true) { OWNED[a[0]] = true; ENABLED[a[0]] = en[a[0]] !== false; } });
     STAFF = (g('STAFF') || []).map(function (s) { return { name: s.name || s.email || '', role: s.role }; }); if (!STAFF.length && D) STAFF = [{ name: ME.name, role: 'owner' }];
