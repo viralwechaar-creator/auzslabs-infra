@@ -171,5 +171,17 @@ export default async function run({ browser, stack }) {
     await q("update tenant_settings set features = features || '{\"storefront\":true}' where tenant_id=$1", [tid]);
     assert((await q("select plan_status from sfx_stores where tenant_id=$1", [tid]))[0].plan_status === 'active', 'trigger did not activate');
   }, 'critical');
+  await s.check('Product extras and bulk edit work through the owner API (db/393)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    const pid = (await q("insert into sfx_products (tenant_id, name, handle, status, price) values ($1,'Bulk Tee','bulk-tee','active',100) returning id", [tid]))[0].id;
+    await q("insert into sfx_variants (tenant_id, product_id, label, price, stock) values ($1,$2,'M',100,2)", [tid, pid]);
+    const tok = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token;
+    const rpc = async (fn, a) => (await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(a) }));
+    assert((await rpc('sfx_product_extra_save', { p_id: pid, p: { cost: '40', vendor: 'Acme', bogus: 'x' } })).ok, 'extra save');
+    const ex = (await q("select extra from sfx_products where id=$1", [pid]))[0].extra; assert(ex.cost === '40' && ex.vendor === 'Acme' && ex.bogus === undefined, JSON.stringify(ex));
+    const b = await rpc('sfx_product_bulk', { p_ids: [pid], p: { pricePct: '10', status: 'draft' } }); assert(b.ok, await b.text());
+    const row = (await q("select p.price::float pp, p.status, v.price::float vp from sfx_products p join sfx_variants v on v.product_id=p.id where p.id=$1", [pid]))[0]; assert(row.pp === 110 && row.vp === 110 && row.status === 'draft', JSON.stringify(row));
+    assert(!(await rpc('sfx_product_bulk', { p_ids: [pid], p: { pricePct: '900' } })).ok, 'absurd change must be refused');
+  }, 'major');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }
