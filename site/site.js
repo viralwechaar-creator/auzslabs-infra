@@ -217,6 +217,7 @@
           u = u.split('#')[0] + '#auz_gt=' + tok;
         }
       } catch (err) {}
+      try { if (new URL(u).origin === location.origin) { location.href = u; return; } } catch (err) {}
       openEmbed(u, (a.querySelector('h3') || a).textContent.replace(/^Open\s*/i, '').trim());
     });
     // The app opens INSIDE this page (a full-screen frame with a Back bar), so an installed home-screen app stays in
