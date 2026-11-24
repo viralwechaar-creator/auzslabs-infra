@@ -153,7 +153,7 @@
 <div class="shell">
   <header class="u-top">
     <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="u-nav" aria-label="Main"><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="themes.html">Themes</a><a href="contact.html">Contact</a></nav>
+    <nav class="u-nav" aria-label="Main"><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="studio.html">Studio</a><a href="themes.html">Themes</a><a href="pricing.html">Pricing</a><a href="contact.html">Contact</a></nav>
     <div class="u-r">
       <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M20 14.500A8 8 0 0 1 9.500 4 8 8 0 1 0 20 14.500Z"/></svg></button>
       <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
@@ -195,6 +195,7 @@
 
 
             <a href="themes.html" class="nav-link">Themes</a>
+            <a href="pricing.html" class="nav-link">Pricing</a>
       <a href="studio.html" class="nav-link">Studio</a>
       <a href="live-demo.html" class="nav-link">Live demo</a>
       <a href="download-apps.html" class="nav-link">Download apps</a>
@@ -248,12 +249,12 @@
 <tr><th>Custom integrations</th><td>Scoped separately</td><td>Scoped separately</td><td>Scoped separately</td><td>Requirements reviewed with you</td></tr>
 </tbody></table></div></section>
 <section class="pr-quote" id="quote"><div><h2>Request a quote</h2><p>Tell us what you need. We’ll review your selection and confirm the scope and pricing before you pay.</p></div>
-<div><form data-contact-form id="prForm"><label>Plan<select id="prPlan" name="niche"><option>Basic</option><option>Pro</option><option>Advanced</option><option>Enterprise</option></select></label>
+<div><form id="prForm"><label>Plan<select id="prPlan"><option>Basic</option><option>Pro</option><option>Advanced</option><option>Enterprise</option></select></label>
 <fieldset><legend>Choose at least one service</legend><div class="pr-svc"><label><input type="checkbox" value="AUZsLedger"> AUZsLedger</label><label><input type="checkbox" value="AUZsStyle"> AUZsStyle</label><label><input type="checkbox" value="Salon Console"> Salon Console</label><label><input type="checkbox" value="Retail storefront"> Retail storefront <em>Quoted separately</em></label><label><input type="checkbox" value="Salon website"> Salon website <em>Quoted separately</em></label></div></fieldset>
 <label>Business name<input name="business" required></label><div class="pr-two"><label>Your name<input name="name" required></label><label>Email or phone<input name="contact" required></label></div>
 <label>What do you need? <em>Optional</em><textarea name="message"></textarea></label>
 <div style="position:absolute;left:-9999px" aria-hidden="true"><input name="hp" tabindex="-1" autocomplete="off"></div>
-<button class="pr-btn" type="submit">Send quote request</button></form><div class="success-view"><div class="success-mark">✓</div><h3>Got it.</h3><p>We’ll reach out to <span class="success-contact">you</span> shortly.</p></div></div></section>
+<p id="prErr" role="alert" hidden style="color:#b00020;font-size:14px;margin:0"></p><button class="pr-btn" type="submit">Send quote request</button></form><div class="success-view"><div class="success-mark">✓</div><h3>Got it.</h3><p>We’ll reach out to <span class="success-contact">you</span> shortly.</p></div></div></section>
 <section class="pr-faq" id="faq"><div><h2>Pricing FAQs</h2><a href="contact.html">Ask us a question</a></div><div>
 <details><summary>How does Basic pricing work?</summary><p>Basic is for business apps such as AUZsLedger, AUZsStyle or the Salon Console. We quote based on the apps you select, after verifying your business.</p></details>
 <details><summary>Is a website included with a Basic app?</summary><p>No. Retail and salon websites are quoted separately. Pro and Advanced include an online storefront.</p></details>
@@ -265,7 +266,17 @@
 <details><summary>Can I try the apps before requesting a quote?</summary><p>Yes. Open the <a href="live-demo.html">live demo</a> to try the apps with sample data.</p></details>
 </div></section>
 </div>
-<script>(function(){var p=document.getElementById("prPlan"),f=document.getElementById("prForm");document.querySelectorAll("[data-plan]").forEach(function(a){a.addEventListener("click",function(){p.value=a.dataset.plan})});f.addEventListener("submit",function(e){var s=[].map.call(f.querySelectorAll("fieldset input:checked"),function(x){return x.value});if(p.value==="Basic"&&!s.length){e.preventDefault();e.stopImmediatePropagation();alert("Choose at least one service.");return}var m=f.querySelector("[name=message]");m.value="[Pricing page] Plan: "+p.value+(s.length?"; Services: "+s.join(", "):"")+(m.value?"\n"+m.value:"");var n=f.querySelector("[name=niche]");n.removeAttribute("name")},true)})()</script>
+<script>(function(){var p=document.getElementById("prPlan"),f=document.getElementById("prForm"),err=document.getElementById("prErr"),btn=f.querySelector("button[type=submit]");
+document.querySelectorAll("[data-plan]").forEach(function(a){a.addEventListener("click",function(){p.value=a.dataset.plan})});
+f.addEventListener("submit",function(e){e.preventDefault();err.hidden=true;
+var s=[].map.call(f.querySelectorAll("fieldset input:checked"),function(x){return x.value});
+if(p.value==="Basic"&&!s.length){err.textContent="Choose at least one service.";err.hidden=false;return}
+var v=function(n){return(f.querySelector("[name="+n+"]")||{}).value||""};
+var msg="[Pricing page] Plan: "+p.value+(s.length?"; Services: "+s.join(", "):"")+(v("message")?"\n"+v("message"):"");
+btn.disabled=true;btn.textContent="Sending…";
+fetch("https://api.auzslab.in/rpc/submit_lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({p_name:v("name"),p_contact:v("contact"),p_business:v("business"),p_message:msg,p_niche:"",p_hp:v("hp")})})
+.then(function(r){if(!r.ok)throw new Error("failed");f.style.display="none";var sv=f.parentElement.querySelector(".success-view");sv.classList.add("show");sv.querySelector(".success-contact").textContent=v("contact")||"you";f.reset()})
+.catch(function(){err.textContent="We could not send your request. Please try again, or call +91 92512 50829.";err.hidden=false;btn.disabled=false;btn.textContent="Send quote request"})})})()</script>
 <div class="ftwrap" id="ftwrap">
     <button class="ftt" aria-expanded="false"><span class="ftti"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.500 0 18M12 3c-3 3.5-3 14.500 0 18"/></svg></span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
     <div class="ftinfo">
@@ -275,7 +286,7 @@
     </div>
     <footer><div class="cols">
       <div class="col"><span class="lbl">Connect with us</span><a href="tel:+919251250829">Call</a><a href="https://wa.me/919251250829" target="_blank" rel="noopener">Text (WhatsApp)</a><a href="https://www.instagram.com/auzslab.in" target="_blank" rel="noopener">Instagram</a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" target="_blank" rel="noopener">Facebook</a><a href="mailto:helloauzslab@gmail.com">Email</a></div>
-      <div class="col"><span class="lbl">Explore</span><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="themes.html">Themes</a></div>
+      <div class="col"><span class="lbl">Explore</span><a href="products.html">Services</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="themes.html">Themes</a><a href="pricing.html">Pricing</a></div>
       <div class="col"><span class="lbl">Company</span><a href="about.html">About AUZslab</a><a href="developers.html">Developer partners</a><a href="careers.html">Careers</a><a href="contact.html">Contact</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
       <div class="ftbrand"><a class="ft-logo" href="index.html" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab" loading="lazy"></a></div></div>
       <div class="fin"><span>&copy; 2026 AUZslab. All rights reserved</span><a href="sitemap.html">Sitemap</a></div></footer>
