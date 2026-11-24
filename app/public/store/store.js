@@ -77,7 +77,12 @@ let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
 const toast = (m) => { const t = E('div', { class: 'toast', role: 'status' }, m); document.body.append(t); setTimeout(() => t.remove(), 2200); };
 async function rpc(fn, args) {
-  if (DEMO) { if (fn === 'public_sty_store') return window.StoreDemo.build(DEMO); if (/_(track|notify_me|cart_save|reviews|coupon_check)$/.test(fn)) return null; throw new Error('This is a preview template. Ordering is switched off.'); }
+  if (DEMO) {
+    if (fn === 'public_sty_store') {
+      // the preview shows the real AUZsStyle demo account (its products, collections, stores and photos); built-in sample data only if that cannot be read
+      try { const r = await sb.rpc('public_sty_store', { p_slug: 'demo' }); if (r && r.data && !r.data.closed && r.data.styles && r.data.styles.length) return window.StoreDemo.live(r.data, DEMO); } catch (e) { /* fall back below */ }
+      return window.StoreDemo.build(DEMO);
+    } if (/_(track|notify_me|cart_save|reviews|coupon_check)$/.test(fn)) return null; throw new Error('This is a preview template. Ordering is switched off.'); }
   const { data, error } = await sb.rpc(fn, args || {}); if (error) { const e = new Error(error.message || 'Something went wrong'); e.status = error.status; throw e; } return data; }
 const saveBag = () => { LS.set('bag', bag); paintCounts(); };
 const saveWish = () => { LS.set('wish', wish); paintCounts(); };

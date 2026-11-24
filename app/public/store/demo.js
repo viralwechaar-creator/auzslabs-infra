@@ -3,6 +3,13 @@
 (function () {
   const slug = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   window.StoreDemo = {
+    // The real AUZsStyle demo account's public store, shown with the chosen template and ordering switched off.
+    live(d, theme) {
+      const fix = (v) => { if (typeof v === 'string') return v.startsWith('/uploads/') ? 'https://api.auzslab.in' + v : v; if (Array.isArray(v)) return v.map(fix); if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v)) o[k] = fix(v[k]); return o; } return v; };
+      const out = fix(d);
+      out.config = { ...(out.config || {}), template: theme === 'minimal' ? 'minimal' : '1', announce: 'Template preview: ordering is switched off' };
+      return out;
+    },
     async build(theme) {
       const rows = await (await fetch('/studs-preview/catalog.json')).json();
       const img = (f) => '/store/genx-studio/' + f;
