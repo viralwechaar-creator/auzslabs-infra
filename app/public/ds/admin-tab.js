@@ -160,10 +160,36 @@
           o.rpc('admin_tab_set', { p_user: p.id, p_on: !p.adminAccess }).then(function () { return staffPane(host, o); })
             .catch(function (e) { o.toast(e.message || 'Could not change', true); sw.disabled = false; });
         };
-        list.append(el('div', { class: 'li', style: 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px' }, [
-          el('div', { style: 'min-width:0' }, [el('div', { text: p.email || p.username || 'Staff', style: 'font-weight:600;overflow-wrap:anywhere' }), el('div', { class: 'muted small', text: p.role + (p.loginOff ? ' · login off' : '') })]), sw]));
+        var extra = [], pm = msgBox();
+        if (!owner && p.username) {
+          var rp = el('button', { class: 'btn small', type: 'button', text: 'Reset PIN' });
+          rp.onclick = function () {
+            var typed = window.prompt('New PIN for ' + p.username + ': type 4 digits (6 for managers), or leave blank for a random one.');
+            if (typed === null) return;
+            rp.disabled = true;
+            o.rpc('staff_reset_pin', { p_staff_id: p.id, p_pin: typed.trim() || null }).then(function (d) { pm.textContent = 'New PIN for ' + d.username + ': ' + d.pin + '. Write it down now, it is shown once.'; })
+              .catch(function (e) { pm.textContent = e.message || 'Could not reset.'; }).then(function () { rp.disabled = false; });
+          };
+          var lg = el('button', { class: 'btn small', type: 'button', text: p.loginOff ? 'Turn login on' : 'Turn login off' });
+          lg.onclick = function () { lg.disabled = true; o.rpc('staff_set_active', { p_staff_id: p.id, p_active: !!p.loginOff }).then(function () { return staffPane(host, o); }).catch(function (e) { pm.textContent = e.message || 'Could not change.'; lg.disabled = false; }); };
+          extra.push(rp, lg);
+        }
+        list.append(el('div', { class: 'li', style: 'padding:10px 12px;display:grid;gap:8px' }, [
+          el('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:10px' }, [
+            el('div', { style: 'min-width:0' }, [el('div', { text: p.email || p.username || 'Staff', style: 'font-weight:600;overflow-wrap:anywhere' }), el('div', { class: 'muted small', text: p.role + (p.loginOff ? ' · login off' : '') })]), sw]),
+          extra.length ? el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap' }, extra) : null, pm]));
       });
-      host.replaceChildren(el('p', { class: 'muted small', text: 'Staff can open this Admin tab only if you switch it on for them. The owner always can.' }), list);
+      var nm = el('input', { class: 'input', placeholder: 'Name', autocomplete: 'off' }), ph = el('input', { class: 'input', placeholder: 'Phone (optional)', autocomplete: 'off' }), mg = el('label', { class: 'small', style: 'display:flex;gap:8px;align-items:center' }, [el('input', { type: 'checkbox' }), el('span', { text: 'Manager (6-digit PIN)' })]);
+      var ab = el('button', { class: 'btn fill', type: 'button', text: 'Add staff with a PIN' }), am = msgBox();
+      ab.onclick = function () {
+        if (!nm.value.trim()) { am.textContent = 'Enter their name.'; return; }
+        ab.disabled = true;
+        o.rpc('staff_create', { p_name: nm.value.trim(), p_phone: ph.value.trim(), p_role_id: null, p_builtin: mg.firstChild.checked ? 'manager' : null, p_outlet: null }).then(function (d) {
+          am.textContent = 'Added. Username: ' + d.username + '  PIN: ' + d.pin + '. They sign in with the Staff option. Write the PIN down now, it is shown once.'; nm.value = ''; ph.value = '';
+        }).catch(function (e) { am.textContent = e.message || 'Could not add.'; }).then(function () { ab.disabled = false; });
+      };
+      host.replaceChildren(el('p', { class: 'muted small', text: 'Staff can open this Admin tab only if you switch it on for them. The owner always can.' }), list, card([el('h3', { text: 'Add staff' }), nm, ph, mg, ab, am]));
+
     }).catch(function (e) { host.replaceChildren(el('p', { class: 'muted small', text: e.message || 'Could not load.' })); });
   }
 
@@ -251,7 +277,14 @@
   var _priv = privacyPane;
   privacyPane = function (host, o) { _priv(host, o); consentBlock(host, o); };
 
+  function backupPane(host, o) {
+    var m = msgBox(), b = el('button', { class: 'btn fill', type: 'button', text: 'Backup, export or clear data' });
+    b.onclick = function () { if (window.auzMyData && o.sb) window.auzMyData(o.sb); else m.textContent = 'Backup is not available here.'; };
+    simple(host, [card([el('h3', { text: 'Backup and export' }), el('p', { class: 'muted small', text: 'Download a full backup (JSON) or an Excel-ready export of your business data. Only the owner can do this. Passwords, PINs and secrets are never included.' }), b, m])]);
+  }
+
   function helpPane(host) {
+
     var a = function (t, href) { return el('a', { class: 'btn', href: href, text: t, target: '_blank', rel: 'noopener' }); };
     simple(host, [card([el('h3', { text: 'Help and support' }), el('p', { class: 'muted small', text: 'We are happy to help.' }),
       a('Call +91 92512 50829', 'tel:+919251250829'), a('WhatsApp us', 'https://wa.me/919251250829'), a('Email helloauzslab@gmail.com', 'mailto:helloauzslab@gmail.com')])]);
@@ -261,7 +294,7 @@
     status: function (rpc) { return rpc('admin_tab_status').catch(function () { return { owner: false, allowed: false }; }); },
     mount: function (host, o) {
       var body = el('div', { style: 'margin-top:12px' });
-      var panes = [['Profile', profilePane], ['Account', accountPane], ['Staff access', staffPane], ['Billing', billingPane], ['Notifications', notificationsPane], ['WhatsApp', whatsappPane], ['Privacy', privacyPane], ['AI connectors', connectorsPane], ['Help', helpPane]];
+      var panes = [['Profile', profilePane], ['Account', accountPane], ['Staff access', staffPane], ['Billing', billingPane], ['Notifications', notificationsPane], ['WhatsApp', whatsappPane], ['Privacy', privacyPane], ['Backup', backupPane], ['AI connectors', connectorsPane], ['Help', helpPane]];
       var bar = el('div', { class: 'seg', role: 'tablist', style: 'display:flex;gap:6px;flex-wrap:wrap' });
       function pick(i) { Array.prototype.forEach.call(bar.children, function (b, j) { b.className = 'btn small' + (i === j ? ' fill' : ''); b.setAttribute('aria-selected', i === j ? 'true' : 'false'); }); panes[i][1](body, o); }
       panes.forEach(function (p, i) { var b = el('button', { type: 'button', role: 'tab', text: p[0] }); b.onclick = function () { pick(i); }; bar.append(b); });
