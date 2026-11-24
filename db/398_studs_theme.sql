@@ -1,9 +1,8 @@
 -- Studs: a new built-in storefront theme (black Studio Drop, white catalogue, campaign carousel).
 --
--- SAFE BY DEFAULT. Running this file changes nothing for any existing store:
---   * Studs is registered as an approved built-in theme but offered to every store (enabled_tenants = null; restrict with .{}.). It does not
---     appear in any store's theme library, cannot be installed and cannot be activated until a platform admin adds a store id
---     to sfx_themes.enabled_tenants (see the staging notes at the end of this file).
+-- Studs is an approved built-in theme offered to every store (enabled_tenants = null). Installing creates a DRAFT only; a store
+--   goes live on it only when its owner presses Publish, and can roll back for that store alone. To restrict it: set enabled_tenants
+--   to '{}' or to a list of tenant ids (see the notes at the end of this file).
 --   * No store's theme, active install, products, collections, URL, checkout or account settings are touched.
 --   * Installing Studs only creates a DRAFT copy (sfx_theme_installs, published_content = null), as for every theme.
 --   * Only sfx_theme_install_set_active / sfx_studs_publish (the merchant's explicit Publish) make it live for that one store.
