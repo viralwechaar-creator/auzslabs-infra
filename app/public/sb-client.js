@@ -46,7 +46,8 @@
     for (const [a, re] of APP_ADDR) if (re.test(path)) { app = a; break; }
     if (!app || (parts.length > 2 && parts[0] === app)) return page;
     const hi = page.indexOf('#'); const frag = hi >= 0 ? page.slice(hi + 1) : ''; const main = hi >= 0 ? page.slice(0, hi) : page;
-    let url = protocol + '//' + app + '.' + root + main;
+    // the storefront lives on the main address itself (auzslab.in/storefront.html), so reaching it never changes the address of an installed web app
+    let url = app === 'auzsshop' ? protocol + '//' + root + main : protocol + '//' + app + '.' + root + main;
     if (sess && sess.access_token) {
       const tok = btoa(unescape(encodeURIComponent(JSON.stringify({ t: sess.access_token, u: sess.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       url += '#auz_gt=' + tok + (frag ? '&' + frag : '');

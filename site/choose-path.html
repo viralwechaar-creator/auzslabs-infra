@@ -68,7 +68,7 @@
     </div>
   </main>
 </div>
-<script src="/sb-client.js?v=110"></script>
+<script src="/sb-client.js?v=120"></script>
 <script src="site.js?v=115"></script>
 <script>window.CFG = { url: 'https://api.auzslab.in', key: '' };</script>
 <script>
@@ -79,7 +79,7 @@ function show(id) { ['step1', 'storeForm'].forEach((x) => { $(x).style.display =
 
 let OWN = null;
 $('pickStore').onclick = () => {
-  if (OWN && OWN.store) { window.location.href = 'https://' + OWN.slug + '.auzslab.in/storefront.html'; return; }
+  if (OWN && OWN.store) { window.location.href = 'https://auzslab.in/storefront.html'; return; }
   if (OWN) { $('storeForm').innerHTML = '<span class="tl-cap">Online store</span><p class="tl-note">Your account already has a business' + (OWN.name ? ' (' + OWN.name.replace(/[<>&]/g, '') + ')' : '') + ', so the instant trial is not available. Ask us to add the online store to it and we will switch it on.</p><a class="tb pri wide" href="contact.html?as=business&service=Online%20store">Ask for the online store</a><button type="button" class="tb" id="storeBack" style="margin-top:8px">&larr; Back</button>'; $('storeBack').onclick = () => show('step1'); }
   show('storeForm');
 };
@@ -117,7 +117,7 @@ $('storeReqForm').addEventListener('submit', async (e) => {
   // product, same as AUZsStyle/Salon's own hub pages aren't listed there either).
   const r = data && (data.data || data);
   const slugOut = (r && r.slug) || slug;
-  window.location.href = 'https://' + slugOut + '.auzslab.in/storefront.html';
+  window.location.href = 'https://auzslab.in/storefront.html';
 });
 
 checkSession();
