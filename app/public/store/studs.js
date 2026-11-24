@@ -71,7 +71,7 @@
         l.href = 'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&family=Inter:wght@400;500;600;900&display=swap'; document.head.append(l);
       }
       if (!document.getElementById('studs-global')) { const g = document.createElement('style'); g.id = 'studs-global'; g.textContent = 'body.studs-on #app{display:none!important}#studs-host{display:block}#studs-host[hidden]{display:none!important}'; document.head.append(g); }
-      cssText = await (await fetch('/store/studs.css?v=5')).text();
+      cssText = await (await fetch('/store/studs.css?v=7')).text();
     })();
     return ready;
   }
@@ -179,10 +179,44 @@
     showPlay(); sync();
   }
 
+  // Filters and Sort by on a category / Shop all page (size, colour, price; sort order). Kept in LV for the page that is open.
+  let LV = null;
+  function listResult() {
+    const v = LV; const min = +v.min || 0, max = +v.max || Infinity;
+    const out = v.items.filter((p) => (!v.sizes.length || p.sizes.some((x) => v.sizes.includes(x))) && (!v.colours.length || p.colours.some((x) => v.colours.includes(x))) && p.price >= min && p.price <= max);
+    if (v.sort === 'price-up') out.sort((a, b) => a.price - b.price); else if (v.sort === 'price-down') out.sort((a, b) => b.price - a.price); else if (v.sort === 'newest') out.sort((a, b) => String(b.created).localeCompare(String(a.created)));
+    return out;
+  }
+  function paintList() {
+    const box = $('#plist'); if (!box || !LV) return; box.innerHTML = grid(listResult());
+    const n = LV.sizes.length + LV.colours.length + (LV.min || LV.max ? 1 : 0);
+    const fb = $('[data-list=filters]'), sb = $('[data-list=sort]');
+    if (fb) fb.textContent = n ? 'Filters (' + n + ')' : 'Filters';
+    if (sb) sb.textContent = LV.sort === 'featured' ? 'Sort by' : 'Sort by: ' + ({ 'price-up': 'Price low to high', 'price-down': 'Price high to low', newest: 'Newest' }[LV.sort]);
+  }
+  function listPanel(kind) {
+    if (!LV) return '';
+    if (kind === 'sort') return '<div class="lp-sort">' + [['featured', 'Featured'], ['newest', 'Newest'], ['price-up', 'Price: low to high'], ['price-down', 'Price: high to low']].map(([k, t]) => `<button type="button" data-sort="${k}"${LV.sort === k ? ' aria-pressed="true"' : ''}>${t}</button>`).join('') + '</div>';
+    const sizes = [...new Set(LV.items.flatMap((p) => p.sizes))], cols = [...new Set(LV.items.flatMap((p) => p.colours))];
+    const chips = (name, list, on) => list.map((x) => `<label class="lp-chip"><input type="checkbox" name="${name}" value="${esc(x)}"${on.includes(x) ? ' checked' : ''}><span>${esc(x)}</span></label>`).join('');
+    return `<form class="lp-filters" id="lp-form"><fieldset><legend>Size</legend><div class="lp-chips">${chips('size', sizes, LV.sizes)}</div></fieldset>
+      ${cols.length ? `<fieldset><legend>Colour</legend><div class="lp-chips">${chips('colour', cols, LV.colours)}</div></fieldset>` : ''}
+      <fieldset><legend>Price (Rs)</legend><div class="lp-price"><input name="min" type="number" min="0" inputmode="numeric" placeholder="From" value="${esc(LV.min)}"><input name="max" type="number" min="0" inputmode="numeric" placeholder="To" value="${esc(LV.max)}"></div></fieldset>
+      <div class="lp-actions"><button class="button" type="submit" id="lp-show">Show ${listResult().length} pieces</button><button type="button" class="lp-clear" data-clear>Clear all</button></div></form>`;
+  }
+  function bindListPanel(kind) {
+    if (kind === 'sort') { panelBody.querySelectorAll('[data-sort]').forEach((b) => b.addEventListener('click', () => { LV.sort = b.dataset.sort; paintList(); panel.close(); })); return; }
+    const form = panelBody.querySelector('#lp-form'); if (!form) return;
+    const read = () => { const d = new FormData(form); LV.sizes = d.getAll('size'); LV.colours = d.getAll('colour'); LV.min = String(d.get('min') || ''); LV.max = String(d.get('max') || ''); paintList(); const c = panelBody.querySelector('#lp-show'); if (c) c.textContent = 'Show ' + listResult().length + ' pieces'; };
+    form.addEventListener('input', read);
+    form.addEventListener('submit', (e) => { e.preventDefault(); read(); panel.close(); });
+    form.querySelector('[data-clear]').addEventListener('click', () => { form.reset(); form.querySelectorAll('input[type=checkbox]').forEach((i) => { i.checked = false; }); form.querySelectorAll('input[type=number]').forEach((i) => { i.value = ''; }); read(); });
+  }
   function listing(items, title, query, filters, c, intro) {
     if (!filters) {
       const head = intro ? `<div class="cat-intro"><h1>${esc(title)}</h1><p>${esc(intro)}</p></div>` : `<h1 class="sr-only">${esc(title)}</h1>`;
-      main.innerHTML = (title === 'Shop all' ? campaignCarousel(c) : '') + `<section class="section product-listing" aria-label="${esc(title)}">${head}${grid(items)}</section>`;
+      LV = { items, sizes: [], colours: [], min: '', max: '', sort: 'featured' };
+      main.innerHTML = (title === 'Shop all' ? campaignCarousel(c) : '') + `<section class="section product-listing" aria-label="${esc(title)}">${head}<div class="list-bar"><button type="button" data-list="filters">Filters</button><button type="button" data-list="sort">Sort by</button></div><div id="plist">${grid(items)}</div></section>`;
       bindCarousel(); return;
     }
     const categories = [...new Set(items.map((p) => p.category))].sort();
@@ -272,14 +306,16 @@
 
   function showPanel(kind, p) {
     const all = products();
-    panelTitle.textContent = { menu: 'Menu', search: 'Search', bag: 'Shopping bag', size: 'Size guide' }[kind];
+    panelTitle.textContent = { menu: 'Menu', search: 'Search', bag: 'Shopping bag', size: 'Size guide', filters: 'Filters', sort: 'Sort by' }[kind];
     panelBody.innerHTML = {
       menu: '<nav class="panel-nav" aria-label="Store menu"><a href="#/drop">Studio drop</a><a href="#/shop">Shop all</a><a href="#/collections">Collections</a><a href="#/me">My account</a><a href="#/contact">Customer care</a></nav>',
       bag: kind === 'bag' ? bagMarkup(true) : '',
+      filters: listPanel('filters'), sort: listPanel('sort'),
       size: p ? `<div class="size-guide-copy"><h3>${esc(p.name)}</h3><p>Size options for this product</p><ul>${p.sizes.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></div>` : '',
       search: '<form class="search-form"><label>Search products<input type="search" name="q" placeholder="Try denim" required></label><button class="button">View results</button></form><div class="panel-results"></div>',
     }[kind];
     if (!panel.open) panel.showModal();
+    if (kind === 'filters' || kind === 'sort') bindListPanel(kind);
     if (kind === 'search') {
       const input = panelBody.querySelector('input'); input.focus();
       input.addEventListener('input', () => { const q = input.value.trim(); const r = q ? all.filter((x) => matches(x, q)).slice(0, 5) : []; panelBody.querySelector('.panel-results').innerHTML = r.map((x) => `<a href="#/p/${esc(x.slug)}">${esc(x.name)}</a>`).join(''); });
@@ -291,6 +327,7 @@
     const t = event.target;
     if (t === drawer) { drawer.close(); return; }
     if (drawer && drawer.open && t.closest && (t.closest('.dr-close') || t.closest('.dr-nav a') || t.closest('.dr-account'))) drawer.close();
+    const lst = t.closest && t.closest('[data-list]'); if (lst) { showPanel(lst.dataset.list); return; }
     const open = t.closest && t.closest('[data-panel]');
     if (open) { if (open.dataset.panel === 'menu') openDrawer(); else showPanel(open.dataset.panel); }
     if (t.closest && (t.closest('#close-panel') || (panel.open && t.closest('#panel a')))) panel.close();
