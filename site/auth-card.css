@@ -192,17 +192,17 @@ html:has(body.auth-page){zoom:1!important}
 @media (min-width:760px){
   .auth-page{background:
     radial-gradient(60% 55% at 12% 8%,rgba(194,24,63,.16),transparent 70%),
-    radial-gradient(55% 60% at 92% 96%,rgba(128,0,32,.18),transparent 70%),
+    radial-gradient(55% 60% at 92% 96%,rgba(0,0,0,.18),transparent 70%),
     radial-gradient(40% 40% at 50% 50%,rgba(255,255,255,.55),transparent 75%),
     radial-gradient(rgba(23,23,23,.09) 1px,transparent 1.2px) 0 0/22px 22px,
-    var(--bg,#efeeed)}
+    var(--bg,#eeeeee)}
   /* faint horizon lines behind the card */
   .auth-main{position:relative}
   .auth-main::before,.auth-main::after{content:"";position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(23,23,23,.14),transparent);pointer-events:none}
   .auth-main::before{top:13%}
   .auth-main::after{bottom:13%}
   .auth-frame{max-width:1120px;max-height:calc(100vh - 40px);
-    box-shadow:0 1px 2px rgba(0,0,0,.2),0 30px 60px -22px rgba(0,0,0,.55),0 80px 140px -40px rgba(128,0,32,.35),0 0 0 8px rgba(255,255,255,.35)}
+    box-shadow:0 1px 2px rgba(0,0,0,.2),0 30px 60px -22px rgba(0,0,0,.55),0 80px 140px -40px rgba(0,0,0,.35),0 0 0 8px rgba(255,255,255,.35)}
   .auth-photo{min-height:640px}
   .auth-form-pane{padding:46px 48px}
 }
@@ -214,12 +214,12 @@ html:has(body.auth-page){zoom:1!important}
 @media (min-width:760px){
   .auth-page{background:
     radial-gradient(55% 50% at 10% 6%,rgba(194,24,63,.30),transparent 70%),
-    radial-gradient(50% 55% at 94% 98%,rgba(128,0,32,.34),transparent 70%),
+    radial-gradient(50% 55% at 94% 98%,rgba(0,0,0,.34),transparent 70%),
     radial-gradient(45% 45% at 50% 52%,rgba(255,255,255,.05),transparent 75%),
     radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.2px) 0 0/22px 22px,
     #0a0a0c;color:#f3f1ee}
   .auth-main::before,.auth-main::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
-  .auth-frame{box-shadow:0 1px 2px rgba(0,0,0,.4),0 30px 60px -22px rgba(0,0,0,.8),0 80px 140px -40px rgba(128,0,32,.55),0 0 0 1px rgba(255,255,255,.07),0 0 0 9px rgba(255,255,255,.025)}
+  .auth-frame{box-shadow:0 1px 2px rgba(0,0,0,.4),0 30px 60px -22px rgba(0,0,0,.8),0 80px 140px -40px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.07),0 0 0 9px rgba(255,255,255,.025)}
   .auth-back,.auth-page .u-menu{border:1px solid rgba(255,255,255,.18)!important;background:rgba(255,255,255,.06)!important;color:#f3f1ee!important}
   .auth-page .u-menu i,.auth-page .u-menu i::before,.auth-page .u-menu i::after{background:#f3f1ee}
 

@@ -1,9 +1,9 @@
 /* AUZslab public site: one new design system, built from the AUZsStyle online store.
    Soft grey page, white rounded cards, small black pills, very small type, no dead space.
    Replaces every earlier marketing stylesheet. Mobile first; one floating dock on phones. */
-:root{--bg:#efeeed;--card:#fff;--ink:#0c0c0c;--mut:#8b8987;--dim:#5f5d5b;--line:#e2e0de;--soft:#f6f5f4;--accent:#800020;--r1:26px;--r2:18px;--r3:12px;--pad:12px;--hh:52px;
+:root{--bg:#eeeeee;--card:#fff;--ink:#0c0c0c;--mut:#8a8a8a;--dim:#5f5f5f;--line:#e0e0e0;--soft:#f5f5f5;--accent:#111111;--r1:26px;--r2:18px;--r3:12px;--pad:12px;--hh:52px;
   --sh:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05);--fs:12px}
-:root[data-theme=dark]{--bg:#141313;--card:#201f1e;--ink:#f2f2f0;--mut:#8f8d8b;--dim:#b4b2b0;--line:#33312f;--soft:#1a1918;--sh:0 1px 2px rgba(0,0,0,.4)}
+:root[data-theme=dark]{--accent:#f2f2f0;--bg:#141414;--card:#202020;--ink:#f2f2f0;--mut:#8e8e8e;--dim:#b3b3b3;--line:#333333;--soft:#1a1a1a;--sh:0 1px 2px rgba(0,0,0,.4)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overscroll-behavior-y:none}
 body{margin:0;background:var(--bg);color:var(--ink);font:400 var(--fs)/1.55 ui-sans-serif,-apple-system,"SF Pro Text","Inter","Segoe UI",system-ui,sans-serif;letter-spacing:.005em;-webkit-font-smoothing:antialiased;padding-bottom:84px;overscroll-behavior-y:none}
@@ -231,7 +231,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ink)}
 }
 #salon-plans .sp-card:nth-of-type(even){transform:rotate(.4deg)}
 #salon-plans .sp-card:nth-of-type(odd){transform:rotate(-.3deg)}
-#salon-plans .sp-card.hi{border-color:var(--accent);box-shadow:0 14px 34px -14px rgba(128,0,32,.4)}
+#salon-plans .sp-card.hi{border-color:var(--accent);box-shadow:0 14px 34px -14px rgba(0,0,0,.4)}
 #salon-plans .sp-num{
   width:28px;height:28px;border-radius:50%;border:1px solid var(--ink);
   display:flex;align-items:center;justify-content:center;

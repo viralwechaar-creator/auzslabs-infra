@@ -1,10 +1,10 @@
 /* AUZslab minimal layer: one calm look for every public page, copied from the AUZsStyle online store.
    Loaded LAST on every marketing page; it only restyles (no markup, no behaviour). Phase 1 of the full redesign.
    Tokens match app/public/store/store.css: soft grey page, white rounded cards, black pills, very small type. */
-:root{--m-bg:#efeeed;--m-card:#fff;--m-ink:#0c0c0c;--m-mut:#8b8987;--m-line:#e2e0de;--m-soft:#f6f5f4;--m-r1:26px;--m-r2:18px;--m-r3:12px;--m-sh:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05);--m-accent:#800020;
-  --bg:#efeeed;--bg-raised:#fff;--ink:#0c0c0c;--ink-solid:#0c0c0c;--ink-dim:#5f5d5b;--ink-dim-solid:#5f5d5b;--ink-faint:#8b8987;--ink-faint-solid:#8b8987;--line:#e2e0de;--line-soft:#ecebe9}
-:root[data-theme=dark]{--m-bg:#171616;--m-card:#232120;--m-ink:#f2f2f0;--m-mut:#9a9896;--m-line:#34322f;--m-soft:#1e1d1c;--m-sh:0 1px 2px rgba(0,0,0,.3);
-  --bg:#171616;--bg-raised:#232120;--ink:#f2f2f0;--ink-solid:#f2f2f0;--ink-dim:#b8b8b6;--ink-faint:#8a8886;--line:#34322f;--line-soft:#2a2927}
+:root{--m-bg:#eeeeee;--m-card:#fff;--m-ink:#0c0c0c;--m-mut:#8b8987;--m-line:#e0e0e0;--m-soft:#f5f5f5;--m-r1:26px;--m-r2:18px;--m-r3:12px;--m-sh:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05);--m-accent:#111111;
+  --bg:#eeeeee;--bg-raised:#fff;--ink:#0c0c0c;--ink-solid:#0c0c0c;--ink-dim:#5f5d5b;--ink-dim-solid:#5f5d5b;--ink-faint:#8b8987;--ink-faint-solid:#8b8987;--line:#e0e0e0;--line-soft:#ecebe9}
+:root[data-theme=dark]{--m-bg:#171616;--m-card:#222222;--m-ink:#f2f2f0;--m-mut:#9a9896;--m-line:#34322f;--m-soft:#1e1d1c;--m-sh:0 1px 2px rgba(0,0,0,.3);
+  --bg:#171616;--bg-raised:#222222;--ink:#f2f2f0;--ink-solid:#f2f2f0;--ink-dim:#b8b8b6;--ink-faint:#8a8886;--line:#34322f;--line-soft:#2a2927}
 
 html body{background:var(--m-bg);color:var(--m-ink);font:400 12.5px/1.6 ui-sans-serif,-apple-system,"SF Pro Text","Inter","Segoe UI",system-ui,sans-serif;letter-spacing:.005em;-webkit-font-smoothing:antialiased}
 html body p,html body li{font-size:12.5px;line-height:1.6}

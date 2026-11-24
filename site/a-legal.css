@@ -20,9 +20,9 @@ html body.a-legal main.content .al-rail a{display:flex;gap:10px;align-items:base
 html body.a-legal main.content .al-rail a i{font:700 10px/1 "Space Mono",ui-monospace,monospace;font-style:normal;color:#aaa49d}
 html body.a-legal main.content .al-rail a:hover{color:#111}
 html body.a-legal main.content .al-rail a.on{color:#111;font-weight:700;transform:translateX(4px)}
-html body.a-legal main.content .al-rail a.on i{color:#800020}
+html body.a-legal main.content .al-rail a.on i{color:#111111}
 html body.a-legal main.content .al-bar{position:absolute;left:0;top:0;bottom:0;width:2px;background:#d8d3cc;border-radius:2px}
-html body.a-legal main.content .al-bar::after{content:"";position:absolute;inset:0;background:#800020;transform-origin:top;transform:scaleY(0)}
+html body.a-legal main.content .al-bar::after{content:"";position:absolute;inset:0;background:#111111;transform-origin:top;transform:scaleY(0)}
 @supports(animation-timeline:scroll()){html body.a-legal main.content .al-bar::after{animation:alProg linear both;animation-timeline:scroll(root)}@keyframes alProg{to{transform:scaleY(1)}}}
 /* reading column */
 html body.a-legal main.content .al-doc{max-width:700px}
@@ -30,7 +30,7 @@ html body.a-legal main.content .al-sec{position:relative;padding:34px 0 34px;bor
 html body.a-legal main.content .al-sec:first-child{border-top:0;padding-top:0}
 html body.a-legal main.content .al-n{position:absolute;left:-.04em;top:30px;font:700 clamp(48px,6.4vw,78px)/1 Inter,system-ui,sans-serif;letter-spacing:-.05em;color:transparent;-webkit-text-stroke:1px #cfc9c1;pointer-events:none;z-index:0;transition:-webkit-text-stroke-color .3s}
 html body.a-legal main.content .al-sec:first-child .al-n{top:-4px}
-html body.a-legal main.content .al-sec.on .al-n{-webkit-text-stroke-color:#800020}
+html body.a-legal main.content .al-sec.on .al-n{-webkit-text-stroke-color:#111111}
 html body.a-legal main.content .al-sec h2{position:relative;z-index:1;font-size:clamp(24px,3.2vw,34px)!important;line-height:1.12!important;letter-spacing:-.025em!important;font-weight:700!important;margin:0 0 14px!important;padding-top:clamp(46px,5.4vw,70px);color:#111!important;text-align:left!important}
 html body.a-legal main.content .al-sec p,html body.a-legal main.content .al-sec li{position:relative;z-index:1;font-size:16.5px!important;line-height:1.75!important;color:#2c2a27!important;text-align:left!important;max-width:none}
 html body.a-legal main.content .al-sec p,html body.a-legal main.content .al-sec .p,html body.a-legal main.content .al-sec li{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important}
@@ -39,7 +39,7 @@ html body.a-legal main.content .al-sec p{margin:0 0 14px!important}
 html body.a-legal main.content .al-sec ul,html body.a-legal main.content .al-sec ol{padding-left:20px!important;margin:0 0 14px!important;display:block!important}
 html body.a-legal main.content .al-sec li{margin:0 0 8px!important;display:list-item!important;border:0!important;padding:0!important}
 html body.a-legal main.content .al-sec b{color:#111}
-html body.a-legal main.content .al-sec a{color:#800020;text-underline-offset:3px}
+html body.a-legal main.content .al-sec a{color:#111111;text-underline-offset:3px}
 html body.a-legal main.content .al-sec table{width:100%;border-collapse:collapse;font-size:14.5px}
 html body.a-legal main.content .al-sec td,html body.a-legal main.content .al-sec th{border-bottom:1px solid #d8d3cc;padding:10px 8px;text-align:left}
 /* end strip */

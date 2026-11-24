@@ -1,13 +1,13 @@
 /* desktop (900px and up). Independent of the mobile file: edit freely. */
 :root{--ink:#000000;
-  --ink-solid:#000000;--ink-dim-solid:#625d58;--ink-faint-solid:#8f8a84;
-  --ink-dim:#625d58;
-  --ink-faint:#8f8a84;
-  --bg:#faf9f7;
-  --bg-raised:#efece8;
+  --ink-solid:#000000;--ink-dim-solid:#5f5f5f;--ink-faint-solid:#8a8a8a;
+  --ink-dim:#5f5f5f;
+  --ink-faint:#8a8a8a;
+  --bg:#fafafa;
+  --bg-raised:#eeeeee;
   --line:rgba(0,0,0,.16);
   --line-soft:rgba(0,0,0,.06);
-  --accent:#800020;
+  --accent:#111111;
   --success:#000000;
   --sidebar-w:240px;
   --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;
@@ -18,17 +18,17 @@
 @media (prefers-color-scheme:dark){
   :root:not([data-theme=light]){
     --ink:#f2f2f0;--ink-dim:#b8b8b6;--ink-faint:#7a7a78;
-    --bg:#232120;--bg-raised:#2d2b29;
+    --bg:#222222;--bg-raised:#2c2c2c;
     --line:rgba(255,255,255,.16);--line-soft:rgba(255,255,255,.07);
-    --accent:#a3324f;--success:#3fa968;
+    --accent:#e6e6e6;--success:#3fa968;
     color-scheme:dark;
   }
 }
 :root[data-theme=dark]{
   --ink:#f2f2f0;--ink-dim:#b8b8b6;--ink-faint:#7a7a78;
-  --bg:#232120;--bg-raised:#2d2b29;
+  --bg:#222222;--bg-raised:#2c2c2c;
   --line:rgba(255,255,255,.16);--line-soft:rgba(255,255,255,.07);
-  --accent:#a3324f;--success:#3fa968;
+  --accent:#e6e6e6;--success:#3fa968;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -135,7 +135,7 @@ input,select,textarea{font-size:16px}
   transition:transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s cubic-bezier(.22,1,.36,1), background .2s ease, border-color .2s ease;}
 .btn:hover{background:var(--ink-solid);color:#fff;transform:translateY(-1px)}
 .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
-.btn-primary:hover{background:var(--accent);box-shadow:0 8px 24px -6px rgba(128,0,32,.5);transform:translateY(-1px)}
+.btn-primary:hover{background:var(--accent);box-shadow:0 8px 24px -6px rgba(0,0,0,.5);transform:translateY(-1px)}
 .btn-ghost{border-color:var(--line);color:var(--ink-dim)}
 .btn-ghost:hover{background:var(--ink-solid);border-color:var(--ink-solid);color:#fff}
 .card{--ink:var(--ink-solid);--ink-dim:var(--ink-dim-solid);--ink-faint:var(--ink-faint-solid);color:var(--ink-solid);

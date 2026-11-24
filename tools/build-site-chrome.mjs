@@ -25,7 +25,7 @@ function header(cur) {
   const a = (h, t) => `<a href="${h}"${h === cur ? ' class="on"' : ''}>${t}</a>`;
   return `<header class="u-top">
     <a href="index.html" class="u-logo" aria-label="AUZslab home"><img src="logo.png" alt="AUZslab"></a>
-    <nav class="u-nav" aria-label="Main">${[['products.html', 'Products'], ['live-demo.html', 'Live demo'], ['studio.html', 'Studio'], ['platform.html', 'Why AUZslab'], ['contact.html', 'Contact']].map(([h, t]) => a(h, t)).join('')}</nav>
+    <nav class="u-nav" aria-label="Main">${[['products.html', 'Products'], ['live-demo.html', 'Live demo'], ['studio.html', 'Studio'], ['contact.html', 'Contact']].map(([h, t]) => a(h, t)).join('')}</nav>
     <div class="u-r">
       <button type="button" class="u-ic" data-theme-toggle aria-label="Dark mode">${svg('moon', 15)}</button>
       <a href="signup.html" class="u-pill" data-signin-link>Get started</a>
@@ -40,7 +40,7 @@ function sheet(cur) {
   <aside class="u-sheet sidebar" id="sidebarDrawer" aria-label="Menu">
     <div class="u-sheet-top"><a href="index.html"><img src="logo.png" alt="AUZslab"></a><button id="drawerClose" aria-label="Close menu">Close</button></div>
     <nav class="sidebar-nav" aria-label="Primary">
-      ${link('index.html', 'Home')}${link('products.html', 'Products')}${grp('Business types', BIZ.length, BIZ)}${link('platform.html', 'Why AUZslab')}${link('live-demo.html', 'Live demo')}${link('download-apps.html', 'Download apps')}${link('cart.html', 'Cart <span class="cart-count"></span>')}${grp('Resources', RES.length, RES)}${link('contact.html', 'Contact')}
+      ${link('index.html', 'Home')}${link('products.html', 'Products')}${grp('Business types', BIZ.length, BIZ)}${link('live-demo.html', 'Live demo')}${link('download-apps.html', 'Download apps')}${link('cart.html', 'Cart <span class="cart-count"></span>')}${grp('Resources', RES.length, RES)}${link('contact.html', 'Contact')}
     </nav>
     <div class="foot"><div class="row"><a href="signup.html" class="btn btn-ghost" data-signin-link>Get started</a><button class="btn" data-open-contact>Let's talk</button></div><div class="copy">&copy; 2026 AUZslab</div></div>
   </aside>`;
@@ -54,7 +54,7 @@ function footer() {
   const tabs = [['Products', [['products.html#slab-pos', 'AUZsPOS'], ['products.html#slab-payroll', 'AUZsPay'], ['products.html#slab-accounting', 'AUZsLedger'], ['products.html#slab-scan', 'AUZsScan'], ['products.html#slab-mobile', 'AUZsMob'], ['products.html#slab-salon', 'AUZslab Salon'], ['products.html#slab-qr', 'QR ordering']]],
     ['Business types', BIZ.map(([h, t]) => [h, t.replace(/&amp;/g, '&').replace(/&eacute;/g, 'e')])],
     ['Resources', RES.map(([h, t]) => [h, t.replace(/&amp;/g, '&')])],
-    ['Company', [['platform.html', 'Why AUZslab'], ['live-demo.html', 'Live demo'], ['download-apps.html', 'Download apps'], ['sitemap.html', 'Sitemap']]]];
+    ['Company', [['live-demo.html', 'Live demo'], ['download-apps.html', 'Download apps'], ['sitemap.html', 'Sitemap']]]];
   return `<div class="ftwrap" id="ftwrap">
     <button class="ftt" aria-expanded="false"><span class="ftti">${svg('ship', 15)}${svg('tag', 15)}${svg('chat', 15)}${svg('globe', 15)}</span><span class="ftl">Setup, support and help</span><i class="pl">+</i></button>
     <div class="ftinfo">
@@ -64,7 +64,7 @@ function footer() {
     </div>
     <footer><div class="cols">
       <div class="col"><span class="lbl">Connect with us</span><a href="tel:${TEL}">Call</a><a href="https://wa.me/${WA}" target="_blank" rel="noopener">Text (WhatsApp)</a><a href="${IG}" target="_blank" rel="noopener">Instagram</a><a href="${FB}" target="_blank" rel="noopener">Facebook</a><a href="mailto:${MAIL}">Email</a></div>
-      <div class="col"><span class="lbl">Explore</span><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a><a href="platform.html">Why AUZslab</a></div>
+      <div class="col"><span class="lbl">Explore</span><a href="products.html">Products</a><a href="live-demo.html">Live demo</a><a href="download-apps.html">Download apps</a><a href="studio.html">Studio</a><a href="web-design.html">Websites &amp; stores</a></div>
       <div class="col"><span class="lbl">Company</span><a href="contact.html">Contact</a><a href="signup.html">Sign in</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="refund.html">Refunds</a></div>
       <div class="ftbrand"><div class="big">AUZslab</div></div></div>
       <div class="fin"><span>&copy; 2026 AUZslab. All rights reserved</span><a href="sitemap.html">Sitemap</a></div></footer>
