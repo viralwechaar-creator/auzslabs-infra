@@ -100,7 +100,7 @@ export function rerender(skipRefresh) {
   const bizName = state.business.name || 'Your store';
   const initials = bizName.trim().split(/\s+/).slice(0, 2).map((word) => Array.from(word)[0] || '').join('').toUpperCase();
   const sidebarBottom = '<div class="sidebar-bottom"><a class="sidebar-settings" href="' + pathFor('settings') + '"' + (inSettings ? ' aria-current="' + (active === 'settings' ? 'page' : 'true') + '"' : '') + '>' + icon('settings') + '<span>Settings</span></a>' +
-    '<div class="sidebar-store-row"><a class="workspace-id" href="' + pathFor('website') + '" title="' + esc(bizName) + ' online store"><span class="avatar" aria-hidden="true">' + esc(initials) + '</span><strong>' + esc(bizName) + '</strong></a>' +
+    '<button class="sidebar-settings" type="button" data-action="sign-out" style="background:none;border:0;cursor:pointer;width:100%;text-align:left"><span>Sign out</span></button>' + '<div class="sidebar-store-row"><a class="workspace-id" href="' + pathFor('website') + '" title="' + esc(bizName) + ' online store"><span class="avatar" aria-hidden="true">' + esc(initials) + '</span><strong>' + esc(bizName) + '</strong></a>' +
     '<a class="sidebar-alerts" href="' + pathFor('notifications') + '" aria-label="Store notifications' + (unread ? ', ' + unread + ' unread' : '') + '" title="Store notifications">' + icon('bell') + (unread ? '<span aria-hidden="true">' + Math.min(unread, 99) + (unread > 99 ? '+' : '') + '</span>' : '') + '</a></div></div>';
   const settingsNav = settingsGroups.map((group) => '<section data-settings-group><div class="nav-label">' + group.label + '</div>' + group.items.map(([id, label, glyph]) => '<a href="' + pathFor(id + (settingsRoutes.has(id) ? '' : '?via=settings')) + '"' + (id === active ? ' aria-current="page"' : '') + '>' + icon(glyph) + '<span>' + label + '</span></a>').join('') + '</section>').join('');
   const sidebar = inSettings ?
@@ -162,6 +162,7 @@ document.addEventListener('click', (event) => {
   const target = event.target.closest('[data-action]'); if (!target) return;
   const [action, key, detail] = target.dataset.action.split(':');
   if (action === 'close-dialog') { if ($('#dialog').open) return close(); target.closest('form')?.reset(); return; }
+  if (action === 'sign-out') { Promise.resolve(sb.auth.signOut()).catch(() => {}).then(() => { location.href = 'https://auzslab.in/signup.html'; }); return; }
   if (action === 'global-search') return search();
   if (action === 'account-theme') { const dark = localStorage.getItem('auzslab.preview.theme') === 'dark'; localStorage.setItem('auzslab.preview.theme', dark ? 'light' : 'dark'); return rerender(); }
   if (action === 'toggle-nav' || action === 'close-nav') { setNavOpen(action === 'toggle-nav' && !navOpen, true); return; }
