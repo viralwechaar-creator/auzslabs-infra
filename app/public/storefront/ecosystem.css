@@ -515,3 +515,20 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
   .shell.nav-open .sidebar{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
 }
 @media(max-width:900px){.shell.nav-open .topbar{visibility:hidden}}
+
+/* Phone menu, compact (Shopify-style): small rows, every tab listed, Switch app and Settings flow with the list instead of covering it */
+@media(max-width:900px){
+  .shell.nav-open .sidebar{display:block;padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(96px + env(safe-area-inset-bottom,0px))}
+  .shell.nav-open .sidebar .side-nav{display:block}
+  .shell.nav-open .sidebar .side-nav a{min-height:42px;font-size:1rem;font-weight:550;gap:13px;padding-inline:12px;border-radius:12px}
+  .shell.nav-open .sidebar .side-nav a.sub{min-height:36px;font-size:.9rem;padding-left:46px}
+  .shell.nav-open .sidebar .ico{width:20px;height:20px}
+  .shell.nav-open .sidebar .nav-label{font-size:.8rem;padding:12px 12px 4px}
+  .shell.nav-open .sidebar .sidebar-bottom{display:block;margin-top:8px;padding-top:6px}
+  .shell.nav-open .sidebar .sidebar-apps{display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px 8px;margin:0;border:0}
+  .shell.nav-open .sidebar .sidebar-apps .nav-label{flex:0 0 100%;padding:4px 4px 2px}
+  .shell.nav-open .sidebar .sidebar-app{min-height:32px;padding:5px 11px;font-size:.82rem;gap:6px;border-radius:999px;background:#1c1c1e;color:#fff}
+  .shell.nav-open .sidebar .sidebar-app .ico{width:15px;height:15px}
+  .shell.nav-open .sidebar :is(.sidebar-settings,.workspace-id){min-height:40px;font-size:.95rem}
+  .shell.settings-mode.nav-open .settings-sidebar{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}

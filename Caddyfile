@@ -96,7 +96,7 @@
         # 'unsafe-eval' stay (no build step/nonces, and some pages bridge to the page's own inline-script globals via
         # eval -- see that block's comment), the real value is blocking a stored-XSS payload from pulling in an
         # attacker's own script.
-        header Content-Security-Policy "frame-ancestors 'self' https://app.{$DOMAIN}; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
+        header Content-Security-Policy "frame-ancestors 'self' https://app.{$DOMAIN} https://{$DOMAIN}; object-src 'none'; base-uri 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://browser.sentry-cdn.com https://checkout.razorpay.com"
         @home path /
         rewrite @home {args[0]}
         @mine path {args[0]} {args[1:]}
