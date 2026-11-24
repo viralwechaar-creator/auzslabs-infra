@@ -123,8 +123,9 @@ export default async function run({ browser, stack }) {
     assert(await pg.evaluate(() => /₹3,198/.test(document.querySelector('#studs-host').shadowRoot.querySelector('#panel-body').innerText)), 'subtotal wrong');
     await pg.screenshot({ path: '/tmp/claude-0/studs/int-d-bag.png' });
     await pg.evaluate(() => { location.hash = '#/checkout'; }); await pg.waitForTimeout(1200);
-    assert(await pg.evaluate(() => getComputedStyle(document.querySelector('#studs-host')).display === 'none' || document.querySelector('#studs-host').hidden), 'Studs still covering checkout');
-    const t = await pg.locator('#app').innerText(); assert(/checkout|delivery|contact|total/i.test(t), 'native checkout did not render: ' + t.slice(0, 120));
+    assert(await pg.evaluate(() => { const h = document.querySelector('#studs-host'); return !!h && !h.hidden && h.contains(document.getElementById('view')) && !!h.shadowRoot.querySelector('.header'); }), 'checkout is not framed by the Studs header');
+    await pg.screenshot({ path: '/tmp/claude-0/studs/int-d-checkout.png' }).catch(() => {});
+    const t = await pg.locator('#view').innerText(); assert(/checkout|delivery|contact|total/i.test(t), 'native checkout did not render: ' + t.slice(0, 120));
     await pg.evaluate(() => { location.hash = '#/me'; }); await pg.waitForTimeout(1000);
     assert(/sign in|phone|orders|account/i.test(await pg.locator('#app').innerText()), 'account page did not render');
     assert(!errs.filter((e) => !/sentry|fonts|googleapis|ERR_/i.test(e)).length, errs.slice(0, 3).join(' | '));

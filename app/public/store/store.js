@@ -1510,7 +1510,7 @@ function route() {
       TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
       return;
     }
-    window.StudsTheme.hide();
+    window.StudsTheme.frame();
   }
   view._disconnectProduct?.();
   view._disconnectProduct = null;
@@ -1571,7 +1571,7 @@ window.StoreHost = {
 function loadStuds() {
   if (window.StudsTheme) return window.StudsTheme.ready();
   return new Promise((resolve) => {
-    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=3';
+    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=4';
     sc.onload = () => resolve(window.StudsTheme ? window.StudsTheme.ready() : null); sc.onerror = () => resolve(null);
     document.head.append(sc);
   });
