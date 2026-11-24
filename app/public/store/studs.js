@@ -280,7 +280,27 @@
   // ---------- routing ----------
   const OWN = new Set(['home', 'drop', 'shop', 'search', 'collections', 'collection', 'p', 'bag']);
   function owns(id) { return OWN.has(id); }
+  // Routes Studs does not draw itself (checkout, account, orders, policies) keep the Studs header and footer around the store's own content
+  let framed = false, viewHome = null;
+  function unframe() {
+    if (!framed) return; framed = false;
+    const v = document.getElementById('view');
+    if (v && viewHome && v.parentNode === host) viewHome.parent.insertBefore(v, viewHome.next);
+    viewHome = null;
+  }
+  async function frame() {
+    await load(); mount(); host.hidden = false; document.body.classList.add('studs-on');
+    stopCampaigns(); stopCampaigns = () => {};
+    host.dataset.palette = 'light'; if (panel.open) panel.close();
+    const v = document.getElementById('view');
+    if (v && v.parentNode !== host) { viewHome = { parent: v.parentNode, next: v.nextSibling }; host.append(v); }
+    framed = true;
+    main.innerHTML = '<slot></slot>';
+    $$('[data-department]').forEach((a) => a.removeAttribute('aria-current'));
+    paintBagCount(); lastPath = { parts: ['__frame'] };
+  }
   function render(parts, again) {
+    unframe();
     stopCampaigns(); stopCampaigns = () => {};
     const [page, id] = [parts[0] || '', parts[1]]; const q = new URLSearchParams((location.hash.split('?')[1]) || '');
     lastPath = { parts };
@@ -308,9 +328,10 @@
   window.StudsTheme = {
     owns,
     async show(parts) { await load(); mount(); host.hidden = false; document.body.classList.add('studs-on'); render(parts); },
-    hide() { if (host) { host.hidden = true; } document.body.classList.remove('studs-on'); },
+    hide() { unframe(); if (host) { host.hidden = true; } document.body.classList.remove('studs-on'); },
+    frame,
     // settings changed (owner preview): rebuild the whole Studs shell so the announcement bar, footer and pages all follow
-    refresh() { if (host && !host.hidden && lastPath) { const parts = lastPath.parts; host.remove(); host = null; stopCampaigns(); mount(); host.hidden = false; render(parts); } },
+    refresh() { if (host && !host.hidden && lastPath) { const parts = lastPath.parts, wasFramed = framed; unframe(); host.remove(); host = null; stopCampaigns(); mount(); host.hidden = false; if (wasFramed) frame(); else render(parts); } },
     ready: load,
   };
 })();
