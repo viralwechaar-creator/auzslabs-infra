@@ -261,12 +261,12 @@ export default async function run({ browser, stack }) {
     assert((await cell('Orders')).startsWith('3'), 'all time orders wrong: ' + (await cell('Orders')));
     const paid = (await q("select coalesce(sum(total),0)::float t from sfx_orders where payment_status='paid'"))[0].t; assert((await cell('Sales (paid)')).replace(/[^0-9.]/g, '') === String(paid), 'paid sales wrong: ' + (await cell('Sales (paid)')) + ' vs ' + paid);
   });
-  await s.check('Storefront drawer lets the owner switch to the other apps they own', async () => {
+  await s.check('Settings -> Switch apps lets the owner open the other apps they own', async () => {
     await q("update tenant_settings set features = features || '{\"style\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
-    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
-    const hrefs = await page.locator('.sidebar-apps a.sidebar-app:not(.current)').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/switch-apps'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
+    const hrefs = await page.locator('.switch-apps a.switch-app').evaluateAll((els) => els.map((e) => e.getAttribute('href')));
     assert(hrefs.some((h) => /auzsstyle\.auzslab\.in\/style\.html/.test(h)), 'no AUZsStyle switch link: ' + JSON.stringify(hrefs));
-    assert(await page.locator('.sidebar-apps a.current').count() === 1, 'current storefront row missing');
+    assert(await page.locator('.sidebar-apps').count() === 0, 'switch-app block should be gone from the menu');
   });
   await s.check('Phone Settings is a grouped list with search; Business profile stays reachable', async () => {
     const mctx = await newCtx(browser, stack, { w: 390, h: 844 }); const mp = await mctx.newPage();
