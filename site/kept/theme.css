@@ -1,12 +1,12 @@
 :root{
   --ink:#000000;
-  --ink-dim:#625d58;
-  --ink-faint:#8f8a84;
-  --bg:#faf9f7;
-  --bg-raised:#efece8;
+  --ink-dim:#5f5f5f;
+  --ink-faint:#8a8a8a;
+  --bg:#fafafa;
+  --bg-raised:#eeeeee;
   --line:rgba(0,0,0,.16);
   --line-soft:rgba(0,0,0,.06);
-  --accent:#800020;
+  --accent:#111111;
   --success:#000000;
   --sidebar-w:240px;
   --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display',Inter,system-ui,sans-serif;
@@ -169,7 +169,7 @@ input,select,textarea{font-size:16px}
 .btn-primary{
   background:var(--accent);color:#fff;border-color:var(--accent);
 }
-.btn-primary:hover{background:var(--accent);box-shadow:0 8px 24px -6px rgba(128,0,32,.5);transform:translateY(-1px)}
+.btn-primary:hover{background:var(--accent);box-shadow:0 8px 24px -6px rgba(0,0,0,.5);transform:translateY(-1px)}
 .btn-ghost{border-color:var(--line);color:var(--ink-dim)}
 .btn-ghost:hover{background:var(--ink);border-color:var(--ink);color:#fff}
 

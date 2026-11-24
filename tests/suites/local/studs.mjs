@@ -24,7 +24,7 @@ export default async function run({ browser, stack }) {
     return ids;
   };
   const idsA = await seed(ta, 'Alpha'); const idsB = await seed(tb, 'Beta');
-  await q("update sfx_themes set enabled_tenants = '{}' where slug = 'studs'");   // the shipped default: nobody
+  await q("update sfx_themes set enabled_tenants = '{}' where slug = 'studs'");   // gate it for these checks (the shipped default offers it to every store)
   const publicOf = async (slug) => (await q('select public_sfx_store($1) as j', [slug]))[0].j;
   const beforeB = JSON.stringify(await publicOf(B));
   const login = async (slug, email) => {

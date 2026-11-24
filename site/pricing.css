@@ -8,7 +8,7 @@ html body main.content .pr-hero p{font-size:clamp(14px,1.6vw,18px);color:#4a4f58
 .pr-plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start;margin-top:20px}
 .pr-plan{display:flex;flex-direction:column;border:1px solid #dcdfe4;background:#fff;border-radius:22px;padding:22px}
 .pr-plan.hi{border:1.5px solid #16181d}
-.pr-plan.dark{background:#16181d;color:#f4f4f2;border-color:#16181d}
+.pr-plan.dark{background:#16181d;color:#f4f4f4;border-color:#16181d}
 html body main.content .pr-plan h2{font-size:24px!important}
 html body main.content .pr-plan.dark h2{color:#fff}
 .pr-plan .sub{font-size:13px;color:#6a6f78;margin:4px 0 14px}.pr-plan.dark .sub,.pr-plan.dark .gst{color:#b9bcc4}

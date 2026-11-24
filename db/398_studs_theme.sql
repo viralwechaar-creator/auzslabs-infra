@@ -1,7 +1,7 @@
 -- Studs: a new built-in storefront theme (black Studio Drop, white catalogue, campaign carousel).
 --
 -- SAFE BY DEFAULT. Running this file changes nothing for any existing store:
---   * Studs is registered as an approved built-in theme but with enabled_tenants = '{}', i.e. it is offered to NOBODY. It does not
+--   * Studs is registered as an approved built-in theme but offered to every store (enabled_tenants = null; restrict with .{}.). It does not
 --     appear in any store's theme library, cannot be installed and cannot be activated until a platform admin adds a store id
 --     to sfx_themes.enabled_tenants (see the staging notes at the end of this file).
 --   * No store's theme, active install, products, collections, URL, checkout or account settings are touched.
@@ -240,9 +240,9 @@ begin
     '{styles}', coalesce(r->'styles', '[]'::jsonb) || gone);
 end $$;
 
--- 10. the theme itself. enabled_tenants = '{}' keeps it invisible to every store until staging enables one.
+-- 10. the theme itself. enabled_tenants = null: offered to every store. Installing still only creates a draft; a store goes live on it only when its owner presses Publish. To restrict it again: update sfx_themes set enabled_tenants = '{}' where slug='studs'.
 insert into sfx_themes (name, slug, description, price_cents, status, is_builtin, base_chrome, enabled_tenants, preview_image_url)
-values ('Studs', 'studs', 'A bold, photography-led retail storefront: a black Studio Drop, a campaign carousel on Shop all, borderless product tiles and a white catalogue.', 0, 'approved', true, 'studs', '{}', '/theme-previews/studs.jpg')
+values ('Studs', 'studs', 'A bold, photography-led retail storefront: a black Studio Drop, a campaign carousel on Shop all, borderless product tiles and a white catalogue.', 0, 'approved', true, 'studs', null, '/theme-previews/studs.jpg')
 on conflict (slug) do nothing;
 insert into sfx_theme_versions (theme_id, version_number, content, frozen)
 select id, 1, '{"kind":"studs","sections":[],"settings":{}}'::jsonb, true from sfx_themes where slug = 'studs'

@@ -228,6 +228,15 @@ function tagsCollectionsPanel(p, dis) {
   const cols = state.collections.length ? '<fieldset class="check-list"><legend>Collections</legend>' + state.collections.map((c) => '<label class="inline"><input type="checkbox" name="collections" value="' + esc(c.id) + '"' + (mine.has(c.id) ? ' checked' : '') + ' ' + dis + '> ' + esc(c.name) + '</label>').join('') + '</fieldset>' : '<p class="compact-copy">No collections yet. Create one under Products › Collections.</p>';
   return panel('Tags and collections', body('<div class="field-grid">' + input('Tags (separated by commas)', 'tags', tags, 'text', 'maxlength="300" ' + dis) + '</div>' + cols));
 }
+function productSales(r) {
+  const mine = state.orders.map((o) => ({ o, lines: (o.lines || []).filter((l) => l.productId === r.id) })).filter((x) => x.lines.length);
+  const units = mine.reduce((t, x) => t + x.lines.reduce((u, l) => u + (l.qty || 1), 0), 0);
+  const paid = mine.filter((x) => String(x.o.payment).toLowerCase() === 'paid');
+  const sales = paid.reduce((t, x) => t + x.lines.reduce((u, l) => u + (l.qty || 1) * Number(l.price || 0), 0), 0);
+  if (!mine.length) return panel('Sales in this preview', body('<p class="compact-copy">No orders for this product yet. Sales will appear here as customers buy it.</p>'));
+  const recent = mine.slice().sort((a, b) => cmp(b.o.date, a.o.date)).slice(0, 5).map((x) => '<a class="ps-row" href="' + pathFor('orders/' + x.o.id) + '"><span>#' + esc(x.o.number) + '<small>' + dateValue(x.o.date) + '</small></span><span>' + x.lines.reduce((u, l) => u + (l.qty || 1), 0) + ' pc<small>' + status(x.o.payment) + '</small></span></a>').join('');
+  return panel('Sales in this preview', body('<div class="ps-stats"><div><span>Units sold</span><strong>' + units + '</strong></div><div><span>Orders</span><strong>' + mine.length + '</strong></div><div><span>Sales (paid)</span><strong>' + money(sales) + '</strong></div></div>') + '<div class="ps-list">' + recent + '</div>');
+}
 function productDetail(id) {
   const p = id !== 'new' ? state.products.find((x) => x.id === id) : null;
   if (!p && id !== 'new') return head('Product unavailable', 'This product could not be found.', wl('Back to products', 'products'));
@@ -247,7 +256,7 @@ function productDetail(id) {
       tagsCollectionsPanel(p, dis) + customFieldInputs(ex.custom) +
       panel('Search listing', body('<div class="field-grid">' + input('Page title', 'seoTitle', ex.seoTitle || '', 'text', 'maxlength="70" ' + dis) + input('URL handle', 'handle', p ? r.handle : '', 'text', 'pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="made-from-title" ' + dis) + area('Search description', 'seoDescription', ex.seoDescription || '', 'maxlength="160" ' + dis) + '</div><div data-seo-preview>' + seoPreview(ex.seoTitle || r.name, p ? r.handle : '', ex.seoDescription || r.description) + '</div>')) +
       '</div><aside>' + panel('Status', body('<div class="stack">' + select('Catalog status', 'status', ['Draft', 'Active', 'Archived'], r.status) + (canWrite() ? '' : '<p class="compact-copy">Only an owner or manager can change this.</p>') + '</div>')) +
-      (p ? panel('Stock', body('<p>' + esc(r.stock) + ' available across ' + (r.variants || []).length + ' variant(s)</p>')) : '') + '</aside></div>' +
+      (p ? panel('Stock', body('<p>' + esc(r.stock) + ' available across ' + (r.variants || []).length + ' variant(s)</p>')) : '') + (p ? productSales(r) : '') + '</aside></div>' +
       '<div class="product-save actions">' + (canWrite() ? '<button class="btn primary">' + (p ? 'Save changes' : 'Create product') + '</button>' : '') + wl('Cancel', 'products') + '</div></form>';
   } else if (tab === 'media') {
     const existing = [...new Set([r.image, ...(r.media || [])].filter(Boolean))];

@@ -126,8 +126,8 @@ body.ac3 .u-top,body.ac3 .u-dock,body.ac3 .shell,body.ac3 .u-fab,body.ac3 .knock
 
 /* ===== Admin-panel look (round 6): warm sand page, white 20px cards with the admin's soft lift, mono labels, wine accent,
    labelled sidebar from 900px, floating black pill bar below, one section at a time inside long tabs ===== */
-body.ac3{--a-bg:#faf9f7;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#efece8;--a-mut:#625d58;--a-faint:#8f8a84;--wine:#800020;--wine-soft:rgba(128,0,32,.08);--lift:0 1px 2px rgba(0,0,0,.05),0 10px 26px -14px rgba(0,0,0,.28);--sb:#faf9f7;--top:48px;font-family:Inter,-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif}
-:root[data-theme=dark] body.ac3{--a-bg:#1f1d1b;--a-card:#2d2b29;--a-sep:#413e3b;--a-fill:#38352f;--a-mut:#a59d95;--a-faint:#8a8178;--wine-soft:rgba(190,60,90,.16);--sb:#1f1d1b}
+body.ac3{--a-bg:#fafafa;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#eeeeee;--a-mut:#5f5f5f;--a-faint:#8a8a8a;--wine:#111111;--wine-soft:rgba(0,0,0,.08);--lift:0 1px 2px rgba(0,0,0,.05),0 10px 26px -14px rgba(0,0,0,.28);--sb:#fafafa;--top:48px;font-family:Inter,-apple-system,"SF Pro Text",Helvetica,Arial,sans-serif}
+:root[data-theme=dark] body.ac3{--a-bg:#1f1d1b;--a-card:#2c2c2c;--a-sep:#413e3b;--a-fill:#38352f;--a-mut:#a59d95;--a-faint:#8a8178;--wine-soft:rgba(190,60,90,.16);--sb:#1f1d1b}
 .a3{font-family:inherit}
 .a3-top{padding-left:20px;padding-right:20px}
 .a3-crumb{font:700 14px/1 inherit;color:var(--a-ink);letter-spacing:-.01em}
@@ -147,7 +147,7 @@ body.ac3{--a-bg:#faf9f7;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#efece8;--a-mut:#
 .a3-l{font:600 9px/1.2 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.07em;text-transform:uppercase;color:var(--a-faint)}
 .a3-s{font-size:21px;font-weight:700;letter-spacing:-.02em;margin-top:6px}
 .a3-t h3{font-size:15px;font-weight:700;letter-spacing:-.005em}.a3-t h2{font-size:clamp(17px,1.8vw,19px);font-weight:700;letter-spacing:-.01em}
-.a3-t.dk{background:#000;box-shadow:var(--lift),inset 0 0 70px -30px rgba(128,0,32,.55)!important}
+.a3-t.dk{background:#000;box-shadow:var(--lift),inset 0 0 70px -30px rgba(0,0,0,.55)!important}
 .a3-t.c::after{border-color:var(--wine);top:18px}
 .a3-t.c:hover{box-shadow:0 2px 4px rgba(0,0,0,.06),0 18px 38px -16px rgba(0,0,0,.34)!important}
 .a3-mos{gap:10px;margin-bottom:14px}
@@ -213,7 +213,7 @@ body.ac3{--a-bg:#faf9f7;--a-card:#fff;--a-sep:#e9e5e0;--a-fill:#efece8;--a-mut:#
  .a3-det>.card>.fc-h{padding:20px 26px 4px}.a3-det>.card>.fc-b>.fc-in{padding:8px 26px 28px}
 }
 @media(min-width:600px){.a3-det .field{max-width:560px}}
-.a3-pane input:focus,.a3-pane select:focus,.a3-pane textarea:focus{box-shadow:0 0 0 3px rgba(128,0,32,.12);outline:0}
+.a3-pane input:focus,.a3-pane select:focus,.a3-pane textarea:focus{box-shadow:0 0 0 3px rgba(0,0,0,.12);outline:0}
 .a3-pane input:checked+.slider{background:var(--wine)}
 .a3-det .fc-in{display:block}
 @media(min-width:600px){.a3-det>.card>.fc-b>.fc-in{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px;align-content:start}
