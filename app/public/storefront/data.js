@@ -31,6 +31,7 @@ export const menu = [
 ];
 
 export const icons = {
+  logout: 'M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 8l4 4-4 4M20 12H9',
   tag: 'M3 4h7l10 10-6 6L3 9z M7 7h.01',
   pin: 'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z M14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0z',
   lock: 'M6 10h12v10H6z M8 10V7a4 4 0 0 1 8 0v3',
