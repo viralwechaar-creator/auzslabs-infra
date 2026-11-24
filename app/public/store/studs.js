@@ -71,7 +71,7 @@
         l.href = 'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&family=Inter:wght@400;500;600;900&display=swap'; document.head.append(l);
       }
       if (!document.getElementById('studs-global')) { const g = document.createElement('style'); g.id = 'studs-global'; g.textContent = 'body.studs-on #app{display:none!important}#studs-host{display:block}#studs-host[hidden]{display:none!important}'; document.head.append(g); }
-      cssText = await (await fetch('/store/studs.css?v=1')).text();
+      cssText = await (await fetch('/store/studs.css?v=2')).text();
     })();
     return ready;
   }
@@ -139,18 +139,18 @@
 
   function home(all, c) {
     const more = all.filter((p) => !c.dropIds.has(p.slug)).slice(0, 8);
-    const hero = c.hero.image ? `<section class="hero" aria-labelledby="campaign-title"><img class="hero-image" fetchpriority="high" src="${esc(c.hero.image)}" alt="${esc(c.hero.alt)}"><h1 id="campaign-title" class="sr-only">${esc(H.D.shop.name)}</h1><a class="button" href="${esc(safeHref(c.hero.href))}">${esc(c.hero.label)} <span aria-hidden="true">↗</span></a></section>` : '';
+    const hero = c.hero.image ? `<section class="hero" aria-labelledby="campaign-title"><img class="hero-image" fetchpriority="high" src="${esc(c.hero.image)}" alt="${esc(c.hero.alt)}"><h1 id="campaign-title" class="sr-only">${esc(H.D.shop.name)}</h1><a class="button" href="${esc(safeHref(c.hero.href))}">${esc(c.hero.label)} <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></section>` : '';
     return hero +
-      (c.drop.length ? `<section class="showcase" aria-labelledby="new-in"><div class="showcase-head"><h2 id="new-in">${esc(c.dropTitle)}</h2><a href="#/drop">View the drop <span aria-hidden="true">↗</span></a></div>${grid(c.drop, true)}</section>` : '') +
+      (c.drop.length ? `<section class="showcase" aria-labelledby="new-in"><div class="showcase-head"><h2 id="new-in">${esc(c.dropTitle)}</h2><a href="#/drop">View the drop <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>${grid(c.drop, true)}</section>` : '') +
       (c.quote ? `<figure class="home-banner manifesto-banner"><img src="${esc(c.quote.image)}" loading="lazy" decoding="async" alt="${esc(c.quote.alt)}">${c.quote.text ? `<figcaption>${esc(c.quote.text).replace(/\n/g, '<br>')}</figcaption>` : ''}</figure>` : '') +
-      (more.length ? `<section class="showcase" aria-labelledby="more-genx"><div class="showcase-head"><h2 id="more-genx">${esc(c.moreTitle)}</h2><a href="#/shop">Shop all <span aria-hidden="true">↗</span></a></div>${grid(more, true)}</section>` : '') +
+      (more.length ? `<section class="showcase" aria-labelledby="more-genx"><div class="showcase-head"><h2 id="more-genx">${esc(c.moreTitle)}</h2><a href="#/shop">Shop all <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>${grid(more, true)}</section>` : '') +
       (c.closing ? `<a class="home-banner closing-banner" href="${esc(safeHref(c.closing.href))}"><img src="${esc(c.closing.image)}" loading="lazy" decoding="async" alt="${esc(c.closing.alt)}">${c.closing.text ? `<span>${esc(c.closing.text)}</span>` : ''}</a>` : '');
   }
 
   function campaignCarousel(c) {
     if (!c.campaigns.length) return '';
     return `<section class="campaigns" aria-label="Shop the campaigns"><div class="campaign-track" tabindex="0" aria-label="Campaign slides">${c.campaigns.map(({ image, collection }, i) => `
-      <article class="campaign-slide"><img src="${esc(image)}" alt="" ${i ? 'loading="lazy"' : 'fetchpriority="high"'}><div class="campaign-copy"><a class="button" href="#/collection/${esc(slug(collection))}" aria-label="Shop now: ${esc(collection)}">Shop now <span aria-hidden="true">↗</span></a><h2>${esc(collection)}</h2></div></article>`).join('')}</div>
+      <article class="campaign-slide"><img src="${esc(image)}" alt="" ${i ? 'loading="lazy"' : 'fetchpriority="high"'}><div class="campaign-copy"><a class="button" href="#/collection/${esc(slug(collection))}" aria-label="Shop now: ${esc(collection)}">Shop now <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a><h2>${esc(collection)}</h2></div></article>`).join('')}</div>
       <div class="campaign-controls"><button type="button" data-campaign-step="-1" aria-label="Previous campaign">‹</button>${c.campaigns.map(({ collection }, i) => `<button type="button" data-campaign-slide="${i}" aria-label="Show ${esc(collection)}" aria-pressed="${i === 0}"><span></span></button>`).join('')}<button type="button" data-campaign-step="1" aria-label="Next campaign">›</button><button type="button" class="campaign-play" aria-label="Pause slideshow">Ⅱ</button></div></section>`;
   }
 
@@ -317,9 +317,9 @@
     else if (page === 'collections') {
       const names = c.names; contentPage('Collections', names.length ? '<div class="collections">' + names.map((n) => { const img = safeUrl(c.colImg[n]) || (all.find((p) => p.collection === n) || { files: [] }).files[0] || ''; return `<a class="collection" href="#/collection/${esc(slug(n))}">${img ? `<img loading="lazy" src="${esc(img)}" alt="">` : ''}<strong>${esc(n)}</strong></a>`; }).join('') + '</div>' : '<p class="copy">No collections yet.</p>');
     }
-    else if (page === 'collection') { const n = c.names.find((x) => slug(x) === id); if (n) listing(all.filter((p) => p.collection === n), n, '', true, c); else contentPage('Collection not found', '<a href="#/collections">All collections ↗</a>'); }
+    else if (page === 'collection') { const n = c.names.find((x) => slug(x) === id); if (n) listing(all.filter((p) => p.collection === n), n, '', true, c); else contentPage('Collection not found', '<a href="#/collections">All collections <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>'); }
     else if (page === 'p' && bySlug(all, id)) detail(bySlug(all, id), all, c);
-    else if (page === 'p') contentPage('Product not found', '<a href="#/shop">Continue shopping ↗</a>');
+    else if (page === 'p') contentPage('Product not found', '<a href="#/shop">Continue shopping <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>');
     else if (page === 'bag') main.innerHTML = `<section class="section cart-page"><h1 class="page-title">Shopping bag</h1>${bagMarkup(true)}</section>`;
     paintBagCount();
     if (!again) window.scrollTo(0, 0);
