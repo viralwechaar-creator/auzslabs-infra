@@ -154,5 +154,22 @@ export default async function run({ browser, stack }) {
     const r = (await q("select public_sfx_store('testcafe')->'config'->'minimalPages' as p"))[0].p;
     assert(r.length === 1 && r[0].slug === 'about-us', JSON.stringify(r));
   }, 'major');
+  await s.check('Store catalogue can be built from AUZsStyle data, and again without duplicates (db/392)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    const br = (await q("insert into sty_branches (tenant_id, name, is_main) values ($1,'Main',true) returning id", [tid]))[0].id;
+    const st = (await q("insert into sty_styles (tenant_id, name, category, price, mrp, photo_url) values ($1,'Linen Shirt','Shirts',900,1200,'https://x.test/a.jpg') returning id", [tid]))[0].id;
+    const vr = (await q("insert into sty_variants (tenant_id, style_id, colour, size, barcode) values ($1,$2,'Blue','M','BC-IMP-1') returning id", [tid, st]))[0].id;
+    await q("insert into sty_stock_moves (tenant_id, branch_id, variant_id, qty, kind) values ($1,$2,$3,7,'opening')", [tid, br, vr]);
+    const tok = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token;
+    const call = async () => (await (await fetch(stack.apiBase + '/rpc/sfx_import_from_style', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: '{}' })).json());
+    const a = await call(); assert((a.data || a).created === 1, JSON.stringify(a));
+    const b = await call(); assert((b.data || b).created === 0 && (b.data || b).updated === 1, JSON.stringify(b));
+    const row = (await q("select p.name, p.compare_at::float c, v.label, v.stock from sfx_products p join sfx_variants v on v.product_id = p.id where p.tenant_id=$1 and p.source_style_id=$2", [tid, st]));
+    assert(row.length === 1 && row[0].label === 'Blue / M' && row[0].stock === 7 && row[0].c === 1200, JSON.stringify(row));
+    await q("update tenant_settings set features = features || '{\"storefront\":false}' where tenant_id=$1", [tid]);
+    await q("update sfx_stores set plan_status='paused' where tenant_id=$1", [tid]);
+    await q("update tenant_settings set features = features || '{\"storefront\":true}' where tenant_id=$1", [tid]);
+    assert((await q("select plan_status from sfx_stores where tenant_id=$1", [tid]))[0].plan_status === 'active', 'trigger did not activate');
+  }, 'critical');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }

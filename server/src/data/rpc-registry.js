@@ -787,6 +787,7 @@ export const RPC = {
   sfx_store_set_razorpay: { params: ['p'], jsonb: ['p'], auth: true },
   sfx_product_list: { params: [], auth: true },
   sfx_product_get: { params: ['p_id'], auth: true },
+  sfx_import_from_style: { params: [], auth: true },
   sfx_product_save: { params: ['p_id', 'p'], jsonb: ['p'], defaults: { p_id: null }, auth: true },
   sfx_product_delete: { params: ['p_id'], auth: true },
   sfx_collection_list: { params: [], auth: true },
