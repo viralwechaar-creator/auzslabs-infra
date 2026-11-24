@@ -76,7 +76,7 @@ export const pathFor = (id) => dashboardPath + '#/' + id;
 // is mid-typing) refetches its own data every time it's opened, the same "show it, then make sure it's
 // current" shape as AUZsStyle's store.js caching -- catches an order placed, or a status changed, from
 // another tab or by a teammate since this page last loaded.
-const LIST_REFRESH = { orders: refreshOrders, products: refreshProducts, collections: refreshCollections, domains: refreshDomains, customers: refreshCustomers, discounts: refreshDiscounts, inventory: refreshInventory, transfers: refreshLocations, categories: refreshCategories, drafts: refreshDrafts, returns: refreshReturns, 'abandoned-checkouts': refreshAbandoned, shipping: refreshCheckout, companies: refreshCompanies, segments: refreshSegments, growth: refreshCampaigns, builder: () => Promise.all([refreshMarketplace(), refreshInstalls()]), billing: refreshPlan, roles: refreshRoles };
+const LIST_REFRESH = { orders: refreshOrders, products: refreshProducts, collections: refreshCollections, domains: refreshDomains, customers: refreshCustomers, discounts: refreshDiscounts, inventory: refreshInventory, transfers: refreshLocations, categories: refreshCategories, drafts: refreshDrafts, channels: refreshDrafts, returns: refreshReturns, 'abandoned-checkouts': refreshAbandoned, shipping: refreshCheckout, companies: refreshCompanies, segments: refreshSegments, growth: refreshCampaigns, builder: () => Promise.all([refreshMarketplace(), refreshInstalls()]), billing: refreshPlan, roles: refreshRoles };
 let lastRefreshedRoute = '';
 
 export function rerender(skipRefresh) {
