@@ -813,9 +813,32 @@ function bookingSection(p) {
   }).catch(() => { clear(body).append(E('p', { class: 'hint' }, 'Booking is not set up for this store yet.')); });
   return root;
 }
+// Theme editor preview (storefront dashboard): the owner's editor iframes /store.html?preview=draft and sends the
+// unsaved draft sections by postMessage, so the canvas updates as they type. Same-origin only; ignored otherwise.
+const PREVIEW = new URLSearchParams(location.search).get('preview') === 'draft';
+let PREVIEW_SECTIONS = null;
 function customSections(v) {
-  const sections = cfg().customSections || [];
-  for (const s of sections) { const el = customSection(s); if (el) v.append(el); }
+  const sections = PREVIEW && PREVIEW_SECTIONS ? PREVIEW_SECTIONS : (cfg().customSections || []);
+  sections.forEach((s, i) => {
+    let el = customSection(s);
+    if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));
+    if (!el) return;
+    if (PREVIEW) {
+      el.setAttribute('data-sec', String(i)); el.style.cursor = 'pointer';
+      el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); parent.postMessage({ type: 'auz-select', index: i }, location.origin); }, true);
+    }
+    v.append(el);
+  });
+}
+if (PREVIEW) {
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.type !== 'auz-draft' || !Array.isArray(e.data.sections)) return;
+    PREVIEW_SECTIONS = e.data.sections.slice(0, 60);
+    if (typeof route === 'function' && (!location.hash || /^#\/?$/.test(location.hash))) { const y = scrollY; route(); scrollTo(0, y); }
+  });
+  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'auz-highlight') { document.querySelectorAll('.custom-section.sel').forEach((n) => n.classList.remove('sel')); const n = document.querySelector('[data-sec="' + Number(e.data.index) + '"]'); if (n) { n.classList.add('sel'); if (e.data.scroll) n.scrollIntoView({ block: 'center', behavior: 'smooth' }); } } });
+  setTimeout(() => { try { parent.postMessage({ type: 'auz-ready' }, location.origin); } catch (err) { /* not in a frame */ } }, 0);
+  window.addEventListener('load', () => { try { parent.postMessage({ type: 'auz-ready' }, location.origin); } catch (err) { /* not in a frame */ } });
 }
 V.home = (v) => {
   if (cfg().template === 'minimal') {
