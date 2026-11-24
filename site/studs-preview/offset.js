@@ -173,10 +173,11 @@ function bindCarousel() {
   sync();
 }
 
-function listing(items, title, query = '', filters = true) {
+function listing(items, title, query = '', filters = true, intro = '') {
   if (!filters) {
+    const head = intro ? `<div class="cat-intro"><h1>${escape(title)}</h1><p>${escape(intro)}</p></div>` : `<h1 class="sr-only">${escape(title)}</h1>`;
     main.innerHTML = (title==='Shop all' ? campaignCarousel() : '') +
-      `<section class="section product-listing" aria-label="${escape(title)}"><h1 class="sr-only">${escape(title)}</h1>${grid(items)}</section>`;
+      `<section class="section product-listing" aria-label="${escape(title)}">${head}${grid(items)}</section>`;
     bindCarousel();
     return;
   }
@@ -400,6 +401,7 @@ function route() {
   const [,page,id] = (path || '/').split('/');
   const studio = !page || page === 'drop' || (page === 'product' && selectedDrop.includes(id));
   document.documentElement.dataset.palette = studio ? 'dark' : 'light';
+  document.documentElement.dataset.page = page || 'home';
   const department = {drop:'studio',shop:'shop',collections:'collections',collection:'collections'}[page || 'drop'];
   for (const link of document.querySelectorAll('[data-department]')) {
     if (link.dataset.department === department) link.setAttribute('aria-current', ['drop','shop','collections'].includes(page) ? 'page' : 'true');
@@ -414,7 +416,7 @@ function route() {
   else if (page==='shop') {
     const category = new URLSearchParams(query).get('category') || '';
     const selected = products.some(product => product.category === category) ? category : '';
-    listing(selected ? products.filter(product=>product.category===selected) : products,selected || 'Shop all','',false);
+    listing(selected ? products.filter(product=>product.category===selected) : products,selected || 'Shop all','',false, selected ? selected+' from GenX is picked to be worn on repeat. Every piece is made to move with your everyday rotation. Browse the full range below.' : '');
   }
   else if (page==='search') {
     const term = new URLSearchParams(query).get('q')?.trim() || '';
