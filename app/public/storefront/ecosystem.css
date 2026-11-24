@@ -311,3 +311,9 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
 .shell .metric>span:last-child:not(:first-child){grid-column:1/-1;grid-row:2}
 .shell .metric.analytics-kpi{align-items:start}
 .shell .metric.analytics-kpi>strong,.shell .metric.analytics-kpi>span:first-child{align-self:start}
+/* Metric cards: value stays whole on one line; if it does not fit beside the label it drops to its own line below */
+.shell .metric{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;column-gap:14px;row-gap:4px;container-type:normal}
+.shell .metric>span:first-child{flex:1 0 auto;max-width:100%;min-width:0}
+.shell .metric>strong{flex:0 0 auto;max-width:100%;white-space:nowrap;text-align:left;justify-self:auto;grid-column:auto;grid-row:auto}
+.shell .metric>small,.shell .metric>span:last-child:not(:first-child){flex:0 0 100%;order:3;grid-column:auto;grid-row:auto;margin-top:2px}
+.shell .metric.analytics-kpi{align-items:baseline}
