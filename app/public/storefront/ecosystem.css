@@ -328,3 +328,7 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
   .shell .side-nav .nav-label{font-size:.7rem}
   .shell .sidebar-settings{min-height:38px;font-size:.88rem;padding:6px 11px}
 }
+.shell .settings-rail .brand{display:none}
+.shell .settings-brand{padding:4px 6px 12px}
+.shell .settings-brand .brand img{width:136px;height:auto}
+@media(max-width:899px){.shell .settings-brand{display:none}}
