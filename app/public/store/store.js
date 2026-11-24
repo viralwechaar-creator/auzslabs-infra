@@ -1574,7 +1574,7 @@ window.StoreHost = {
 function loadStuds() {
   if (window.StudsTheme) return window.StudsTheme.ready();
   return new Promise((resolve) => {
-    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=6';
+    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=7';
     sc.onload = () => resolve(window.StudsTheme ? window.StudsTheme.ready() : null); sc.onerror = () => resolve(null);
     document.head.append(sc);
   });

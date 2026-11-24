@@ -251,3 +251,10 @@ dialog::backdrop{background:#000a}
 .dr-account:hover{text-decoration:none;color:#ccc}
 @media(prefers-reduced-motion:no-preference){#menu-drawer[open]{animation:dr-in .22s ease-out}@keyframes dr-in{from{transform:translateX(-24px);opacity:0}}}
 .dr-nav .dr-grp{border:0;padding:0}.dr-grp>summary{border:0}
+
+/* Category intro (title and a short note) above a category's products */
+.cat-intro{padding:22px var(--gutter) 18px;display:grid;gap:12px}
+.cat-intro h1{font:600 30px/1.05 Dosis,var(--compact-font);letter-spacing:.01em;text-transform:uppercase;color:var(--ink)}
+.cat-intro p{max-width:62ch;font:400 14px/1.3 Dosis,var(--compact-font);letter-spacing:.015em;text-transform:uppercase;color:var(--ink)}
+/* the category tabs are a phone feature; on a computer they are not shown on the home page */
+@media(min-width:900px){:host([data-page=home]) .cats,:host([data-page=drop]) .cats{display:none}.cat-intro h1{font-size:40px}.cat-intro p{font-size:16px}}

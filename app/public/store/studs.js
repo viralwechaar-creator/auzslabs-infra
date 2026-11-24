@@ -71,7 +71,7 @@
         l.href = 'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&family=Inter:wght@400;500;600;900&display=swap'; document.head.append(l);
       }
       if (!document.getElementById('studs-global')) { const g = document.createElement('style'); g.id = 'studs-global'; g.textContent = 'body.studs-on #app{display:none!important}#studs-host{display:block}#studs-host[hidden]{display:none!important}'; document.head.append(g); }
-      cssText = await (await fetch('/store/studs.css?v=4')).text();
+      cssText = await (await fetch('/store/studs.css?v=5')).text();
     })();
     return ready;
   }
@@ -179,9 +179,10 @@
     showPlay(); sync();
   }
 
-  function listing(items, title, query, filters, c) {
+  function listing(items, title, query, filters, c, intro) {
     if (!filters) {
-      main.innerHTML = (title === 'Shop all' ? campaignCarousel(c) : '') + `<section class="section product-listing" aria-label="${esc(title)}"><h1 class="sr-only">${esc(title)}</h1>${grid(items)}</section>`;
+      const head = intro ? `<div class="cat-intro"><h1>${esc(title)}</h1><p>${esc(intro)}</p></div>` : `<h1 class="sr-only">${esc(title)}</h1>`;
+      main.innerHTML = (title === 'Shop all' ? campaignCarousel(c) : '') + `<section class="section product-listing" aria-label="${esc(title)}">${head}${grid(items)}</section>`;
       bindCarousel(); return;
     }
     const categories = [...new Set(items.map((p) => p.category))].sort();
@@ -331,6 +332,7 @@
     const all = products(); const c = settings(all);
     const studio = !page || page === 'home' || page === 'drop' || (page === 'p' && c.dropIds.has(id));
     host.dataset.palette = studio ? 'dark' : 'light';
+    host.dataset.page = !page || page === 'home' ? 'home' : page;
     const dep = { drop: 'studio', shop: 'shop', collections: 'collections', collection: 'collections' }[page || 'drop'];
     $$('[data-department]').forEach((a) => { if (a.dataset.department === dep) a.setAttribute('aria-current', ['drop', 'shop', 'collections'].includes(page) ? 'page' : 'true'); else a.removeAttribute('aria-current'); });
     if (panel.open && !again) panel.close();
@@ -339,7 +341,7 @@
       $$('[data-cat]').forEach((a) => { if (a.dataset.cat === key) { a.setAttribute('aria-current', 'page'); if (a.scrollIntoView) a.scrollIntoView({ inline: 'center', block: 'nearest' }); } else a.removeAttribute('aria-current'); }); }
     if (!page || page === 'home') main.innerHTML = home(all, c);
     else if (page === 'drop') listing(c.drop, c.dropTitle === 'New in' ? 'Studio drop' : c.dropTitle, '', true, c);
-    else if (page === 'shop') { const cat = q.get('category') || ''; const sel = all.some((p) => p.category === cat) ? cat : ''; listing(sel ? all.filter((p) => p.category === sel) : all, sel || 'Shop all', '', false, c); }
+    else if (page === 'shop') { const cat = q.get('category') || ''; const sel = all.some((p) => p.category === cat) ? cat : ''; listing(sel ? all.filter((p) => p.category === sel) : all, sel || 'Shop all', '', false, c, sel ? sel + ' from ' + H.D.shop.name + ' is picked to be worn on repeat. Every piece is made to move with your everyday rotation. Browse the full range below.' : ''); }
     else if (page === 'search') { const term = (q.get('q') || '').trim(); listing(all, term ? 'Search for “' + term + '”' : 'All products', term, true, c); }
     else if (page === 'collections') {
       const names = c.names; contentPage('Collections', names.length ? '<div class="collections">' + names.map((n) => { const img = safeUrl(c.colImg[n]) || (all.find((p) => p.collection === n) || { files: [] }).files[0] || ''; return `<a class="collection" href="#/collection/${esc(slug(n))}">${img ? `<img loading="lazy" src="${esc(img)}" alt="">` : ''}<strong>${esc(n)}</strong></a>`; }).join('') + '</div>' : '<p class="copy">No collections yet.</p>');
