@@ -149,5 +149,10 @@ export default async function run({ browser, stack }) {
     const sent = stack.rzp.refunds.find((x) => /pay_REF1/.test(x.url)); assert(sent && sent.amount === 20000 && Buffer.from(sent.auth.replace('Basic ', ''), 'base64').toString().startsWith('rzp_store_key:'), JSON.stringify(sent));
     const again = await fetch(stack.apiBase + '/payments/sfx/refund/start', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify({ returnId: ret, amount: 200 }) }); assert(again.status === 400, 'second refund not refused');
   }, 'critical');
+  await s.check('Store pages saved by the owner appear on the public store; hidden ones do not (db/391)', async () => {
+    await q("update sfx_stores set config = config || jsonb_build_object('pages', jsonb_build_array(jsonb_build_object('id','p1','name','About us','slug','about-us','content','Hello','status','Visible'), jsonb_build_object('id','p2','name','Secret','slug','secret','content','x','status','Hidden'))) where tenant_id = (select id from tenants where slug='testcafe')");
+    const r = (await q("select public_sfx_store('testcafe')->'config'->'minimalPages' as p"))[0].p;
+    assert(r.length === 1 && r[0].slug === 'about-us', JSON.stringify(r));
+  }, 'major');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }

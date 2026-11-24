@@ -254,7 +254,7 @@ function websitePage(id) {
   if (id === 'builder' || id === 'templates') return themePage();
   if (id === 'domains') return domainPage();
   if (id === 'checkout') return checkoutPage();
-  return comingSoon('Pages', 'Custom storefront pages (About, FAQs, policies) are coming in a later release. Your storefront already shows your product catalog and collections.', ['website', 'Online store']);
+  return storePagesPage();
 }
 
 // ---------- Settings / team / apps: business profile is real, the rest is coming soon ----------
@@ -451,6 +451,66 @@ function campaignForm(c) {
     select('Discount code (optional)', 'discountCode', [['', 'None']].concat((state.discounts || []).map((d) => [d.code, d.code])), c?.discountCode || '') + input('Money spent (Rs)', 'spend', c?.spend ?? 0, 'number', 'min="0" step="1"'));
 }
 
+// ---------- Content: Pages, Files, Custom data, Markets (stored as lists in the store's own config, db/391) ----------
+const cfgList = (k) => (Array.isArray(state.store?.config?.[k]) ? state.store.config[k] : []);
+async function saveList(k, list) { const ctx = await api('sfx_store_save', { p: { [k]: list } }); applyContext(ctx); }
+const newId = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const slugify = (v) => String(v || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+const contentTabs = [['content', 'Overview'], ['pages', 'Pages and menus'], ['files', 'Files'], ['data', 'Custom data']];
+const rowActions = (kind, id) => canWrite() ? button('Edit', kind + '-edit:' + id, 'compact') + button('Delete', kind + '-delete:' + id, 'compact danger') : '';
+const storeLink = (path) => state.store.published && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html#/' + path : '';
+
+function pageForm(pg) {
+  const v = pg || { status: 'Hidden' };
+  return editForm('page-record', pg?.id, input('Page title', 'name', v.name || '', 'text', 'required maxlength="120"') + input('URL handle', 'slug', v.slug || '', 'text', 'pattern="[a-z0-9-]+" maxlength="60" placeholder="about-us"') +
+    area('Content', 'content', v.content || '', 'rows="8" maxlength="10000"') + input('Cover image URL', 'image', v.image || '', 'url') +
+    select('Visibility', 'status', ['Hidden', 'Visible', 'Scheduled'], v.status || 'Hidden') + input('Publish on (for Scheduled)', 'publishAt', v.publishAt || '', 'datetime-local') +
+    input('Search title', 'seoTitle', v.seoTitle || '', 'text', 'maxlength="70"') + area('Search description', 'seoDescription', v.seoDescription || '', 'rows="2" maxlength="160"'), 'Save page');
+}
+function storePagesPage(bare) {
+  const pages = cfgList('pages');
+  const rows = pages.map((x) => [esc(x.name), esc('/' + x.slug), badge(x.status, x.status === 'Visible' ? '' : 'neutral'), x.updatedOn ? dateValue(x.updatedOn) : '—',
+    (x.status === 'Visible' && storeLink('page/' + x.slug) ? link('View', storeLink('page/' + x.slug), 'compact') : '') + rowActions('page', x.id)]);
+  return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
+    panel('Store pages', table(['Page', 'URL', 'Visibility', 'Updated', ''], rows) + (pages.length ? '' : '<p class="compact-copy">No pages yet. Add one and set it to Visible to publish it.</p>'));
+}
+function contentPage(id) {
+  const pages = cfgList('pages'), files = cfgList('files'), fields = cfgList('customFields');
+  if (id === 'pages') return head('Pages and menus', 'Create storefront pages. Visible pages appear on your online store.', canWrite() ? button('Add page', 'page-new', 'primary') : '') + tabs(id, contentTabs) + storePagesPage(true);
+  if (id === 'files') return head('Files', 'Images and documents you reuse across pages. Paste the link of an image or file already uploaded.', canWrite() ? button('Add file', 'file-new', 'primary') : '') + tabs(id, contentTabs) +
+    panel('Media library', table(['File', 'Type', 'Link', ''], files.map((f) => [esc(f.name), esc(f.type || '—'), f.url ? '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">Open</a>' : '—', rowActions('file', f.id)])));
+  if (id === 'data') return head('Custom data', 'Define extra details you want to keep for products, customers or orders.', canWrite() ? button('Add field', 'field-new', 'primary') : '') + tabs(id, contentTabs) +
+    panel('Field definitions', table(['Name', 'Applies to', 'Value type', ''], fields.map((f) => [esc(f.name), esc(f.appliesTo), esc(f.valueType), rowActions('field', f.id)])));
+  return head('Content', 'Manage the pages, files and custom data that feed your site.') + tabs('content', contentTabs) +
+    '<div class="metrics">' + metric('Pages', pages.length, pages.filter((x) => x.status === 'Visible').length + ' visible') + metric('Files', files.length, 'Media library') + metric('Custom fields', fields.length, 'Definitions') + '</div>' +
+    panel('Website content', body('<div class="stack">' + wl('Pages and menus', 'pages') + wl('Files', 'files') + wl('Custom data', 'data') + '</div>'));
+}
+function fileForm(f) { return editForm('file-record', f?.id, input('Name', 'name', f?.name || '', 'text', 'required maxlength="120"') + select('Type', 'type', ['Image', 'Document', 'Video', 'Other'], f?.type || 'Image') + input('Link (https://...)', 'url', f?.url || '', 'url', 'required')); }
+function fieldForm(f) { return editForm('field-record', f?.id, input('Field name', 'name', f?.name || '', 'text', 'required maxlength="80"') + select('Applies to', 'appliesTo', ['Products', 'Customers', 'Orders', 'Collections'], f?.appliesTo || 'Products') + select('Value type', 'valueType', ['Text', 'Number', 'Yes or no', 'Date', 'List'], f?.valueType || 'Text'), 'Save field'); }
+function marketForm(m) { return editForm('market-record', m?.id, input('Market name', 'name', m?.name || '', 'text', 'required maxlength="80"') + input('Region (country or area)', 'region', m?.region || 'India', 'text', 'maxlength="80"') + select('Currency', 'currency', ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'], m?.currency || 'INR') + select('Language', 'language', ['English', 'Hindi'], m?.language || 'English') + select('Status', 'status', ['Active', 'Draft'], m?.status || 'Draft'), 'Save market'); }
+function marketsPage() {
+  const ms = cfgList('markets');
+  return head('Markets', 'Plan where your store sells and which currency and language each market shows. Checkout currently charges in your store currency.', canWrite() ? button('Add market', 'market-new', 'primary') : '') +
+    panel('Markets', table(['Market', 'Region', 'Currency', 'Language', 'Status', ''], ms.map((m) => [esc(m.name), esc(m.region), esc(m.currency), esc(m.language), status(m.status), rowActions('market', m.id)])));
+}
+const contentRecords = { page: ['pages', pageForm, 'page'], file: ['files', fileForm, 'file'], field: ['customFields', fieldForm, 'field'], market: ['markets', marketForm, 'market'] };
+async function contentAction(a, key) {
+  const m = /^(page|file|field|market)-(new|edit|delete)$/.exec(a); if (!m) return false;
+  const [list, form, word] = contentRecords[m[1]]; const items = cfgList(list);
+  if (m[2] === 'new') { dialog('Add ' + word, form(null)); return true; }
+  if (m[2] === 'edit') { dialog('Edit ' + word, form(items.find((x) => x.id === key))); return true; }
+  if (!confirm('Delete this ' + word + '?')) return true;
+  try { await saveList(list, items.filter((x) => x.id !== key)); save('Deleted.'); rerender(true); } catch (e) { flash(e.message); }
+  return true;
+}
+async function contentSubmit(key, rid, data) {
+  const m = /^(page|file|field|market)-record$/.exec(key); if (!m) return false;
+  const list = contentRecords[m[1]][0]; const items = cfgList(list).slice(); const rec = { ...data };
+  if (m[1] === 'page') { rec.slug = slugify(rec.slug || rec.name); rec.updatedOn = new Date().toISOString().slice(0, 10); if (!rec.slug) throw new Error('Enter a page title.'); if (items.some((x) => x.slug === rec.slug && x.id !== rid)) throw new Error('Another page already uses that URL handle.'); }
+  if (rid) { const i = items.findIndex((x) => x.id === rid); if (i < 0) throw new Error('Not found.'); items[i] = { ...items[i], ...rec }; } else items.push({ id: newId(), ...rec });
+  await saveList(list, items); save('Saved.'); close(); rerender(true); return true;
+}
+
 export function workspace(id, record) {
   if (['analytics', 'reports', 'live-view'].includes(id)) return analyticsPage(id, record);
   let html;
@@ -467,8 +527,8 @@ export function workspace(id, record) {
   else if (id === 'segments') html = segmentsPage();
   else if (id === 'companies') html = companiesPage();
   else if (id === 'growth') html = growthPage();
-  else if (['content', 'pages', 'files', 'data'].includes(id)) html = comingSoon('Content', 'Custom storefront pages, a media library, and custom fields are coming in a later release.');
-  else if (id === 'markets') html = comingSoon('Markets', 'Selling in more than one currency or region is coming in a later release.');
+  else if (['content', 'pages', 'files', 'data'].includes(id)) html = contentPage(id);
+  else if (id === 'markets') html = marketsPage();
   else html = management(id);
   return { html, dispatch: (type, target, event, key, detail) => dispatch(id, type, target, event, key, detail) };
 }
@@ -558,6 +618,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'checkout-settings') {
         await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);
+      } else if (await contentSubmit(key, rid, data)) {
+        /* saved by contentSubmit */
       } else if (key === 'company-record') {
         await api('sfx_company_save', { p_id: rid, p: { name: data.name, gstin: data.gstin, contact: data.contact, notes: data.notes } }); await refreshCompanies(); save('Company saved.'); close(); rerender(true);
       } else if (key === 'segment-record') {
@@ -611,6 +673,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'company-new') return dialog('Add company', companyForm(null));
   if (a === 'company-edit') return dialog('Edit company', companyForm(state.companies.find((c) => c.id === key)));
   if (a === 'company-delete') return withBusy(async () => { if (!confirm('Delete this company? Its customers are kept.')) return; await api('sfx_company_delete', { p_id: key }); await refreshCompanies(); save('Company deleted.'); rerender(true); });
+  if (await contentAction(a, key)) return;
   if (a === 'campaign-new') return dialog('Add campaign', campaignForm(null));
   if (a === 'campaign-edit') return dialog('Edit campaign', campaignForm(state.campaigns.find((c) => c.id === key)));
   if (a === 'campaign-delete') return withBusy(async () => { if (!confirm('Delete this campaign?')) return; await api('sfx_campaign_delete', { p_id: key }); await refreshCampaigns(); save('Campaign deleted.'); rerender(true); });
