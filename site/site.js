@@ -209,7 +209,7 @@
     var successContact = $('#successContact');
 
     function openContact() {
-      if (!overlay) return;
+      if (!overlay) { if (!/\/contact\.html$/.test(location.pathname)) location.href = 'contact.html'; else { var f = document.querySelector('form input, form textarea'); if (f) f.focus(); } return; }
       overlay.classList.add('open');
       if (formView) formView.style.display = 'block';
       if (successView) successView.classList.remove('show');
