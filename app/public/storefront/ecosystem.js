@@ -122,9 +122,11 @@ export function rerender(skipRefresh) {
     const current = id === active || item.children?.some(([child]) => child === active);
     return '<a href="' + pathFor(id) + '"' + (current ? ' aria-current="' + (id === active ? 'page' : 'true') + '"' : '') + '>' + icon(item.icon) + '<span>' + item.name + '</span></a>';
   }).join('');
-  const mobileNav = '<nav class="mobile-quick-nav" aria-label="Quick navigation">' + quickLinks +
-    '<button type="button" data-action="global-search">' + icon('search') + '<span>Search</span></button>' +
-    '<button type="button" data-action="toggle-nav" aria-controls="workspace-sidebar" aria-expanded="' + navOpen + '">' + icon('menu') + '<span>Menu</span></button></nav>';
+  const mobileNav = '<nav class="mobile-quick-nav" aria-label="Quick navigation">' +
+    '<button type="button" class="mq-round" data-action="global-search" aria-label="Search">' + icon('search') + '</button>' +
+    '<div class="mq-pill">' + quickLinks +
+    '<button type="button" data-action="toggle-nav" aria-controls="workspace-sidebar" aria-expanded="' + navOpen + '" aria-label="Menu">' + icon('menu') + '<span>Menu</span></button></div>' +
+    '<a class="mq-round" href="' + pathFor('settings') + '" aria-label="Settings"' + (inSettings ? ' aria-current="page"' : '') + '>' + icon('settings') + '</a></nav>';
   const previousArea = $('.work-area');
   const route = location.hash || '#/home';
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
