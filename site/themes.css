@@ -9,8 +9,8 @@ html body.a-web main.content .thm-pills button[aria-pressed=true],html body.a-we
 html body.a-web main.content .thm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 html body.a-web main.content .thm-card{display:flex;flex-direction:column;min-width:0;border:1px solid #363636;border-radius:12px;background:#151515;overflow:hidden}
 html body.a-web main.content .thm-card[hidden]{display:none}
-html body.a-web main.content .thm-img{position:relative;aspect-ratio:4/3;background:#252525;overflow:hidden}
-html body.a-web main.content .thm-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%}
+html body.a-web main.content .thm-img{position:relative;aspect-ratio:1440/690;background:#252525;overflow:hidden}
+html body.a-web main.content .thm-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
 html body.a-web main.content .thm-body{padding:12px;display:flex;flex-direction:column;flex:1}
 html body.a-web main.content .thm-row{display:flex;justify-content:space-between;align-items:center;gap:6px}
 html body.a-web main.content .thm-card h3{font-size:17px;letter-spacing:-.02em;margin:0;color:#f4f4f2}
