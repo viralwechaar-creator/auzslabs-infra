@@ -202,6 +202,23 @@
       } catch (e) {}
     }
 
+
+    // Links to one of the owner's own apps (data-hand) open in this same window, carrying the sign-in, so an
+    // installed home-screen app never throws them into a separate in-app browser sheet.
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[data-hand]');
+      if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey) return;
+      e.preventDefault();
+      var u = a.href;
+      try {
+        var s = JSON.parse(localStorage.getItem('auz_session') || 'null');
+        if (s && s.access_token && /\.auzslab\.in$/.test(new URL(u).hostname)) {
+          var tok = btoa(unescape(encodeURIComponent(JSON.stringify({ t: s.access_token, u: s.user })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          u = u.split('#')[0] + '#auz_gt=' + tok;
+        }
+      } catch (err) {}
+      location.href = u;
+    });
     var overlay = $('#modalOverlay');
     var modal = $('#modal');
     var formView = $('#formView');

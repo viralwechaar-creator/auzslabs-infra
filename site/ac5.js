@@ -226,7 +226,7 @@
     var mine = ALL_APPS.filter(function (a) { return OWNED[a.k]; });
     var rows = mine.map(function (a) {
       var on = ENABLED[a.k] !== false;
-      return '<div class="srow"><div class="sic large ' + a.tone + '">' + ic(a.ic) + '</div><div class="sinfo"><strong>' + esc(a.n) + '</strong><span>' + esc(a.d) + '</span></div><span class="pill ' + (on ? 'ok' : 'warn') + '"><i></i>' + (on ? 'Ready' : 'Switched off') + '</span>' + (on ? '<a class="btn sm" href="' + esc(a.href || '#') + '" target="_blank" rel="noopener">Open &rarr;</a>' : '<button class="btn sm" data-go="services">Turn on</button>') + '</div>';
+      return '<div class="srow"><div class="sic large ' + a.tone + '">' + ic(a.ic) + '</div><div class="sinfo"><strong>' + esc(a.n) + '</strong><span>' + esc(a.d) + '</span></div><span class="pill ' + (on ? 'ok' : 'warn') + '"><i></i>' + (on ? 'Ready' : 'Switched off') + '</span>' + (on ? '<a class="btn sm" href="' + esc(a.href || '#') + '" data-hand="1">Open &rarr;</a>' : '<button class="btn sm" data-go="services">Turn on</button>') + '</div>';
     }).join('');
     return head('Open an app', 'One link for each app your business can use.') + '<section class="panel services-panel">' + (rows ? '<div class="slist">' + rows + '</div>' : '<div class="empty"><b>Nothing switched on yet.</b>Add a service and we will set it up.</div>') + '</section>';
   };
