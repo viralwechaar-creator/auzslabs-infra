@@ -173,11 +173,45 @@ function bindCarousel() {
   sync();
 }
 
+let LV = null;
+function listResult() {
+  const min = +LV.min || 0, max = +LV.max || Infinity;
+  const out = LV.items.filter(p => (!LV.sizes.length || p.sizes.some(x => LV.sizes.includes(x))) && (!LV.colours.length || LV.colours.includes(p.colour)) && p.price >= min && p.price <= max);
+  if (LV.sort === 'price-up') out.sort((a,b) => a.price - b.price); else if (LV.sort === 'price-down') out.sort((a,b) => b.price - a.price);
+  return out;
+}
+function paintList() {
+  const box = document.getElementById('plist'); if (!box || !LV) return; box.innerHTML = grid(listResult());
+  const n = LV.sizes.length + LV.colours.length + (LV.min || LV.max ? 1 : 0);
+  const fb = document.querySelector('[data-list=filters]'), sb = document.querySelector('[data-list=sort]');
+  if (fb) fb.textContent = n ? 'Filters (' + n + ')' : 'Filters';
+  if (sb) sb.textContent = LV.sort === 'featured' ? 'Sort by' : 'Sort by: ' + ({'price-up':'Price low to high','price-down':'Price high to low'}[LV.sort]);
+}
+function listPanel(kind) {
+  if (!LV) return '';
+  if (kind === 'sort') return '<div class="lp-sort">' + [['featured','Featured'],['price-up','Price: low to high'],['price-down','Price: high to low']].map(([k,t]) => `<button type="button" data-sort="${k}"${LV.sort===k?' aria-pressed="true"':''}>${t}</button>`).join('') + '</div>';
+  const sizes = [...new Set(LV.items.flatMap(p => p.sizes))], cols = [...new Set(LV.items.map(p => p.colour).filter(Boolean))];
+  const chips = (name, list, on) => list.map(x => `<label class="lp-chip"><input type="checkbox" name="${name}" value="${escape(x)}"${on.includes(x)?' checked':''}><span>${escape(x)}</span></label>`).join('');
+  return `<form class="lp-filters" id="lp-form"><fieldset><legend>Size</legend><div class="lp-chips">${chips('size',sizes,LV.sizes)}</div></fieldset>
+    <fieldset><legend>Colour</legend><div class="lp-chips">${chips('colour',cols,LV.colours)}</div></fieldset>
+    <fieldset><legend>Price (Rs)</legend><div class="lp-price"><input name="min" type="number" min="0" inputmode="numeric" placeholder="From" value="${escape(LV.min)}"><input name="max" type="number" min="0" inputmode="numeric" placeholder="To" value="${escape(LV.max)}"></div></fieldset>
+    <div class="lp-actions"><button class="button" type="submit" id="lp-show">Show ${listResult().length} pieces</button><button type="button" class="lp-clear" data-clear>Clear all</button></div></form>`;
+}
+function bindListPanel(kind) {
+  if (kind === 'sort') { panelBody.querySelectorAll('[data-sort]').forEach(b => b.addEventListener('click', () => { LV.sort = b.dataset.sort; paintList(); panel.close(); })); return; }
+  const form = panelBody.querySelector('#lp-form'); if (!form) return;
+  const read = () => { const d = new FormData(form); LV.sizes = d.getAll('size'); LV.colours = d.getAll('colour'); LV.min = String(d.get('min') || ''); LV.max = String(d.get('max') || ''); paintList(); const c = panelBody.querySelector('#lp-show'); if (c) c.textContent = 'Show ' + listResult().length + ' pieces'; };
+  form.addEventListener('input', read);
+  form.addEventListener('submit', e => { e.preventDefault(); read(); panel.close(); });
+  form.querySelector('[data-clear]').addEventListener('click', () => { form.reset(); form.querySelectorAll('input[type=checkbox]').forEach(i => { i.checked = false; }); form.querySelectorAll('input[type=number]').forEach(i => { i.value = ''; }); read(); });
+}
+
 function listing(items, title, query = '', filters = true, intro = '') {
   if (!filters) {
     const head = intro ? `<div class="cat-intro"><h1>${escape(title)}</h1><p>${escape(intro)}</p></div>` : `<h1 class="sr-only">${escape(title)}</h1>`;
     main.innerHTML = (title==='Shop all' ? campaignCarousel() : '') +
-      `<section class="section product-listing" aria-label="${escape(title)}">${head}${grid(items)}</section>`;
+      `<section class="section product-listing" aria-label="${escape(title)}">${head}<div class="list-bar"><button type="button" data-list="filters">Filters</button><button type="button" data-list="sort">Sort by</button></div><div id="plist">${grid(items)}</div></section>`;
+    LV = { items, sizes: [], colours: [], min: '', max: '', sort: 'featured' };
     bindCarousel();
     return;
   }
@@ -366,14 +400,16 @@ function openDrawer() {
 }
 
 function showPanel(kind, product) {
-  panelTitle.textContent = {menu:'Menu',search:'Search',bag:'Shopping bag',size:'Size guide'}[kind];
+  panelTitle.textContent = {menu:'Menu',search:'Search',bag:'Shopping bag',size:'Size guide',filters:'Filters',sort:'Sort by'}[kind];
   panelBody.innerHTML = {
     menu:'<nav class="panel-nav" aria-label="Store menu"><a href="#/drop">Studio drop</a><a href="#/shop">Shop all</a><a href="#/collections">Collections</a><a href="#/account">My account</a><a href="#/help">Customer care</a></nav>',
     bag:kind==='bag' ? bagMarkup() : '',
+    filters:listPanel('filters'), sort:listPanel('sort'),
     size:product ? `<div class="size-guide-copy"><h3>${escape(product.name)}</h3><p>Size options for this product</p><ul>${product.sizes.map(size=>`<li>${escape(size)}</li>`).join('')}</ul><p class="copy">Garment measurements are unavailable for this demo item.</p></div>` : '',
     search:'<form class="search-form"><label>Search products<input type="search" name="q" placeholder="Try denim" required></label><button class="button">View results</button></form><div class="panel-results"></div>'
   }[kind];
   if (!panel.open) panel.showModal();
+  if (kind==='filters' || kind==='sort') bindListPanel(kind);
   if (kind==='search') {
     const search = panelBody.querySelector('input');
     search.focus();
@@ -439,6 +475,8 @@ function route() {
 }
 
 document.addEventListener('click', event => {
+  const listBtn = event.target.closest('[data-list]');
+  if (listBtn) { showPanel(listBtn.dataset.list); return; }
   const open = event.target.closest('[data-panel]');
   if (event.target === drawer) drawer.close();
   if (drawer.open && (event.target.closest('.dr-close') || event.target.closest('.dr-nav a') || event.target.closest('.dr-account'))) drawer.close();

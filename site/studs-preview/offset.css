@@ -258,3 +258,22 @@ dialog::backdrop{background:#000a}
 .cat-intro p{max-width:62ch;font:400 14px/1.3 Dosis,var(--compact-font);letter-spacing:.015em;text-transform:uppercase;color:var(--ink)}
 /* the category tabs are a phone feature; on a computer they are not shown on the home page */
 @media(min-width:900px){html[data-page=home] .cats,html[data-page=drop] .cats{display:none}.cat-intro h1{font-size:40px}.cat-intro p{font-size:16px}}
+
+/* Filters / Sort by bar and its panels */
+.list-bar{display:flex;justify-content:space-between;align-items:center;margin:0 calc(-1 * var(--gutter)) 14px;padding:0 var(--gutter);border-bottom:1px solid var(--line);border-top:1px solid var(--line)}
+.list-bar button{min-height:50px;padding:0;border:0;background:transparent;font:400 17px/1 Dosis,var(--compact-font);letter-spacing:.08em;text-transform:uppercase;color:var(--ink)}
+.lp-sort{display:grid}
+.lp-sort button{min-height:52px;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;font:400 18px/1 Dosis,var(--compact-font);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.lp-sort button[aria-pressed=true]{font-weight:700}
+.lp-filters fieldset{border:0;padding:0;margin:0 0 18px}
+.lp-filters legend{padding:0 0 10px;font:600 15px/1 Dosis,var(--compact-font);letter-spacing:.08em;text-transform:uppercase}
+.lp-chips{display:flex;flex-wrap:wrap;gap:8px}
+.lp-chip input{position:absolute;opacity:0;pointer-events:none}
+.lp-chip span{display:inline-block;min-width:44px;padding:10px 14px;border:1px solid var(--line);font:400 14px/1 Dosis,var(--compact-font);letter-spacing:.06em;text-align:center;text-transform:uppercase}
+.lp-chip input:checked+span{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.lp-chip input:focus-visible+span{outline:2px solid currentColor;outline-offset:2px}
+.lp-price{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lp-price input{min-height:44px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--ink)}
+.lp-actions{display:grid;gap:10px}
+.lp-clear{min-height:44px;border:0;background:transparent;text-decoration:underline;text-underline-offset:4px;font:400 14px/1 Dosis,var(--compact-font);letter-spacing:.08em;text-transform:uppercase}
+.lp-price input{min-width:0;width:100%}.lp-filters{max-width:100%}
