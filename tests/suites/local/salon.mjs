@@ -291,6 +291,7 @@ export default async function run({ browser, stack }) {
     const c = salonClient(stack, 'salondemo');
     const sr = await c.call('GET', '/site'); assert(sr.status === 200 && sr.data && sr.data.menu && sr.data.menu.length, 'site status ' + sr.status + ' ' + JSON.stringify(sr.data).slice(0, 160));
     assert(!/showoff/i.test(JSON.stringify(sr.data)), 'the demo salon still carries a client name');
+    assert(/hero-photo\.jpg/.test(sr.data.settings.heroPhoto || ''), 'the demo salon does not use the hero picture: ' + sr.data.settings.heroPhoto);
     const good = await c.call('POST', '/admin/login', { password: 'Auzslab@Demo' }); assert(good.status === 200, 'demo console password refused: ' + good.status);
   }, 'major');
 
