@@ -217,8 +217,23 @@
           u = u.split('#')[0] + '#auz_gt=' + tok;
         }
       } catch (err) {}
-      location.href = u;
+      openEmbed(u, (a.querySelector('h3') || a).textContent.replace(/^Open\s*/i, '').trim());
     });
+    // The app opens INSIDE this page (a full-screen frame with a Back bar), so an installed home-screen app stays in
+    // one window: no separate address, no browser toolbar. Falls back to a normal same-window jump if framing fails.
+    function openEmbed(u, name) {
+      var old = document.getElementById('appEmbed'); if (old) old.remove();
+      var w = document.createElement('div'); w.id = 'appEmbed';
+      w.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)';
+      var bar = document.createElement('div'); bar.style.cssText = 'flex:none;display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;background:#000;color:#fff;font:600 14px system-ui,sans-serif';
+      var back = document.createElement('button'); back.type = 'button'; back.textContent = '\u2039 Account'; back.style.cssText = 'background:#1c1c1e;color:#fff;border:0;border-radius:999px;padding:6px 12px;font:600 13px system-ui,sans-serif';
+      var t = document.createElement('span'); t.textContent = name || ''; t.style.cssText = 'opacity:.7;font-weight:500';
+      bar.appendChild(back); bar.appendChild(t);
+      var f = document.createElement('iframe'); f.src = u; f.setAttribute('allow', 'camera; clipboard-write; fullscreen'); f.style.cssText = 'flex:1;border:0;width:100%;background:#fff';
+      w.appendChild(bar); w.appendChild(f); document.body.appendChild(w);
+      document.documentElement.style.overflow = 'hidden';
+      back.onclick = function () { w.remove(); document.documentElement.style.overflow = ''; };
+    }
     var overlay = $('#modalOverlay');
     var modal = $('#modal');
     var formView = $('#formView');
