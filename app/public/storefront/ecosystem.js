@@ -62,12 +62,12 @@ const switchApps = () => {
 const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
 
 const allItems = menu.flatMap((m) => (m.id ? [[m.id, m.name], ...(m.children || [])] : []));
-const settingsGroups = [
+export const settingsGroups = [
   { label: 'Business', items: [['settings', 'Business profile', 'business'], ['billing', 'Billing and renewals', 'receipt'], ['team', 'Staff and access', 'team'], ['roles', 'Roles', 'shield'], ['locations', 'Locations', 'pin']] },
   { label: 'Store operations', items: [['checkout', 'Payments', 'card'], ['domains', 'Domains', 'link'], ['builder', 'Theme', 'palette'], ['policies', 'Store policies', 'scroll']] },
   { label: 'Preferences', items: [['notifications', 'Notifications', 'bell'], ['privacy-settings', 'Customer privacy', 'eye'], ['security', 'Sign-in and support', 'key']] },
 ];
-const settingsRoutes = new Set(['settings', ...(menu.find((item) => item.id === 'settings')?.children || []).map(([id]) => id), 'team', 'roles', 'locations', 'billing', 'security']);
+export const settingsRoutes = new Set(['settings', ...(menu.find((item) => item.id === 'settings')?.children || []).map(([id]) => id), 'team', 'roles', 'locations', 'billing', 'security']);
 let returnToWorkspace = 'home';
 const dashboardPath = '/storefront.html';
 export const pathFor = (id) => dashboardPath + '#/' + id;
