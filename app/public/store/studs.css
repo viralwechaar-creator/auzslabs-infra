@@ -89,7 +89,7 @@ h1,h2,p{margin:0}
 .campaign-slide{position:relative;isolation:isolate;height:clamp(460px,59vw,750px);display:grid;align-items:end;scroll-snap-align:start;overflow:hidden}
 .campaign-slide img,.campaign-slide::before{position:absolute;inset:0;width:100%;height:100%;z-index:-2}
 .campaign-slide::before{content:"";z-index:-1;background:linear-gradient(0deg,#0004,#0003 49%,transparent 76%)}
-.campaign-copy{position:absolute;inset:50% 12px auto;transform:translateY(-18px);display:grid;justify-items:center;gap:9px;color:#fff;text-align:center}
+.campaign-copy{position:absolute;inset:auto 12px 26px;transform:none;display:grid;justify-items:center;gap:9px;color:#fff;text-align:center}
 .campaign-copy h2{font:600 14px/1.15 Dosis,var(--compact-font);letter-spacing:.07em;text-transform:uppercase;text-shadow:0 1px 4px #000}
 .campaign-controls{display:flex;justify-content:center;align-items:center;min-height:44px}
 .campaign-controls button{display:grid;place-items:center;width:34px;height:36px;border:0;background:transparent;color:var(--ink);font-size:22px}
@@ -220,3 +220,5 @@ dialog::backdrop{background:#000a}
   .bag-item{grid-template-columns:54px minmax(0,1fr) auto;gap:8px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
+
+.arr{display:inline-block;width:1em;height:1em;vertical-align:-.14em;flex:none}

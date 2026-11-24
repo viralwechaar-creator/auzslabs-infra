@@ -91,13 +91,13 @@ function sectionHead(label, title, link = '') {
 function home() {
   const more = products.filter(product => !selectedDrop.includes(product.slug)).slice(0,8);
   return `<section class="hero" aria-labelledby="campaign-title"><img class="hero-image" fetchpriority="high" src="/store/studs-demo/denim-wide.jpg" alt="Two models in indigo and ecru denim on an orange set">
-  <h1 id="campaign-title" class="sr-only">GenX Cloths</h1><a class="button" href="#/drop">Explore the drop <span aria-hidden="true">↗</span></a></section>
-  <section class="showcase" aria-labelledby="new-in"><div class="showcase-head"><h2 id="new-in">New in</h2><a href="#/drop">View the drop <span aria-hidden="true">↗</span></a></div>${grid(drop,true)}</section>
+  <h1 id="campaign-title" class="sr-only">GenX Cloths</h1><a class="button" href="#/drop">Explore the drop <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></section>
+  <section class="showcase" aria-labelledby="new-in"><div class="showcase-head"><h2 id="new-in">New in</h2><a href="#/drop">View the drop <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>${grid(drop,true)}</section>
   <figure class="home-banner manifesto-banner">
     <img src="/store/studs-demo/genx-studio-manifesto.jpg" width="2124" height="740" loading="lazy" decoding="async" alt="Three GenX models in relaxed workwear and denim on a concrete bench">
     <figcaption>Cut with room to move.<br>Made to be worn your way.</figcaption>
   </figure>
-  <section class="showcase" aria-labelledby="more-genx"><div class="showcase-head"><h2 id="more-genx">More from GenX</h2><a href="#/shop">Shop all <span aria-hidden="true">↗</span></a></div>${grid(more,true)}</section>
+  <section class="showcase" aria-labelledby="more-genx"><div class="showcase-head"><h2 id="more-genx">More from GenX</h2><a href="#/shop">Shop all <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>${grid(more,true)}</section>
   <a class="home-banner closing-banner" href="#/collection/denim-in-motion" aria-label="Explore Denim in Motion">
     <img src="/store/studs-demo/genx-denim-crossing.jpg" width="2172" height="724" loading="lazy" decoding="async" alt="Four pairs of wide-leg trousers and shoes in stride across concrete">
     <span>Clean lines. Timeless style.</span>
@@ -107,7 +107,7 @@ function home() {
 function campaignCarousel() {
   return `<section class="campaigns" aria-label="Shop the GenX campaigns">
     <div class="campaign-track" tabindex="0" aria-label="Campaign slides">${campaigns.map(({image,collection},index)=>`
-      <article class="campaign-slide"><img src="${image}" alt="" ${index ? 'loading="lazy"' : 'fetchpriority="high"'}><div class="campaign-copy"><a class="button" href="#/collection/${slug(collection)}" aria-label="Shop now: ${collection}">Shop now <span aria-hidden="true">↗</span></a><h2>${collection}</h2></div></article>`).join('')}</div>
+      <article class="campaign-slide"><img src="${image}" alt="" ${index ? 'loading="lazy"' : 'fetchpriority="high"'}><div class="campaign-copy"><a class="button" href="#/collection/${slug(collection)}" aria-label="Shop now: ${collection}">Shop now <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a><h2>${collection}</h2></div></article>`).join('')}</div>
     <div class="campaign-controls"><button type="button" data-campaign-step="-1" aria-label="Previous campaign">‹</button>
       ${campaigns.map(({collection},index)=>`<button type="button" data-campaign-slide="${index}" aria-label="Show ${collection}" aria-pressed="${index===0}"><span></span></button>`).join('')}
       <button type="button" data-campaign-step="1" aria-label="Next campaign">›</button>
@@ -405,13 +405,13 @@ function route() {
   } else if (page==='product' && bySlug.has(id)) detail(bySlug.get(id));
   else if (page==='bag') main.innerHTML = `<section class="section cart-page"><h1 class="page-title">Shopping bag</h1>${bagMarkup()}</section>`;
   else if (page==='checkout') checkoutPage();
-  else if (page==='account') contentPage('My account','<p class="copy">Customer sign-in and order history are available when the theme is connected to an AUZslab store.</p><p><a href="#/shop">Continue shopping ↗</a></p>');
+  else if (page==='account') contentPage('My account','<p class="copy">Customer sign-in and order history are available when the theme is connected to an AUZslab store.</p><p><a href="#/shop">Continue shopping <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>');
   else if (page==='help') contentPage('Customer care','<details><summary>Delivery</summary><p class="copy">The merchant sets delivery areas, prices, and timing for the published store.</p></details><details><summary>Returns and exchanges</summary><p class="copy">The published store links to the merchant’s policy and support channel.</p></details>');
   else if (page==='policy' && policies.has(id)) {
     const [title, description] = policies.get(id);
-    contentPage(title,`<p class="copy">${description}</p><p><a href="#/help">Customer care ↗</a></p>`);
+    contentPage(title,`<p class="copy">${description}</p><p><a href="#/help">Customer care <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>`);
   }
-  else contentPage('Page not found','<a href="#/">Return to the storefront ↗</a>');
+  else contentPage('Page not found','<a href="#/">Return to the storefront <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>');
   window.scrollTo(0,0);
 }
 
