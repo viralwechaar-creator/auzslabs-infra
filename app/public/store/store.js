@@ -1,7 +1,8 @@
 /* AUZsStyle online store (customer-facing, no login). Plain script, no build. Everything is drawn with textContent / createElement
    (never innerHTML). Data comes from public_sty_store; orders go through public_sty_place_order. */
 'use strict';
-const SLUG = new URLSearchParams(location.search).get('shop') || window.TENANT_SLUG || '';
+const DEMO = new URLSearchParams(location.search).get('demo');   // theme preview template (auzslab.in): fixed demo catalogue, no orders
+const SLUG = new URLSearchParams(location.search).get('shop') || window.TENANT_SLUG || (DEMO ? 'theme-preview' : '');
 const sb = window.supabase.createClient(CFG.url, CFG.key);
 const $ = (s, r) => (r || document).querySelector(s);
 // native append() prints the word "null" for a null child; make it skip empty children like E() does
@@ -75,7 +76,9 @@ let PFX = 'sty';
 let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
 const toast = (m) => { const t = E('div', { class: 'toast', role: 'status' }, m); document.body.append(t); setTimeout(() => t.remove(), 2200); };
-async function rpc(fn, args) { const { data, error } = await sb.rpc(fn, args || {}); if (error) { const e = new Error(error.message || 'Something went wrong'); e.status = error.status; throw e; } return data; }
+async function rpc(fn, args) {
+  if (DEMO) { if (fn === 'public_sty_store') return window.StoreDemo.build(DEMO); if (/_(track|notify_me|cart_save|reviews|coupon_check)$/.test(fn)) return null; throw new Error('This is a preview template. Ordering is switched off.'); }
+  const { data, error } = await sb.rpc(fn, args || {}); if (error) { const e = new Error(error.message || 'Something went wrong'); e.status = error.status; throw e; } return data; }
 const saveBag = () => { LS.set('bag', bag); paintCounts(); };
 const saveWish = () => { LS.set('wish', wish); paintCounts(); };
 const recent = () => LS.get('recent', []).filter((id) => BYID[id]);
@@ -1594,7 +1597,7 @@ async function boot() {
   if (cached && cached.config && cached.config.template === '2') cached = null;
   // Studs draws its own page chrome from the live data, so it never uses the instant first paint from the last visit.
   if (cached && cached.config && cached.config.template === 'studs') cached = null;
-  if (PREVIEW_STUDS) cached = null;
+  if (PREVIEW_STUDS || DEMO) cached = null;
   // Restore which product's RPCs the cached copy was fetched with, so an interaction fired before the fresh
   // fetch below resolves (see the cached-first-paint branch) still hits the right public_<prefix>_* functions.
   if (cached) PFX = cached.__pfx === 'sfx' ? 'sfx' : 'sty';
@@ -1612,7 +1615,7 @@ async function boot() {
   const fresh = resolveStore();
   const fail = (e) => { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Could not open the store'), E('div', { class: 'mut' }, e.message))); };
   const closed = (d) => { clear(app).append(E('div', { class: 'empty' }, E('h1', null, d.name || 'Store'), E('div', { class: 'mut' }, 'Our online store is not open yet. Please check back soon.'))); document.title = d.name || 'Store'; };
-  const remember = (d) => { try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify({ ...d, __pfx: PFX })); } catch (e) { /* storage full */ } };
+  const remember = (d) => { if (DEMO) return; try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify({ ...d, __pfx: PFX })); } catch (e) { /* storage full */ } };
   if (cached && cached.styles && !cached.closed) {
     ingest(cached); shell(); window.addEventListener('hashchange', route); route();
     fresh.then((d) => { if (!d || d.closed) return; remember(d);
