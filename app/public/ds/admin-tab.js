@@ -10,6 +10,119 @@
   }
   function field(label, input) { return el('label', { class: 'small', style: 'display:grid;gap:4px;margin-bottom:10px' }, [el('span', { text: label }), input]); }
 
+
+  function inp(type, ph, ac) { return el('input', { class: 'input', type: type, placeholder: ph, autocomplete: ac || 'off' }); }
+  function act(btn, m, fn, okText) {
+    btn.onclick = function () {
+      btn.disabled = true; m.textContent = '';
+      Promise.resolve().then(fn).then(function (r) {
+        if (r && r.error) throw r.error;
+        m.textContent = okText || 'Done.';
+      }).catch(function (e) { m.textContent = (e && e.message) || 'Could not do that.'; }).then(function () { btn.disabled = false; });
+    };
+  }
+  function signOutNow(o) {
+    return Promise.resolve(o.sb && o.sb.auth ? o.sb.auth.signOut() : null).catch(function () {}).then(function () { location.href = 'https://auzslab.in/signup.html'; });
+  }
+
+  function accountPane(host, o) {
+    var sb = o.sb;
+    if (!sb || !sb.auth) { simple(host, [card([el('p', { class: 'muted small', text: 'Account security is not available in this app yet. Open auzslab.in/account.html?stay=1 to manage your password and sign-in.' })])]); return; }
+    var out = el('button', { class: 'btn', type: 'button', text: 'Sign out' });
+    out.onclick = function () { out.disabled = true; signOutNow(o); };
+
+    var mp = msgBox(), op = inp('password', 'Current password', 'current-password'), np = inp('password', 'New password (8+ characters)', 'new-password'), pb = el('button', { class: 'btn fill', type: 'button', text: 'Update password' });
+    act(pb, mp, function () {
+      if (np.value.length < 8) throw new Error('New password must be at least 8 characters.');
+      return sb.rpc('change_my_password', { p_old_password: op.value, p_new_password: np.value }).then(function (r) { if (!r.error) { op.value = ''; np.value = ''; } return r; });
+    }, 'Password updated.');
+
+    var me = msgBox(), ne = inp('email', 'New login email', 'email'), ep = inp('password', 'Current password', 'current-password'), eb = el('button', { class: 'btn fill', type: 'button', text: 'Send confirmation link' });
+    act(eb, me, function () { if (!ne.value.trim()) throw new Error('Enter the new email address.'); return sb.auth.requestEmailChange(ne.value.trim(), ep.value); }, 'We sent a link to the new address. Your email changes when you open it.');
+
+    var mr = msgBox(), re = inp('email', 'Recovery email', 'email'), rb = el('button', { class: 'btn', type: 'button', text: 'Add recovery email' }), rx = el('button', { class: 'btn', type: 'button', text: 'Remove recovery email' });
+    act(rb, mr, function () { if (!re.value.trim()) throw new Error('Enter an email address.'); return sb.auth.requestRecoveryEmail(re.value.trim()); }, 'We sent a link to confirm it.');
+    act(rx, mr, function () { return sb.auth.removeRecoveryEmail(); }, 'Removed.');
+
+    var tf = el('div'); 
+    function paintTwo() {
+      var m = msgBox();
+      Promise.resolve(sb.auth.get2faStatus()).then(function (r) {
+        var on = r && r.data && r.data.enabled;
+        if (on) {
+          var pw = inp('password', 'Password', 'current-password'), cd = inp('text', 'Code from your app', 'one-time-code'), d = el('button', { class: 'btn', type: 'button', text: 'Turn off' });
+          act(d, m, function () { return sb.auth.disable2fa(pw.value, cd.value.trim()).then(function (x) { if (!x.error) paintTwo(); return x; }); }, 'Turned off.');
+          tf.replaceChildren(el('p', { class: 'small', text: 'Two-step sign-in is on.' }), pw, cd, d, m);
+        } else {
+          var st = el('button', { class: 'btn fill', type: 'button', text: 'Set up two-step sign-in' });
+          act(st, m, function () {
+            return sb.auth.setup2fa().then(function (x) {
+              if (x.error) return x;
+              var d = x.data || {}, cd = inp('text', '6-digit code', 'one-time-code'), c = el('button', { class: 'btn fill', type: 'button', text: 'Confirm and turn on' }), mm = msgBox();
+              act(c, mm, function () {
+                return sb.auth.confirm2faSetup(cd.value.trim()).then(function (y) {
+                  if (y.error) return y;
+                  var codes = (y.data && (y.data.backup_codes || y.data.backupCodes)) || [];
+                  tf.replaceChildren(el('p', { class: 'small', text: 'Two-step sign-in is on. Save these backup codes now, each works once:' }), el('pre', { text: codes.join('\n'), style: 'user-select:all;white-space:pre-wrap' }));
+                  return y;
+                });
+              });
+              tf.replaceChildren(el('p', { class: 'small', text: 'Add this key in your authenticator app, then enter the code:' }),
+                el('code', { text: d.secret || d.otpauth || '', style: 'user-select:all;word-break:break-all;display:block;margin:6px 0' }), cd, c, mm);
+              return x;
+            });
+          });
+          tf.replaceChildren(el('p', { class: 'muted small', text: 'Ask for a code from your phone each time you sign in.' }), st, m);
+        }
+      }).catch(function (e) { tf.replaceChildren(el('p', { class: 'muted small', text: (e && e.message) || 'Could not load.' })); });
+    }
+    paintTwo();
+
+    var dv = el('div', { style: 'display:grid;gap:8px' });
+    function paintDev() {
+      Promise.resolve(sb.auth.listSessions()).then(function (r) {
+        var rows = (r && r.data) || [];
+        dv.replaceChildren.apply(dv, rows.length ? rows.map(function (s) {
+          var b = el('button', { class: 'btn small', type: 'button', text: s.current ? 'This device' : 'Sign out' });
+          if (s.current) b.disabled = true; else b.onclick = function () { b.disabled = true; Promise.resolve(sb.auth.revokeSession(s.jti)).then(paintDev); };
+          return el('div', { class: 'li', style: 'display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0' }, [el('div', null, [el('div', { text: s.device_label || 'Device', style: 'font-weight:600' }), el('div', { class: 'muted small', text: s.last_seen_at ? 'Last used ' + new Date(s.last_seen_at).toLocaleString() : '' })]), b]);
+        }) : [el('p', { class: 'muted small', text: 'No other devices.' })]);
+      }).catch(function (e) { dv.replaceChildren(el('p', { class: 'muted small', text: (e && e.message) || 'Could not load.' })); });
+    }
+    paintDev();
+
+    var md = msgBox(), dp = inp('password', 'Password to confirm', 'current-password'), ck = el('input', { type: 'checkbox' }), db = el('button', { class: 'btn', type: 'button', text: 'Delete my account', style: 'color:#b3261e' });
+    act(db, md, function () {
+      if (!ck.checked) throw new Error('Tick the box to confirm.');
+      return sb.auth.deleteAccount(dp.value).then(function (r) { if (!r.error) location.href = 'https://auzslab.in/'; return r; });
+    }, 'Account deleted.');
+
+    simple(host, [
+      card([el('h3', { text: 'Sign out' }), el('p', { class: 'muted small', text: 'Sign out of AUZslab on this device.' }), out]),
+      card([el('h3', { text: 'Change password' }), op, np, pb, mp]),
+      card([el('h3', { text: 'Login email' }), ne, ep, eb, me]),
+      card([el('h3', { text: 'Recovery email' }), el('p', { class: 'muted small', text: 'A backup address we can reach you on. It cannot be used to sign in.' }), re, el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, [rb, rx]), mr]),
+      card([el('h3', { text: 'Two-step sign-in' }), tf]),
+      card([el('h3', { text: 'Where you are signed in' }), dv]),
+      card([el('h3', { text: 'Delete account' }), el('p', { class: 'muted small', text: 'This signs you out and blocks the login. Your business data is kept until our team removes it on request.' }), dp,
+        el('label', { class: 'small', style: 'display:flex;gap:8px;align-items:center' }, [ck, el('span', { text: 'I understand this cannot be undone' })]), db, md])
+    ]);
+  }
+
+  function consentBlock(host, o) {
+    var box = el('div', { style: 'display:grid;gap:8px' });
+    Promise.all([o.rpc('my_consents').catch(function () { return null; }), o.rpc('my_data_requests').catch(function () { return []; })]).then(function (res) {
+      var c = res[0] || {}, reqs = res[1] || [], upd = !!(c.purposes && c.purposes.updates), m = msgBox();
+      var tg = el('button', { class: 'btn small', type: 'button', text: upd ? 'Stop product updates' : 'Send me product updates' });
+      act(tg, m, function () { return o.rpc('record_my_consent', { p_purposes: { service: true, updates: !upd }, p_source: 'admin_tab' }).then(function () { host.replaceChildren(); consentBlock(host, o); }); }, 'Saved.');
+      var lines = [el('h3', { text: 'Your consent' }), el('p', { class: 'muted small', text: c.accepted_at ? 'You agreed to the Privacy policy (version ' + (c.accepted_version || '') + ') on ' + new Date(c.accepted_at).toLocaleDateString() + '.' : 'No consent on record yet.' }), tg, m,
+        el('a', { href: 'https://auzslab.in/privacy.html', target: '_blank', rel: 'noopener', class: 'small', text: 'Read the Privacy policy' })];
+      lines.push(el('h3', { text: 'Your requests' }));
+      lines.push.apply(lines, reqs.length ? reqs.map(function (r) { return el('div', { class: 'li', style: 'padding:6px 0' }, [el('div', { text: (r.kind || 'request') + ' · ' + (r.status || ''), style: 'font-weight:600' }), r.reply ? el('div', { class: 'muted small', text: r.reply }) : null]); }) : [el('p', { class: 'muted small', text: 'No requests yet.' })]);
+      host.append(card(lines));
+    });
+  }
+
   function profilePane(host, o) {
     host.replaceChildren(el('p', { class: 'muted small', text: 'Loading…' }));
     o.rpc('my_profile').then(function (data) {
@@ -135,6 +248,9 @@
     simple(host, [card([el('h3', { text: 'Privacy and my data' }), el('p', { class: 'muted small', text: 'Download everything we hold about you, or send a privacy request.' }), dl]), card([el('h3', { text: 'Send a request' }), field('Type', kind), field('Details', note), send, m])]);
   }
 
+  var _priv = privacyPane;
+  privacyPane = function (host, o) { _priv(host, o); consentBlock(host, o); };
+
   function helpPane(host) {
     var a = function (t, href) { return el('a', { class: 'btn', href: href, text: t, target: '_blank', rel: 'noopener' }); };
     simple(host, [card([el('h3', { text: 'Help and support' }), el('p', { class: 'muted small', text: 'We are happy to help.' }),
@@ -145,7 +261,7 @@
     status: function (rpc) { return rpc('admin_tab_status').catch(function () { return { owner: false, allowed: false }; }); },
     mount: function (host, o) {
       var body = el('div', { style: 'margin-top:12px' });
-      var panes = [['Profile', profilePane], ['Staff access', staffPane], ['Billing', billingPane], ['Notifications', notificationsPane], ['WhatsApp', whatsappPane], ['Privacy', privacyPane], ['AI connectors', connectorsPane], ['Help', helpPane]];
+      var panes = [['Profile', profilePane], ['Account', accountPane], ['Staff access', staffPane], ['Billing', billingPane], ['Notifications', notificationsPane], ['WhatsApp', whatsappPane], ['Privacy', privacyPane], ['AI connectors', connectorsPane], ['Help', helpPane]];
       var bar = el('div', { class: 'seg', role: 'tablist', style: 'display:flex;gap:6px;flex-wrap:wrap' });
       function pick(i) { Array.prototype.forEach.call(bar.children, function (b, j) { b.className = 'btn small' + (i === j ? ' fill' : ''); b.setAttribute('aria-selected', i === j ? 'true' : 'false'); }); panes[i][1](body, o); }
       panes.forEach(function (p, i) { var b = el('button', { type: 'button', role: 'tab', text: p[0] }); b.onclick = function () { pick(i); }; bar.append(b); });
