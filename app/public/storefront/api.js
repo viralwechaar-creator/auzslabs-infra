@@ -51,7 +51,7 @@ export function toProduct(p) {
     status: p.status === 'active' ? 'Active' : p.status === 'archived' ? 'Archived' : 'Draft',
     price: Number(p.price), compare: p.compareAt ?? '', image: (p.images || [])[0] || '', media: p.images || [],
     sku: (p.variants || [])[0]?.sku || '', stock: Number(p.stock || 0),
-    variants: (p.variants || []).map(toVariant), channels: ['Online store'], tags: '', options: '', custom: {},
+    variants: (p.variants || []).map(toVariant), channels: ['Online store'], tags: '', options: '', custom: {}, extra: p.extra || {},
   };
 }
 export function toCollection(c) {
@@ -82,6 +82,10 @@ export async function refreshCheckout() { state.checkout = await api('sfx_checko
 export async function refreshCompanies() { const [c, cu] = await Promise.all([api('sfx_company_list'), api('sfx_customer_list')]); state.companies = c; state.customers = cu; }
 export async function refreshSegments() { state.segments = await api('sfx_segment_list'); }
 export async function refreshCampaigns() { const [c, d] = await Promise.all([api('sfx_campaign_list'), api('sfx_discount_list')]); state.campaigns = c; state.discounts = d; }
+export async function refreshRoles() {
+  const [r, st] = await Promise.all([sb.from('roles').select('*').order('name'), sb.from('profiles').select('*').order('email')]);
+  state.roles = r.data || []; state.staffList = st.data || [];
+}
 export async function refreshPlan() { state.plan = await api('sfx_status'); }
 export async function refreshDomains() { state.domains = await api('sfx_domain_list'); }
 // Theme marketplace (db/375): the approved listing (built-ins + developer themes) and this store's own
