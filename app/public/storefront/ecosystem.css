@@ -438,3 +438,36 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
   .shell .oc-sub i{font-style:normal;opacity:.4;margin:0 4px}
   .shell .oc-chips{display:flex;gap:6px;flex-wrap:wrap}
 }
+
+/* ===== Phone: fixed glass header, glass floating navigation (iOS style) ===== */
+.shell .m-search,.shell .m-hero,.shell .m-stats{display:none}
+@media(max-width:900px){
+  .shell{--hdr:calc(env(safe-area-inset-top,0px) + 126px);--glass:color-mix(in srgb,var(--paper) 62%,transparent);--glass-line:color-mix(in srgb,var(--ink) 10%,transparent)}
+  .shell:has(.topbar.is-home){--hdr:calc(env(safe-area-inset-top,0px) + 168px)}
+  .shell .topbar{height:auto;min-height:0;box-sizing:border-box;position:fixed;top:0;left:0;right:0;z-index:40;display:flex;flex-wrap:wrap;align-items:center;row-gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border-bottom:1px solid var(--glass-line)}
+  .shell .work{padding-top:calc(var(--hdr) + 6px)}
+  .shell .m-search{display:flex;align-items:center;gap:10px;order:3;flex:0 0 100%;min-height:46px;padding:0 16px;border:1px solid var(--glass-line);border-radius:999px;background:color-mix(in srgb,var(--paper) 70%,transparent);color:var(--muted);font-size:1rem;text-align:left;box-shadow:0 6px 18px -12px rgba(0,0,0,.4)}
+  .shell .m-search .ico{width:20px;height:20px}
+  .shell .topbar .topbar-actions{background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%)}
+  /* chips stay under the header while the page scrolls */
+  .shell .work>.tabs{position:sticky;top:calc(var(--hdr) - 4px);z-index:15;margin-top:-6px;padding-top:8px;background:var(--glass);-webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%)}
+  /* Home: dark store header with the numbers, white sheet curving up beneath it */
+  .shell .topbar.is-home{background:#000;color:#fff;border:0;-webkit-backdrop-filter:none;backdrop-filter:none;padding-bottom:30px}
+  .shell .topbar.is-home :is(.mobile-page-name,.topbar-actions){display:none}
+  .shell .topbar.is-home::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:26px;background:var(--paper);border-radius:28px 28px 0 0}
+  .shell .topbar.is-home .m-hero{order:1;flex:0 0 100%;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .shell .m-avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#b13ec9;color:#fff;font-weight:700;font-size:.95rem;text-decoration:none}
+  .shell .m-store{flex:1;text-align:center;font-size:1.15rem;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .shell .m-bell{position:relative;width:42px;height:42px;display:grid;place-items:center;color:#fff}
+  .shell .m-bell .ico{width:24px;height:24px}
+  .shell .m-bell span{position:absolute;top:0;right:0;min-width:20px;height:20px;border-radius:10px;background:#e0262d;color:#fff;font-size:.72rem;font-weight:700;display:grid;place-items:center;padding:0 5px}
+  .shell .topbar.is-home .m-stats{order:2;flex:0 0 100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .shell .m-stats div{display:grid;gap:2px;min-width:0}
+  .shell .m-stats span{font-size:.78rem;color:#b5b5b5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .shell .m-stats b{font-size:1.15rem;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
+  .shell:has(.topbar.is-home) .work{padding-top:calc(var(--hdr) + 2px)}
+  /* glass floating navigation */
+  .mobile-quick-nav .mq-round,.mobile-quick-nav .mq-pill{background:color-mix(in srgb,var(--paper) 58%,transparent);-webkit-backdrop-filter:blur(26px) saturate(190%);backdrop-filter:blur(26px) saturate(190%);border:1px solid color-mix(in srgb,#fff 55%,transparent);box-shadow:0 12px 32px -14px rgba(0,0,0,.45),inset 0 1px 0 color-mix(in srgb,#fff 70%,transparent)}
+  .mobile-quick-nav :is([aria-current],[aria-expanded=true]){background:color-mix(in srgb,var(--ink) 12%,transparent)}
+  .shell.nav-open .mobile-quick-nav .mq-pill,.shell.nav-open .mobile-quick-nav .mq-round{background:rgba(44,44,46,.6);border-color:rgba(255,255,255,.16)}
+}
