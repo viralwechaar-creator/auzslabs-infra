@@ -15,44 +15,95 @@
     if (document.getElementById('at-css')) return;
     var st = document.createElement('style'); st.id = 'at-css';
     st.textContent = [
-      '.at.at{--at-fg:var(--label,var(--ink,#1a1a1a));--at-bg:var(--bg,#fff);--at-ac:var(--accent,var(--plum,var(--at-fg)));',
-      '--at-line:color-mix(in srgb,var(--at-fg) 13%,transparent);--at-soft:color-mix(in srgb,var(--at-fg) 5%,transparent);--at-mut:color-mix(in srgb,var(--at-fg) 58%,transparent);',
-      'display:grid;grid-template-columns:230px minmax(0,1fr);gap:22px;align-items:start;color:var(--at-fg);font-size:14px;line-height:1.45}',
+      '.at.at{--at-fg:var(--label,var(--ink,#1a1a1a));--at-bg:var(--bg,#fff);--at-ac:var(--accent,var(--plum,#800020));',
+      '--at-line:color-mix(in srgb,var(--at-fg) 12%,transparent);--at-soft:color-mix(in srgb,var(--at-fg) 4.5%,transparent);--at-mut:color-mix(in srgb,var(--at-fg) 56%,transparent);',
+      'display:grid;grid-template-columns:260px minmax(0,1fr);gap:26px;align-items:start;color:var(--at-fg);font-size:14px;line-height:1.45}',
       '.at.at.at-solo{grid-template-columns:minmax(0,1fr)}',
-      '.at.at .at-nav{display:grid;gap:4px;position:sticky;top:12px;padding:8px;border:1px solid var(--at-line);border-radius:18px;background:var(--at-soft)}',
-      '.at.at .at-nav button{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 12px;border-radius:12px;font-weight:600;font-size:14px;color:var(--at-fg);display:block}',
+      /* left rail */
+      '.at.at .at-rail{position:sticky;top:12px;display:grid;gap:14px}',
+      '.at.at .at-me{display:flex;gap:12px;align-items:center;padding:14px;border:1px solid var(--at-line);border-radius:20px;background:linear-gradient(145deg,color-mix(in srgb,var(--at-ac) 16%,transparent),var(--at-soft))}',
+      '.at.at .at-av{flex:none;width:44px;height:44px;border-radius:14px;background:var(--at-fg);color:var(--at-bg);display:grid;place-items:center;font-weight:800;font-size:16px;letter-spacing:.02em}',
+      '.at.at .at-me b{display:block;font-size:14.5px;line-height:1.25;overflow-wrap:anywhere}',
+      '.at.at .at-me span{display:block;font-size:12px;color:var(--at-mut);overflow-wrap:anywhere}',
+      '.at.at .at-nav{display:grid;gap:2px;padding:8px;border:1px solid var(--at-line);border-radius:20px;background:var(--at-soft)}',
+      '.at.at .at-grp{padding:10px 10px 4px;font-size:10.5px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--at-mut)}',
+      '.at.at .at-nav button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;font-weight:600;font-size:13.5px;color:var(--at-fg)}',
+      '.at.at .at-nav button svg{flex:none;width:17px;height:17px;opacity:.7}',
       '.at.at .at-nav button:hover{background:var(--at-soft)}',
-      '.at.at .at-nav button[aria-selected=true]{background:var(--at-fg);color:var(--at-bg)}',
+      '.at.at .at-nav button[aria-selected=true]{background:var(--at-fg);color:var(--at-bg);box-shadow:0 6px 18px -8px color-mix(in srgb,var(--at-fg) 60%,transparent)}',
+      '.at.at .at-nav button[aria-selected=true] svg{opacity:1}',
       '.at.at .at-nav button:focus-visible{outline:2px solid var(--at-ac);outline-offset:2px}',
+      /* main */
+      '.at.at .at-main{min-width:0;display:grid;gap:16px}',
+      '.at.at .at-head{display:grid;gap:3px;padding:2px 2px 4px}',
+      '.at.at .at-head h2{margin:0;font-size:24px;font-weight:780;letter-spacing:-.02em}',
+      '.at.at .at-head p{margin:0;color:var(--at-mut);font-size:13.5px}',
       '.at.at .at-body{min-width:0;display:grid;gap:14px}',
-      '.at.at .at-title{margin:0 0 2px;font-size:20px;font-weight:750;letter-spacing:-.01em}',
-      '.at.at .card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;align-content:start;padding:18px;border:1px solid var(--at-line);border-radius:18px;background:var(--at-soft);box-shadow:none;margin:0}',
+      /* overview */
+      '.at.at .at-hero{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:22px;border-radius:24px;border:1px solid var(--at-line);background:radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,var(--at-ac) 20%,transparent),transparent 60%),var(--at-soft)}',
+      '.at.at .at-hero .at-av{width:62px;height:62px;border-radius:20px;font-size:23px}',
+      '.at.at .at-hero h3{margin:0;font-size:22px;font-weight:780;letter-spacing:-.02em}',
+      '.at.at .at-hero p{margin:2px 0 0;color:var(--at-mut)}',
+      '.at.at .at-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;border:1px solid var(--at-line);background:var(--at-bg);font-size:11.5px;font-weight:700}',
+      '.at.at .at-chip i{width:7px;height:7px;border-radius:50%;background:#2e9e5b;display:inline-block}',
+      '.at.at .at-chip.warn i{background:#d98a1c}',
+      '.at.at .at-chip.off i{background:color-mix(in srgb,var(--at-fg) 35%,transparent)}',
+      '.at.at .at-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}',
+      '.at.at .at-tile{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:8px;align-content:start;padding:16px;border:1px solid var(--at-line);border-radius:20px;background:var(--at-soft);transition:transform .15s,background .15s}',
+      '.at.at .at-tile:hover{transform:translateY(-2px);background:color-mix(in srgb,var(--at-fg) 7%,transparent)}',
+      '.at.at .at-tile:focus-visible{outline:2px solid var(--at-ac);outline-offset:2px}',
+      '.at.at .at-ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--at-ac) 16%,transparent);color:var(--at-ac)}',
+      '.at.at .at-ico svg{width:19px;height:19px}',
+      '.at.at .at-tile b{font-size:14.5px}',
+      '.at.at .at-tile span.s{color:var(--at-mut);font-size:12.5px}',
+      /* cards and forms */
+      '.at.at .card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;align-content:start;padding:20px;border:1px solid var(--at-line);border-radius:22px;background:var(--at-soft);box-shadow:none;margin:0}',
       '.at.at .card>*{grid-column:1/-1;margin:0;min-width:0}',
       '.at.at .card>label,.at.at .card>input,.at.at .card>select,.at.at .card>textarea{grid-column:auto}',
-      '.at.at .card h3{margin:0;font-size:15px;font-weight:700}',
+      '.at.at .card h3{margin:0;font-size:15px;font-weight:720}',
       '.at.at .muted,.at.at .small.muted{color:var(--at-mut);font-size:13px;margin:0}',
-      '.at.at label.small{display:grid;gap:5px;margin:0!important;font-size:12.5px;font-weight:600;color:var(--at-mut)}',
-      '.at.at .input,.at.at input:not([type=checkbox]):not([type=radio]),.at.at select,.at.at textarea{box-sizing:border-box;width:100%;min-height:42px;padding:9px 12px;border:1px solid var(--at-line);border-radius:12px;background:var(--at-bg);color:var(--at-fg);font:inherit;box-shadow:none;margin:0}',
-      '.at.at textarea{min-height:84px}',
+      '.at.at label.small{display:grid;gap:5px;margin:0!important;font-size:12.5px;font-weight:650;color:var(--at-mut)}',
+      '.at.at .input,.at.at input:not([type=checkbox]):not([type=radio]),.at.at select,.at.at textarea{box-sizing:border-box;width:100%;min-height:44px;padding:10px 13px;border:1px solid var(--at-line);border-radius:13px;background:var(--at-bg);color:var(--at-fg);font:inherit;box-shadow:none;margin:0}',
+      '.at.at textarea{min-height:90px}',
       '.at.at input:focus,.at.at select:focus,.at.at textarea:focus{outline:2px solid var(--at-ac);outline-offset:1px}',
-      '.at.at .btn,.at.at button.btn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;justify-self:start;min-height:40px;padding:0 16px;border:1px solid var(--at-line);border-radius:999px;background:var(--at-bg);color:var(--at-fg);font-weight:650;font-size:13.5px;text-decoration:none;width:auto}',
+      '.at.at .btn,.at.at button.btn{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;justify-self:start;min-height:40px;padding:0 18px;border:1px solid var(--at-line);border-radius:999px;background:var(--at-bg);color:var(--at-fg);font-weight:650;font-size:13.5px;text-decoration:none;width:auto}',
       '.at.at .btn:hover{background:var(--at-soft)}',
       '.at.at .btn.fill{background:var(--at-fg);border-color:var(--at-fg);color:var(--at-bg)}',
-      '.at.at .btn.small{min-height:34px;padding:0 12px;font-size:12.5px}',
+      '.at.at .btn.small{min-height:34px;padding:0 13px;font-size:12.5px}',
       '.at.at .btn[disabled]{opacity:.5;cursor:default}',
       '.at.at .list{display:grid;gap:8px}',
-      '.at.at .li{border:1px solid var(--at-line);border-radius:14px;background:var(--at-bg);padding:10px 12px}',
+      '.at.at .li{border:1px solid var(--at-line);border-radius:15px;background:var(--at-bg);padding:11px 13px}',
       '.at.at pre,.at.at code{background:var(--at-bg);border:1px solid var(--at-line);border-radius:10px;padding:8px 10px;font-size:12.5px}',
       '.at.at a:not(.btn){color:var(--at-ac)}',
       '@media (max-width:899px){',
-      '.at.at{grid-template-columns:minmax(0,1fr);gap:12px}',
-      '.at.at .at-nav{position:static;display:flex;gap:6px;overflow-x:auto;padding:6px;border-radius:999px;scrollbar-width:none}',
+      '.at.at{grid-template-columns:minmax(0,1fr);gap:14px}',
+      '.at.at .at-rail{position:static}',
+      '.at.at .at-me{display:none}',
+      '.at.at .at-nav{display:flex;gap:6px;overflow-x:auto;padding:6px;border-radius:999px;scrollbar-width:none}',
+      '.at.at .at-grp{display:none}',
       '.at.at .at-nav button{white-space:nowrap;border-radius:999px;padding:8px 14px}',
-      '.at.at .card{grid-template-columns:minmax(0,1fr);padding:14px}',
+      '.at.at .at-nav button svg{display:none}',
+      '.at.at .at-head h2{font-size:20px}',
+      '.at.at .card{grid-template-columns:minmax(0,1fr);padding:16px}',
+      '.at.at .at-hero{padding:16px}',
       '}'
     ].join('');
     document.head.appendChild(st);
   }
+  var NS = 'http://www.w3.org/2000/svg';
+  var ICONS = {
+    home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z', user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+    shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M9 12l2 2 4-4', lock: 'M6 10V8a6 6 0 0 1 12 0v2M5 10h14v11H5z',
+    users: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 21a7 7 0 0 1 14 0M17 4.5a3.5 3.5 0 0 1 0 6.5M18 15a6 6 0 0 1 4 6',
+    card: 'M3 6h18v12H3zM3 10h18', bell: 'M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4', chat: 'M4 5h16v11H9l-5 4z',
+    db: 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6',
+    plug: 'M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4', help: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01'
+  };
+  function icon(name) {
+    var svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '1.8'); svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round'); svg.setAttribute('aria-hidden', 'true');
+    var path = document.createElementNS(NS, 'path'); path.setAttribute('d', ICONS[name] || ICONS.home); svg.appendChild(path); return svg;
+  }
+  function initials(t) { var w = String(t || '?').replace(/@.*/, '').trim().split(/\s+/).slice(0, 2); return w.map(function (x) { return (x[0] || '').toUpperCase(); }).join('') || '?'; }
 
   function field(label, input) { return el('label', { class: 'small', style: 'display:grid;gap:4px;margin-bottom:10px' }, [el('span', { text: label }), input]); }
 
@@ -336,19 +387,69 @@
       a('Call +91 92512 50829', 'tel:+919251250829'), a('WhatsApp us', 'https://wa.me/919251250829'), a('Email helloauzslab@gmail.com', 'mailto:helloauzslab@gmail.com')])]);
   }
 
+  function overviewPane(host, o, go) {
+    var hero = el('div', { class: 'at-hero' });
+    var av = el('div', { class: 'at-av', text: '…' }), title = el('h3', { text: 'Your account' }), sub = el('p', { text: '' }), chips = el('div', { style: 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px' });
+    hero.append(av, el('div', { style: 'min-width:0;flex:1' }, [title, sub, chips]));
+    var tiles = el('div', { class: 'at-tiles' });
+    function chip(text, kind) { var c = el('span', { class: 'at-chip' + (kind ? ' ' + kind : '') }); c.append(el('i')); c.append(document.createTextNode(text)); chips.append(c); }
+    function tile(ic, name, sum, target) { var t = el('button', { class: 'at-tile', type: 'button' }, [el('span', { class: 'at-ico' }, [icon(ic)]), el('b', { text: name }), el('span', { class: 's', text: sum })]); t.onclick = function () { go(target); }; tiles.append(t); return t; }
+    chip(o.isOwner ? 'Owner' : 'Team member');
+    var tSec = tile('shield', 'Sign-in and security', 'Password, two-step sign-in, devices', 'Account');
+    var tTeam = tile('users', 'Team access', 'Who can open Admin', 'Staff access');
+    tile('card', 'Billing and plan', 'Renewals, payments and plan', 'Billing');
+    var tWa = tile('chat', 'WhatsApp messages', 'Automatic bills and reminders', 'WhatsApp');
+    tile('db', 'Backup and data', 'Download or export your data', 'Backup');
+    tile('plug', 'AI connectors', 'Let your AI app read your business', 'AI connectors');
+    function setSum(t, text) { t.querySelector('.s').textContent = text; }
+    Promise.resolve(o.rpc('my_profile')).then(function (d) {
+      var P = (d && d.profile) || {}, login = (d && d.login_email) || '';
+      var nm = P.business_name || P.name || login || 'Your business'; av.textContent = initials(nm); title.textContent = nm; sub.textContent = [P.name, login].filter(Boolean).join(' · ');
+    }).catch(function () {});
+    if (o.sb && o.sb.auth && o.sb.auth.get2faStatus) Promise.resolve(o.sb.auth.get2faStatus()).then(function (r) { var on = !!(r && r.data && r.data.enabled); setSum(tSec, on ? 'Two-step sign-in is on' : 'Two-step sign-in is off. Turn it on'); chip(on ? 'Two-step on' : 'Two-step off', on ? '' : 'warn'); }).catch(function () {});
+    if (o.isOwner) Promise.resolve(o.rpc('admin_tab_staff')).then(function (rows) { var n = (rows || []).filter(function (p) { return p.role !== 'owner'; }).length; setSum(tTeam, n + (n === 1 ? ' team member' : ' team members') + ' · choose who can open Admin'); }).catch(function () {});
+    Promise.resolve(o.rpc('wa_my_status')).then(function (st) { st = st || {}; var on = !!(st.settings ? st.settings.enabled : st.enabled); setSum(tWa, on ? 'On for your business' : 'Off. Tap to turn on'); }).catch(function () {});
+    host.replaceChildren(hero, tiles);
+  }
+
   window.auzAdminTab = {
     status: function (rpc) { return rpc('admin_tab_status').catch(function () { return { owner: false, allowed: false }; }); },
     mount: function (host, o) {
       injectCss();
       var body = el('div', { class: 'at-body' });
-      var panes = [['Profile', profilePane], ['Account', accountPane], ['Staff access', staffPane], ['Billing', billingPane], ['Notifications', notificationsPane], ['WhatsApp', whatsappPane], ['Privacy', privacyPane], ['Backup', backupPane], ['AI connectors', connectorsPane], ['Help', helpPane]];
+      // name, description, icon, group
+      var panes = [
+        ['Overview', overviewPane, 'Your account at a glance.', 'home', ''],
+        ['Profile', profilePane, 'Your name, contact details and business information.', 'user', 'Account'],
+        ['Account', accountPane, 'Password, login email, two-step sign-in and the devices you are signed in on.', 'shield', 'Account'],
+        ['Privacy', privacyPane, 'Your consent, your data and privacy requests.', 'lock', 'Account'],
+        ['Staff access', staffPane, 'Add staff, reset PINs and choose who can open Admin.', 'users', 'Business'],
+        ['Billing', billingPane, 'Your plan, renewals and payments.', 'card', 'Business'],
+        ['Notifications', notificationsPane, 'Your latest alerts.', 'bell', 'Business'],
+        ['WhatsApp', whatsappPane, 'Automatic WhatsApp bills and reminders for your customers.', 'chat', 'Business'],
+        ['Backup', backupPane, 'Download a full backup or an export of your business data.', 'db', 'Data'],
+        ['AI connectors', connectorsPane, 'Connect an AI app such as Claude or ChatGPT to your business.', 'plug', 'Connect'],
+        ['Help', helpPane, 'Talk to us.', 'help', 'Connect']
+      ];
       var only = o.only && panes.filter(function (x) { return x[0] === o.only; })[0];
       var root = el('div', { class: 'at' + (only ? ' at-solo' : '') });
       if (only) { root.append(body); host.replaceChildren(root); only[1](body, o); return; }
-      var nav = el('nav', { class: 'at-nav', role: 'tablist', 'aria-label': 'Admin sections' });
-      function pick(i) { Array.prototype.forEach.call(nav.children, function (b, k) { b.setAttribute('aria-selected', i === k ? 'true' : 'false'); }); body.replaceChildren(); panes[i][1](body, o); }
-      panes.forEach(function (p, i) { var b = el('button', { type: 'button', role: 'tab', text: p[0] }); b.onclick = function () { pick(i); }; nav.append(b); });
-      root.append(nav, body); host.replaceChildren(root); pick(0);
+      var rail = el('aside', { class: 'at-rail' }), nav = el('nav', { class: 'at-nav', role: 'tablist', 'aria-label': 'Admin sections' });
+      var meName = el('b', { text: 'Admin' }), meSub = el('span', { text: o.isOwner ? 'Owner' : 'Team member' });
+      rail.append(el('div', { class: 'at-me' }, [el('div', { class: 'at-av', text: 'A' }), el('div', { style: 'min-width:0' }, [meName, meSub])]), nav);
+      var head = el('div', { class: 'at-head' }), main = el('div', { class: 'at-main' }, [head, body]);
+      var btns = [], last = null;
+      function pick(i) {
+        btns.forEach(function (b, k) { b.setAttribute('aria-selected', i === k ? 'true' : 'false'); });
+        head.replaceChildren(el('h2', { text: i === 0 ? 'Admin' : panes[i][0] }), el('p', { text: panes[i][2] }));
+        body.replaceChildren(); panes[i][1](body, o, function (name) { var k = panes.findIndex(function (x) { return x[0] === name; }); if (k >= 0) pick(k); });
+      }
+      panes.forEach(function (p, i) {
+        if (p[4] && p[4] !== last) { nav.append(el('div', { class: 'at-grp', text: p[4] })); last = p[4]; }
+        var b = el('button', { type: 'button', role: 'tab' }); b.append(icon(p[3])); b.append(document.createTextNode(p[0])); b.onclick = function () { pick(i); }; nav.append(b); btns.push(b);
+      });
+      root.append(rail, main); host.replaceChildren(root); pick(0);
+      Promise.resolve(o.rpc('my_profile')).then(function (d) { var P = (d && d.profile) || {}, nm = P.business_name || P.name || (d && d.login_email) || 'Admin'; meName.textContent = nm; rail.querySelector('.at-av').textContent = initials(nm); }).catch(function () {});
     }
   };
 })();
