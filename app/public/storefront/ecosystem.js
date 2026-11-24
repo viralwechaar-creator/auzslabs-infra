@@ -6,7 +6,7 @@
 // preview also routed through this file is a separate, unrelated project and is not part of this build.
 import { menu, icons, emptyState } from './data.js';
 import { workspace } from './workspace.js';
-import { sb, boot, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, boot, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 export const $ = (selector) => document.querySelector(selector);
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -163,7 +163,7 @@ document.addEventListener('click', (event) => {
   const target = event.target.closest('[data-action]'); if (!target) return;
   const [action, key, detail] = target.dataset.action.split(':');
   if (action === 'close-dialog') { if ($('#dialog').open) return close(); target.closest('form')?.reset(); return; }
-  if (action === 'sign-out') { Promise.resolve(sb.auth.signOut()).catch(() => {}).then(() => { location.href = 'https://auzslab.in/signup.html'; }); return; }
+  if (action === 'sign-out') { Promise.resolve(sb.auth.signOut()).catch(() => {}).then(() => { location.href = 'https://auzslab.in/signup.html?signout=1'; }); return; }
   if (action === 'global-search') return search();
   if (action === 'account-theme') { const dark = localStorage.getItem('auzslab.preview.theme') === 'dark'; localStorage.setItem('auzslab.preview.theme', dark ? 'light' : 'dark'); return rerender(); }
   if (action === 'toggle-nav' || action === 'close-nav') { setNavOpen(action === 'toggle-nav' && !navOpen, true); return; }

@@ -22,7 +22,7 @@
     };
   }
   function signOutNow(o) {
-    return Promise.resolve(o.sb && o.sb.auth ? o.sb.auth.signOut() : null).catch(function () {}).then(function () { if (!(o.sb && o.sb.auth && o.sb.auth.keepPage)) location.href = 'https://auzslab.in/signup.html'; });
+    return Promise.resolve(o.sb && o.sb.auth ? o.sb.auth.signOut() : null).catch(function () {}).then(function () { if (!(o.sb && o.sb.auth && o.sb.auth.keepPage)) location.href = 'https://auzslab.in/signup.html?signout=1'; });
   }
 
   function accountPane(host, o) {
