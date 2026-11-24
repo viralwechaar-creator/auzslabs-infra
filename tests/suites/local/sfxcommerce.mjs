@@ -261,6 +261,18 @@ export default async function run({ browser, stack }) {
     assert((await cell('Orders')).startsWith('3'), 'all time orders wrong: ' + (await cell('Orders')));
     const paid = (await q("select coalesce(sum(total),0)::float t from sfx_orders where payment_status='paid'"))[0].t; assert((await cell('Sales (paid)')).replace(/[^0-9.]/g, '') === String(paid), 'paid sales wrong: ' + (await cell('Sales (paid)')) + ' vs ' + paid);
   });
+  await s.check('Orders and Customers have search, filter and sort bars that narrow the list', async () => {
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
+    const all = await page.locator('#orders-results tbody tr').count();
+    await page.fill('#ol-query', 'zzz-no-such-order'); await page.waitForTimeout(300);
+    assert(await page.locator('#orders-results .empty').count() === 1, 'order search did not empty the list (had ' + all + ')');
+    await page.fill('#ol-query', ''); await page.selectOption('#ol-sort', 'high'); await page.waitForTimeout(300);
+    assert(await page.locator('#orders-results tbody tr').count() === all, 'clearing the search should bring the orders back');
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/customers'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
+    assert(await page.locator('#cl-query').count() === 1 && await page.locator('#cl-sort').count() === 1, 'customer bar missing');
+    await page.fill('#cl-query', 'zzz-nobody'); await page.waitForTimeout(300);
+    assert(await page.locator('#customers-results .empty').count() === 1, 'customer search did not empty the list');
+  });
   await s.check('Settings -> Switch apps lets the owner open the other apps they own', async () => {
     await q("update tenant_settings set features = features || '{\"style\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/switch-apps'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
