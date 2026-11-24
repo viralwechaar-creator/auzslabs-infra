@@ -6,6 +6,8 @@
     async build(theme) {
       const rows = await (await fetch('/studs-preview/catalog.json')).json();
       const img = (f) => '/store/genx-studio/' + f;
+      const banner = { 'Denim in Motion': 'denim-wide', 'Field Notes': 'field-wide', 'Offbeat Streetwear': 'street-wide', 'Small Essentials': 'essentials-wide', 'Urban Carry': 'urban-wide' };
+      const bannerUrl = (n) => '/store/demo-banners/' + (banner[n] || 'denim-wide') + '.jpg';
       const styles = rows.map((p) => {
         const per = Math.max(1, Math.round((p.stock || 0) / Math.max(1, p.sizes.length)));
         return {
@@ -16,12 +18,16 @@
         };
       });
       const names = [...new Set(rows.map((p) => p.collection).filter(Boolean))];
-      const collections = names.map((n) => ({ id: slug(n), name: n, imageUrl: img(rows.find((p) => p.collection === n).files[0]), styleIds: rows.filter((p) => p.collection === n).map((p) => p.slug) }));
+      const collections = names.map((n) => ({ id: slug(n), name: n, image: bannerUrl(n), imageUrl: bannerUrl(n), styleIds: rows.filter((p) => p.collection === n).map((p) => p.slug) }));
       return {
         name: 'GenX Clothing', shop: { name: 'GenX Clothing', logoUrl: '', address: 'Jodhpur, Rajasthan', phone: '' },
         styles, collections,
-        config: { template: theme === 'minimal' ? 'minimal' : '1', brandName: 'GenX Clothing', tagline: 'Streetwear, made loud', announce: 'Template preview: ordering is switched off', heroImages: [img(rows[0].files[0]), img(rows[3].files[0])],
-          shipping: { fee: 0, freeOver: 0 }, pay: { cod: true }, policies: {}, faqs: [], stores: [], founders: [] },
+        config: { template: theme === 'minimal' ? 'minimal' : '1', brandName: 'GenX Clothing', tagline: 'Streetwear, made loud', announce: 'Template preview: ordering is switched off', heroImages: ['denim-wide', 'street-wide', 'field-wide', 'essentials-wide'].map((n) => '/store/demo-banners/' + n + '.jpg'), heroTitle: 'GenX Clothing', heroCta: 'Shop now',
+          stores: [
+            { name: 'GenX Studio, Jodhpur', address: 'Sardarpura, Jodhpur, Rajasthan', hours: 'Daily 11:00 to 21:00', phone: '', photo: img(rows[0].files[1] || rows[0].files[0]) },
+            { name: 'GenX Pop-up, Jaipur', address: 'C-Scheme, Jaipur, Rajasthan', hours: 'Fri to Sun 12:00 to 20:00', phone: '', photo: img(rows[3].files[1] || rows[3].files[0]) },
+          ],
+          shipping: { fee: 0, freeOver: 0 }, pay: { cod: true }, policies: {}, faqs: [], founders: [] },
       };
     },
   };
