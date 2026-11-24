@@ -230,6 +230,9 @@ http.createServer((req,res)=>{
     if(retired.test(route)) {res.writeHead(302,{...options,Location:'/'});return res.end();}
     if(/^\/(?:api|rpc|auth|setup|licence|db)\//.test(route)) return api(req,res,route);
     if(!['GET','HEAD'].includes(req.method)) return send(res,405,{error:'Method not available'});
+    if(route==='/studs.html') return file(res,here,'/offset.html');
+    if(['/offset.html','/offset.css','/offset.js'].includes(route)&&file(res,here,route)) return;
+    if(route==='/offset-catalog.json'&&file(res,path.join(repo,'tools','minimal-preview'),'/genx-studio-catalog.json')) return;
     if(route==='/robots.txt') return send(res,200,'User-agent: *\nDisallow: /\n','text/plain');
     if(contactRoutes.has(route))return contactPage(res,route);
     if(shell.has(route)) return file(res,here,'/index.html');

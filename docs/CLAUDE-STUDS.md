@@ -1,0 +1,22 @@
+# Studs theme integration
+
+Integrate the supplied **Studs** theme into the current AUZslab production codebase. The attached `studs-preview-handoff.zip` contains the approved local design, page markup, styles, interactions, demo catalog, and imagery. The source filenames still use `offset`. Use **Studs** as the customer-facing theme name and `studs` as its theme identifier.
+
+## Start with the existing application
+
+1. Inspect the current branch, working tree, theme library, public storefront renderer, tenant theme settings, theme editor and checkout flows. Locate the production registration and rendering path for built-in themes before changing files. Produce a short gap and impact summary before applying changes.
+2. Serve the extracted package as a static directory on loopback and open `/offset.html#/`. Use this working preview as the visual reference for every change. Reuse its CSS, imagery, typography, spacing and layout wherever the production component contract permits. Compare desktop at 1484 × 678 and mobile at 390 × 844. Preserve the approved design across all pages from the package.
+3. Register Studs as a selectable retail theme. Add it to the public AUZslab Themes page and the owner dashboard theme library with preview, install and edit actions. Installation should create a draft. Only an explicit publish action should change that owner's storefront. Existing stores should retain their current theme.
+4. Integrate with the live storefront renderer and theme editor. Inspect the supported upload schema before choosing the implementation. If ZIP imports only support adding sections to an existing base, register Studs as a built-in renderer with an editable settings schema instead of treating this handoff archive as an importable theme ZIP. Keep a single source of truth for draft preview and published rendering. Make campaign images and links, announcement copy, drop and collection sources, quote and footer banner, and footer links configurable with sensible defaults.
+5. Wire real tenant-scoped published products, collections, variants, stock, prices, customer accounts, bag, shipping, discounts, policies, and checkout through the current platform services. Use the GenX demo data only for the public preview or an isolated demo tenant. Remove the fixture stock override and local-only checkout behavior from production. Preserve tenant scoping and existing account and order flows.
+
+## Visual acceptance criteria
+
+- Black Studio Drop and selected Studio product pages. White Shop All, collection and regular catalog product pages. Black announcement strip, centered store logo, outlined header icons close to the edges and sticky department navigation.
+- Full-width homepage hero with the small Explore the drop button at bottom center. New In, the washed grainy quote banner with crisp white lettering and a black stroke, the second product grid, then the closing banner. Keep the 10 px gap above the closing image. Display both added banners uncropped on mobile. The homepage has no separate Browse by Collection block.
+- Shop All starts with touching auto-advancing campaign images. Each has a centered Shop Now button and only its collection name underneath. Keep manual navigation, pause and reduced-motion behavior. Go straight from the carousel controls to the products. Keep the visible Shop All title, category controls and sort controls absent on that landing page.
+- Product images are borderless 3:4 tiles with four columns on desktop and two on mobile. Respect the source grid spacing. Shop All and product recommendations put the name and price on one line below each photo. Homepage editorial labels sit over the photos. Preserve the washed sold-out state.
+- Preserve the gallery, size guide, PIN entry, quantity stepper, Add to bag and Buy now layout, product details, bag drawer, full cart, checkout review and mobile footer disclosures. Replace the preview-only behavior with native merchant services when those services are enabled.
+- Keep the supplied GenX artwork and copy. The reference for production is the attached Studs preview.
+
+Test draft isolation, product variants, sold-out quantities, cart totals, checkout handoff, mobile layout, broken paths and existing themes. Report any differences from the preview, the files changed, and any operational prerequisites. Stop after staging or opening a reviewable change. Present the diff and test evidence for approval before production deployment.
