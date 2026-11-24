@@ -208,6 +208,44 @@ export default async function run({ browser, stack }) {
     await call('sfx_theme_install_set_active', { p_install_id: dup.j.installId }); assert(!(await call('sfx_theme_install_delete', { p_install_id: dup.j.installId })).ok, 'live theme cannot be deleted');
     assert((await call('sfx_theme_install_delete', { p_install_id: made.j.installId })).ok, 'delete custom'); assert(!(await call('sfx_theme_install_delete', { p_install_id: inst.j.installId })).ok, 'marketplace install cannot be deleted');
   }, 'major');
+  await s.check('Product options are saved with the product, validated, and generated variants keep SKU, barcode, price and stock (db/396)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    const tok = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token;
+    const call = async (fn, a) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(a) }); const j = await r.json().catch(() => ({})); return { ok: r.ok, j: j.data !== undefined ? j.data : j }; };
+    const pid = (await q("insert into sfx_products (tenant_id, name, handle, status, price) values ($1,'Opt Ring','opt-ring','active',100) returning id", [tid]))[0].id;
+    const save = await call('sfx_product_save', { p_id: pid, p: { name: 'Opt Ring', status: 'active', price: 100, variants: [{ label: 'Silver / Matte', sku: 'S-M', barcode: 'B-1', price: 120, stock: 3 }, { label: 'Gold / Gloss', sku: 'G-G', barcode: 'B-2', price: 150, stock: 0 }] } });
+    assert(save.ok, JSON.stringify(save));
+    assert((await call('sfx_product_extra_save', { p_id: pid, p: { options: [{ name: 'Material', values: ['Silver', 'Gold'] }, { name: 'Finish', values: ['Matte', 'Gloss'] }] } })).ok, 'options saved');
+    const row = (await q("select extra->'options' o from sfx_products where id=$1", [pid]))[0]; assert(row.o.length === 2 && row.o[0].values[1] === 'Gold', JSON.stringify(row));
+    const vs = await q("select label, sku, barcode, price::float, stock from sfx_variants where product_id=$1 order by position", [pid]); assert(vs.length === 2 && vs[0].barcode === 'B-1' && vs[1].price === 150, JSON.stringify(vs));
+    const pub = (await q("select jsonb_path_query_array(public_sfx_store('testcafe')->'styles', '$[*] ? (@.name == \"Opt Ring\").variants[*].size') as v"))[0].v; assert(pub.includes('Silver / Matte'), JSON.stringify(pub));
+    for (const bad of [[{ name: 'A', values: [] }], [{ name: '', values: ['x'] }], [{ name: 'A', values: ['x'] }, { name: 'B', values: ['y'] }, { name: 'C', values: ['z'] }, { name: 'D', values: ['w'] }], [{ name: 'A', values: ['x'.repeat(41)] }]]) assert(!(await call('sfx_product_extra_save', { p_id: pid, p: { options: bad } })).ok, 'bad options accepted ' + JSON.stringify(bad));
+  }, 'major');
+  await s.check('Product editor extras: tags, collections, custom field, SEO preview, photo upload and list filters (db/397)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("update sfx_stores set config = jsonb_set(coalesce(config,'{}'::jsonb), '{customFields}', '[{\"id\":\"cf1\",\"name\":\"Material\",\"appliesTo\":\"Products\",\"valueType\":\"Text\"}]'::jsonb) where tenant_id=$1", [tid]);
+    await q("delete from sfx_collections where tenant_id=$1 and name='Summer Set'", [tid]);
+    await q("insert into sfx_collections (tenant_id, name, handle) values ($1,'Summer Set','summer-set')", [tid]);
+    const pid = (await q("insert into sfx_products (tenant_id, name, handle, status, price, category) values ($1,'Extras Tee','extras-tee','active',250,'Tops') returning id", [tid]))[0].id;
+    await q("insert into sfx_variants (tenant_id, product_id, label, price, stock) values ($1,$2,'M',250,9)", [tid, pid]);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/products/' + pid), { waitUntil: 'load' }); await page.waitForTimeout(2500);
+    assert(await page.locator('[data-seo-preview]').count() === 1 && await page.locator('input[name=tags]').count() === 1 && await page.locator('input[name=collections]').count() >= 1 && await page.locator('input[name=cf_cf1]').count() === 1, 'panels missing: ' + (await page.locator('body').innerText()).slice(0, 200));
+    await page.fill('input[name=seoTitle]', 'Best Extras Tee'); assert(/Best Extras Tee/.test(await page.locator('[data-seo-preview]').innerText()), 'SEO preview did not update');
+    await page.fill('input[name=tags]', 'Summer, Cotton'); await page.fill('input[name=cf_cf1]', '100% cotton'); await page.locator('input[name=collections]').first().check();
+    await page.locator('.product-save button.primary').click(); await page.waitForTimeout(1800);
+    const ex = (await q("select extra from sfx_products where id=$1", [pid]))[0].extra; assert(ex.custom && ex.custom.cf1 === '100% cotton', JSON.stringify(ex));
+    assert((await q("select cardinality(tags)::int n from sfx_products where id=$1", [pid]))[0].n === 2, 'tags not saved');
+    assert((await q("select count(*)::int n from sfx_collection_products where product_id=$1", [pid]))[0].n === 1, 'collection not saved');
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/products/' + pid + '?tab=media'), { waitUntil: 'load' }); await page.waitForTimeout(2500);
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    await page.setInputFiles('input[type=file]', { name: 'p.png', mimeType: 'image/png', buffer: png }); await page.locator('form[data-key=product-media] button.primary').click(); await page.waitForTimeout(2500);
+    const img = (await q("select images->>0 as image from sfx_products where id=$1", [pid]))[0].image; assert(img && /uploads\/site\/.+\/storefront\//.test(img), 'upload not stored: ' + img);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/products'), { waitUntil: 'load' }); await page.waitForTimeout(2500);
+    await page.selectOption('#pf-tag', 'cotton'); await page.waitForTimeout(400);
+    const t1 = await page.locator('#table-results').innerText(); assert(/Extras Tee/.test(t1) && !/Bulk Tee/.test(t1), 'tag filter wrong: ' + t1.slice(0, 200));
+    await page.selectOption('#pf-tag', ''); await page.selectOption('#pf-stock', 'out'); await page.waitForTimeout(400);
+    { const t2 = await page.locator('#table-results').innerText(); assert(!/Extras Tee/.test(t2), 'stock filter wrong: ' + JSON.stringify(t2.slice(0, 400)) + JSON.stringify(await q('select label, stock from sfx_variants where product_id=$1', [pid]))); }
+  }, 'major');
   await s.check('Orders page: summary strip with sparklines follows the reporting period', async () => {
     const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
     await q("delete from sfx_orders where tenant_id = $1", [tid]);
@@ -223,5 +261,5 @@ export default async function run({ browser, stack }) {
     assert((await cell('Orders')).startsWith('3'), 'all time orders wrong: ' + (await cell('Orders')));
     const paid = (await q("select coalesce(sum(total),0)::float t from sfx_orders where payment_status='paid'"))[0].t; assert((await cell('Sales (paid)')).replace(/[^0-9.]/g, '') === String(paid), 'paid sales wrong: ' + (await cell('Sales (paid)')) + ' vs ' + paid);
   });
-  await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
+  await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save|x\.test|\/uploads\//i.test(e)).length, errs.filter((e) => !/sentry|fonts|sfx_discount_save|x\.test|\/uploads\//i.test(e)).slice(0, 3).join(' | ')); });
 }

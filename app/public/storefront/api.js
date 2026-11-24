@@ -68,6 +68,18 @@ export function toOrder(o) {
 }
 
 export async function refreshProducts() { state.products = (await api('sfx_product_list')).map(toProduct); }
+export async function refreshMemberships() { try { state.memberships = await api('sfx_collection_memberships'); } catch (e) { state.memberships = state.memberships || {}; } }
+// Compresses a chosen photo in the browser (max 1600 px wide, WebP/JPEG) and stores it in the business's own uploads folder.
+export async function uploadImage(file) {
+  if (!/^image\//.test(file.type)) throw new Error('"' + file.name + '" is not an image.');
+  const bmp = await new Promise((res, rej) => { const url = URL.createObjectURL(file), img = new Image(); img.onload = () => { URL.revokeObjectURL(url); res(img); }; img.onerror = () => rej(new Error('Could not read "' + file.name + '".')); img.src = url; });
+  const sc = Math.min(1, 1600 / bmp.width), c = document.createElement('canvas'); c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', 0.82)); if (!blob) throw new Error('Could not process "' + file.name + '".');
+  const name = 'storefront/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + '.jpg';
+  const { error } = await sb.storage.from('site').upload(name, blob, { contentType: 'image/jpeg' }); if (error) throw new Error(error.message || 'Upload failed');
+  return sb.storage.from('site').getPublicUrl(name).data.publicUrl;
+}
 export async function refreshCollections() { state.collections = (await api('sfx_collection_list')).map(toCollection); }
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
@@ -118,6 +130,6 @@ export async function boot(onReady) {
   let ctx;
   try { ctx = await api('sfx_context'); } catch (e) { return blocked('Could not open your storefront', e.message); }
   applyContext(ctx); state.features = dash.features || {};
-  try { await Promise.all([refreshProducts(), refreshCollections(), refreshOrders(), refreshMarketplace(), refreshInstalls(), refreshPlan()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
+  try { await Promise.all([refreshProducts(), refreshCollections(), refreshMemberships(), refreshCategories(), refreshOrders(), refreshMarketplace(), refreshInstalls(), refreshPlan()]); } catch (e) { /* home still renders; individual pages retry their own fetch */ }
   onReady();
 }

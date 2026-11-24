@@ -817,6 +817,8 @@ export const RPC = {
   sfx_category_list: { params: [], auth: true },
   sfx_category_rename: { params: ['p_old', 'p_new'], auth: true },
   sfx_product_set_tags: { params: ['p_id', 'p_tags'], auth: true },
+  sfx_collection_memberships: { params: [], auth: true },
+  sfx_product_set_collections: { params: ['p_id', 'p_collections'], auth: true },
   sfx_product_tags: { params: [], auth: true },
   sfx_domain_remove: { params: ['p_id'], auth: true },
   sfx_domain_set_primary: { params: ['p_id', 'p_on'], auth: true },
