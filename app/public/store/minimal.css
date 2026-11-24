@@ -423,3 +423,4 @@ body.minimal-store.homehero.pasthero .top :is(.brand,.l a,.r .ic){color:var(--ma
 .minimal-store .btn:not(.out,.soft):hover:not(:disabled){background:#3f4145}
 .minimal-store :is(.btn.out,.btn.soft,.minimal-filter-button,.minimal-view-toggle,.minimal-collection-controls button){color:var(--matte-control)}
 .minimal-store .minimal-view-toggle[aria-pressed="true"]{background:var(--matte-fill);color:#fff}
+.minimal-store .top{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}

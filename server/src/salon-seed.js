@@ -118,14 +118,14 @@ function makeSeed() {
 
   return {
     settings: {
-      salonName: 'Showoff Salon',
+      salonName: 'Salon Demo',
       tagline: 'Unisex salon, Sardarpura, Jodhpur',
       phone: '',
       whatsapp: '',
       email: '',
       address: 'Sardarpura, Jodhpur',
       mapUrl: '',
-      instagram: 'showoff_unisex_salon_academy',
+      instagram: '',
       timezone: 'Asia/Kolkata',
       open: '10:00',
       close: '20:00',
@@ -133,7 +133,7 @@ function makeSeed() {
       capacity: 2,
       closedDays: [],
       advanceDays: 60,
-      invoiceFooter: 'Thank you for visiting Showoff Salon.',
+      invoiceFooter: 'Thank you for visiting.',
       heroLogo: '',
       bgMusic: { mode: 'off', src: '', volume: 15, spotifyUrl: '', spotifyEmbed: '' }
     },

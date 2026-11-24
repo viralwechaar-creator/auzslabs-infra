@@ -1064,3 +1064,8 @@ body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(10
 
 .custom-section.sel{outline:2px solid #2b6cff;outline-offset:-2px}
 .custom-empty{padding:28px 16px;text-align:center}
+
+/* The header keeps clear of the phone's status bar / Dynamic Island (viewport-fit=cover): --hh includes the top inset */
+:root{--hh:calc(50px + env(safe-area-inset-top,0px))}
+.top{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media(min-width:900px){:root{--hh:calc(64px + env(safe-area-inset-top,0px))}}

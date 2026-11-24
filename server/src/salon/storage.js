@@ -103,6 +103,15 @@ const DEMO_TTL = 12 * 3600 * 1000;
 // 12 hours (and recreates its sample staff login + payroll employee).
 // A demo salon on the shared records engine (the live Showoff Salon demo) keeps its own menu, look and copy:
 // only the fake activity (bookings, bills, expenses) is regenerated, dated relative to today.
+// The demo salon carries no client's name: any "Showoff ..." text in its settings or copy becomes neutral (logo and pictures are left alone).
+function scrubBrand(o) {
+  if (!o || typeof o !== 'object') return;
+  for (const k of Object.keys(o)) {
+    const v = o[k];
+    if (typeof v === 'string') o[k] = v.replace(/showoff[_ ]unisex[_ ]salon[_ ]academy/gi, '').replace(/showoff[ _]?salon/gi, 'Salon Demo').replace(/showoff/gi, 'Salon');
+    else if (v && typeof v === 'object') scrubBrand(v);
+  }
+}
 async function refreshGenericDemo(tenant) {
   const client = await pool.connect();
   try {
@@ -113,6 +122,7 @@ async function refreshGenericDemo(tenant) {
     addDemoActivity(db, todayStr());
     db.clients = []; db.cashlog = []; db.packages = db.packages || []; db.clientPackages = []; db.checkins = [];
     db.settings.demoSeededAt = Date.now();
+    scrubBrand(db.settings); scrubBrand(db.content);
     await engine.persistDb(client, tenant.id, before, db);
     await client.query('commit');
   } catch (e) { await client.query('rollback').catch(() => {}); throw e; } finally { client.release(); }
