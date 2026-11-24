@@ -1209,7 +1209,7 @@
     }]);
   }
   function viewAdmin() {
-    const host = h('div', { class: 'a-card adm-embed', style: 'max-width:760px' }, h('p', { text: 'Loading...' }));
+    const host = h('div', { class: 'a-card adm-embed', style: 'max-width:1100px' }, h('p', { text: 'Loading...' }));
     (async () => {
       try {
         const r = await api('POST', '/api/admin/account-token', {});
