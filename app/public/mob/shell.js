@@ -234,7 +234,7 @@ function buildShell() {
     h('div', { class: 'foot' }, h('span', null, syncStatusNode()), h('span', null, S.user.email),
       seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => saveLang(v), { full: true }),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
-      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => auzHelp.open(sb) }, 'Help'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, t('signOut')))));
+      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => auzHelp.open(sb) }, 'Help'), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, icon('logout', 16), ' ', t('signOut')))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
     tabsFor().map((id) => h('button', { type: 'button', 'data-tab': id, onclick: () => go(id) }, icon(nav.find((n) => n[0] === id)[2], 25), h('span', null, t(id)))),

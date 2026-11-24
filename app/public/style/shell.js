@@ -249,7 +249,7 @@ function buildShell() {
     h('div', { class: 'foot' }, h('span', null, pillNode()), h('span', null, S.user.email),
       seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => { setLang(v); buildShell(); route_(); }, { full: true }),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
-      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => auzHelp.open(sb) }, t('Help')), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, t('Sign out')))));
+      h('div', { class: 'row', style: { gap: '6px', marginTop: '6px' } }, h('button', { class: 'btn sm', type: 'button', onclick: () => auzHelp.open(sb) }, t('Help')), h('button', { class: 'btn sm', type: 'button', onclick: signOut }, icon('logout', 16), ' ', t('Sign out')))));
   const topbar = h('header', { class: 'topbar', id: 'topbar' }, h('div', { class: 'l', id: 'tb-l' }), h('div', { class: 'tt', id: 'tb-t' }), h('div', { class: 'r', id: 'tb-r' }));
   const tabs = tabsFor();
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Main' },
