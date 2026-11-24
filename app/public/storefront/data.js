@@ -27,7 +27,7 @@ export const menu = [
   { id: 'apps', name: 'Apps and plans', icon: 'grid' },
   { label: 'Business' },
   { id: 'team', name: 'Staff and access', icon: 'user', children: [['roles', 'Roles'], ['locations', 'Locations']] },
-  { id: 'settings', name: 'Settings', icon: 'settings', children: [['notifications', 'Notifications'], ['billing', 'Billing and renewals'], ['security', 'Sign-in and support']] },
+  { id: 'settings', name: 'Settings', icon: 'settings', children: [['notifications', 'Notifications'], ['policies', 'Store policies'], ['privacy-settings', 'Customer privacy'], ['billing', 'Billing and renewals'], ['security', 'Sign-in and support']] },
 ];
 
 export const icons = {
