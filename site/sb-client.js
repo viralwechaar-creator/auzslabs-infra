@@ -81,10 +81,25 @@
       if (!/(^|\.)auzslab\.in$/.test(location.hostname) || !d || !d.tenant || !d.tenant.slug) return false;
       const f = d.features || {}, en = d.enabled_features || {}, on = (k) => f[k] === true && en[k] !== false, slug = d.tenant.slug;
       const to = (u) => { location.href = window.auzHandoffUrl ? window.auzHandoffUrl(u) : u; return true; };
-      if (on('style')) return to('https://auzsstyle.auzslab.in/style.html');
-      if (on('accounting')) return to('https://auzsledger.auzslab.in/accounts.html');
-      if (on('salon')) return to('https://' + slug + '.auzslab.in/salon/admin/');
-      if (on('storefront')) return to('https://' + slug + '.auzslab.in/storefront.html');
+      const apps = [];
+      if (on('style')) apps.push(['AUZsStyle', 'Billing, stock and shop analytics', 'https://auzsstyle.auzslab.in/style.html']);
+      if (on('accounting')) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html']);
+      if (on('salon')) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + slug + '.auzslab.in/salon/admin/']);
+      if (on('storefront')) apps.push(['Online store', 'Products, orders, themes and domains', 'https://' + slug + '.auzslab.in/storefront.html']);
+      if (apps.length === 1) return to(apps[0][2]);
+      if (apps.length > 1) {
+        if (document.getElementById('auzAppPick')) return true;
+        const box = document.createElement('div'); box.id = 'auzAppPick'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Choose where to go');
+        box.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif';
+        const card = document.createElement('div'); card.style.cssText = 'background:#fff;color:#111;border-radius:18px;max-width:420px;width:100%;padding:22px;display:grid;gap:10px';
+        const h = document.createElement('h2'); h.textContent = 'Where do you want to go?'; h.style.cssText = 'margin:0 0 4px;font-size:20px'; card.append(h);
+        apps.forEach((a) => {
+          const b = document.createElement('button'); b.type = 'button'; b.style.cssText = 'text-align:left;border:1px solid #ddd;background:#fafafa;border-radius:12px;padding:12px 14px;cursor:pointer;font:inherit;color:inherit';
+          const t = document.createElement('div'); t.textContent = a[0]; t.style.fontWeight = '700'; const n = document.createElement('div'); n.textContent = a[1]; n.style.cssText = 'font-size:13px;color:#666';
+          b.append(t, n); b.onclick = () => to(a[2]); card.append(b);
+        });
+        box.append(card); document.body.append(box); return true;
+      }
     } catch (e) {}
     return false;
   };

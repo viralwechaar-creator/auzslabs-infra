@@ -275,6 +275,28 @@
       async resetPassword(token, password) {
         return request('/auth/reset', { method: 'POST', body: { token, password }, auth: false });
       },
+      async requestEmailChange(newEmail, password) {
+        return request('/auth/change-email/request', { method: 'POST', body: { new_email: newEmail, password } });
+      },
+      async confirmEmailChange(token) {
+        return request('/auth/change-email/confirm', { method: 'POST', body: { token }, auth: false });
+      },
+      async requestRecoveryEmail(email) {
+        return request('/auth/recovery-email/request', { method: 'POST', body: { email } });
+      },
+      async confirmRecoveryEmail(token) {
+        return request('/auth/recovery-email/confirm', { method: 'POST', body: { token }, auth: false });
+      },
+      async removeRecoveryEmail() {
+        return request('/auth/recovery-email/remove', { method: 'POST', body: {} });
+      },
+      async listSessions() {
+        const { data, error } = await request('/auth/sessions', { method: 'GET' });
+        return { data: data?.sessions || null, error };
+      },
+      async revokeSession(jti) {
+        return request(`/auth/sessions/${encodeURIComponent(jti)}/revoke`, { method: 'POST' });
+      },
       // Apple App Store Guideline 5.1.1(v): self-service account deletion.
       // password is only checked server-side for an account that has one.
       async deleteAccount(password) {
