@@ -192,5 +192,21 @@ export default async function run({ browser, stack }) {
     assert(!(await save({ policies: { hack: 'x' } })).ok, 'unknown policy field must be refused');
     assert(!(await save({ policies: { terms: 'x'.repeat(9000) } })).ok, 'oversized policy must be refused');
   }, 'major');
+  await s.check('Theme library: create, import validation, duplicate, rename, delete; marketplace install still works after copies (db/395)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    const tok = (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token;
+    const call = async (fn, a) => { const r = await fetch(stack.apiBase + '/rpc/' + fn, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok }, body: JSON.stringify(a) }); const j = await r.json().catch(() => ({})); return { ok: r.ok, j: j.data !== undefined ? j.data : j }; };
+    const made = await call('sfx_theme_install_create', { p: { name: 'Lib theme', starter: 'shop', base: 'classic' } }); assert(made.ok && made.j.installId, JSON.stringify(made));
+    assert(!(await call('sfx_theme_install_create', { p: { name: 'x', starter: 'nope' } })).ok, 'unknown starter refused');
+    const ok = await call('sfx_theme_import', { p: { version: 1, name: 'Pkg', base: 'minimal', accent: '#112233', sections: [{ type: 'hero', props: { heading: 'Hi', href: 'https://x.test', evil: 'drop' } }] } }); assert(ok.ok, JSON.stringify(ok));
+    const row = (await q("select draft_content from sfx_theme_installs where id=$1", [ok.j.installId]))[0].draft_content; assert(row.sections[0].props.evil === undefined && row.accent === '#112233', JSON.stringify(row));
+    for (const bad of [{ version: 1, name: 'B', sections: [{ type: 'script', props: {} }] }, { version: 1, name: 'B', sections: [{ type: 'button', props: { text: 'x', href: 'javascript:alert(1)' } }] }, { version: 2, name: 'B' }, { version: 1, name: 'B', accent: 'red' }, { version: 1, name: 'B', base: 'evil' }]) assert(!(await call('sfx_theme_import', { p: bad })).ok, 'bad package accepted: ' + JSON.stringify(bad));
+    const dup = await call('sfx_theme_install_duplicate', { p_install_id: made.j.installId }); assert(dup.ok, JSON.stringify(dup));
+    assert((await call('sfx_theme_install_rename', { p_install_id: dup.j.installId, p_name: 'Renamed' })).ok, 'rename');
+    assert((await q("select name from sfx_theme_installs where id=$1", [dup.j.installId]))[0].name === 'Renamed', 'name saved');
+    const mp = (await q("select id from sfx_themes where slug='minimal'"))[0].id; const inst = await call('sfx_theme_install', { p_theme_id: mp }); assert(inst.ok && inst.j.alreadyInstalled === false, 'marketplace install after copies: ' + JSON.stringify(inst));
+    await call('sfx_theme_install_set_active', { p_install_id: dup.j.installId }); assert(!(await call('sfx_theme_install_delete', { p_install_id: dup.j.installId })).ok, 'live theme cannot be deleted');
+    assert((await call('sfx_theme_install_delete', { p_install_id: made.j.installId })).ok, 'delete custom'); assert(!(await call('sfx_theme_install_delete', { p_install_id: inst.j.installId })).ok, 'marketplace install cannot be deleted');
+  }, 'major');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save/i.test(e)).length, errs.slice(0, 3).join(' | ')); });
 }
