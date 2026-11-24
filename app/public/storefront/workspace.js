@@ -474,12 +474,28 @@ async function payPlan(out) {
   for (let i = 0; i < 20; i++) { await new Promise((r) => setTimeout(r, 2000)); await refreshPlan(); if (state.plan.plan_status === 'active') { const ctx = await api('sfx_context'); applyContext(ctx); save('Your plan is active.'); return rerender(true); } }
   out.textContent = 'Payment received. Your plan will switch on within a minute; refresh this page shortly.';
 }
+function channelsPage() {
+  const paid = state.orders.filter((o) => String(o.payment).toLowerCase() === 'paid');
+  const sales = paid.reduce((t, o) => t + Number(o.total || 0), 0);
+  const live = !!state.store.published, drafts = (state.drafts || []).length, styleOn = !!(state.features || {}).style;
+  const row = (title, note, chip, meta, href, cta) => '<div class="channel-row"><div class="ch-main"><strong>' + title + '</strong>' + chip + '<small>' + note + '</small>' + (meta ? '<div class="ch-meta">' + meta + '</div>' : '') + '</div>' + (href ? '<a class="btn compact" href="' + href + '">' + cta + '</a>' : '') + '</div>';
+  const m = (label, value) => '<span><i>' + label + '</i> ' + value + '</span>';
+  return head('Sales channels', 'Where your store sells. Each channel shares one catalog and one set of orders.', '') +
+    '<section class="summary-bar" aria-label="Channel summary">' + summaryCell('Channels live', (live ? 1 : 0) + (drafts ? 1 : 0) + (styleOn ? 1 : 0)) + summaryCell('Orders', state.orders.length) + summaryCell('Sales (paid)', money(sales)) + '</section>' +
+    panel('Your channels', '<div class="channel-list">' +
+      row('Online store', 'Your public storefront with theme, checkout and domain.', live ? badge('Live') : badge('Not live yet', 'warn'), m('Orders', state.orders.length) + m('Sales', money(sales)) + m('Products', state.products.filter((p) => p.status === 'Active').length), pathFor('website'), 'Manage') +
+      row('Draft orders', 'Phone, in-person and manual sales you create by hand.', drafts ? badge('In use') : badge('Ready', 'neutral'), m('Open drafts', drafts), pathFor('drafts'), 'Open') +
+      row('AUZsStyle shop', 'Your in-store till. Share its catalog and stock with the online store.', styleOn ? badge('Connected') : badge('Not connected', 'neutral'), styleOn ? m('Catalog', 'Import from AUZsStyle on Products') : '', styleOn ? pathFor('products') : '', 'Open products') +
+    '</div>') +
+    panel('Add a channel', body('<p class="compact-copy">More ways to sell, such as WhatsApp ordering and marketplaces, are not available yet. We will list them here when they are ready.</p>'));
+}
 function management(id) {
   if (id === 'policies') return policiesPage();
   if (id === 'privacy-settings') return privacySettingsPage();
   if (id === 'roles') return rolesPage();
   if (id === 'settings') return businessSettings();
   if (id === 'billing') return billingPage();
+  if (id === 'channels') return channelsPage();
   if (id === 'switch-apps') return head('Switch apps', 'Open another AUZslab app for this business. You stay signed in.', '', ['settings', 'Settings']) + panel('', '<div class="switch-apps">' + appLinks().map(([n, d, u, ic]) => '<a class="switch-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span><strong>' + esc(n) + '</strong><small>' + esc(d) + '</small></span></a>').join('') + '</div>');
   const adminPages = { team: ['Staff and access', 'Staff access', 'Choose who can open Admin. Staff sign-in and roles are managed here.'], notifications: ['Notifications', 'Notifications', 'Your latest alerts.'], security: ['Sign-in and support', '', 'Your details, notifications, privacy, WhatsApp, AI connectors and help.'] };
   if (adminPages[id]) return head(adminPages[id][0], adminPages[id][2], '', ['settings', 'Settings']) + '<div class="panel"><div class="panel-body" data-admin-pane="' + esc(adminPages[id][1]) + '"></div></div>';

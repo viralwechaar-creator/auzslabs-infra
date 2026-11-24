@@ -273,6 +273,13 @@ export default async function run({ browser, stack }) {
     await page.fill('#cl-query', 'zzz-nobody'); await page.waitForTimeout(300);
     assert(await page.locator('#customers-results .empty').count() === 1, 'customer search did not empty the list');
   });
+  await s.check('Sales channels page lists the online store with its real order count', async () => {
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/channels'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
+    assert(await page.locator('.channel-row strong', { hasText: /^Online store$/ }).count() === 1, 'online store channel missing');
+    const n = (await q("select count(*)::int c from sfx_orders where tenant_id = (select id from tenants where slug='testcafe')"))[0].c;
+    const shown = await page.locator('.summary-cell', { hasText: 'Orders' }).first().locator('strong').innerText();
+    assert(Number(shown) === n, 'orders shown ' + shown + ' vs ' + n);
+  });
   await s.check('Settings -> Switch apps lets the owner open the other apps they own', async () => {
     await q("update tenant_settings set features = features || '{\"style\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/switch-apps'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
