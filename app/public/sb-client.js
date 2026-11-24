@@ -35,7 +35,7 @@
   const APP_ADDR = [
     ['auzspos', /^\/(index|dashboard|backoffice)\.html$|^\/(pos|console)\//],
     ['auzsstyle', /^\/style\.html$|^\/style\//], ['auzsmob', /^\/mob\.html$|^\/mob\//], ['auzspay', /^\/payroll\.html$|^\/payroll\//],
-    ['auzsledger', /^\/accounts\.html$/], ['auzsscan', /^\/scan\.html$/], ['auzsfinance', /^\/finance\.html$|^\/finance\//],
+    ['auzsledger', /^\/accounts\.html$/], ['auzsscan', /^\/scan\.html$/], ['auzsfinance', /^\/finance\.html$|^\/finance\//], ['auzsshop', /^\/storefront\.html$|^\/storefront\//],
     ['app', /^\/(start|my)\.html$/],
   ];
   function appUrlFor(hostname, protocol, page, sess) {

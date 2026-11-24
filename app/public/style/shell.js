@@ -19,6 +19,7 @@ function parseHash() {
 const go = (path) => { const tgt = '#/' + path.replace(/^#?\/?/, ''); if (location.hash === tgt) route_(); else location.hash = tgt; };
 const allowed = (def) => !!def && (!def.perm || (typeof def.perm === 'function' ? def.perm() : can(def.perm)));
 const NAV = [['sell', 'Sell', 'cart'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'receipt'], ['home', 'Overview', 'home'], ['gst', 'GST', 'percent'], ['intel', 'Buying intelligence', 'bolt'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'moneyIn'], ['drawer', 'Cash drawer', 'drawer'], ['expenses', 'Expenses', 'wallet'], ['store', 'Online store', 'storefront'], ['ai', 'AI connector', 'chip'], ['admin', 'Admin', 'shieldUser'], ['settings', 'Settings', 'gear']];
+const storefrontOn = () => !!(S.dash && S.dash.features && S.dash.features.storefront && (S.dash.enabled_features || {}).storefront !== false);
 const capOff = (k) => !!(S.ctx && S.ctx.caps && S.ctx.caps[k] === false);
 const navList = () => NAV.filter(([id]) => allowed(PAGES[id]) && !(id === 'store' && capOff('online_store')));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
@@ -246,6 +247,7 @@ function buildShell() {
       h('button', { class: 'side-tg', type: 'button', 'aria-label': 'Toggle sidebar', onclick: () => $('#shell').classList.toggle('min') }, icon('sidebar', 20))),
     (S.ctx.branches || []).length > 1 ? h('button', { class: 'nav-i', type: 'button', onclick: (e) => pickBranch(e.currentTarget) }, icon('building', 20), h('span', { class: 'lbl-t' }, branchName())) : null,
     nav.map(([id, l, ic]) => navItem(id, l, ic)),
+    storefrontOn() ? h('button', { class: 'nav-i', type: 'button', onclick: () => { location.href = window.auzAppUrl('/storefront.html'); } }, icon('storefront', 20), h('span', { class: 'lbl-t' }, t('Storefront dashboard'))) : null,
     h('div', { class: 'foot' }, h('span', null, pillNode()), h('span', null, S.user.email),
       seg([['en', 'EN'], ['hi', 'HI']], S_LANG, (v) => { setLang(v); buildShell(); route_(); }, { full: true }),
       seg([['system', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], auzThemeGet(), (v) => auzTheme(v), { full: true }),
@@ -267,6 +269,7 @@ function moreSheet() {
     h('div', { class: 'list' },
       liRow({ icon: 'plus', title: t('Customer request'), chevron: true, onclick: () => { s.close(); requestSheet({}); } }),
        liRow({ icon: 'cash', title: t('Shift'), chevron: true, onclick: () => { s.close(); shiftSheet(); } }),
+      storefrontOn() ? liRow({ icon: 'storefront', title: t('Storefront dashboard'), chevron: true, onclick: () => { s.close(); location.href = window.auzAppUrl('/storefront.html'); } }) : null,
       capOff('online_store') ? null : liRow({ icon: 'globe', title: t('Open my website'), chevron: true, onclick: () => { s.close(); window.open(billOrigin() + '/store.html', '_blank', 'noopener'); } })),
     rest.length ? section(t('More'), h('div', { class: 'list' }, rest.map(([id, l, ic]) => liRow({ icon: ic, title: t(l), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
     h('div', { class: 'list' },
