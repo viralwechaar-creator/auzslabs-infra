@@ -68,7 +68,7 @@
     # never leaves its own address (iOS shows a browser toolbar on any jump to another address). Only these files, from the
     # app folder; the marketing site's own sb-client.js, vendor/ and assets/ stay untouched (the page loads its own copy
     # as /storefront/sb-client.js, a link to the shared file).
-    @sfx path /storefront.html /storefront/* /store.html /store/* /theme-dev.html /ds/mydata.js /ds/admin-tab.js /manifest-storefront.json /icon-storefront* /config.js /tenant.js
+    @sfx path /storefront.html /storefront/* /store.html /store/* /theme-dev.html /ds/mydata.js /ds/admin-tab.js /manifest-storefront.json /icon-storefront* /config.js /tenant.js /site-kiln.html /salon/index.html /salon/menu/* /salon/assets/* /salon/preview/*
     handle @sfx {
         root * /srv/app
         file_server
