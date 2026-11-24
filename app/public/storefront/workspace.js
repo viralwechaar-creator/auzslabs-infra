@@ -116,6 +116,7 @@ function productsPage(id) {
       panel('All collections', '<div class="filters"><input id="collection-query" type="search" aria-label="Search collections" placeholder="Search collections"><small id="collection-count"></small></div><div id="collection-results">' + collectionList() + '</div>');
   }
   return head(title, 'Your catalog, shared by your storefront’s theme and checkout.', (canWrite() ? button('Bulk edit selected', 'bulk-open') + button('Import from AUZsStyle', 'style-import') : '') + button('Export CSV', 'products-csv') + (canWrite() ? wl('Add product', 'products/new', 'primary') : '')) + tabs(id, productTabs) +
+    '<section class="summary-bar" aria-label="Product summary">' + summaryCell('Products', state.products.length) + summaryCell('Active', state.products.filter((x) => x.status === 'Active').length) + summaryCell('Draft or archived', state.products.filter((x) => x.status !== 'Active').length) + '</section>' +
     panel('All products', '<div class="filters"><input id="table-query" type="search" aria-label="Search products" placeholder="Search products"><small id="table-count"></small></div><div id="table-results">' + productsList() + '</div>');
 }
 function collectionList(query = '') {
