@@ -65,3 +65,5 @@ html body .u-dock .chat svg{width:22px;height:22px}
 .u-menu i{width:16px!important;height:1.6px!important;box-shadow:0 5px 0 currentColor,0 10px 0 currentColor!important;margin:0 0 10px!important}
 .u-pill[data-signin-link]:has(svg){width:38px;height:38px!important;padding:0!important;justify-content:center;border-radius:50%!important}
 .u-pill[data-signin-link] svg{width:17px;height:17px}
+/* whatever text an older script puts next to the account icon stays hidden (icon only) */
+.u-pill[data-signin-link]:has(svg) :not(svg){position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
