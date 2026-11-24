@@ -50,7 +50,7 @@ export function dialog(title, body, opts = {}) {
   if (!root.open) root.showModal();
 }
 export function close() { if ($('#dialog').open) $('#dialog').close(); }
-const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/legacy-assets/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
+const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
 
 const allItems = menu.flatMap((m) => (m.id ? [[m.id, m.name], ...(m.children || [])] : []));
 const settingsGroups = [
