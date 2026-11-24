@@ -59,7 +59,7 @@
   }
 
   // ---------- shadow root ----------
-  let host = null, root = null, main = null, panel = null, panelBody = null, panelTitle = null, stopCampaigns = () => {}, cssText = null, ready = null, lastPath = '';
+  let host = null, root = null, drawer = null, main = null, panel = null, panelBody = null, panelTitle = null, stopCampaigns = () => {}, cssText = null, ready = null, lastPath = '';
   const $ = (s) => root.querySelector(s);
   const $$ = (s) => [...root.querySelectorAll(s)];
 
@@ -71,12 +71,12 @@
         l.href = 'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600&family=Inter:wght@400;500;600;900&display=swap'; document.head.append(l);
       }
       if (!document.getElementById('studs-global')) { const g = document.createElement('style'); g.id = 'studs-global'; g.textContent = 'body.studs-on #app{display:none!important}#studs-host{display:block}#studs-host[hidden]{display:none!important}'; document.head.append(g); }
-      cssText = await (await fetch('/store/studs.css?v=2')).text();
+      cssText = await (await fetch('/store/studs.css?v=4')).text();
     })();
     return ready;
   }
 
-  const SHELL = (name, depts) => `
+  const SHELL = (name, depts, cats) => `
   <a class="skip" href="#content">Skip to content</a>
   <div class="announcement" aria-label="Store announcements"><button type="button" data-announcement="-1" aria-label="Previous announcement"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg></button><a id="announcement-link" href="#/shop" aria-live="polite"></a><button type="button" data-announcement="1" aria-label="Next announcement"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></button></div>
   <div class="store-nav"><header class="header">
@@ -87,9 +87,11 @@
       <a class="icon-control account-link" href="#/me" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M4 20v-1a8 8 0 0 1 16 0v1"/></svg></a>
       <button class="icon-control bag-button" type="button" data-panel="bag" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6h10a2 2 0 0 1 2 1.8l1 10A2 2 0 0 1 18 20H6a2 2 0 0 1-2-2.2l1-10A2 2 0 0 1 7 6Z"/><path d="M9 9a3 3 0 0 0 6 0"/></svg><span class="sr-only">Shopping bag, </span><span id="bag-count" data-empty="true">0</span><span class="sr-only"> items</span></button>
     </div></header>
-    <nav class="primary" aria-label="Shop departments">${depts}</nav></div>
+    <nav class="primary" aria-label="Shop departments">${depts}</nav>
+    <nav class="cats" aria-label="Categories">${cats}</nav></div>
   <main id="content" tabindex="-1"></main>
   <footer class="footer" id="studs-footer"></footer>
+  <dialog id="menu-drawer" aria-label="Store menu"></dialog>
   <dialog id="panel" aria-labelledby="panel-title"><div class="panel-head"><h2 id="panel-title"></h2><button id="close-panel" type="button" aria-label="Close panel">×</button></div><div id="panel-body"></div></dialog>
   <div class="sr-only" role="status" id="status"></div>`;
 
@@ -102,7 +104,11 @@
     root.append(st, wrap);
     const all = products(); const cfgv = settings(all);
     const dept = (a, d, t) => `<a href="${a}" data-department="${d}">${t}</a>`;
-    wrap.innerHTML = SHELL(H.D.shop.name, dept('#/drop', 'studio', esc(S().dropNav || 'Studio drop')) + dept('#/shop', 'shop', 'Shop all') + dept('#/collections', 'collections', 'Collections'));
+    const catNames = [...new Set(all.map((p) => p.category).filter(Boolean))];
+    const cat = (a, k, t) => `<a href="${a}" data-cat="${esc(k)}">${esc(t)}</a>`;
+    const catRow = cat('#/', '@home', 'Home') + cat('#/drop', '@drop', S().dropNav || 'New drops') + cat('#/shop', '@all', 'All') + catNames.map((n) => cat('#/shop?category=' + encodeURIComponent(n), n, n)).join('');
+    wrap.innerHTML = SHELL(H.D.shop.name, dept('#/drop', 'studio', esc(S().dropNav || 'Studio drop')) + dept('#/shop', 'shop', 'Shop all') + dept('#/collections', 'collections', 'Collections'), catRow);
+    drawer = wrap.querySelector('#menu-drawer');
     main = wrap.querySelector('#content'); panel = wrap.querySelector('#panel'); panelBody = wrap.querySelector('#panel-body'); panelTitle = wrap.querySelector('#panel-title');
     // announcements
     let ai = 0; const link = wrap.querySelector('#announcement-link');
@@ -249,6 +255,20 @@
     return '<div class="bag-layout"><div class="bag-list">' + rows + '</div><div class="bag-totals"><div class="total"><span>Subtotal</span><strong>' + money(H.bagTotal()) + '</strong></div>' + review + '</div></div>';
   }
 
+  const CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function openDrawer() {
+    const all = products(); const c = settings(all);
+    const cats = [...new Set(all.map((p) => p.category).filter(Boolean))];
+    const grp = (title, links) => `<details class="dr-grp"><summary>${esc(title)}${CHEV}</summary><div class="dr-sub">${links}</div></details>`;
+    drawer.innerHTML = `<button class="dr-close" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    <nav class="dr-nav" aria-label="Store menu"><a href="#/">Home</a><a href="#/drop">${esc(S().dropNav || 'Studio drop')}</a>
+    ${grp('Shop', '<a href="#/shop">All products</a>' + cats.map((n) => `<a href="#/shop?category=${encodeURIComponent(n)}">${esc(n)}</a>`).join(''))}
+    ${c.names.length ? grp('Collections', '<a href="#/collections">All collections</a>' + c.names.map((n) => `<a href="#/collection/${esc(slug(n))}">${esc(n)}</a>`).join('')) : '<a href="#/collections">Collections</a>'}
+    <a href="#/contact">Customer care</a></nav>
+    <a class="dr-account" href="#/me"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>My Account</a>`;
+    if (!drawer.open) drawer.showModal();
+  }
+
   function showPanel(kind, p) {
     const all = products();
     panelTitle.textContent = { menu: 'Menu', search: 'Search', bag: 'Shopping bag', size: 'Size guide' }[kind];
@@ -267,7 +287,11 @@
   }
 
   function onClick(event) {
-    const t = event.target; const open = t.closest && t.closest('[data-panel]'); if (open) showPanel(open.dataset.panel);
+    const t = event.target;
+    if (t === drawer) { drawer.close(); return; }
+    if (drawer && drawer.open && t.closest && (t.closest('.dr-close') || t.closest('.dr-nav a') || t.closest('.dr-account'))) drawer.close();
+    const open = t.closest && t.closest('[data-panel]');
+    if (open) { if (open.dataset.panel === 'menu') openDrawer(); else showPanel(open.dataset.panel); }
     if (t.closest && (t.closest('#close-panel') || (panel.open && t.closest('#panel a')))) panel.close();
     const qty = t.closest && t.closest('[data-qty]'); if (!qty) return;
     const i = Number(qty.dataset.qty), step = Number(qty.dataset.step); const l = lines()[i]; if (!l) return;
@@ -310,6 +334,9 @@
     const dep = { drop: 'studio', shop: 'shop', collections: 'collections', collection: 'collections' }[page || 'drop'];
     $$('[data-department]').forEach((a) => { if (a.dataset.department === dep) a.setAttribute('aria-current', ['drop', 'shop', 'collections'].includes(page) ? 'page' : 'true'); else a.removeAttribute('aria-current'); });
     if (panel.open && !again) panel.close();
+    if (drawer && drawer.open) drawer.close();
+    { const key = !page || page === 'home' ? '@home' : page === 'drop' ? '@drop' : page === 'shop' ? (q.get('category') || '@all') : '';
+      $$('[data-cat]').forEach((a) => { if (a.dataset.cat === key) { a.setAttribute('aria-current', 'page'); if (a.scrollIntoView) a.scrollIntoView({ inline: 'center', block: 'nearest' }); } else a.removeAttribute('aria-current'); }); }
     if (!page || page === 'home') main.innerHTML = home(all, c);
     else if (page === 'drop') listing(c.drop, c.dropTitle === 'New in' ? 'Studio drop' : c.dropTitle, '', true, c);
     else if (page === 'shop') { const cat = q.get('category') || ''; const sel = all.some((p) => p.category === cat) ? cat : ''; listing(sel ? all.filter((p) => p.category === sel) : all, sel || 'Shop all', '', false, c); }

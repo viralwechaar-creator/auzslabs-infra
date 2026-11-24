@@ -222,3 +222,32 @@ dialog::backdrop{background:#000a}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important}}
 
 .arr{display:inline-block;width:1em;height:1em;vertical-align:-.14em;flex:none}
+
+/* Category tabs under the departments */
+.cats{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--line);background:var(--paper);scroll-snap-type:x proximity}
+.cats::-webkit-scrollbar{display:none}
+.cats a{position:relative;flex:none;scroll-snap-align:center;padding:13px clamp(12px,2.4vw,22px);font:12px/1 var(--compact-font);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;color:var(--muted)}
+.cats a:hover{color:var(--ink);text-decoration:none}
+.cats a[aria-current]{color:var(--ink);font-weight:700}
+.cats a[aria-current]::after{content:"";position:absolute;inset:auto 14px 5px;height:2px;background:currentColor}
+@media(min-width:900px){.cats{justify-content:center}}
+
+/* Menu drawer: full-height black, from the left */
+#menu-drawer{inset:0 auto 0 0;width:min(86vw,420px);padding:0;background:#000;color:#fff;border:0;box-shadow:12px 0 60px #000a;overflow-y:auto}
+#menu-drawer::backdrop{background:#000b}
+#menu-drawer[open]{display:flex;flex-direction:column}
+.dr-close{display:grid;place-items:center;width:46px;height:46px;margin:22px 0 10px 22px;border:0;border-radius:50%;background:#242424;color:#fff}
+.dr-close svg{width:22px;height:22px}
+.dr-nav{display:grid;padding:0 22px}
+.dr-nav>a,.dr-grp>summary{display:flex;justify-content:space-between;align-items:center;min-height:54px;font:300 26px/1 Dosis,var(--compact-font);letter-spacing:.02em;text-transform:uppercase;color:#fff;cursor:pointer;list-style:none}
+.dr-grp>summary::-webkit-details-marker{display:none}
+.dr-nav a:hover{text-decoration:none;color:#ccc}
+.dr-grp .chev{width:20px;height:20px;transition:transform .2s}
+.dr-grp[open] .chev{transform:rotate(180deg)}
+.dr-sub{display:grid;padding:0 0 10px 2px}
+.dr-sub a{padding:9px 0;font:400 17px/1.2 Dosis,var(--compact-font);letter-spacing:.05em;text-transform:uppercase;color:#bbb}
+.dr-account{display:flex;align-items:center;gap:12px;margin-top:auto;padding:24px 22px calc(24px + env(safe-area-inset-bottom,0px));border-top:2px dashed #fff;font:300 22px/1 Dosis,var(--compact-font);color:#fff}
+.dr-account svg{width:30px;height:30px}
+.dr-account:hover{text-decoration:none;color:#ccc}
+@media(prefers-reduced-motion:no-preference){#menu-drawer[open]{animation:dr-in .22s ease-out}@keyframes dr-in{from{transform:translateX(-24px);opacity:0}}}
+.dr-nav .dr-grp{border:0;padding:0}.dr-grp>summary{border:0}

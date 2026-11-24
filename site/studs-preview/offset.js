@@ -346,6 +346,24 @@ function matches(product, query) {
   return [product.name,product.category,product.colour,product.collection].join(' ').toLowerCase().includes(query.toLowerCase());
 }
 
+const CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const categoryNames = [...new Set(products.map(product => product.category).filter(Boolean))];
+const drawer = document.getElementById('menu-drawer');
+{
+  const cat = (href, key, text) => `<a href="${href}" data-cat="${escape(key)}">${escape(text)}</a>`;
+  document.getElementById('cats').innerHTML = cat('#/','@home','Home') + cat('#/drop','@drop','New drops') + cat('#/shop','@all','All') + categoryNames.map(name => cat('#/shop?category='+encodeURIComponent(name), name, name)).join('');
+}
+function openDrawer() {
+  const group = (title, links) => `<details class="dr-grp"><summary>${escape(title)}${CHEV}</summary><div class="dr-sub">${links}</div></details>`;
+  drawer.innerHTML = `<button class="dr-close" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+  <nav class="dr-nav" aria-label="Store menu"><a href="#/">Home</a><a href="#/drop">Studio drop</a>
+  ${group('Shop','<a href="#/shop">All products</a>'+categoryNames.map(name=>`<a href="#/shop?category=${encodeURIComponent(name)}">${escape(name)}</a>`).join(''))}
+  ${group('Collections','<a href="#/collections">All collections</a>'+collections.map(name=>`<a href="#/collection/${slug(name)}">${escape(name)}</a>`).join(''))}
+  <a href="#/help">Customer care</a></nav>
+  <a class="dr-account" href="#/account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>My Account</a>`;
+  if (!drawer.open) drawer.showModal();
+}
+
 function showPanel(kind, product) {
   panelTitle.textContent = {menu:'Menu',search:'Search',bag:'Shopping bag',size:'Size guide'}[kind];
   panelBody.innerHTML = {
@@ -388,6 +406,9 @@ function route() {
     else link.removeAttribute('aria-current');
   }
   if (panel.open) panel.close();
+  if (drawer.open) drawer.close();
+  { const key = !page ? '@home' : page==='drop' ? '@drop' : page==='shop' ? (new URLSearchParams(query).get('category') || '@all') : '';
+    for (const link of document.querySelectorAll('[data-cat]')) { if (link.dataset.cat === key) { link.setAttribute('aria-current','page'); link.scrollIntoView({inline:'center',block:'nearest'}); } else link.removeAttribute('aria-current'); } }
   if (!page) main.innerHTML = home();
   else if (page==='drop') listing(drop,'Studio drop');
   else if (page==='shop') {
@@ -417,7 +438,9 @@ function route() {
 
 document.addEventListener('click', event => {
   const open = event.target.closest('[data-panel]');
-  if (open) showPanel(open.dataset.panel);
+  if (event.target === drawer) drawer.close();
+  if (drawer.open && (event.target.closest('.dr-close') || event.target.closest('.dr-nav a') || event.target.closest('.dr-account'))) drawer.close();
+  if (open) { if (open.dataset.panel === 'menu') openDrawer(); else showPanel(open.dataset.panel); }
   if (event.target.closest('#close-panel') || (panel.open && event.target.closest('#panel a'))) panel.close();
   const quantity = event.target.closest('[data-qty]');
   if (!quantity) return;
