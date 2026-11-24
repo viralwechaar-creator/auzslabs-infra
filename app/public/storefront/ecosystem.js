@@ -50,14 +50,14 @@ export function dialog(title, body, opts = {}) {
   if (!root.open) root.showModal();
 }
 export function close() { if ($('#dialog').open) $('#dialog').close(); }
-const switchApps = () => {
+export const appLinks = () => {
   const f = state.features || {}, on = (k) => f[k];
   const apps = [];
-  if (on('style')) apps.push(['AUZsStyle', 'https://auzsstyle.auzslab.in/style.html', 'shirt']);
-  if (on('accounting')) apps.push(['AUZsLedger', 'https://auzsledger.auzslab.in/accounts.html', 'ledger']);
-  if (on('salon') && state.tenant?.slug) apps.push(['Salon console', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/', 'scissors']);
-  apps.push(['Account and apps', 'https://auzslab.in/account.html', 'accountCircle']);
-  return '<div class="sidebar-apps"><div class="nav-label">Switch app</div><a class="sidebar-app current" href="' + pathFor('') + '" aria-current="true">' + icon('store') + '<span>Storefront</span></a>' + apps.map(([n, u, ic]) => '<a class="sidebar-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span>' + esc(n) + '</span></a>').join('') + '</div>';
+  if (on('style')) apps.push(['AUZsStyle', 'Billing, stock and shop analytics', 'https://auzsstyle.auzslab.in/style.html', 'shirt']);
+  if (on('accounting')) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html', 'ledger']);
+  if (on('salon') && state.tenant?.slug) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/', 'scissors']);
+  apps.push(['Account and apps', 'Your profile, plan and all your apps', 'https://auzslab.in/account.html', 'accountCircle']);
+  return apps;
 };
 const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
 
@@ -66,8 +66,9 @@ export const settingsGroups = [
   { label: 'Business', items: [['settings', 'Business profile', 'business'], ['billing', 'Billing and renewals', 'receipt'], ['team', 'Staff and access', 'team'], ['roles', 'Roles', 'shield'], ['locations', 'Locations', 'pin']] },
   { label: 'Store operations', items: [['checkout', 'Payments', 'card'], ['domains', 'Domains', 'link'], ['builder', 'Theme', 'palette'], ['policies', 'Store policies', 'scroll']] },
   { label: 'Preferences', items: [['notifications', 'Notifications', 'bell'], ['privacy-settings', 'Customer privacy', 'eye'], ['security', 'Sign-in and support', 'key']] },
+  { label: 'Apps', items: [['switch-apps', 'Switch apps', 'swap']] },
 ];
-export const settingsRoutes = new Set(['settings', ...(menu.find((item) => item.id === 'settings')?.children || []).map(([id]) => id), 'team', 'roles', 'locations', 'billing', 'security']);
+export const settingsRoutes = new Set(['settings', ...(menu.find((item) => item.id === 'settings')?.children || []).map(([id]) => id), 'team', 'roles', 'locations', 'billing', 'security', 'switch-apps']);
 let returnToWorkspace = 'home';
 const dashboardPath = '/storefront.html';
 export const pathFor = (id) => dashboardPath + '#/' + id;
@@ -109,7 +110,7 @@ export function rerender(skipRefresh) {
     '</div>';
   const bizName = state.business.name || 'Your store';
   const initials = bizName.trim().split(/\s+/).slice(0, 2).map((word) => Array.from(word)[0] || '').join('').toUpperCase();
-  const sidebarBottom = '<div class="sidebar-bottom">' + switchApps() + '<a class="sidebar-settings" href="' + pathFor('settings') + '"' + (inSettings ? ' aria-current="' + (active === 'settings' ? 'page' : 'true') + '"' : '') + '>' + icon('settings') + '<span>Settings</span></a>' +
+  const sidebarBottom = '<div class="sidebar-bottom">' + '<a class="sidebar-settings" href="' + pathFor('settings') + '"' + (inSettings ? ' aria-current="' + (active === 'settings' ? 'page' : 'true') + '"' : '') + '>' + icon('settings') + '<span>Settings</span></a>' +
     '<div class="sidebar-store-row"><a class="workspace-id" href="' + pathFor('website') + '" title="' + esc(bizName) + ' online store"><span class="avatar" aria-hidden="true">' + esc(initials) + '</span><strong>' + esc(bizName) + '</strong></a>' +
     '<a class="sidebar-alerts" href="' + pathFor('notifications') + '" aria-label="Store notifications' + (unread ? ', ' + unread + ' unread' : '') + '" title="Store notifications">' + icon('bell') + (unread ? '<span aria-hidden="true">' + Math.min(unread, 99) + (unread > 99 ? '+' : '') + '</span>' : '') + '</a></div></div>';
   const settingsNav = settingsGroups.map((group) => '<section data-settings-group><div class="nav-label">' + group.label + '</div>' + group.items.map(([id, label, glyph]) => '<a href="' + pathFor(id + (settingsRoutes.has(id) ? '' : '?via=settings')) + '"' + (id === active ? ' aria-current="page"' : '') + '>' + icon(glyph) + '<span>' + label + '</span></a>').join('') + '</section>').join('') + '<section data-settings-group><div class="nav-label">Account</div><a href="#" data-action="sign-out">' + icon('logout') + '<span>Sign out</span></a></section>';
