@@ -46,12 +46,21 @@ function home() {
 
 // ---------- Orders ----------
 const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping']];
+function orderBar() {
+  const o = lb.orders;
+  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order or customer" value="' + esc(o.q) + '">' +
+    '<select id="ol-pay" aria-label="Payment"><option value="">All payments</option>' + [['paid', 'Paid'], ['pending', 'Pending']].map(([v, t]) => '<option value="' + v + '"' + (o.pay === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
+    sortSel('ol-sort', [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Total, high to low'], ['low', 'Total, low to high']], o.sort) + '</div>';
+}
 function ordersList() {
-  const rows = table(['Order', 'Date', 'Customer', 'Total', 'Payment', 'Fulfillment'], state.orders.map((o) => [
+  const o = lb.orders, q = o.q.trim().toLowerCase();
+  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q)) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
+  list = list.slice().sort(o.sort === 'old' ? (a, b) => cmp(a.date, b.date) : o.sort === 'high' ? (a, b) => b.total - a.total : o.sort === 'low' ? (a, b) => a.total - b.total : (a, b) => cmp(b.date, a.date));
+  const rows = table(['Order', 'Date', 'Customer', 'Total', 'Payment', 'Fulfillment'], list.map((o) => [
     link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status),
   ]));
   // phone: one tappable card per order (number and total, then customer, items, date, status chips)
-  const cards = state.orders.length ? '<div class="order-cards">' + state.orders.map((o) => '<a class="order-card" href="' + pathFor('orders/' + o.id) + '"><div class="oc-top"><strong>#' + esc(o.number) + '</strong><span>' + money(o.total) + '</span></div><div class="oc-sub">' + esc(o.customer || '—') + ' <i>|</i> ' + (o.quantity ?? 0) + ' item' + (o.quantity === 1 ? '' : 's') + ' <i>|</i> ' + dateValue(o.date) + '</div><div class="oc-chips">' + status(o.payment) + status(o.status) + '</div></a>').join('') + '</div>' : '';
+  const cards = list.length ? '<div class="order-cards">' + list.map((o) => '<a class="order-card" href="' + pathFor('orders/' + o.id) + '"><div class="oc-top"><strong>#' + esc(o.number) + '</strong><span>' + money(o.total) + '</span></div><div class="oc-sub">' + esc(o.customer || '—') + ' <i>|</i> ' + (o.quantity ?? 0) + ' item' + (o.quantity === 1 ? '' : 's') + ' <i>|</i> ' + dateValue(o.date) + '</div><div class="oc-chips">' + status(o.payment) + status(o.status) + '</div></a>').join('') + '</div>' : '';
   return '<div class="orders-table">' + rows + '</div>' + cards;
 }
 
@@ -88,7 +97,7 @@ function ordersPage(id) {
   if (id === 'abandoned-checkouts') return abandonedPage();
   return head('Orders', 'Orders placed on your storefront.', '') + tabs(id, orderTabs) +
     orderMetrics() +
-    panel('All orders', ordersList());
+    panel('All orders', orderBar() + '<div id="orders-results">' + ordersList() + '</div>');
 }
 function orderDetail(id) {
   const o = state.orders.find((x) => x.id === id);
@@ -105,17 +114,23 @@ function orderDetail(id) {
 // ---------- Products ----------
 const productTabs = [['products', 'All products'], ['collections', 'Collections'], ['inventory', 'Inventory'], ['transfers', 'Transfers'], ['categories', 'Categories and tags']];
 const productLabel = (p) => '<div class="cell-product">' + image(p.image, '', 'thumb') + link(esc(p.name), 'products/' + encodeURIComponent(p.id)) + '</div>';
-let pf = { status: '', category: '', tag: '', stock: '' };
+let pf = { status: '', category: '', tag: '', stock: '', sort: '' };
+// search / sort / filter bars shared by the list pages
+const lb = { orders: { q: '', sort: 'new', pay: '' }, customers: { q: '', sort: 'name' } };
+const sortSel = (id, opts, val) => '<select id="' + id + '" aria-label="Sort">' + opts.map(([v, t]) => '<option value="' + v + '"' + (v === val ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>';
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 function productsList(query = '') {
   const q = query.toLowerCase(); const tags = state.productTags || {};
   const items = state.products.filter((p) => (!q || p.name.toLowerCase().includes(q)) && (!pf.status || p.status === pf.status) && (!pf.category || (p.category || '') === pf.category) && (!pf.tag || (tags[p.id] || []).includes(pf.tag))
     && (!pf.stock || (pf.stock === 'out' ? Number(p.stock) <= 0 : pf.stock === 'low' ? Number(p.stock) > 0 && Number(p.stock) < 5 : Number(p.stock) >= 5)));
+  const sorters = { name: (a, b) => cmp((a.name || '').toLowerCase(), (b.name || '').toLowerCase()), 'price-asc': (a, b) => a.price - b.price, 'price-desc': (a, b) => b.price - a.price, 'stock-asc': (a, b) => a.stock - b.stock, 'stock-desc': (a, b) => b.stock - a.stock };
+  if (sorters[pf.sort]) items.sort(sorters[pf.sort]);
   return table(canWrite() ? ['', 'Product', 'Category', 'Status', 'Price', 'Available'] : ['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => (canWrite() ? ['<input type="checkbox" data-bulk="' + esc(p.id) + '" aria-label="Select ' + esc(p.name) + '">'] : []).concat([productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock])));
 }
 function productFilters() {
   const cats = [...new Set(state.products.map((p) => p.category).filter(Boolean))].sort(); const tagSet = [...new Set(Object.values(state.productTags || {}).flat())].sort();
   const sel = (id, label, opts, val) => '<select id="' + id + '" aria-label="' + label + '"><option value="">' + label + '</option>' + opts.map(([v, t]) => '<option value="' + esc(v) + '"' + (v === val ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
-  return sel('pf-status', 'All statuses', ['Active', 'Draft', 'Archived'].map((x) => [x, x]), pf.status) + sel('pf-category', 'All categories', cats.map((x) => [x, x]), pf.category) + sel('pf-tag', 'All tags', tagSet.map((x) => [x, x]), pf.tag) + sel('pf-stock', 'Any stock', [['in', 'In stock (5+)'], ['low', 'Low (1 to 4)'], ['out', 'Out of stock']], pf.stock);
+  return sel('pf-status', 'All statuses', ['Active', 'Draft', 'Archived'].map((x) => [x, x]), pf.status) + sel('pf-category', 'All categories', cats.map((x) => [x, x]), pf.category) + sel('pf-tag', 'All tags', tagSet.map((x) => [x, x]), pf.tag) + sel('pf-stock', 'Any stock', [['in', 'In stock (5+)'], ['low', 'Low (1 to 4)'], ['out', 'Out of stock']], pf.stock) + sel('pf-sort', 'Sort: default', [['name', 'Name A to Z'], ['price-asc', 'Price, low to high'], ['price-desc', 'Price, high to low'], ['stock-asc', 'Stock, low to high'], ['stock-desc', 'Stock, high to low']], pf.sort);
 }
 function productsPage(id) {
   if (id === 'inventory') return inventoryPage();
@@ -480,13 +495,20 @@ function management(id) {
 }
 
 // ---------- Customers ----------
-function customersPage() {
-  const rows = (state.customers || []).map((c) => [
+function customersList() {
+  const o = lb.customers, q = o.q.trim().toLowerCase();
+  const list = (state.customers || []).filter((c) => !q || [c.name, c.phone, c.email].some((v) => String(v || '').toLowerCase().includes(q)));
+  list.sort(o.sort === 'orders' ? (a, b) => b.orderCount - a.orderCount : o.sort === 'spend' ? (a, b) => b.lifetimeSpend - a.lifetimeSpend : o.sort === 'recent' ? (a, b) => cmp(b.lastOrderAt || '', a.lastOrderAt || '') : (a, b) => cmp((a.name || '').toLowerCase(), (b.name || '').toLowerCase()));
+  const rows = list.map((c) => [
     esc(c.name), esc(c.phone || '—'), esc(c.email || '—'), c.orderCount, money(c.lifetimeSpend), dateValue(c.lastOrderAt),
     c.manual && canWrite() ? button('Edit', 'customer-edit:' + c.id, 'compact') + button('Delete', 'customer-delete:' + c.id, 'compact danger') : (canWrite() ? button('Save as customer', 'customer-adopt:' + encodeURIComponent(c.phone || ''), 'compact') : ''),
   ]);
+  return table(['Name', 'Phone', 'Email', 'Orders', 'Total spent', 'Last order', ''], rows);
+}
+function customersPage() {
+  const o = lb.customers;
   return head('Customers', 'People who ordered from your store, plus customers you add by hand.', canWrite() ? button('Add customer', 'customer-new', 'primary') : '') +
-    panel('All customers', table(['Name', 'Phone', 'Email', 'Orders', 'Total spent', 'Last order', ''], rows));
+    panel('All customers', '<div class="filters"><input id="cl-query" type="search" aria-label="Search customers" placeholder="Search name, phone or email" value="' + esc(o.q) + '">' + sortSel('cl-sort', [['name', 'Name A to Z'], ['orders', 'Most orders'], ['spend', 'Highest spend'], ['recent', 'Latest order']], o.sort) + '</div><div id="customers-results">' + customersList() + '</div>');
 }
 function customerForm(c) {
   return editForm('customer-record', c?.id, input('Name', 'name', c?.name || '', 'text', 'required maxlength="160"') + input('Phone', 'phone', c?.phone || '', 'tel', 'maxlength="20"') +
@@ -896,8 +918,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
-  if (type === 'change' && /^pf-(status|category|tag|stock)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
+  if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
   if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'), el = f.querySelector('[data-seo-preview]'); if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
+  if ((type === 'input' || type === 'change') && /^ol-(query|pay|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.orders[k === 'query' ? 'q' : k] = target.value; $('#orders-results').innerHTML = ordersList(); return; }
+  if ((type === 'input' || type === 'change') && /^cl-(query|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.customers[k === 'query' ? 'q' : k] = target.value; $('#customers-results').innerHTML = customersList(); return; }
   if ((type === 'input' || type === 'change') && ['table-query'].includes(target.id)) { $('#table-results').innerHTML = productsList(target.value); return; }
   if ((type === 'input' || type === 'change') && target.id === 'collection-query') { $('#collection-results').innerHTML = collectionList(target.value); return; }
   if (type === 'submit' && target.dataset.form === 'section') {
