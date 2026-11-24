@@ -534,3 +534,38 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
 }
 /* phone tab bar sits lower, close to the bottom edge (just above the home indicator) */
 @media(max-width:900px){.mobile-quick-nav{padding-bottom:calc(env(safe-area-inset-bottom,0px)*.4 + 4px)!important}}
+
+/* ===== Phone: compact and light (smaller header, controls, filters and cards on every page) ===== */
+@media(max-width:900px){
+  .shell{--hdr:calc(env(safe-area-inset-top,0px) + 92px)}
+  .shell:has(.topbar.is-home){--hdr:calc(env(safe-area-inset-top,0px) + 150px)}
+  .shell .topbar{row-gap:6px;padding:calc(6px + env(safe-area-inset-top,0px)) 14px 6px}
+  .shell .mobile-page-name{font-size:1.35rem;letter-spacing:-.03em}
+  .shell .topbar .topbar-actions{padding:2px;box-shadow:none}
+  .shell .topbar .top-action{min-width:34px;height:34px}
+  .shell .topbar .ico{width:18px;height:18px}
+  .shell .m-search{min-height:34px;padding:0 12px;font-size:.85rem;gap:8px;box-shadow:none}
+  .shell .m-search .ico{width:16px;height:16px}
+  .shell .work{padding:4px 14px 20px}
+  .shell .page-head{margin:0 0 8px}
+  .shell .page-head p{font-size:.75rem;margin:0 0 6px}
+  .shell .page-head .actions{gap:6px}
+  .shell .btn{min-height:32px;padding:4px 14px;font-size:.8rem;font-weight:600}
+  .shell .btn.compact{min-height:28px}
+  .shell .work>.tabs,.shell .tabs{gap:2px;margin:0 -14px 8px;padding:6px 14px 4px}
+  .shell .tabs a,.shell .tabs button{padding:6px 12px;font-size:.85rem;font-weight:600}
+  .shell .panel,.shell .metric,.shell .summary-bar,.shell .record-layout .panel{border-radius:14px;box-shadow:none}
+  .shell .panel-title{padding:10px 12px}
+  .shell .panel-title h2{font-size:.95rem}
+  .shell input:not([type=checkbox],[type=radio]),.shell select,.shell textarea{min-height:34px;font-size:.85rem;border-radius:10px;padding-block:4px}
+  .shell .analytics-filters{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;padding:8px 10px}
+  .shell .analytics-filters label,.shell .analytics-filters .field{font-size:.72rem;gap:2px}
+  .shell .analytics-filters .analytics-dates,.shell .analytics-filters output{grid-column:1/-1}
+  .shell .analytics-filters .btn{grid-column:auto;justify-self:start}
+  .shell .analytics-filters small{align-self:center;justify-self:end;font-size:.7rem}
+  .shell .metric{padding:8px 12px;row-gap:1px}
+  .shell .metric>span:first-child{font-size:.9rem;font-weight:650}
+  .shell .metric>strong{font-size:1.05rem}
+  .shell .metric>small,.shell .metric>span:last-child:not(:first-child){font-size:.72rem;margin-top:0}
+  .shell .metrics{gap:6px}
+}
