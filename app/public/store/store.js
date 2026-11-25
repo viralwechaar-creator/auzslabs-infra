@@ -1587,7 +1587,7 @@ const navState = () => { document.body.classList.toggle('atop', window.scrollY <
 window.addEventListener('scroll', navState, { passive: true }); window.addEventListener('hashchange', () => setTimeout(navState, 50));
 function ingest(d) {
   shopIcon(d);
-  D = d; STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
+  D = d; try { if (d.config && d.config.languages && d.config.languages.hindi && window.stHindi) window.stHindi.enable(); } catch {} STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
   STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
 }

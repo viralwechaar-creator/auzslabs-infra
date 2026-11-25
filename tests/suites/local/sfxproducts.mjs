@@ -150,6 +150,17 @@ export default async function run({ browser, stack }) {
     const old = (await q('select sfx_theme_chrome_clean($1::jsonb) as c', [JSON.stringify({ header: { links: [{ label: 'A', href: '/a' }] }, footer: { about: 'x', links: [{ label: 'B', href: '/b' }] } })]))[0].c;
     assert(!('columns' in old.footer) && !('children' in old.header.links[0]), 'old shape changed: ' + JSON.stringify(old));
   }, 'critical');
+  await s.check('Languages: off by default, Hindi switch saved, public store gets a language button and swaps labels', async () => {
+    let pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert(!(pub.config.languages), 'languages on by default');
+    const sv = await rpc(stack, 'sfx_languages_save', { p: { hindi: true } }, owner); assert(sv.data?.data?.hindi === true || sv.data?.hindi === true, JSON.stringify(sv.data).slice(0, 120));
+    pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert(pub.config.languages?.hindi === true, 'public config missing languages');
+    const sp = await ctx.newPage(); await sp.goto(stack.url('testcafe', '/store.html?design=minimal#/bag'), { waitUntil: 'domcontentloaded' }); await sp.waitForTimeout(3000);
+    assert(await sp.locator('#st-lang').count() === 1, 'no language button'); await sp.click('#st-lang'); await sp.waitForTimeout(800);
+    const t = await sp.locator('body').innerText(); assert(/बैग/.test(t), 'labels not swapped: ' + t.slice(0, 160));
+    await sp.click('#st-lang'); await sp.waitForTimeout(500); assert(!/बैग/.test(await sp.locator('body').innerText()), 'did not switch back to English');
+    await open('#/markets'); const m = await page.locator('main').innerText(); assert(/Store languages/.test(m), 'dashboard languages panel missing');
+    await rpc(stack, 'sfx_languages_save', { p: { hindi: false } }, owner);
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();

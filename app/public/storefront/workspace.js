@@ -11,7 +11,7 @@ import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -917,8 +917,9 @@ function fileForm(f) { return editForm('file-record', f?.id, input('Name', 'name
 function fieldForm(f) { return editForm('field-record', f?.id, input('Field name', 'name', f?.name || '', 'text', 'required maxlength="80"') + select('Applies to', 'appliesTo', ['Products', 'Customers', 'Orders', 'Collections'], f?.appliesTo || 'Products') + select('Value type', 'valueType', ['Text', 'Number', 'Yes or no', 'Date', 'List'], f?.valueType || 'Text'), 'Save field'); }
 function marketForm(m) { return editForm('market-record', m?.id, input('Market name', 'name', m?.name || '', 'text', 'required maxlength="80"') + input('Region (country or area)', 'region', m?.region || 'India', 'text', 'maxlength="80"') + select('Currency', 'currency', ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'], m?.currency || 'INR') + select('Language', 'language', ['English', 'Hindi'], m?.language || 'English') + select('Status', 'status', ['Active', 'Draft'], m?.status || 'Draft'), 'Save market'); }
 function marketsPage() {
-  const ms = cfgList('markets');
+  const ms = cfgList('markets'); const hi = !!(state.languages || {}).hindi;
   return head('Markets', 'Plan where your store sells and which currency and language each market shows. Checkout currently charges in your store currency.', canWrite() ? button('Add market', 'market-new', 'primary') : '') +
+    panel('Store languages', body('<p class="compact-copy">Your product names, descriptions and pages stay exactly as you wrote them. Turning Hindi on adds a हिंदी / English button on your store that translates the shop\'s own labels (bag, checkout, buttons). The Hindi wording should be checked by a Hindi speaker.</p>' + (canWrite() ? editForm('languages-settings', '', select('Hindi on your store', 'hindi', ['Off', 'On'], hi ? 'On' : 'Off'), 'Save language') : '<p class="compact-copy">Hindi is ' + (hi ? 'on' : 'off') + '.</p>'))) +
     panel('Markets', table(['Market', 'Region', 'Currency', 'Language', 'Status', ''], ms.map((m) => [esc(m.name), esc(m.region), esc(m.currency), esc(m.language), status(m.status), rowActions('market', m.id)])));
 }
 const contentRecords = { page: ['pages', pageForm, 'page'], file: ['files', fileForm, 'file'], field: ['customFields', fieldForm, 'field'], market: ['markets', marketForm, 'market'] };
@@ -1255,6 +1256,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         const rec = { id: rid || undefined, name: data.name, address: data.address, city: data.city, phone: data.phone, hours: data.hours, map: data.map, photo, featured: data.featured === '1' };
         const cur = state.storeDir || []; const list = rid ? cur.map((x) => x.id === rid ? rec : x) : (rec.featured ? [rec, ...cur] : [...cur, rec]);
         await api('sfx_stores_save', { p: list }); await refreshStoreDir(); save('Store saved.'); close(); rerender(true);
+      } else if (key === 'languages-settings') {
+        await api('sfx_languages_save', { p: { hindi: data.hindi === 'On' } }); await refreshLanguages(); save('Language saved.'); rerender(true);
       } else if (key === 'tax-settings') {
         await api('sfx_tax_settings_save', { p: { rate: data.rate, label: data.label, gstin: data.gstin, inclusive: !/^Do not/.test(data.inclusive || '') } });
         await refreshCheckout(); save('Tax settings saved.'); rerender(true);
