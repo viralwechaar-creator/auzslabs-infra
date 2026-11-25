@@ -103,7 +103,7 @@ export const RPC = {
   sos_announcements: { params: [], auth: true },
   sos_my_profile: { params: [], auth: true },
   sos_profile_update: { params: ['p_name', 'p_phone'], auth: true },
-  sos_document_create: { params: ['p_label'], auth: true },
+  sos_document_create: { params: ['p_label', 'p_category'], auth: true },
   sos_my_documents: { params: [], auth: true },
   sos_all_documents: { params: [], auth: true },
   sos_document_delete: { params: ['p_id'], auth: true },

@@ -178,6 +178,16 @@ export default async function run({ stack }) {
   await s.check('Logged out, every sos_* call is refused', async () => {
     for (const fn of ['sos_my_leads', 'sos_my_performance', 'sos_field_session_current', 'sos_my_tasks']) { const r = await call(null, fn, {}); assert(r.status === 401, fn + ' status ' + r.status); }
   }, 'critical');
+  await s.check('A staff member adds a document with a category, uploads the file, and admin can list, open and download it', async () => {
+    const d = await ok(exec2, 'sos_document_create', { p_label: 'Aadhaar card', p_category: 'aadhaar_card' });
+    assert(d && d.id, 'not created: ' + JSON.stringify(d));
+    const up = await fetch(stack.apiBase + '/storage/sos-staff-doc/' + d.id, { method: 'POST', headers: { authorization: 'Bearer ' + exec2, 'content-type': 'application/pdf' }, body: Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n') });
+    assert(up.status === 200, 'upload ' + up.status + ' ' + await up.text());
+    const list = await ok(platformAdmin, 'admin_sos_staff_documents', { p_user: exec2Id });
+    const row = (list || []).find((x) => x.id === d.id); assert(row && row.uploaded && row.category === 'aadhaar_card', JSON.stringify(list));
+    const dl = await fetch(stack.apiBase + '/storage/sos-staff-doc-admin/' + d.id, { headers: { authorization: 'Bearer ' + platformAdmin, origin: 'http://localhost:5173' } });
+    assert(dl.status === 200 && dl.headers.get('access-control-allow-origin') === 'http://localhost:5173', 'admin read ' + dl.status);
+  }, 'critical');
   await s.check('Admin downloads one PDF with a staff member\'s profile and documents; nobody else can', async () => {
     const get = (tok) => fetch(stack.apiBase + '/admin/sos-staff-pdf/' + exec2Id + '?name=Exec', { headers: { authorization: 'Bearer ' + tok, origin: 'http://localhost:5173' } });
     const r = await get(platformAdmin); assert(r.headers.get('access-control-allow-origin') === 'http://localhost:5173', 'no CORS header on the pdf: the browser would block it'); assert(r.status === 200 && /pdf/.test(r.headers.get('content-type') || ''), 'admin pdf status ' + r.status);
