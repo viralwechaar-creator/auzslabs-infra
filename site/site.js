@@ -177,11 +177,11 @@
             var key = 'auz_admin_' + session.user.id, cached = null;
             try { cached = sessionStorage.getItem(key); } catch (e) {}
             var apply = function (isAdmin) {
-              if (!isAdmin) return;
+              if (!isAdmin) { signinLinks.forEach(function (el) { el.href = 'https://auzslab.in/account.html'; el.setAttribute('aria-label', 'My account'); }); return; }
               signinLinks.forEach(function (el) {
                 el.href = 'https://auzslab.in/admin.html';
                 el.setAttribute('aria-label', 'Admin dashboard');
-                el.textContent = 'Admin';
+                el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="sr-only">' + 'Admin</span>';
               });
             };
             if (cached !== null) { apply(cached === '1'); return; }
@@ -196,7 +196,7 @@
           signinLinks.forEach(function (el) {
             el.href = 'https://auzslab.in/account.html';
             el.setAttribute('aria-label', 'My account');
-            el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="sr-only">Account</span>';
+            el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span class="sr-only">Account</span>';
           });
         });
       } catch (e) {}
