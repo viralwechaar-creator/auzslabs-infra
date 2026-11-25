@@ -19,7 +19,7 @@ export const menu = [
   { id: 'customers', name: 'Customers', icon: 'user', children: [['segments', 'Segments'], ['companies', 'Companies']] },
   { id: 'growth', name: 'Growth', icon: 'spark' },
   { id: 'discounts', name: 'Discounts', icon: 'tag' },
-  { id: 'content', name: 'Content', icon: 'file', children: [['pages', 'Pages and menus'], ['files', 'Files'], ['data', 'Custom data']] },
+  { id: 'content', name: 'Content', icon: 'file', children: [['pages', 'Pages and menus'], ['blog', 'Blog'], ['redirects', 'Redirects'], ['versions', 'Saved versions'], ['files', 'Files'], ['data', 'Custom data'], ['custom-fields', 'Typed fields']] },
   { id: 'markets', name: 'Markets', icon: 'globe' },
   { id: 'analytics', name: 'Analytics', icon: 'chart', children: [['reports', 'Reports'], ['live-view', 'Live view']] },
   { label: 'Sales channels' },

@@ -86,6 +86,10 @@ export async function refreshStyleLink() { try { state.styleLink = await api('sf
 export async function refreshLive() { try { state.liveVisitors = await api('sfx_live_visitors'); } catch (e) { state.liveVisitors = { error: true }; } }
 export async function refreshVisitors(days = 14) { try { state.visitors = await api('sfx_visitor_summary', { p_days: days }); } catch (e) { state.visitors = { error: true }; } }
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
+export async function refreshBlog() { state.blog = await api('sfx_blog_list'); }
+export async function refreshRedirects() { state.redirects = await api('sfx_redirect_list'); }
+export async function refreshRevisions() { state.revisions = await api('sfx_revision_list'); }
+export async function refreshCustomFields() { const [d, o] = await Promise.all([api('sfx_metafield_def_list'), api('sfx_metaobject_def_list')]); state.metaDefs = d; state.metaObjectDefs = o; }
 export async function refreshDiscounts() { state.discounts = await api('sfx_discount_list'); }
 export async function refreshInventory() { const [inv, mv, ck] = await Promise.all([api('sfx_inventory_list'), api('sfx_stock_moves_list', {}), api('sfx_checkout_settings_get')]); state.checkout = ck; state.inventory = inv; state.stockMoves = mv; }
 export async function refreshLocations() { const [locs, mv, inv] = await Promise.all([api('sfx_location_list'), api('sfx_stock_moves_list', {}), api('sfx_inventory_list')]); state.locations = locs; state.stockMoves = mv; state.inventory = inv; }

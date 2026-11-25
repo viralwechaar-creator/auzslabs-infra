@@ -11,7 +11,7 @@ import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -914,7 +914,7 @@ const cfgList = (k) => (Array.isArray(state.store?.config?.[k]) ? state.store.co
 async function saveList(k, list) { const ctx = await api('sfx_store_save', { p: { [k]: list } }); applyContext(ctx); }
 const newId = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const slugify = (v) => String(v || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
-const contentTabs = [['content', 'Overview'], ['pages', 'Pages and menus'], ['files', 'Files'], ['data', 'Custom data']];
+const contentTabs = [['content', 'Overview'], ['pages', 'Pages and menus'], ['blog', 'Blog'], ['redirects', 'Redirects'], ['versions', 'Saved versions'], ['files', 'Files'], ['data', 'Custom data'], ['custom-fields', 'Typed fields']];
 const rowActions = (kind, id) => canWrite() ? button('Edit', kind + '-edit:' + id, 'compact') + button('Delete', kind + '-delete:' + id, 'compact danger') : '';
 const storeLink = (path) => state.store.published && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html#/' + path : '';
 
@@ -940,7 +940,37 @@ function storePagesPage(bare) {
   return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
     panel('Store pages', '<div class="filters"><input id="pg-query" type="search" aria-label="Search pages" placeholder="Search pages" value="' + esc(pgf.q) + '"><select id="pg-status" aria-label="Filter by visibility">' + ['', 'Visible', 'Hidden', 'Scheduled'].map((o) => '<option value="' + o + '"' + (o === pgf.status ? ' selected' : '') + '>' + (o || 'All visibility') + '</option>').join('') + '</select></div>' + bulk + '<div id="pages-results">' + pagesList() + '</div>');
 }
+function blogPage() {
+  const rows = (state.blog || []).map((b) => [esc(b.title), '<code>/blog/' + esc(b.handle) + '</code>', badge(b.status === 'published' ? 'Published' : 'Draft', b.status === 'published' ? '' : 'neutral'), dateValue(b.updatedAt),
+    canWrite() ? button('Edit', 'blog-edit:' + b.id, 'compact') + button('Delete', 'blog-delete:' + b.id, 'compact danger') : '']);
+  return head('Blog', 'Articles for your store. Only published posts are visible to customers.', canWrite() ? button('Write a post', 'blog-new', 'primary') : '') + tabs('blog', contentTabs) + panel('Posts', table(['Title', 'Address', 'Status', 'Updated', ''], rows));
+}
+function blogForm(b) {
+  const v = b || { status: 'draft', tags: [] };
+  return editForm('blog-record', b?.id, input('Title', 'title', v.title || '', 'text', 'required maxlength="150"') + input('Address (leave empty to use the title)', 'handle', v.handle || '', 'text', 'maxlength="80"') +
+    area('Short summary', 'excerpt', v.excerpt || '', 'maxlength="400"') + area('Post', 'body', v.body || '', 'rows="10" maxlength="100000"') + input('Author', 'author', v.author || '', 'text', 'maxlength="80"') +
+    input('Tags (comma separated)', 'tags', (v.tags || []).join(', '), 'text') + input('Search title (up to 70)', 'seoTitle', v.seoTitle || '', 'text', 'maxlength="70"') + area('Search description (up to 320)', 'seoDescription', v.seoDescription || '', 'maxlength="320"') +
+    select('Status', 'status', [['draft', 'Draft'], ['published', 'Published']], v.status || 'draft'), 'Save post');
+}
+function redirectsPage() {
+  const rows = (state.redirects || []).map((r) => ['<code>' + esc(r.from) + '</code>', '<code>' + esc(r.to) + '</code>', badge(r.auto ? 'Automatic' : 'Yours', r.auto ? 'neutral' : ''), canWrite() ? button('Edit', 'redirect-edit:' + r.id, 'compact') + button('Delete', 'redirect-delete:' + r.id, 'compact danger') : '']);
+  return head('Redirects', 'Send an old address to a new one. When you change a product, collection or post address, the old one is redirected for you.', canWrite() ? button('Add redirect', 'redirect-new', 'primary') : '') + tabs('redirects', contentTabs) + panel('All redirects', table(['From', 'To', 'Kind', ''], rows));
+}
+function revisionsPage() {
+  const rows = (state.revisions || []).map((r) => [new Date(r.createdAt).toLocaleString('en-IN'), esc(r.note || 'Saved version'), esc(r.theme), canWrite() ? button('Restore', 'revision-restore:' + r.id, 'compact') : '']);
+  return head('Saved versions', 'A copy of your store settings is saved before every change. Restore one to go back. Your current settings are saved first, so restoring can be undone.', canWrite() ? button('Save a version now', 'revision-save', 'primary') : '') + tabs('versions', contentTabs) + panel('Versions', table(['When', 'Note', 'Theme', ''], rows));
+}
+function customFieldsPage() {
+  const defs = state.metaDefs || []; const objs = state.metaObjectDefs || [];
+  return head('Typed fields', 'Fields with a type (text, number, yes/no, link, date) that are checked when saved. Mark one "show on the storefront" to let your store display it.', canWrite() ? button('Add field', 'metafield-new', 'primary') + button('Add record type', 'metaobject-new') : '') + tabs('custom-fields', contentTabs) +
+    panel('Fields', table(['Applies to', 'Name', 'Key', 'Type', 'On storefront', ''], defs.map((d) => [esc(d.ownerType), esc(d.label), '<code>' + esc(d.key) + '</code>', esc(d.valueType), d.storefront ? 'Yes' : 'No', canWrite() ? button('Delete', 'metafield-delete:' + d.id, 'compact danger') : '']))) +
+    panel('Record types', table(['Type', 'Name', 'Fields', 'Records'], objs.map((o) => [esc(o.type), esc(o.label), (o.fields || []).map((f) => esc(f.label)).join(', '), o.count])));
+}
 function contentPage(id) {
+  if (id === 'blog') return blogPage();
+  if (id === 'redirects') return redirectsPage();
+  if (id === 'versions') return revisionsPage();
+  if (id === 'custom-fields') return customFieldsPage();
   const pages = cfgList('pages'), files = cfgList('files'), fields = cfgList('customFields');
   if (id === 'pages') return head('Pages and menus', 'Create storefront pages. Visible pages appear on your online store.', canWrite() ? button('Add page', 'page-new', 'primary') : '') + tabs(id, contentTabs) + storePagesPage(true);
   if (id === 'files') return head('Files', 'Images and documents you reuse across pages. Paste the link of an image or file already uploaded.', canWrite() ? button('Add file', 'file-new', 'primary') : '') + tabs(id, contentTabs) +
@@ -1172,7 +1202,7 @@ export function workspace(id, record) {
   else if (id === 'segments') html = segmentsPage();
   else if (id === 'companies') html = companiesPage();
   else if (id === 'growth') html = growthPage();
-  else if (['content', 'pages', 'files', 'data'].includes(id)) html = contentPage(id);
+  else if (['content', 'pages', 'files', 'data', 'blog', 'redirects', 'versions', 'custom-fields'].includes(id)) html = contentPage(id);
   else if (id === 'markets') html = marketsPage();
   else html = management(id);
   return { html, dispatch: (type, target, event, key, detail) => dispatch(id, type, target, event, key, detail) };
@@ -1258,6 +1288,16 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshOrders(); save('Tracking saved.'); close(); rerender();
       } else if (key === 'credit-adjust') {
         await api('sfx_credit_adjust', { p_customer: rid, p_delta: Number(data.delta), p_note: data.note }); await refreshCustomers(); save('Store credit updated.'); close(); rerender(true);
+      } else if (key === 'blog-record') {
+        await api('sfx_blog_save', { p_id: rid, p: { title: data.title, handle: data.handle, excerpt: data.excerpt, body: data.body, author: data.author, tags: String(data.tags || '').split(',').map((x) => x.trim()).filter(Boolean), seoTitle: data.seoTitle, seoDescription: data.seoDescription, status: data.status } });
+        await refreshBlog(); save('Post saved.'); close(); rerender(true);
+      } else if (key === 'redirect-record') {
+        await api('sfx_redirect_save', { p_id: rid, p: { from: data.from, to: data.to } }); await refreshRedirects(); save('Redirect saved.'); close(); rerender(true);
+      } else if (key === 'metafield-record') {
+        await api('sfx_metafield_def_save', { p_id: null, p: { ownerType: data.ownerType, key: data.key, label: data.label, valueType: data.valueType, storefront: data.storefront === 'yes' } }); await refreshCustomFields(); save('Field added.'); close(); rerender(true);
+      } else if (key === 'metaobject-record') {
+        const fields = String(data.fields || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const [k, label, valueType] = l.split('|').map((x) => x.trim()); return { key: k, label, valueType: valueType || 'text' }; });
+        await api('sfx_metaobject_def_save', { p: { type: data.type, label: data.label, fields } }); await refreshCustomFields(); save('Record type saved.'); close(); rerender(true);
       } else if (key === 'return-receive') {
         const r = state.returns.find((x) => x.id === rid);
         await api('sfx_return_receive', { p_id: rid, p_lines: (r.lines || []).map((l, i) => ({ variantId: l.variantId, restock: data['k' + i] !== 'no' })) }); await refreshReturns(); save('Return received.'); close(); rerender(true);
@@ -1378,6 +1418,19 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       '<p><strong>Addresses</strong></p><ul>' + addr + '</ul></div>');
   });
   if (a === 'credit-adjust') return dialog('Store credit', editForm('credit-adjust', key, input('Amount (use a minus to remove)', 'delta', '', 'number', 'required step="0.01"') + input('Note', 'note', '', 'text', 'maxlength="200"'), 'Save'));
+  if (a === 'blog-new') return dialog('Write a post', blogForm(null));
+  if (a === 'blog-edit') return withBusy(async () => { dialog('Edit post', blogForm(await api('sfx_blog_get', { p_id: key }))); });
+  if (a === 'blog-delete') return withBusy(async () => { if (!confirm('Delete this post?')) return; await api('sfx_blog_delete', { p_id: key }); await refreshBlog(); save('Post deleted.'); rerender(true); });
+  if (a === 'redirect-new') return dialog('Add redirect', editForm('redirect-record', '', input('Old address (starts with /)', 'from', '', 'text', 'required placeholder="/old-page"') + input('New address (starts with / or https://)', 'to', '', 'text', 'required placeholder="/collections/sale"'), 'Save redirect'));
+  if (a === 'redirect-edit') { const r = state.redirects.find((x) => x.id === key); return dialog('Edit redirect', editForm('redirect-record', key, input('Old address', 'from', r.from, 'text', 'required') + input('New address', 'to', r.to, 'text', 'required'), 'Save redirect')); }
+  if (a === 'redirect-delete') return withBusy(async () => { await api('sfx_redirect_delete', { p_id: key }); await refreshRedirects(); save('Redirect removed.'); rerender(true); });
+  if (a === 'revision-save') return withBusy(async () => { const r = await api('sfx_revision_save', { p_note: 'Saved by you' }); await refreshRevisions(); save(r.unchanged ? 'Nothing has changed since the last version.' : 'Version saved.'); rerender(true); });
+  if (a === 'revision-restore') return withBusy(async () => { if (!confirm('Restore this version of your store settings? Your current settings are saved first.')) return; await api('sfx_revision_restore', { p_id: key }); await refreshRevisions(); save('Version restored.'); rerender(true); });
+  if (a === 'metafield-new') return dialog('Add typed field', editForm('metafield-record', '', select('Applies to', 'ownerType', [['product', 'Products'], ['collection', 'Collections'], ['customer', 'Customers'], ['order', 'Orders'], ['store', 'The store']], 'product') + input('Name', 'label', '', 'text', 'required maxlength="80"') + input('Key (lowercase, like fabric)', 'key', '', 'text', 'required pattern="[a-z][a-z0-9_]{1,40}"') +
+    select('Type', 'valueType', [['text', 'Text'], ['number', 'Number'], ['boolean', 'Yes or no'], ['url', 'Link'], ['date', 'Date']], 'text') + select('Show on the storefront', 'storefront', [['no', 'No, keep it private'], ['yes', 'Yes']], 'no'), 'Add field'));
+  if (a === 'metafield-delete') return withBusy(async () => { if (!confirm('Delete this field and every value saved in it?')) return; await api('sfx_metafield_def_delete', { p_id: key }); await refreshCustomFields(); save('Field deleted.'); rerender(true); });
+  if (a === 'metaobject-new') return dialog('Add record type', editForm('metaobject-record', '', input('Type key (lowercase, like size_guide)', 'type', '', 'text', 'required pattern="[a-z][a-z0-9_]{1,40}"') + input('Name', 'label', '', 'text', 'required maxlength="80"') +
+    area('Fields, one per line: key | name | type (text, number, boolean, url, date)', 'fields', 'title | Title | text', 'rows="5"'), 'Add record type'));
   if (a === 'customer-edit') return dialog('Edit customer', customerForm(state.customers.find((c) => c.id === key)));
   if (a === 'customer-adopt') { const c = state.customers.find((x) => x.phone === decodeURIComponent(key)); return dialog('Save as customer', customerForm({ ...c, id: null })); }
   if (a === 'customer-delete') return withBusy(async () => { if (!confirm('Delete this customer record? Their past orders are not affected.')) return; await api('sfx_customer_delete', { p_id: key }); await refreshCustomers(); save('Customer deleted.'); rerender(true); });

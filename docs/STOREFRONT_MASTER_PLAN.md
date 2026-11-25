@@ -18,7 +18,7 @@ Source: the Shopify lesson series (Modules 1-11) plus the owner's decisions. Sho
 | D | Customers: stable customer id on orders, address snapshots, consent record, sign-in by code (email + WhatsApp), account portal, store credit | built, tested (customer account page UI, credit redemption at checkout, SMS not built) |
 | E | Discounts/marketing: discount calculator, buy-X-get-Y, free shipping, UTM/touch log, campaign attribution | built, tested (stacking/combining discounts and campaign reports from attribution not built) |
 | F | Checkout settings: fields, payment methods order, shipping tiers + reasons, tax rules (CGST/SGST/IGST), purchase limits | built, tested (checkout page fields change what the public checkout shows only through config; theme code not rewritten) |
-| G | Content/themes: blogs, redirects on handle change, theme revisions + restore, SEO fields, custom data (metafields/metaobjects) | planned |
+| G | Content/themes: blogs, redirects on handle change, theme revisions + restore, SEO fields, custom data (metafields/metaobjects) | built, tested (themes revisions cover store settings and theme choice, not section content edits; public pages for blog/redirects need the store theme code to call the new public RPCs) |
 | H | Analytics: sessions, funnel, cohorts, RFM, inventory reports, profit with cost coverage, dashboard layout | planned |
 | I | Settings: roles/permissions split, security screen, notifications log, domains records, languages/markets, privacy, billing records | planned |
 | J | AUZsStyle shared mode + migration + storefront link tab | planned |
