@@ -2,9 +2,9 @@
    person for their history and to record a payment. */
 'use strict';
 const finAgeDays = (d) => d ? Math.max(0, Math.floor((Date.parse(todayISO()) - Date.parse(String(d).slice(0, 10))) / 864e5)) : 0;
-page('fin-dues', { title: 'Finance: Dues', icon: 'users', async render(v) {
+page('fin-dues', { title: 'Dues', icon: 'users', async render(v) {
   await ensureFin();
-  v.header({ title: 'Finance: Dues', actions: [canFin('write') ? { label: 'New credit entry', icon: 'plus', primary: true, run: () => finKindPicker2() } : null] });
+  v.header({ title: 'Dues', actions: [canFin('write') ? { label: 'New credit entry', icon: 'plus', primary: true, run: () => finKindPicker2() } : null] });
   const rows = await api('fin_people_balances');
   const toGet = rows.filter((r) => Number(r.balance) > 0), toPay = rows.filter((r) => Number(r.balance) < 0);
   const sum = (a) => a.reduce((x, r) => x + Math.abs(Number(r.balance)), 0);

@@ -1,14 +1,14 @@
 /* Finance: Accounts (where money sits), Cash withdrawals and Settings (ported from AUZsFinance's p-accounts.js). */
 'use strict';
-page('fin-accounts', { title: 'Finance: Accounts', icon: 'cash', async render(v) {
+page('fin-accounts', { title: 'Money accounts', icon: 'cash', async render(v) {
   await ensureFin();
-  v.header({ title: 'Finance: Accounts', actions: [canFin('admin') ? { label: 'Add account', icon: 'plus', primary: true, run: () => finAccountSheet() } : null] });
+  v.header({ title: 'Money accounts', actions: [canFin('admin') ? { label: 'Add account', icon: 'plus', primary: true, run: () => finAccountSheet() } : null] });
   await reloadFin();
   const tot = FS.ctx.accounts.filter((a) => a.active).reduce((x, a) => x + Number(a.balance), 0);
   v.root.append(h('div', { class: 'hero-n' }, h('div', { class: 'k' }, 'Total in all accounts'), h('div', { class: 'n num' }, inr(tot))),
     h('div', { class: 'list' }, FS.ctx.accounts.map((a) => liRow({ icon: a.kind === 'cash' ? 'cash' : 'building', tone: 'gray', title: a.name, value: inr(a.balance), onclick: () => finAccountDetail(a) }))));
   if (canFin('write') && FS.ctx.accounts.length > 1) v.root.append(h('button', { class: 'btn', onclick: () => addTxn({ kind: 'transfer' }) }, icon('swap', 18), 'Move money between accounts'),
-    h('button', { class: 'btn', onclick: () => finWithdrawCash() }, icon('cash', 18), 'Withdraw cash from bank'), h('button', { class: 'btn', onclick: () => go('fin-withdrawals') }, icon('swap', 18), 'Cash withdrawals'));
+    h('button', { class: 'btn', onclick: () => finWithdrawCash() }, icon('cash', 18), 'Withdraw cash from bank'), h('button', { class: 'btn', onclick: () => finGo('fin-withdrawals') }, icon('swap', 18), 'Cash withdrawals'));
 } });
 // Cash withdrawal = a transfer from a bank/UPI/card account into a cash account (nothing is a cost; only the place the money sits changes)
 function finWithdrawCash() {
@@ -47,9 +47,9 @@ function finAccountSheet(a) {
       await api('fin_save_account', { p: a ? { id: a.id, name: nm.value.trim(), active: act.querySelector('input').checked } : { name: nm.value.trim(), kind: kind.value, opening: N(open.value), opening_date: od.value } });
       close(); await reloadFin(); route_(); } }] });
 }
-page('fin-settings', { title: 'Finance: Settings', icon: 'gear', async render(v) {
+page('fin-settings', { title: 'Money settings', icon: 'gear', async render(v) {
   await ensureFin();
-  v.header({ title: 'Finance: Settings' });
+  v.header({ title: 'Money settings' });
   const [ic, bp, me] = await Promise.all([api('fin_integrity_check'), api('fin_profile_get'), api('my_profile').catch(() => ({ profile: null }))]);
   const mp = (me && me.profile) || {};
   const canEdit = !!bp.can_edit;

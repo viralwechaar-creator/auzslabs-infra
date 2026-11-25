@@ -5,11 +5,11 @@
 const FIN_REP_TABS = [['pl', 'Profit'], ['bs', 'Balance'], ['cash', 'Cash'], ['tb', 'Accounts'], ['age', 'Dues age']];
 const finRepRows = (rows, tone) => rows.length ? h('div', { class: 'list' }, rows.map((r) => liRow({ title: r.name, value: h('span', { class: 'money num ' + (tone || '') }, inr(r.amount)) }))) : empty('box', 'Nothing here', 'No entries in this period.');
 const finRepTotal = (label, v, tone) => h('div', { class: 'hero-n small' }, h('div', { class: 'k' }, label), h('div', { class: 'n num ' + (tone || '') }, inr(v)));
-page('fin-reports', { title: 'Finance reports', icon: 'chart', async render(v) {
+page('fin-reports', { title: 'Cash reports', icon: 'chart', async render(v) {
   await ensureFin();
   const tab = v.q.get('t') || 'pl', per = LS.get('per', 'month');
-  v.header({ title: 'Finance reports', actions: [{ label: 'Download', icon: 'download', run: () => window.print() }] });
-  v.root.append(seg(FIN_REP_TABS, tab, (x) => go('fin-reports?t=' + x), { full: true }));
+  v.header({ title: 'Cash reports', actions: [{ label: 'Download', icon: 'download', run: () => window.print() }] });
+  v.root.append(seg(FIN_REP_TABS, tab, (x) => finGo('fin-reports?t=' + x), { full: true }));
   if (tab !== 'bs' && tab !== 'tb' && tab !== 'age') v.root.append(seg(FIN_PERIODS, per, (x) => { LS.set('per', x); v.refresh(); }, { full: true }));
   const host = h('div', { class: 'grid' }); v.root.append(host);
   const [f, to] = finPeriodDates(per);

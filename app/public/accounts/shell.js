@@ -13,11 +13,6 @@ const NAV_LEDGER = [
   { group: 'Stock', items: ['products', 'stock', 'labels'] },
   { group: 'Financial reports', items: ['analytics', 'reports', 'gst'] },
   { group: 'Accounts', items: ['books', 'banking', 'drawer', 'assets'] },
-  // Finance: the owner's personal expenses/bills tracker (the retired AUZsFinance app), folded in here as its own
-  // group -- same fin_* data as before, just reached from inside Accounting instead of a separate app. Hidden
-  // whole when the tenant's "finance" feature flag is off (see finOn() below), so tenants that never had it see
-  // nothing new here.
-  { group: 'Finance', items: ['fin-home', 'fin-activity', 'fin-dues', 'fin-owner', 'fin-accounts', 'fin-reports', 'fin-insights', 'fin-settings', 'fin-tools'] },
   { group: 'Tools', items: ['bulk', 'data', 'messages', 'alerts', 'ai', 'admin', 'settings'] },
 ];
 const NAV = SCANAPP ? [
@@ -29,7 +24,7 @@ const TABS = SCANAPP ? ['scan', 'sales', 'products', 'stock'] : ['home', 'scan',
 // AUZsScan only (p-easy.js): a short beginner menu by default; "Show all ledger tools" switches to the whole ledger menu
 // Finance group: shown only once S.dash says this tenant's "finance" feature is on (fin-core.js's finOn() does the
 // same check before a fin-* page's own data loads, so a stale deep link still refuses cleanly instead of 404ing).
-const navNow = () => { const base = window.easyOn && easyOn() ? EASY_NAV : SCANAPP && window.easyOn ? SCAN_ALL_NAV : NAV; return base.filter((g) => g.group !== 'Finance' || (window.finOn && finOn())); };
+const navNow = () => (window.easyOn && easyOn() ? EASY_NAV : SCANAPP && window.easyOn ? SCAN_ALL_NAV : NAV);
 const tabsNow = () => (window.easyOn && easyOn() ? EASY_TABS : TABS);
 let route = { id: HOME, args: [], q: new URLSearchParams() };
 let cleanup = [];
@@ -319,6 +314,7 @@ function quickMenu(anchor) {
   if (can('acc_sales')) it.push({ header: 'Sell' }, { label: 'Scan to bill', icon: 'scan', run: () => go('scan') }, { label: 'Invoice', icon: 'doc', run: () => go('new/invoice') }, { label: 'Quotation', icon: 'file', run: () => go('new/quotation') }, { label: 'Receipt (money in)', icon: 'wallet', run: () => receiptSheet('receipt') }, { label: 'New customer', icon: 'user', run: () => partySheet('customer') });
   if (can('acc_purchase')) it.push({ header: 'Buy' }, { label: 'Bill', icon: 'receipt', run: () => go('new/bill') }, { label: 'Expense', icon: 'cash', run: () => go('new/expense') }, { label: 'Payment (money out)', icon: 'wallet', run: () => receiptSheet('payment') }, { label: 'New supplier', icon: 'building', run: () => partySheet('supplier') });
   if (can('acc_inventory')) it.push({ header: 'Stock' }, { label: 'New product', icon: 'box', run: () => productSheet() }, { label: 'Stock adjustment', icon: 'layers', run: () => stockAdjustSheet() });
+  if (can('acc_post') && window.finOn && finOn()) it.push({ header: 'Money entries' }, { label: 'Add money entry', icon: 'wallet', run: () => addTxn() }, { label: 'Owner capital or drawings', icon: 'user', run: () => finGo('fin-owner') });
   if (can('acc_post')) it.push({ header: 'Books' }, { label: 'Journal voucher', icon: 'book', run: () => voucherSheet('journal') }, { label: 'Transfer between accounts', icon: 'swap', run: () => voucherSheet('contra') });
   menu(anchor, it);
 }

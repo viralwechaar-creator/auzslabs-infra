@@ -8,10 +8,10 @@ function finPeriodDates(k) {
   if (k === 'year') return [d.getFullYear() + '-01-01', to];
   return [to.slice(0, 8) + '01', to];
 }
-page('fin-home', { title: 'Finance: Today', icon: 'wallet', async render(v) {
+page('fin-home', { title: 'Money today', icon: 'wallet', async render(v) {
   await ensureFin();
   const per = LS.get('per', 'month');
-  v.header({ title: 'Finance: Today', actions: [canFin('write') ? { label: 'Add entry', icon: 'plus', primary: true, run: () => addTxn() } : null] });
+  v.header({ title: 'Money today', actions: [canFin('write') ? { label: 'Add entry', icon: 'plus', primary: true, run: () => addTxn() } : null] });
   const host = h('div', { class: 'grid' }); v.root.append(host);
   const load = async () => {
     const [f, to] = finPeriodDates(per);
@@ -27,15 +27,15 @@ page('fin-home', { title: 'Finance: Today', icon: 'wallet', async render(v) {
         h('div', null, h('div', { class: 'k' }, 'Out'), h('div', { class: 'n num down' }, inr(d.money_out))),
         h('div', null, h('div', { class: 'k' }, 'Left'), h('div', { class: 'n num ' + (net < 0 ? 'down' : '') }, inr(net)))),
       (d.needs_review || d.no_evidence) ? h('div', { class: 'list' },
-        d.needs_review ? liRow({ icon: 'alert', tone: 'orange', title: d.needs_review + ' entr' + (d.needs_review === 1 ? 'y' : 'ies') + ' to check', chevron: true, onclick: () => go('fin-activity?review=needs_review') }) : null,
-        d.no_evidence ? liRow({ icon: 'camera', tone: 'gray', title: d.no_evidence + ' without a bill or proof', chevron: true, onclick: () => go('fin-activity?evidence=none') }) : null) : null,
+        d.needs_review ? liRow({ icon: 'alert', tone: 'orange', title: d.needs_review + ' entr' + (d.needs_review === 1 ? 'y' : 'ies') + ' to check', chevron: true, onclick: () => finGo('fin-activity?review=needs_review') }) : null,
+        d.no_evidence ? liRow({ icon: 'camera', tone: 'gray', title: d.no_evidence + ' without a bill or proof', chevron: true, onclick: () => finGo('fin-activity?evidence=none') }) : null) : null,
       h('div', { class: 'duo' },
-        kpi('To receive', inr(d.dues_in), 'Customers owe you', () => go('fin-dues')),
-        kpi('To pay', inr(d.dues_out), 'You owe suppliers', () => go('fin-dues'))),
+        kpi('To receive', inr(d.dues_in), 'Customers owe you', () => finGo('fin-dues')),
+        kpi('To pay', inr(d.dues_out), 'You owe suppliers', () => finGo('fin-dues'))),
       (Number(d.capital) || Number(d.drawings) || Number(d.loans_taken) || Number(d.loans_given)) ? section('Owner and loans', h('div', { class: 'list' },
-        liRow({ icon: 'wallet', tone: 'gray', title: 'Owner capital', value: inr(Number(d.capital) - Number(d.drawings)), chevron: true, onclick: () => go('fin-owner') }),
-        Number(d.loans_taken) ? liRow({ icon: 'download', tone: 'gray', title: 'Loans you owe', value: inr(d.loans_taken), chevron: true, onclick: () => go('fin-owner') }) : null,
-        Number(d.loans_given) ? liRow({ icon: 'upload', tone: 'gray', title: 'Loans given', value: inr(d.loans_given), chevron: true, onclick: () => go('fin-owner') }) : null)) : null,
+        liRow({ icon: 'wallet', tone: 'gray', title: 'Owner capital', value: inr(Number(d.capital) - Number(d.drawings)), chevron: true, onclick: () => finGo('fin-owner') }),
+        Number(d.loans_taken) ? liRow({ icon: 'download', tone: 'gray', title: 'Loans you owe', value: inr(d.loans_taken), chevron: true, onclick: () => finGo('fin-owner') }) : null,
+        Number(d.loans_given) ? liRow({ icon: 'upload', tone: 'gray', title: 'Loans given', value: inr(d.loans_given), chevron: true, onclick: () => finGo('fin-owner') }) : null)) : null,
       d.by_category.length ? section('Where it went', finSpendStrip(d.by_category), h('div', { class: 'list' }, d.by_category.slice(0, 6).map((c) => liRow({ title: c.name, value: inr(c.amount), badge: h('div', { class: 'bar' }, h('i', { style: { width: Math.max(4, c.amount / d.by_category[0].amount * 100) + '%' } })) })))) : null,
       section('Recent', d.recent.length ? h('div', { class: 'list' }, d.recent.map((r) => txnRow(r, () => finTxnSheet(r.id)))) : empty('swap', 'Nothing yet', 'Tap the + button to record your first money in or out.', canFin('write') ? h('button', { class: 'btn fill', onclick: () => addTxn() }, 'Add entry') : null)));
   };

@@ -9,7 +9,7 @@ const canFin = (k) => !!FS.perms[k];
 // A function declaration (not const): like p-easy.js's easyOn(), that makes it a property of window, so
 // shell.js's navNow() can check `window.finOn && finOn()` the same way it already checks `window.easyOn`,
 // without caring whether fin-core.js happened to load before or after shell.js.
-function finOn() { return !!(S.dash && (S.dash.features || {}).finance && (S.dash.enabled_features || {}).finance !== false); }
+function finOn() { const f = S.dash && S.dash.features, e = (S.dash && S.dash.enabled_features) || {}; return !!(f && ((f.finance && e.finance !== false) || (f.accounting && e.accounting !== false))); }
 async function ensureFin(force) {
   if (!finOn()) throw new Error('Finance is not part of this business’s plan.');
   if (!FS.loaded || force) { FS.ctx = await api('fin_bootstrap'); FS.perms = FS.ctx.perms || {}; FS.loaded = true; }

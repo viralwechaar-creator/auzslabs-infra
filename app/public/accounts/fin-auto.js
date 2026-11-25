@@ -114,7 +114,7 @@ page('fin-bank', { title: 'Bank import', icon: 'download', async render(v) {
   v.header({ title: 'Bank import', back: 'fin-tools' });
   if (!canFin('write')) return v.root.append(empty('lock', 'No access', 'Your role cannot import a bank statement.'));
   const accounts = FS.ctx.accounts.filter((a) => a.active && a.kind !== 'cash');
-  if (!accounts.length) return v.root.append(empty('cash', 'Add a bank account first', 'Accounts is where you add one.', h('button', { class: 'btn fill', onclick: () => go('fin-accounts') }, 'Open Accounts')));
+  if (!accounts.length) return v.root.append(empty('cash', 'Add a bank account first', 'Accounts is where you add one.', h('button', { class: 'btn fill', onclick: () => finGo('fin-accounts') }, 'Open Accounts')));
   const acc = selectEl(accounts.map((a) => [a.id, a.name]), accounts[0].id, { label: 'Bank account' });
   const file = h('input', { type: 'file', accept: '.csv,.txt,text/csv', style: { display: 'none' } });
   const out = h('div', { class: 'grid' });
@@ -139,7 +139,7 @@ page('fin-bank', { title: 'Bank import', icon: 'download', async render(v) {
         try {
           const send = items.map((x) => ({ date: x.date, desc: x.desc, ref: x.ref, debit: x.debit || 0, credit: x.credit || 0, action: x.status === 'matched' ? 'match' : x.status === 'new' ? 'new' : 'skip', txn_id: x.txn_id }));
           const r = await api('fin_import_commit', { p_account: acc.value, p_rows: send });
-          toast(r.matched + ' matched, ' + r.created + ' added'); await reloadFin(); go('fin-activity?review=needs_review');
+          toast(r.matched + ' matched, ' + r.created + ' added'); await reloadFin(); finGo('fin-activity?review=needs_review');
         } catch (e) { fail(e); b.disabled = false; }
       } }, 'Import ' + (cnt('matched') + cnt('new')) + ' rows'));
   };
@@ -153,8 +153,8 @@ page('fin-insights', { title: 'Insights', icon: 'bolt', async render(v) {
   v.root.append(h('div', { class: 'hero-n' }, h('div', { class: 'k' }, 'Money in 30 days, at this pace'), h('div', { class: 'n num ' + (Number(fc.cash_in_30) < 0 ? 'down' : '') }, inr(fc.cash_in_30)), h('div', { class: 'small muted' }, 'Now ' + inr(fc.cash_now))));
   v.root.append(section('Outlook', h('div', { class: 'list' },
     liRow({ icon: 'download', tone: 'green', title: 'Comes in each day', value: inr(fc.avg_in_per_day) }), liRow({ icon: 'upload', tone: '', title: 'Goes out each day', value: inr(fc.avg_out_per_day) }),
-    liRow({ icon: 'users', tone: 'gray', title: 'To receive', value: inr(fc.to_receive), onclick: () => go('fin-dues') }), liRow({ icon: 'users', tone: 'gray', title: 'To pay', value: inr(fc.to_pay), onclick: () => go('fin-dues') }),
-    Number(fc.recurring_out_30) || Number(fc.recurring_in_30) ? liRow({ icon: 'refresh', tone: 'gray', title: 'Repeating next 30 days', value: inr(Number(fc.recurring_in_30) - Number(fc.recurring_out_30)), onclick: () => go('fin-repeat') }) : null,
+    liRow({ icon: 'users', tone: 'gray', title: 'To receive', value: inr(fc.to_receive), onclick: () => finGo('fin-dues') }), liRow({ icon: 'users', tone: 'gray', title: 'To pay', value: inr(fc.to_pay), onclick: () => finGo('fin-dues') }),
+    Number(fc.recurring_out_30) || Number(fc.recurring_in_30) ? liRow({ icon: 'refresh', tone: 'gray', title: 'Repeating next 30 days', value: inr(Number(fc.recurring_in_30) - Number(fc.recurring_out_30)), onclick: () => finGo('fin-repeat') }) : null,
     fc.runway_days != null ? liRow({ icon: 'alert', tone: 'orange', title: 'Cash lasts about', value: fc.runway_days + ' days' }) : null)));
   v.root.append(section('Worth a look', an.length ? h('div', { class: 'list' }, an.map((a) => liRow({ icon: 'alert', tone: a.tone || 'orange', title: a.title, value: a.amount != null ? inr(Math.abs(a.amount)) : '', onclick: () => finAnomalySheet(a) }))) : empty('check', 'Nothing looks wrong', 'Doubles, unusually big bills, missing proof and overdue loans show here.')));
   v.root.append(section('Money to ask for', rem.length ? h('div', { class: 'list' }, rem.map((p) => liRow({ icon: 'user', tone: 'gray', title: p.name, value: inr(p.amount), chevron: true, onclick: () => finRemindSheet(p) }))) : empty('check', 'No one is late', 'People who owe you for longer than your reminder days show here.')));
@@ -176,12 +176,12 @@ function finRemindSheet(p) {
 }
 
 // ---------- Tools: one quiet page for everything that is not part of the daily rhythm ----------
-page('fin-tools', { title: 'Finance: Tools', icon: 'more', async render(v) {
+page('fin-tools', { title: 'Money tools', icon: 'more', async render(v) {
   await ensureFin();
-  v.header({ title: 'Finance: Tools' });
+  v.header({ title: 'Money tools' });
   let pend = 0; try { pend = (await api('fin_txn_list', { p: { review: 'needs_review', limit: 200 } })).filter((r) => r.status === 'posted').length; } catch { /* ignore */ }
   const T = [['fin-approvals', 'Approvals', 'check', 'Entries waiting for a check', pend], ['fin-repeat', 'Repeating', 'refresh', 'Rent, salary, EMI on its own'], ['fin-bank', 'Bank import', 'download', 'Match a bank statement'], ['fin-withdrawals', 'Cash withdrawals', 'cash', 'Money taken from the bank as cash'], ['fin-tax', 'Tax', 'tag', 'GST and TDS for filing'], ['fin-assets', 'Assets', 'building', 'Things you own, losing value'], ['fin-budget', 'Budget', 'chart', 'A limit for each kind of spend']];
-  v.root.append(h('div', { class: 'tools' }, T.map(([id, name, ic, sub, n]) => h('button', { class: 'tool', type: 'button', onclick: () => go(id) }, h('span', { class: 'tile' }, icon(ic, 20)), h('b', null, name, n ? h('span', { class: 'badge-n' }, String(n)) : null), h('span', { class: 'small muted' }, sub)))));
+  v.root.append(h('div', { class: 'tools' }, T.map(([id, name, ic, sub, n]) => h('button', { class: 'tool', type: 'button', onclick: () => finGo(id) }, h('span', { class: 'tile' }, icon(ic, 20)), h('b', null, name, n ? h('span', { class: 'badge-n' }, String(n)) : null), h('span', { class: 'small muted' }, sub)))));
 } });
 
 // ---------- Tax: GST and TDS added up from the memo you put on entries ----------
