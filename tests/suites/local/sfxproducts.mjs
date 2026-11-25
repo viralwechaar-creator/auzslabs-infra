@@ -101,6 +101,21 @@ export default async function run({ browser, stack }) {
       const bad = []; for (const el of document.querySelectorAll('.work *')) { if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue; const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue; const a = lum(getComputedStyle(el).color), b = lum(bg(el)); if ((Math.max(a, b) + .05) / (Math.min(a, b) + .05) < 3) bad.push(el.textContent.trim().slice(0, 20)); } return bad.slice(0, 3); }); };
     for (const h of ['#/home', '#/team', '#/notifications']) { const bad = await low(h); assert(!bad.length, h + ' unreadable in dark mode: ' + bad.join(', ')); }
   }, 'critical');
+  await s.check('Theme sections keep spacing and alignment; anything else is dropped; the editor shows the controls and link list', async () => {
+    const mk = await rpc(stack, 'sfx_theme_install_create', { p: { name: 'Spacing theme', starter: 'shop', base: 'classic' } }, owner);
+    const iid = mk.data?.data?.installId || mk.data?.installId || mk.data?.id || mk.data?.data?.id; assert(iid, 'install not created: ' + JSON.stringify(mk.data).slice(0, 200));
+    const sv = await rpc(stack, 'sfx_theme_customize_save', { p_install_id: iid, p_content: { sections: [
+      { type: 'text', props: { heading: 'Hi', body: 'x', space: 'roomy', align: 'left' } }, { type: 'text', props: { heading: 'Two', body: 'y', space: 'huge', align: '<b>' } }] } }, owner);
+    assert(!sv.data?.error, JSON.stringify(sv.data).slice(0, 200));
+    const dc = (await q('select draft_content from sfx_theme_installs where id=$1', [iid]))[0].draft_content.sections;
+    assert(dc[0].props.space === 'roomy' && dc[0].props.align === 'left', JSON.stringify(dc[0]));
+    const cl = (await q("select sfx_theme_clean_content($1::jsonb) as c", [JSON.stringify({ sections: [{ type: 'text', props: { heading: 'Two', space: 'huge', align: 'center' } }, { type: 'text', props: { heading: 'One', space: 'roomy', align: '<b>' } }] })]))[0].c.sections;
+    assert(!('space' in cl[0].props) && cl[0].props.align === 'center' && cl[1].props.space === 'roomy' && !('align' in cl[1].props), 'import/duplicate clean wrong: ' + JSON.stringify(cl));
+    await open('#/builder/' + iid); await page.waitForTimeout(1500);
+    const html = await page.content();
+    assert(/name="space"/.test(html) && /id="te-links"/.test(html), 'spacing controls or link list missing');
+    await s.shot(page, 'sfx-theme-editor-spacing');
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();

@@ -848,6 +848,7 @@ function customSections(v, list) {
   const sections = list || (PREVIEW && PREVIEW_SECTIONS ? PREVIEW_SECTIONS : (cfg().customSections || []));
   sections.forEach((s, i) => {
     let el = customSection(s);
+    if (el && s.props) { if (s.props.space === 'compact' || s.props.space === 'roomy') el.classList.add('sp-' + s.props.space); if (s.props.align === 'left') el.classList.add('al-left'); }
     if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));
     if (!el) return;
     if (PREVIEW) {

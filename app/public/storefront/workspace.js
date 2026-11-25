@@ -346,7 +346,24 @@ function themePage() {
     panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));
 }
 // ---------- Theme editor: a store's own draft for one install (section list, add/edit/remove, publish) ----------
+// internal links a section or menu can point to (pages and products of this store)
+function linkOptions() {
+  const base = '/store.html';
+  const o = [['Shop', base + '#/shop'], ['Collections', base + '#/collections'], ['Contact', base + '#/contact'], ['About', base + '#/about']];
+  (ed?.pages || []).forEach((pg) => o.push([pg.title, base + '#/page/' + pg.slug]));
+  cfgList('pages').filter((x) => x.slug && x.name).forEach((x) => o.push([x.name, base + '#/page/' + x.slug]));
+  (state.products || []).filter((x) => x.status === 'Active').slice(0, 60).forEach((x) => o.push([x.name, base + '?view=p&p=' + encodeURIComponent(x.id)]));
+  return o;
+}
+const linkList = () => '<datalist id="te-links">' + linkOptions().map(([n, u]) => '<option value="' + esc(u) + '">' + esc(n) + '</option>').join('') + '</datalist>';
+const spaceFields = (p) => '<label>Spacing<select name="space">' + [['compact', 'Compact'], ['normal', 'Normal'], ['roomy', 'Roomy']].map(([k, l]) => '<option value="' + k + '"' + ((p.space || 'normal') === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
+  '<label>Text alignment<select name="align">' + [['center', 'Centered'], ['left', 'Left']].map(([k, l]) => '<option value="' + k + '"' + ((p.align || 'center') === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>';
 function sectionFieldsFor(s) {
+  const p = s.props || {};
+  const fields = sectionFieldsBase(s);
+  return fields ? fields.replace(/(<input type="url" name="(?:href)")/g, '$1 list="te-links"') + linkList() + (s.type === 'announcement' || s.type === 'booking' ? '' : spaceFields(p)) : fields;
+}
+function sectionFieldsBase(s) {
   const p = s.props || {};
   if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + input('Button link', 'href', p.href, 'url');
   if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
@@ -392,14 +409,15 @@ function edListHtml() {
   if (!ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. Sections show on your home page after the store’s own content.</p>';
   return ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(sectionLabel[x.type] || x.type) + '</span><small>' + esc(String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
 }
+const chromePicker = (dis) => '<label class="wide">Add a link to a page or product<select data-chrome-pick' + dis + '><option value="">Choose…</option>' + linkOptions().map(([n, u]) => '<option value="' + esc(n + ' | ' + u) + '">' + esc(n) + '</option>').join('') + '</select></label>';
 function edChromeHtml(kind) {
   const w = canWrite(); const dis = w ? '' : ' disabled';
   if (kind === 'header') return '<div class="panel-title"><h2>Header</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="header"><div class="field-grid te-fields">' +
     input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + input('Announcement link (optional)', 'announceHref', ed.header.announceHref, 'text', 'placeholder="/shop or https://..."' + dis) +
-    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + '</div></form></div>';
+    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
   return '<div class="panel-title"><h2>Footer</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="footer"><div class="field-grid te-fields">' +
     area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
-    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + '</div></form></div>';
+    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + '</div></form></div>';
 }
 function edRightHtml() {
   if (ed.cur === 'header' || ed.cur === 'footer') return edChromeHtml(ed.cur);
@@ -512,6 +530,7 @@ function edHandle(a, key) {
 }
 function edPicked(v) { ed.cur = v; edBind(); ed.sel = ed.sections.length && (v === 'home' || v.startsWith('p:')) ? 0 : -1; ed.snapped = false; edRefresh('lrbp'); }
 function edChromeInput(target) {
+  if (target.matches && target.matches('[data-chrome-pick]')) { const f = target.closest('form'), ta = f?.querySelector('textarea[name=links]'); if (ta && target.value) { ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + target.value; target.value = ''; ta.dispatchEvent(new Event('input', { bubbles: true })); } return true; }
   const form = target.closest('form[data-form="te-chrome"], form[data-form="te-page"]'); if (!form || !ed || !canWrite()) return false;
   if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
   const d = Object.fromEntries(new FormData(form));
