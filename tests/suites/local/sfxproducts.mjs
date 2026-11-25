@@ -93,6 +93,14 @@ export default async function run({ browser, stack }) {
     assert(await order('Rajasthan') === 0, 'free zone not applied');
     assert(await order('Punjab') === 50, 'flat fee not used for other states');
   }, 'critical');
+  await s.check('Dashboard: the logo link opens Home, and dark mode cards stay readable (metrics, Team, Notifications)', async () => {
+    await open('#/'); const t = await page.locator('main').innerText(); assert(/Manage your catalog/.test(t), 'logo route is blank: ' + t.slice(0, 80));
+    const low = async (hash) => { await open(hash); return page.evaluate(() => { document.querySelector('.shell').setAttribute('data-theme', 'dark');
+      const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }; return .2126 * f(m[0]) + .7152 * f(m[1]) + .0722 * f(m[2]); };
+      const bg = (el) => { for (let e = el; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor, a = b.match(/[\d.]+/g); if (a && (a.length < 4 || Number(a[3]) > .5)) return b; } return 'rgb(18,18,18)'; };
+      const bad = []; for (const el of document.querySelectorAll('.work *')) { if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue; const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue; const a = lum(getComputedStyle(el).color), b = lum(bg(el)); if ((Math.max(a, b) + .05) / (Math.min(a, b) + .05) < 3) bad.push(el.textContent.trim().slice(0, 20)); } return bad.slice(0, 3); }); };
+    for (const h of ['#/home', '#/team', '#/notifications']) { const bad = await low(h); assert(!bad.length, h + ' unreadable in dark mode: ' + bad.join(', ')); }
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();
