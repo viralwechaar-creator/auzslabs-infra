@@ -152,6 +152,18 @@ export async function createStorefrontPlanOrder({ userId }) {
 // the signature MUST be computed over the exact raw bytes Razorpay
 // sent, before any JSON.parse, or a byte-for-byte-identical payload
 // with different key ordering would fail to verify.
+export async function createThemeOrder({ userId, themeId }) {
+  if (!razorpayConfigured()) throw new Error('Online payment is not switched on yet. Please contact AUZslab to unlock this theme.');
+  const { rows } = await withAuth(userId, (client) => client.query('select sfx_theme_order_prepare($1) as r', [themeId]));
+  const p = rows[0].r;
+  const paise = Math.round(Number(p.amount) * 100);
+  const order = await razorpayApi('orders', { amount: paise, currency: 'INR', receipt: `sfxth_${String(p.tenant_id).replace(/-/g, '').slice(0, 20)}`,
+    notes: { sfx_tenant_id: String(p.tenant_id), sfx_theme_id: String(p.theme_id) } });
+  await pool.query(`insert into payments (razorpay_order_id, user_id, sfx_tenant_id, sfx_theme_id, amount, status, period) values ($1, $2, $3, $4, $5, 'created', 'month')`,
+    [order.id, userId, p.tenant_id, p.theme_id, Number(p.amount)]);
+  return { orderId: order.id, amount: order.amount, currency: order.currency, keyId: RAZORPAY_KEY_ID, description: `AUZslab storefront theme: ${p.name}` };
+}
+
 export function verifyWebhookSignature(rawBody, signatureHeader) {
   if (!RAZORPAY_WEBHOOK_SECRET || !signatureHeader) return false;
   const expected = crypto.createHmac('sha256', RAZORPAY_WEBHOOK_SECRET).update(rawBody).digest('hex');
@@ -187,7 +199,7 @@ export async function handleWebhookEvent(event) {
   const payment = event.payload?.payment?.entity;
   if (!payment?.order_id) return;
 
-  const { rows } = await pool.query('select id, status, signup_request_id, addon_request_id, client_order_id, sfx_tenant_id from payments where razorpay_order_id = $1', [payment.order_id]);
+  const { rows } = await pool.query('select id, status, signup_request_id, addon_request_id, client_order_id, sfx_tenant_id, sfx_theme_id from payments where razorpay_order_id = $1', [payment.order_id]);
   const row = rows[0];
   if (!row) return; // an order this server never created, or a test event -- nothing to do
   if (row.status !== 'paid') {
@@ -199,6 +211,7 @@ export async function handleWebhookEvent(event) {
     await pool.query('select online_confirm_order_payment($1, $2, $3)', [row.client_order_id, payment.id, Number(payment.amount) / 100]);
     return;
   }
+  if (row.sfx_theme_id) { await pool.query('select sfx_theme_fulfil_payment($1)', [row.id]); return; }
   if (row.sfx_tenant_id) { await pool.query('select provision_storefront_from_payment($1)', [row.id]); return; }
   if (row.signup_request_id) await pool.query('select provision_from_payment($1)', [row.id]);
   else await pool.query('select provision_addon_from_payment($1)', [row.id]);

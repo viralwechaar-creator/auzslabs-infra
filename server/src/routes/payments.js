@@ -1,5 +1,5 @@
 import { pool, withAuth } from '../db.js';
-import { paymentConfig, gstPct, createClientOrderPayment, createRenewalOrder, createStorefrontPlanOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
+import { paymentConfig, gstPct, createClientOrderPayment, createRenewalOrder, createStorefrontPlanOrder, createThemeOrder, startRazorpayAutorenew, cancelRazorpayAutorenew, razorpayConfigured, verifyWebhookSignature, handleWebhookEvent } from '../payments.js';
 import { cashfreeConfigured, startAutorenew, cancelAutorenew, verifyWebhookSignature as verifyCashfreeSignature, handleWebhookEvent as handleCashfreeWebhookEvent } from '../cashfree.js';
 import { requireVerifiedEmail } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
@@ -139,6 +139,16 @@ export async function handle(ctx) {
     if (rateLimited(`sfxplanpay:${ip}`, 10, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
     if (!razorpayConfigured()) throw new HttpError(400, 'Online payment is not switched on yet. Please ask us to reactivate your store.');
     try { return reply(200, await createStorefrontPlanOrder({ userId: user.id })); }
+    catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start payment'); }
+  }
+  // Premium storefront theme: the shop pays AUZslab (platform keys); the signed webhook unlocks + installs it (db/405).
+  if (url.pathname === '/payments/sfx/theme/create' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxthemepay:${ip}`, 15, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    if (!razorpayConfigured()) throw new HttpError(400, 'Online payment is not switched on yet. Please contact AUZslab to unlock this theme.');
+    const b = await readJsonBody(req);
+    if (!/^[0-9a-f-]{36}$/i.test(String(b.themeId || ''))) throw new HttpError(400, 'choose a theme');
+    try { return reply(200, await createThemeOrder({ userId: user.id, themeId: b.themeId })); }
     catch (err) { throw new HttpError(err.status || 400, err.message || 'could not start payment'); }
   }
   if (url.pathname === '/payments/autorenew/start' && req.method === 'POST') {

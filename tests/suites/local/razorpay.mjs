@@ -175,5 +175,24 @@ export default async function run({ browser, stack }) {
     await q('select renewal_notify_run()');
     assert((await q("select count(*)::int n from notifications where tenant_id=$1 and type='renewal'", [tenantId]))[0].n === 1, 'the reminder did not come back');
   }, 'critical');
+  await s.check('Premium theme: refused unpaid, paid through Razorpay + signed webhook unlocks and installs it once', async () => {
+    await q("update tenant_settings set features = features || '{\"storefront\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
+    await q("insert into sfx_stores (tenant_id, published) select id, true from tenants where slug='testcafe' on conflict (tenant_id) do nothing");
+    await q("delete from sfx_theme_installs where theme_id in (select id from sfx_themes where slug='premium-test')"); await q("delete from sfx_themes where slug='premium-test'");
+    const th = (await q("insert into sfx_themes (name, slug, price_cents, status) values ('Premium test','premium-test',49900,'approved') returning id"))[0].id;
+    const vr = (await q("insert into sfx_theme_versions (theme_id, version_number, content, frozen) values ($1,1,'{\"sections\":[]}',true) returning id", [th]))[0].id;
+    await q('update sfx_themes set approved_version_id=$2 where id=$1', [th, vr]);
+    const own = await login(USERS.cafeOwner);
+    assert((await call('sfx_theme_install', { p_theme_id: th }, own)).status !== 200, 'a paid theme installed without paying');
+    assert((await fetch(stack.apiBase + '/payments/sfx/theme/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ themeId: th }) })).status === 401, 'anonymous could start a purchase');
+    const r = await fetch(stack.apiBase + '/payments/sfx/theme/create', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + own }, body: JSON.stringify({ themeId: th }) }); const o = await r.json();
+    assert(r.status === 200 && o.amount === 49900 && /^order_/.test(o.orderId), 'create: ' + JSON.stringify(o));
+    const ev = captured(o.orderId, 'pay_THEME001', 49900);
+    assert((await hook(ev)).status === 200, 'webhook refused');
+    assert((await q('select count(*)::int n from sfx_theme_purchases where theme_id=$1', [th]))[0].n === 1 && (await q('select count(*)::int n from sfx_theme_installs where theme_id=$1', [th]))[0].n === 1, 'not unlocked/installed');
+    await hook(ev);
+    assert((await q('select count(*)::int n from sfx_theme_purchases where theme_id=$1', [th]))[0].n === 1, 'a replay bought it twice');
+    assert((await fetch(stack.apiBase + '/payments/sfx/theme/create', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + own }, body: JSON.stringify({ themeId: th }) })).status === 400, 'could buy it twice');
+  }, 'critical');
   s.done();
 }

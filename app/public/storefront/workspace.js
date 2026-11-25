@@ -305,7 +305,7 @@ const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', 
 function themeCard(t) {
   const price = t.priceCents > 0 ? money(t.priceCents / 100) : 'Free';
   const buy = t.installed ? badge('Installed') :
-    t.priceCents > 0 ? '<p class="compact-copy">Premium theme. Checkout is being switched on; contact AUZslab to unlock it for your store.</p>' :
+    t.priceCents > 0 ? (canWrite() ? button('Buy for ' + price, 'theme-buy:' + t.id, 'primary') : '<p class="compact-copy">Premium theme. Ask an owner or manager to buy it.</p>') :
     canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
   return '<article class="card"><div class="tile-img">' + (image(t.previewImageUrl, t.name) || '<div class="tile-img placeholder"></div>') +
     '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
@@ -323,7 +323,7 @@ function themePage() {
   const market = state.marketplace.map((t) => ({ ...t, installed: owned.has(t.id) }));
   return head('Theme', 'Browse the theme marketplace, install a theme, and customize what you install.', canWrite() ? button('Import ZIP', 'theme-import') + button('New theme', 'theme-new', 'primary') : '') + tabs('builder', websiteTabs) +
     panel('Your installed themes', state.installs.length ? '<div class="cards">' + state.installs.map(installRow).join('') + '</div>' : body('<p class="compact-copy">You haven’t installed a theme yet. Install one from the marketplace below.</p>')) +
-    panel('Theme marketplace', body('<p class="compact-copy">Prices on this page are always current and are set by AUZslab. Free themes install instantly; premium themes show their price and are unlocked with AUZslab.</p>') + '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
+    panel('Theme marketplace', body('<p class="compact-copy">Prices on this page are always current and are set by AUZslab. Free themes install instantly; premium themes are bought once with a secure payment and install straight away.</p>') + '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
     panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));
 }
 // ---------- Theme editor: a store's own draft for one install (section list, add/edit/remove, publish) ----------
@@ -1254,6 +1254,18 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     await Promise.all([refreshMarketplace(), refreshInstalls()]);
     save(r.alreadyInstalled ? 'Already installed.' : 'Theme installed. Customize it, then publish when ready.');
     rerender();
+  });
+  if (a === 'theme-buy') return withBusy(async () => {
+    const o = await apiPost('/payments/sfx/theme/create', { themeId: key });
+    await loadRzp();
+    await new Promise((ok, no) => {
+      const rz = new window.Razorpay({ key: o.keyId, order_id: o.orderId, amount: o.amount, currency: o.currency, name: 'AUZslab', description: o.description,
+        handler: () => ok(), modal: { ondismiss: () => no(new Error('Payment was not completed.')) } });
+      rz.open();
+    });
+    save('Payment received. Unlocking your theme…');
+    for (let i = 0; i < 20; i++) { await new Promise((r) => setTimeout(r, 2000)); await Promise.all([refreshMarketplace(), refreshInstalls()]); if (state.installs.some((x) => x.themeId === key)) { save('Theme unlocked and installed.'); return rerender(); } }
+    save('Payment received. The theme will appear within a minute; refresh shortly.'); rerender();
   });
   if (a === 'theme-customize') { location.hash = '/builder/' + key; return; }
   if (a === 'studs-save') return withBusy(async () => { studsRead(); const r = await api('sfx_studs_settings_save', { p_install_id: sd.id, p: sd.settings }); sd.settings = r.settings; sd.saved = JSON.stringify(r.settings); await refreshInstalls(); save('Studs draft saved. Your live store has not changed.'); rerender(); });
