@@ -8,7 +8,7 @@ export default async function run({ browser, stack }) {
   const ctx = await newCtx(browser, stack); const page = await ctx.newPage(); const errs = watch(page);
   const email = 'newclient-' + Date.now() + '@test.local';
   await s.check('Sign up tab is Google-only (no email or password boxes)', async () => {
-    await page.goto(stack.url('', '/signup.html')); await page.waitForTimeout(900);
+    await page.goto(stack.url('', '/signup.html')); await page.waitForTimeout(900); await page.click('#modeNew'); await page.waitForTimeout(300);
     assert(!(await page.locator('#email').isVisible()), 'email box is shown on the Sign up tab');
     assert(!(await page.locator('#password').isVisible()), 'password box is shown on the Sign up tab');
     assert(await page.locator('#googleBtnHost *').count() > 0, 'no Continue with Google button');
@@ -58,9 +58,10 @@ export default async function run({ browser, stack }) {
     // before navigation, not via a later location.hash assignment. A plain goto() to the same path with
     // only the hash changed is a same-document navigation in Chromium (no reload, a4.js never re-runs),
     // so an about:blank hop in between forces a real reload each time.
-    await p.goto(stack.url('', '/live-demo.html#pos')); await p.waitForTimeout(900);
-    // retired products (AUZsPOS/AUZsPay/AUZsScan/AUZsFinance, CLAUDE.md) and AUZsMob never get the button
-    assert((await p.locator('.dm2-feat a:has-text("Get this app")').count()) === 0, 'a retired product (AUZsPOS) got a "Get this app" button');
+    await p.goto(stack.url('', '/live-demo.html')); await p.waitForTimeout(900);
+    // retired products (AUZsPOS/AUZsPay/AUZsScan/AUZsFinance) are not on the live demo page at all any more
+    const demoData = await p.locator('#dm-data').evaluate((el) => el.textContent);
+    assert(!/AUZsPOS|AUZsPay|AUZsScan|AUZsFinance/.test(demoData), 'a retired product is still listed on the live demo page');
     // AUZsLedger (sellable) gets the button, straight into cart.html with accounting preselected
     await p.goto('about:blank');
     await p.goto(stack.url('', '/live-demo.html#ledger')); await p.waitForTimeout(900);
@@ -185,14 +186,15 @@ export default async function run({ browser, stack }) {
     const txt = await p.locator('main').innerText();
     assert(!/Total due|Continue to payment|per month|\/month|monthly price/i.test(txt), 'the request page shows prices: ' + txt.slice(0, 300));
     assert(/1,360/.test(txt) && /Hardware integration/.test(txt) && /Website/.test(txt) && /WhatsApp automation/.test(txt), 'onboarding fee or add-ons missing');
-    await p.check('#pick input[data-k=pos]', { force: true }); assert(!(await p.locator('#yearNote').isVisible()), 'yearly notice shown for the restaurant POS');
+    await p.check('#pick input[data-k=accounting]', { force: true }); await p.waitForTimeout(200);
+    assert(/yearly plan/i.test(await p.locator('#yearNote').innerText()), 'no yearly-plan notice for AUZsLedger');
     await p.check('#pick input[data-k=mobile]', { force: true }); await p.waitForTimeout(200);
     assert(/yearly plan/i.test(await p.locator('#yearNote').innerText()) && /AUZsMob/.test(await p.locator('#yearNote').innerText()), 'no yearly-plan notice for AUZsMob');
     await p.check('#pickAdd input[data-k=addon_website]', { force: true });
     await p.fill('#rqName', 'QA Owner'); await p.fill('#rqPhone', '9811100011'); await p.fill('#rqBiz', 'QA Business ' + (Date.now() % 10000)); await p.fill('#rqReq', 'Billing and stock for two outlets');
     await p.click('#rqSend'); await p.waitForSelector('#sent', { state: 'visible', timeout: 10000 });
     const r = await q("select count(*)::int n, min(status) st, (select products from client_orders where business_name like 'QA Business%' order by created_at desc limit 1) pr from client_orders where business_name like 'QA Business%'");
-    assert(r[0].n >= 1 && r[0].st === 'requested' && r[0].pr && ['pos', 'mobile', 'addon_website'].every((k) => r[0].pr.includes(k)), 'no request stored: ' + JSON.stringify(r[0]));
+    assert(r[0].n >= 1 && r[0].st === 'requested' && r[0].pr && ['accounting', 'mobile', 'addon_website'].every((k) => r[0].pr.includes(k)), 'no request stored: ' + JSON.stringify(r[0]));
     assert(/pay\.html\?t=[a-f0-9]{32}/.test(await p.locator('#trackLink').getAttribute('href')), 'no track link');
     await s.shot(p, 'cart-request-sent'); assert(!e5.some((x) => /JS error/.test(x)), e5.join(' | ')); await c5.close();
   }, 'critical');

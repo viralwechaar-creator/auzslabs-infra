@@ -371,9 +371,12 @@ async function routeToApp() {
 }
 async function afterSignIn(user) {
   if (goNext()) return;
+  // a platform admin with no business of their own goes straight to the admin panel (asking for a business dashboard would only fail)
+  const adm = await isPlatformAdmin(), own = !!(user && await hasOwnTenant(user.id));
+  if (adm && !own) { window.location.href = 'admin.html'; return; }
   if (await routeToApp()) return;
-  if (user && await hasOwnTenant(user.id)) { window.location.href = 'account.html'; return; }
-  if (await isPlatformAdmin()) { window.location.href = 'admin.html'; return; }
+  if (own) { window.location.href = 'account.html'; return; }
+  if (adm) { window.location.href = 'admin.html'; return; }
   // Two-path onboarding gate: a brand-new signup with no business yet must
   // choose a path before reaching any dashboard. account.html itself
   // (bootProspect) sends them on to choose-path.html unless they already
