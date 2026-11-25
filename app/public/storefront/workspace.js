@@ -588,6 +588,10 @@ function checkoutPage() {
     panel('Razorpay', body(connected ?
       '<p class="compact-copy">Online payments are connected. Customers can also always pay cash on delivery.</p>' + (canWrite() ? button('Disconnect', 'razorpay-clear') : '') :
       '<p class="compact-copy">Not connected yet. Customers can still check out and pay cash on delivery.</p>' + (canWrite() ? editForm('razorpay', null, input('Key ID', 'keyId', '', 'text', 'required placeholder="rzp_live_..."') + input('Key Secret', 'secret', '', 'password', 'required'), 'Connect Razorpay') : ''))) +
+    panel('Checkout rules', body(canWrite() ? editForm('checkout-rules', '', (() => { const r = state.checkout.rules || { fields: {}, payments: {}, limits: {} };
+      return select('Email at checkout', 'email', [['optional', 'Optional'], ['required', 'Required']], r.fields.email || 'optional') + select('Second address line', 'address2', [['optional', 'Show'], ['hidden', 'Hide']], r.fields.address2 || 'optional') + select('Order note', 'note', [['optional', 'Show'], ['hidden', 'Hide']], r.fields.note || 'optional') +
+        select('Cash on delivery', 'cod', [['yes', 'Allowed'], ['no', 'Not allowed']], r.payments.cod === false ? 'no' : 'yes') + select('Online payment', 'online', [['yes', 'Allowed'], ['no', 'Not allowed']], r.payments.online === false ? 'no' : 'yes') +
+        input('Cash on delivery only up to (Rs, 0 = no limit)', 'codMax', r.payments.codMax || 0, 'number', 'min="0" step="1"') + input('Minimum order (Rs, 0 = none)', 'minOrder', r.limits.minOrder || 0, 'number', 'min="0" step="1"') + input('Most items in one order (0 = no limit)', 'maxItems', r.limits.maxItems || 0, 'number', 'min="0" max="200" step="1"'); })(), 'Save rules') : '<p class="compact-copy">Only an owner or manager can edit this.</p>')) +
     panel('Checkout appearance', body('<p class="compact-copy">Customizing checkout’s colours and confirmation text is coming in a later release. Checkout always uses your store’s own theme today.</p>'), badge('Coming soon', 'neutral'));
 }
 function websiteOverview() {
@@ -841,7 +845,7 @@ function taxesPage() {
   const sample = 1000, tx = on ? (t.inclusive ? sample * t.rate / (100 + Number(t.rate)) : sample * t.rate / 100) : 0;
   return head('Taxes', 'GST on orders from your online store.', '') + tabs('taxes', orderTabs) +
     panel('GST', body(canWrite() ? editForm('tax-settings', '', input('GST rate in % (0 = do not charge or show tax)', 'rate', t.rate ?? 0, 'number', 'min="0" max="28" step="0.1"') + input('Label shown to customers', 'label', t.label || 'GST', 'text', 'maxlength="20"') +
-      select('Your prices', 'inclusive', ['Include tax', 'Do not include tax (tax is added at checkout)'], t.inclusive === false ? 'Do not include tax (tax is added at checkout)' : 'Include tax') + input('Your GST number (optional, 15 characters)', 'gstin', t.gstin || '', 'text', 'maxlength="15" placeholder="08ABCDE1234F1Z5"') +
+      select('Your prices', 'inclusive', ['Include tax', 'Do not include tax (tax is added at checkout)'], t.inclusive === false ? 'Do not include tax (tax is added at checkout)' : 'Include tax') + input('Your GST number (optional, 15 characters)', 'gstin', t.gstin || '', 'text', 'maxlength="15" placeholder="08ABCDE1234F1Z5"') + input('Your state (splits tax into CGST + SGST inside your state, IGST outside)', 'sellerState', t.sellerState || '', 'text', 'maxlength="60" placeholder="Rajasthan"') +
       '<p class="compact-copy">' + (on ? 'On an order of ₹1,000 the ' + esc(t.label || 'GST') + ' is about ₹' + tx.toFixed(2) + (t.inclusive === false ? ', added to the total.' : ', already inside the price.') : 'Tax is off. Orders show no tax line.') + ' Tax applies to the goods after any discount, not to shipping. The same rate is used for every product.</p>', 'Save tax settings') :
       '<p class="compact-copy">' + (on ? esc(t.label || 'GST') + ' ' + Number(t.rate) + '% ' + (t.inclusive === false ? 'added at checkout' : 'included in prices') : 'Tax is off.') + '</p>'));
 }
@@ -854,7 +858,9 @@ function shippingPage() {
   const sh = state.checkout.shipping || {};
   return head('Shipping', 'What customers pay for delivery at checkout.', '') + tabs('shipping', orderTabs) +
     panel('Delivery charge', body(canWrite() ? editForm('checkout-settings', '', input('Delivery fee (Rs)', 'fee', sh.fee ?? 0, 'number', 'min="0" step="1"') + input('Free delivery above (Rs, 0 = never)', 'freeOver', sh.freeOver ?? 0, 'number', 'min="0" step="1"') + area('Note shown to customers', 'note', sh.note || '', 'maxlength="300"') + area('Shipping zones (optional). One per line: Zone name | State, State | Fee | Free above. The customer\'s state picks the zone; any other state pays the delivery fee above.', 'zones', (sh.zones || []).map((z) => [z.name, (z.states || []).join(', '), z.fee, z.freeOver].join(' | ')).join('\n'), 'rows="4" maxlength="2000" placeholder="Rajasthan | Rajasthan | 40 | 500"'), 'Save shipping') :
-      '<p class="compact-copy">Fee Rs ' + Number(sh.fee || 0) + (Number(sh.freeOver) > 0 ? ', free above Rs ' + Number(sh.freeOver) : '') + '.</p>'));
+      '<p class="compact-copy">Fee Rs ' + Number(sh.fee || 0) + (Number(sh.freeOver) > 0 ? ', free above Rs ' + Number(sh.freeOver) : '') + '.</p>')) +
+    panel('Price tiers', body(canWrite() ? editForm('shipping-tiers', '', area('One tier per line: order up to (Rs) | fee | label. Leave the amount empty for everything above.', 'tiers', (sh.tiers || []).map((t) => (t.upTo == null ? '' : t.upTo) + ' | ' + t.fee + ' | ' + (t.label || '')).join('\n'), 'rows="4" placeholder="500 | 40 | Small order\n | 20 | Big order"') +
+      '<p class="compact-copy">A zone for the customer\'s state wins first, then these tiers, then the delivery fee above. Customers see the reason with their shipping charge.</p>', 'Save tiers') : '<p class="compact-copy">' + ((sh.tiers || []).length ? (sh.tiers || []).map((t) => esc(t.label) + ': Rs ' + t.fee).join(', ') : 'No tiers.') + '</p>'));
 }
 function abandonedPage() {
   const rows = (state.abandoned || []).map((a) => [esc(a.name || '—'), esc(a.phone), (a.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), money(a.total), dateValue(a.updatedAt), a.recovered ? badge('Recovered') : badge('Not ordered', 'warn'),
@@ -1316,8 +1322,14 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'languages-settings') {
         await api('sfx_languages_save', { p: { hindi: data.hindi === 'On' } }); await refreshLanguages(); save('Language saved.'); rerender(true);
       } else if (key === 'tax-settings') {
-        await api('sfx_tax_settings_save', { p: { rate: data.rate, label: data.label, gstin: data.gstin, inclusive: !/^Do not/.test(data.inclusive || '') } });
+        await api('sfx_tax_settings_save', { p: { rate: data.rate, label: data.label, gstin: data.gstin, sellerState: data.sellerState || '', inclusive: !/^Do not/.test(data.inclusive || '') } });
         await refreshCheckout(); save('Tax settings saved.'); rerender(true);
+      } else if (key === 'checkout-rules') {
+        await api('sfx_checkout_rules_save', { p: { fields: { email: data.email, address2: data.address2, note: data.note }, payments: { cod: data.cod !== 'no', online: data.online !== 'no', codMax: data.codMax }, limits: { minOrder: data.minOrder, maxItems: data.maxItems } } });
+        await refreshCheckout(); save('Checkout rules saved.'); rerender(true);
+      } else if (key === 'shipping-tiers') {
+        const tiers = String(data.tiers || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => { const [up, fee, label] = l.split('|').map((x) => x.trim()); if (fee === undefined || fee === '') throw new Error('Tier line ' + (i + 1) + ' needs an amount and a fee, like: 500 | 40 | Small order'); return { upTo: up === '' || /^any|rest|more/i.test(up) ? null : Number(up), fee: Number(fee), label }; });
+        await api('sfx_shipping_tiers_save', { p_tiers: tiers }); await refreshCheckout(); save('Shipping tiers saved.'); rerender(true);
       } else if (key === 'checkout-settings') {
         await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note, zones: parseZones(data.zones) }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);

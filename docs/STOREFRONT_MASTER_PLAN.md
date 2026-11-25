@@ -17,7 +17,7 @@ Source: the Shopify lesson series (Modules 1-11) plus the owner's decisions. Sho
 | C | Returns/refunds/cancel as separate records with restock choice; draft orders; test-order flag | built, tested (draft orders already existed) |
 | D | Customers: stable customer id on orders, address snapshots, consent record, sign-in by code (email + WhatsApp), account portal, store credit | built, tested (customer account page UI, credit redemption at checkout, SMS not built) |
 | E | Discounts/marketing: discount calculator, buy-X-get-Y, free shipping, UTM/touch log, campaign attribution | built, tested (stacking/combining discounts and campaign reports from attribution not built) |
-| F | Checkout settings: fields, payment methods order, shipping tiers + reasons, tax rules (CGST/SGST/IGST), purchase limits | planned |
+| F | Checkout settings: fields, payment methods order, shipping tiers + reasons, tax rules (CGST/SGST/IGST), purchase limits | built, tested (checkout page fields change what the public checkout shows only through config; theme code not rewritten) |
 | G | Content/themes: blogs, redirects on handle change, theme revisions + restore, SEO fields, custom data (metafields/metaobjects) | planned |
 | H | Analytics: sessions, funnel, cohorts, RFM, inventory reports, profit with cost coverage, dashboard layout | planned |
 | I | Settings: roles/permissions split, security screen, notifications log, domains records, languages/markets, privacy, billing records | planned |
