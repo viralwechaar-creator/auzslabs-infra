@@ -1,7 +1,10 @@
 /* Notification bell: one inbox for the admin, the team and clients. Shows only when someone is signed in.
    Reads inbox_list / inbox_mark_read (db/273) with the saved session. Copy of this file: app/public/ds/bell.js (keep identical). */
 (function () {
-  if (window.__auzBell) return; window.__auzBell = true;
+  if (window.__auzBell) return;
+  // customer-facing shop pages are never a place for the staff bell (it floated over the shop's own header buttons)
+  if (/(^|\/)(site-kiln|site|store|booking|i|bill|mobbill|stybill)\.html$|^\/salon\/|^\/(b|i)\//.test(location.pathname)) return;
+  window.__auzBell = true;
   var API = window.AUZ_API || (window.CFG && window.CFG.url) || 'https://api.auzslab.in';
   var VAPID = 'BFQTtl3U3YPPl7qBOO00GjCNsW4N-T5jyq4UGs2Mk9s3lHoichGl0_B4yYrPCmCfscnw63XbHtpOp2Iy1nWMmZA';
   var onSite = /^(www\.)?auzslab\.in$/.test(location.hostname);
