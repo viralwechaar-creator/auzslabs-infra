@@ -62,6 +62,12 @@ export default async function run({ browser, stack }) {
     assert(JSON.stringify(await publicOf(B)) === beforeB, 'another store changed');
   }, 'critical');
 
+  await s.check('Studs category notes are cleaned and kept', async () => {
+    const r = (await q("select sfx_studs_clean_settings($1::jsonb) as c", [JSON.stringify({ categoryNotes: { Jackets: '  Warm layers.  ', Empty: '   ', Long: 'x'.repeat(900), Bad: 5 }, heroLabel: 'Go' })]))[0].c;
+    assert(r.categoryNotes && r.categoryNotes.Jackets === 'Warm layers.' && r.categoryNotes.Long.length === 400 && !('Empty' in r.categoryNotes) && !('Bad' in r.categoryNotes), JSON.stringify(r));
+    assert(r.heroLabel === 'Go', 'existing fields lost');
+  }, 'major');
+
   await s.check('Settings are cleaned: unsafe links are refused, known fields saved to the draft only', async () => {
     const bad = await a.rpc('sfx_studs_settings_save', { p_install_id: install, p: { heroImage: 'javascript:alert(1)' } }); assert(bad.error, 'javascript: link accepted');
     const good = await a.rpc('sfx_studs_settings_save', { p_install_id: install, p: { announcements: [{ text: 'Alpha drop is live', href: '#/drop' }], heroLabel: 'Explore the drop', closingImage: '/store/studs-demo/genx-denim-crossing.jpg', closingText: 'Clean lines.', evil: 'x' } });

@@ -428,10 +428,12 @@ function studsRead() {
   const cam = parse2(f.elements.campaigns.value, 'image', 'collection'); if (cam.length) out.campaigns = cam;
   const ft = parse2(f.elements.footerLinks.value, 'label', 'href'); if (ft.length) out.footerLinks = ft;
   const ch = parse2(f.elements.channels.value, 'label', 'href'); if (ch.length) out.channels = ch;
+  const notes = {}; f.querySelectorAll('[data-catnote]').forEach((t) => { const x = t.value.trim(); if (x) notes[t.dataset.catnote] = x.slice(0, 400); }); if (Object.keys(notes).length) out.categoryNotes = notes;
   sd.settings = out; studsPush();
 }
 function studsPush() { const fr = document.querySelector('#studs-frame'); if (fr && fr.contentWindow && sd) { try { fr.contentWindow.postMessage({ type: 'studs-settings', settings: sd.settings }, location.origin); } catch (e) { /* frame not ready */ } } }
 window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'studs-ready') studsPush(); });
+const catNames = () => [...new Set((state.products || []).map((p) => p.category).filter(Boolean))].sort();
 function studsEditor(i) {
   if (!sd || sd.id !== i.id) { const s0 = structuredClone(i.draftContent?.settings || {}); sd = { id: i.id, settings: s0, saved: JSON.stringify(s0) }; }
   const S = sd.settings, w = canWrite();
@@ -443,6 +445,7 @@ function studsEditor(i) {
     panel('Drop and collections', body('<div class="field-grid">' + select('Drop products come from', 'dropCollection', [['', 'Newest products']].concat(cols), S.dropCollection || '', dis) + input('Drop heading', 'dropTitle', S.dropTitle || '', 'text', dis) + input('Second grid heading', 'moreTitle', S.moreTitle || '', 'text', dis) +
       area('Shop all campaign slides, one per line: image address | collection name', 'campaigns', lines2(S.campaigns, 'image', 'collection'), dis + ' rows="4"') + '</div>')) +
     panel('Quote and closing banners', body('<div class="field-grid">' + input('Quote banner image', 'quoteImage', S.quoteImage || '', 'text', dis) + area('Quote text', 'quoteText', S.quoteText || '', dis + ' rows="2"') + input('Closing banner image', 'closingImage', S.closingImage || '', 'text', dis) + input('Closing banner text', 'closingText', S.closingText || '', 'text', dis) + input('Closing banner link', 'closingHref', S.closingHref || '', 'text', dis) + '</div>')) +
+    panel('Category notes', body('<p class="compact-copy">A short line shown under the category title on the shop page. Leave empty to use the default text.</p><div class="field-grid">' + catNames().map((n) => '<label class="field"><span>' + esc(n) + '</span><textarea data-catnote="' + esc(n) + '" rows="2" maxlength="400" ' + dis + '>' + esc((S.categoryNotes || {})[n] || '') + '</textarea></label>').join('') + (catNames().length ? '' : '<p class="compact-copy">Add products with categories to write notes for them.</p>') + '</div>')) +
     panel('Footer', body('<div class="field-grid">' + area('Footer links, one per line: label | link', 'footerLinks', lines2(S.footerLinks, 'label', 'href'), dis + ' rows="3"') + area('Social channels, one per line: label | link', 'channels', lines2(S.channels, 'label', 'href'), dis + ' rows="3"') + '</div><p class="compact-copy">Leave any field empty to use the default built from your own products and collections. Images must be https addresses or files under Content.</p>')) +
     '</form>';
   const live = i.active ? badge('Live on your storefront') : badge('Draft, not live', 'warn');
