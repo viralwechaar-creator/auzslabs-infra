@@ -179,8 +179,8 @@ export default async function run({ stack }) {
     for (const fn of ['sos_my_leads', 'sos_my_performance', 'sos_field_session_current', 'sos_my_tasks']) { const r = await call(null, fn, {}); assert(r.status === 401, fn + ' status ' + r.status); }
   }, 'critical');
   await s.check('Admin downloads one PDF with a staff member\'s profile and documents; nobody else can', async () => {
-    const get = (tok) => fetch(stack.apiBase + '/admin/sos-staff-pdf/' + exec2Id + '?name=Exec', { headers: { authorization: 'Bearer ' + tok } });
-    const r = await get(platformAdmin); assert(r.status === 200 && /pdf/.test(r.headers.get('content-type') || ''), 'admin pdf status ' + r.status);
+    const get = (tok) => fetch(stack.apiBase + '/admin/sos-staff-pdf/' + exec2Id + '?name=Exec', { headers: { authorization: 'Bearer ' + tok, origin: 'http://localhost:5173' } });
+    const r = await get(platformAdmin); assert(r.headers.get('access-control-allow-origin') === 'http://localhost:5173', 'no CORS header on the pdf: the browser would block it'); assert(r.status === 200 && /pdf/.test(r.headers.get('content-type') || ''), 'admin pdf status ' + r.status);
     const b = Buffer.from(await r.arrayBuffer()); assert(b.slice(0, 5).toString() === '%PDF-' && b.length > 800, 'not a pdf');
     assert((await get(manager)).status === 403, 'a sales manager must not get the staff pdf');
     assert((await fetch(stack.apiBase + '/admin/sos-staff-pdf/' + exec2Id)).status === 401, 'anonymous allowed');
