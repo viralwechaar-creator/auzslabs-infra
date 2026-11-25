@@ -1404,6 +1404,48 @@ V.orders = async (v) => {
   v._ot = setInterval(() => { if (!document.body.contains(v) || !location.hash.includes('orders')) return clearInterval(v._ot); load(true); }, 12000);
 };
 V.me = V.orders;
+// Customer account (sfx stores): sign in with a code sent by email or WhatsApp, then see orders, addresses, credit and marketing choice.
+V.account = async (v) => {
+  if (PFX !== 'sfx') return V.orders(v);
+  const KEY = 'acct.' + SLUG; const tok = () => { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
+  const setTok = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch (e) { /* storage blocked */ } };
+  const head = E('div', { class: 'shophd' }, E('h1', null, 'My account'));
+  const wrap = E('div', { class: 'pg' }, head); v.append(wrap);
+  async function signedIn() {
+    let a = null; try { a = await rpc('public_sfx_customer_account', { p_token: tok() }); } catch (e) { a = null; }
+    if (!a) { setTok(''); return signIn(); }
+    clear(wrap); wrap.append(head);
+    const msg = E('div', { class: 'tiny', style: { minHeight: '14px', color: '#1a7f3c' } });
+    const mk = E('input', { type: 'checkbox' }); mk.checked = !!a.acceptsMarketing;
+    const nm = E('input', { value: a.name || '', 'aria-label': 'Name' });
+    wrap.append(
+      E('div', { class: 'card' }, E('h2', null, 'Hi, ' + (a.name || 'there')), E('div', { class: 'mut tiny' }, [a.phone, a.email].filter(Boolean).join(' · ')),
+        a.creditBalance > 0 ? E('div', { class: 'note', style: { marginTop: '8px' } }, 'Store credit: ' + inr(a.creditBalance)) : null,
+        E('div', { class: 'frm', style: { marginTop: '10px' } }, E('label', { class: 'fld' }, nm),
+          E('label', { class: 'tiny', style: { display: 'flex', gap: '8px', alignItems: 'center' } }, mk, 'Send me offers and updates'), msg,
+          E('div', { style: { display: 'flex', gap: '8px' } },
+            E('button', { class: 'btn', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sfx_customer_update', { p_token: tok(), p: { name: nm.value, acceptsMarketing: mk.checked } }); msg.textContent = 'Saved'; } catch (er) { msg.style.color = '#b3261e'; msg.textContent = er.message; } e.target.disabled = false; } }, 'Save'),
+            E('button', { class: 'btn out', onclick: async () => { try { await rpc('public_sfx_customer_signout', { p_token: tok() }); } catch (e) { /* already gone */ } setTok(''); signIn(); } }, 'Sign out')))),
+      E('h2', { style: { padding: '12px 4px 4px' } }, 'My orders'),
+      (a.orders || []).length ? (a.orders || []).map((o) => E('a', { class: 'card', href: link('order/' + o.token), style: { display: 'flex', justifyContent: 'space-between', textDecoration: 'none', color: 'inherit', marginBottom: '8px' } },
+        E('div', null, E('b', null, '#' + o.number), E('div', { class: 'mut tiny' }, cap(o.status) + ' · ' + new Date(o.createdAt).toLocaleDateString('en-GB'))), E('b', null, inr(o.total)))) : E('div', { class: 'card mut' }, 'No orders yet.'),
+      (a.addresses || []).length ? E('h2', { style: { padding: '12px 4px 4px' } }, 'Saved addresses') : null,
+      (a.addresses || []).map((d) => E('div', { class: 'card tiny', style: { marginBottom: '8px' } }, [d.address, d.city, d.state, d.pin].filter(Boolean).join(', '), d.isDefault ? E('span', { class: 'mut' }, '  (default)') : null)));
+  }
+  function signIn() {
+    clear(wrap); wrap.append(head);
+    const msg = E('div', { class: 'tiny', style: { minHeight: '14px', color: '#b3261e' } });
+    const contact = E('input', { placeholder: 'Phone number or email', 'aria-label': 'Phone number or email', autocomplete: 'username' });
+    const code = E('input', { placeholder: '6-digit code', inputmode: 'numeric', 'aria-label': 'Code', autocomplete: 'one-time-code' });
+    const step2 = E('div', { class: 'frm', hidden: true }, E('label', { class: 'fld' }, code),
+      E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; msg.textContent = ''; try { const r = await rpc('public_sfx_customer_verify', { p_slug: SLUG, p_contact: contact.value, p_code: code.value }); if (r && r.ok) { setTok(r.token); return signedIn(); } msg.textContent = (r && r.error) || 'That code did not work'; } catch (er) { msg.textContent = er.message; } e.target.disabled = false; } }, 'Sign in'));
+    const send = E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; msg.textContent = ''; try { const res = await fetch('https://api.auzslab.in/storefront/customer/code', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slug: SLUG, contact: contact.value }) }); if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Could not send the code'); msg.style.color = '#1a7f3c'; msg.textContent = 'If we know you, a code is on its way.'; step2.hidden = false; } catch (er) { msg.style.color = '#b3261e'; msg.textContent = er.message; } e.target.disabled = false; } }, 'Send me a code');
+    wrap.append(E('div', { class: 'card' }, E('h2', null, 'Sign in'), E('div', { class: 'mut tiny', style: { margin: '2px 0 8px' } }, 'Use the phone number or email from your earlier order. We will send a one-time code.'),
+      E('div', { class: 'frm' }, E('label', { class: 'fld' }, contact), send, msg, step2)),
+      E('div', { class: 'tiny mut', style: { padding: '10px 4px' } }, 'No account needed to order. ', E('a', { href: link('orders'), style: { textDecoration: 'underline' } }, 'Track an order without signing in')));
+  }
+  return tok() ? signedIn() : signIn();
+};
 
 // ---------- Journal (blogs / news), Media & gallery, Careers: all written by the owner in AUZsStyle -> Online store -> Store ----------
 const dateTxt = (d) => { try { return d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; } catch (e) { return ''; } };
