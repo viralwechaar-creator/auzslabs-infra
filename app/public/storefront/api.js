@@ -61,8 +61,8 @@ export function toOrder(o) {
   return {
     id: o.id, number: o.number, customer: o.customerName || '', total: Number(o.total),
     payment: o.paymentStatus === 'paid' ? 'Paid' : o.paymentStatus === 'failed' ? 'Failed' : 'Pending',
-    status: o.status === 'fulfilled' ? 'Fulfilled' : o.status === 'cancelled' ? 'Cancelled' : o.status === 'returned' ? 'Returned' : 'Unfulfilled',
-    channel: 'Online store', quantity: (o.lines || []).reduce((s, l) => s + (l.qty || 1), 0), date: String(o.createdAt || '').slice(0, 10),
+    status: o.fulfilmentStatus === 'partial' && o.status !== 'cancelled' && o.status !== 'returned' ? 'Partially fulfilled' : o.status === 'fulfilled' ? 'Fulfilled' : o.status === 'cancelled' ? 'Cancelled' : o.status === 'returned' ? 'Returned' : 'Unfulfilled',
+    channel: o.channel === 'in_store' ? 'In-store' : 'Online store', fulfilment: o.fulfilmentStatus || 'unfulfilled', delivery: o.deliveryStatus || 'none', oversold: !!o.oversold, shipments: o.shipments || [], remaining: o.remaining || [], quantity: (o.lines || []).reduce((s, l) => s + (l.qty || 1), 0), date: String(o.createdAt || '').slice(0, 10),
     item: (o.lines || [])[0]?.name || '', note: o.note || '', tracking: o.tracking || '', lines: o.lines || [], timeline: o.timeline || [],
   };
 }
@@ -87,7 +87,7 @@ export async function refreshLive() { try { state.liveVisitors = await api('sfx_
 export async function refreshVisitors(days = 14) { try { state.visitors = await api('sfx_visitor_summary', { p_days: days }); } catch (e) { state.visitors = { error: true }; } }
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
 export async function refreshDiscounts() { state.discounts = await api('sfx_discount_list'); }
-export async function refreshInventory() { const [inv, mv] = await Promise.all([api('sfx_inventory_list'), api('sfx_stock_moves_list', {})]); state.inventory = inv; state.stockMoves = mv; }
+export async function refreshInventory() { const [inv, mv, ck] = await Promise.all([api('sfx_inventory_list'), api('sfx_stock_moves_list', {}), api('sfx_checkout_settings_get')]); state.checkout = ck; state.inventory = inv; state.stockMoves = mv; }
 export async function refreshLocations() { const [locs, mv, inv] = await Promise.all([api('sfx_location_list'), api('sfx_stock_moves_list', {}), api('sfx_inventory_list')]); state.locations = locs; state.stockMoves = mv; state.inventory = inv; }
 export async function refreshCategories() { const [c, t] = await Promise.all([api('sfx_category_list'), api('sfx_product_tags')]); state.categories = c; state.productTags = t; }
 export async function refreshDrafts() { const [d, i] = await Promise.all([api('sfx_draft_list'), api('sfx_inventory_list')]); state.drafts = d; state.inventory = i; }

@@ -1,0 +1,100 @@
+// Storefront round A: order lifecycle. Fulfilment, delivery and payment are separate states; shipments are records.
+import { suite, watch, assert } from '../../lib/harness.mjs';
+import { newCtx } from '../../lib/common.mjs';
+import { rpc } from '../../lib/api.mjs';
+import { q, USERS, PASSWORD } from '../../lib/db.mjs';
+
+export default async function run({ browser, stack }) {
+  const s = suite('Storefront orders', 'Per-shipment fulfilment, separate fulfilment and delivery states, channel tag, cancel rules.');
+  await q("update tenant_settings set features = features || '{\"storefront\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
+  await q("insert into sfx_stores (tenant_id, published) select id, true from tenants where slug='testcafe' on conflict (tenant_id) do update set published=true");
+  const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+  await q('delete from sfx_orders where tenant_id=$1', [tid]); await q('delete from sfx_products where tenant_id=$1', [tid]);
+  const login = async (email) => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: PASSWORD }) })).json()).access_token;
+  const owner = await login(USERS.cafeOwner);
+  const call = async (fn, args) => (await rpc(stack, fn, args, owner)).data;
+  const pr = (await call('sfx_product_save', { p_id: null, p: { name: 'Ship tee', price: 100, status: 'active', variants: [{ label: 'S', price: 100, stock: 20 }, { label: 'M', price: 100, stock: 20 }] } })).data;
+  const [vs, vm] = pr.variants.map((v) => v.id);
+  const place = async () => {
+    await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: 'Ship Buyer', phone: '98765' + Math.floor(10000 + Math.random() * 89999), address: '12 Park Road, Ward 4', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', lines: [{ variantId: vs, qty: 2 }, { variantId: vm, qty: 1 }] } });
+    return (await q('select id from sfx_orders where tenant_id=$1 order by created_at desc limit 1', [tid]))[0].id;
+  };
+  const get = async (id) => (await call('sfx_order_get', { p_id: id })).data ?? (await call('sfx_order_get', { p_id: id }));
+  let oid;
+
+  await s.check('A new order starts online, unfulfilled, no delivery, not oversold', async () => {
+    oid = await place(); const o = await get(oid);
+    assert(o.channel === 'online' && o.fulfilmentStatus === 'unfulfilled' && o.deliveryStatus === 'none' && o.oversold === false, JSON.stringify(o).slice(0, 300));
+    assert(o.remaining.reduce((a, r) => a + r.qty, 0) === 3, 'remaining should be 3');
+  }, 'critical');
+  await s.check('Shipping part of the order makes it partial and keeps the rest to ship', async () => {
+    await call('sfx_shipment_create', { p_order: oid, p: { items: [{ variantId: vs, qty: 1 }], carrier: 'BlueDart', tracking: 'BD1' } });
+    const o = await get(oid);
+    assert(o.fulfilmentStatus === 'partial' && o.status !== 'fulfilled' && o.shipments.length === 1, JSON.stringify([o.fulfilmentStatus, o.status]));
+    assert(o.remaining.reduce((a, r) => a + r.qty, 0) === 2, 'remaining should be 2');
+  }, 'critical');
+  await s.check('Cannot ship more than is left, an unknown item, or nothing', async () => {
+    const e = async (items) => JSON.stringify((await rpc(stack, 'sfx_shipment_create', { p_order: oid, p: { items } }, owner)).data).toLowerCase();
+    assert(/only ship/.test(await e([{ variantId: vs, qty: 5 }])), 'over-ship allowed');
+    assert(/not on this order/.test(await e([{ variantId: '00000000-0000-0000-0000-000000000000', qty: 1 }])), 'unknown item allowed');
+    assert(/choose at least one/.test(await e([{ variantId: vs, qty: 0 }])), 'empty shipment allowed');
+  }, 'critical');
+  await s.check('Cancelling is refused once something has shipped', async () => {
+    const r = JSON.stringify((await rpc(stack, 'sfx_order_set_status', { p_id: oid, p_status: 'cancelled' }, owner)).data).toLowerCase();
+    assert(/cannot be cancelled/.test(r), r);
+  }, 'critical');
+  await s.check('Shipping the rest makes it fulfilled; delivery follows the shipments', async () => {
+    await call('sfx_shipment_create', { p_order: oid, p: {} });
+    let o = await get(oid); assert(o.fulfilmentStatus === 'fulfilled' && o.status === 'fulfilled' && o.deliveryStatus === 'in_transit', JSON.stringify([o.fulfilmentStatus, o.status, o.deliveryStatus]));
+    await call('sfx_shipment_update', { p_id: o.shipments[0].id, p: { status: 'delivered' } });
+    o = await get(oid); assert(o.deliveryStatus === 'partly_delivered', o.deliveryStatus);
+    await call('sfx_shipment_update', { p_id: o.shipments[1].id, p: { status: 'in_transit' } });
+    await call('sfx_shipment_update', { p_id: o.shipments[1].id, p: { status: 'delivered' } });
+    o = await get(oid); assert(o.deliveryStatus === 'delivered' && o.shipments.every((x) => x.deliveredAt), o.deliveryStatus);
+  }, 'critical');
+  await s.check('A delivered shipment cannot go back; a bad tracking link is refused', async () => {
+    const o = await get(oid);
+    const r = JSON.stringify((await rpc(stack, 'sfx_shipment_update', { p_id: o.shipments[0].id, p: { status: 'in_transit' } }, owner)).data).toLowerCase();
+    assert(/cannot become/.test(r), r);
+    const r2 = JSON.stringify((await rpc(stack, 'sfx_shipment_update', { p_id: o.shipments[0].id, p: { trackingUrl: 'http://x.com/t' } }, owner)).data).toLowerCase();
+    assert(/https/.test(r2), r2);
+  });
+  await s.check('The old one-step fulfil still works and cancelling an untouched order restores stock', async () => {
+    const o2 = await place(); await call('sfx_order_set_status', { p_id: o2, p_status: 'fulfilled', p_tracking: 'T9' });
+    const a = await get(o2); assert(a.fulfilmentStatus === 'fulfilled' && a.shipments.length === 1 && a.shipments[0].tracking === 'T9', JSON.stringify(a.shipments));
+    const o3 = await place(); const before = Number((await q('select stock from sfx_variants where id=$1', [vs]))[0].stock);
+    await call('sfx_order_set_status', { p_id: o3, p_status: 'cancelled' });
+    assert(Number((await q('select stock from sfx_variants where id=$1', [vs]))[0].stock) === before + 2, 'stock not restored');
+  }, 'critical');
+  await s.check('The customer order page shows the three states and shipments without internal ids', async () => {
+    const tok = (await q('select token from sfx_orders where id=$1', [oid]))[0].token;
+    const p = (await rpc(stack, 'public_sfx_order', { p_token: tok })).data;
+    const d = p.data ?? p;
+    assert(d.fulfilmentStatus === 'fulfilled' && d.deliveryStatus === 'delivered' && d.shipments.length === 2 && !('id' in d.shipments[0]), JSON.stringify(d).slice(0, 300));
+  });
+  await s.check('Another business cannot read or change this order\'s shipments', async () => {
+    const other = await login(USERS.salonOwner || USERS.cafeOwner);
+    if (other === owner) return;
+    const sid = (await q('select id from sfx_shipments where order_id=$1 limit 1', [oid]))[0].id;
+    const r = JSON.stringify((await rpc(stack, 'sfx_shipment_update', { p_id: sid, p: { carrier: 'X' } }, other)).data).toLowerCase();
+    assert(/not found|not enabled|denied|permission|storefront/.test(r), r);
+  });
+  await s.check('The order page shows fulfilment per shipment and the Fulfil items dialog creates one', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    const o4 = await place();
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o4), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    let t = await page.locator('body').innerText();
+    assert(/Nothing shipped yet/.test(t) && /Delivery/.test(t) && /Online store/.test(t), t.slice(0, 400));
+    await page.getByRole('button', { name: 'Fulfil items' }).first().click(); await page.waitForTimeout(500);
+    await page.locator('input[name^="q_"]').first().fill('1');
+    await page.locator('input[name=tracking]').fill('UI123');
+    await page.getByRole('button', { name: 'Create shipment' }).click(); await page.waitForTimeout(1500);
+    t = await page.locator('body').innerText();
+    assert(/Shipment 1/.test(t) && /UI123/.test(t) && /still to ship/.test(t) && /Partially fulfilled/.test(t), t.slice(0, 600));
+    await s.shot(page, 'sfx-order-shipment');
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  }, 'critical');
+  s.done();
+}

@@ -105,9 +105,20 @@ function orderDetail(id) {
   if (!o) return head('Order unavailable', 'This order could not be found.', wl('All orders', 'orders'));
   const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
   const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
-  const actions = canWrite() && !['Fulfilled', 'Cancelled', 'Returned'].includes(o.status) ? button('Fulfil order', 'order-fulfill:' + o.id, 'primary') + button('Cancel order', 'order-cancel:' + o.id) : (canWrite() && o.status === 'Fulfilled' ? button('Start a return', 'return-new:' + o.id) : '');
+  const left = (o.remaining || []).reduce((a, r) => a + r.qty, 0);
+  const closed = ['Cancelled', 'Returned'].includes(o.status);
+  const actions = canWrite() && !closed ? (left > 0 && o.status !== 'Fulfilled' ? button('Fulfil items', 'order-fulfill:' + o.id, 'primary') : '') + (o.fulfilment === 'unfulfilled' && o.status !== 'Fulfilled' ? button('Cancel order', 'order-cancel:' + o.id) : button('Start a return', 'return-new:' + o.id)) : '';
+  const dlabel = { none: 'Not shipped', in_transit: 'In transit', partly_delivered: 'Partly delivered', delivered: 'Delivered', failed: 'Delivery failed' }[o.delivery] || 'Not shipped';
+  const ships = (o.shipments || []).filter((x) => x.status !== 'cancelled').map((x) => {
+    const next = { shipped: [['in_transit', 'Mark in transit'], ['delivered', 'Mark delivered']], in_transit: [['delivered', 'Mark delivered'], ['failed', 'Delivery failed']], failed: [['in_transit', 'Retry delivery']] }[x.status] || [];
+    const acts = canWrite() ? next.map(([st, lb]) => button(lb, 'shipment-set:' + x.id + ':' + st)).join('') + (['shipped', 'in_transit'].includes(x.status) ? button('Edit tracking', 'shipment-edit:' + x.id) : '') : '';
+    return '<div class="launch"><div class="info"><strong>Shipment ' + x.seq + '</strong> · ' + status(x.status === 'in_transit' ? 'In transit' : x.status === 'delivered' ? 'Delivered' : x.status === 'failed' ? 'Failed' : 'Shipped') +
+      '<small>' + (x.items || []).map((i) => esc(i.name) + (i.label && i.label !== 'Default' ? ' · ' + esc(i.label) : '') + ' × ' + i.qty).join(', ') + '</small>' +
+      '<small>' + (x.carrier ? esc(x.carrier) + ' ' : '') + (x.tracking ? (x.trackingUrl ? '<a href="' + esc(x.trackingUrl) + '" target="_blank" rel="noopener">' + esc(x.tracking) + '</a>' : esc(x.tracking)) : 'No tracking added') + '</small></div><div>' + acts + '</div></div>';
+  }).join('');
+  const shipPanel = panel('Fulfilment', body('<div class="stack">' + (ships || '<p class="empty">Nothing shipped yet.</p>') + (left > 0 && (o.shipments || []).length ? '<p class="compact-copy">' + left + ' item(s) still to ship.</p>' : '') + '</div>'));
   return head('Order #' + esc(o.number), dateValue(o.date), actions, ['orders', 'Orders']) +
-    '<div class="record-layout"><div>' + panel('Items', lines) + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfillment</div>' + status(o.status) + (o.tracking ? ' · ' + esc(o.tracking) : '') + '</div></div>')) +
+    '<div class="record-layout"><div>' + panel('Items', lines) + shipPanel + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfilment</div>' + status(o.status) + '</div><div class="launch"><div class="info">Delivery</div><strong>' + dlabel + '</strong></div><div class="launch"><div class="info">Channel</div><strong>' + esc(o.channel) + (o.oversold ? ' · oversold, check stock' : '') + '</strong></div></div>')) +
     panel('Timeline', body('<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
     '</div><aside>' + panel('Customer', body('<p>' + esc(o.customer || '—') + '</p>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
 }
@@ -733,12 +744,22 @@ const moveLabel = (m) => m.reason === 'transfer' ? 'Moved ' + m.qty + ' from ' +
 const movesTable = (moves) => table(['When', 'Product', 'What happened', 'Note'], moves.slice(0, 25).map((m) => [dateValue(m.at), esc(m.product + (m.variant && m.variant !== 'Default' ? ' · ' + m.variant : '')), moveLabel(m), esc(m.note || '')]));
 function inventoryPage() {
   const rows = (state.inventory || []).map((v) => [
-    esc(v.product), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>', v.elsewhere,
-    canWrite() ? button('Adjust', 'stock-adjust:' + v.variantId, 'compact') : '',
+    esc(v.product), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>',
+    v.unavailable || 0, v.committed || 0, v.onHand ?? v.online, v.cost == null ? '<span class="muted">Not set</span>' : money(v.cost), v.elsewhere,
+    canWrite() ? button('Adjust', 'stock-adjust:' + v.variantId, 'compact') + button('Details', 'stock-details:' + v.variantId, 'compact') : '',
   ]);
-  return head('Inventory', 'Stock your storefront can sell right now, and stock held elsewhere.', '') + tabs('inventory', productTabs) +
-    panel('Stock levels', table(['Product', 'Variant', 'SKU', 'Available online', 'Other locations', ''], rows)) +
+  const buf = (state.checkout && state.checkout.stockBuffer) || 0;
+  return head('Inventory', 'Available stock can be sold now. Committed is held for orders not shipped yet; unavailable is set aside.', canWrite() ? button('Stock buffer: ' + buf, 'stock-buffer') : '') + tabs('inventory', productTabs) +
+    panel('Stock levels', table(['Product', 'Variant', 'SKU', 'Available', 'Unavailable', 'Committed', 'On hand', 'Cost', 'Other locations', ''], rows)) +
     panel('Recent stock changes', movesTable(state.stockMoves || []));
+}
+function stockDetailsForm(v) {
+  return editForm('stock-details', v.variantId, '<p class="compact-copy wide">' + esc(v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '')) + ': ' + v.online + ' available, ' + (v.unavailable || 0) + ' unavailable, ' + (v.committed || 0) + ' committed.</p>' +
+    input('Cost per unit (leave empty if unknown)', 'cost', v.cost == null ? '' : v.cost, 'number', 'min="0" step="0.01"') +
+    select('Needs shipping', 'needsShipping', [['yes', 'Yes, it is a physical product'], ['no', 'No, nothing to ship']], v.needsShipping === false ? 'no' : 'yes') +
+    select('Set units aside', 'move', [['none', 'No change'], ['set', 'Move to unavailable'], ['release', 'Release back to available']], 'none') +
+    input('How many units', 'units', '', 'number', 'min="0" step="1"') +
+    select('Reason', 'reason', [['damaged', 'Damaged'], ['quality_hold', 'Quality hold'], ['safety_stock', 'Safety stock'], ['other', 'Other']], 'damaged'), 'Save');
 }
 function adjustForm(v) {
   return editForm('stock-adjust', v.variantId, '<p class="compact-copy wide">' + esc(v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '')) + ' has <strong>' + v.online + '</strong> available online.</p>' +
@@ -1210,8 +1231,14 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshCollections(); save(rid ? 'Collection updated.' : 'Collection created.'); close();
         if (!rid) location.hash = '/collections/' + c.id; else rerender();
       } else if (key === 'order-fulfill') {
-        await api('sfx_order_set_status', { p_id: rid, p_status: 'fulfilled', p_tracking: data.tracking || null });
-        await refreshOrders(); save('Order fulfilled.'); close(); rerender();
+        const o = state.orders.find((x) => x.id === rid);
+        const items = (o?.remaining || []).filter((r) => r.qty > 0).map((r) => ({ variantId: r.variantId, qty: Number(data['q_' + r.variantId] ?? r.qty) })).filter((r) => r.qty > 0);
+        if (!items.length) { flash('Choose at least one item to ship.'); return; }
+        await api('sfx_shipment_create', { p_order: rid, p: { items, carrier: data.carrier || null, tracking: data.tracking || null, trackingUrl: data.trackingUrl || null, notify: values.has('notify') } });
+        await refreshOrders(); save('Shipment created.'); close(); rerender();
+      } else if (key === 'shipment-edit') {
+        await api('sfx_shipment_update', { p_id: rid, p: { carrier: data.carrier || '', tracking: data.tracking || '', trackingUrl: data.trackingUrl || '' } });
+        await refreshOrders(); save('Tracking saved.'); close(); rerender();
       } else if (key === 'order-note') {
         await api('sfx_order_note', { p_id: rid, p_note: data.note }); await refreshOrders(); save('Note saved.'); rerender();
       } else if (key === 'business') {
@@ -1227,6 +1254,14 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         const expiresAt = data.expiresAt ? new Date(data.expiresAt + 'T23:59:59').toISOString() : '';
         await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, usageLimit: data.usageLimit } });
         await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); rerender(true);
+      } else if (key === 'stock-details') {
+        await api('sfx_variant_meta_save', { p_variant: rid, p: { cost: data.cost === '' ? '' : String(data.cost), needsShipping: data.needsShipping !== 'no' } });
+        const n = Number(data.units || 0);
+        if (data.move !== 'none' && n > 0) await api('sfx_stock_set_unavailable', { p_variant: rid, p_delta: data.move === 'set' ? n : -n, p_reason: data.move === 'set' ? data.reason : 'released' });
+        await refreshInventory(); save('Stock details saved.'); close(); rerender(true);
+      } else if (key === 'stock-buffer') {
+        const n = Number(data.buffer); if (!Number.isInteger(n) || n < 0) { flash('Enter a whole number, 0 or more.'); return; }
+        await api('sfx_stock_buffer_save', { p_buffer: n }); state.checkout = Object.assign({}, state.checkout, { stockBuffer: n }); save('Stock buffer saved.'); close(); rerender(true);
       } else if (key === 'stock-adjust') {
         const n = Number(data.amount); if (!Number.isInteger(n)) { flash('Enter a whole number.'); return; }
         await api('sfx_stock_adjust', data.mode === 'set' ? { p_variant: rid, p_delta: 0, p_set: n, p_note: data.note } : { p_variant: rid, p_delta: n, p_note: data.note });
@@ -1303,6 +1338,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'discount-new') return dialog('Create discount', discountForm(null));
   if (a === 'discount-edit') return dialog('Edit discount', discountForm(state.discounts.find((d) => d.id === key)));
   if (a === 'discount-toggle') return withBusy(async () => { const d = state.discounts.find((x) => x.id === key); await api('sfx_discount_set_status', { p_id: key, p_status: d.status === 'active' ? 'archived' : 'active' }); await refreshDiscounts(); save('Discount updated.'); rerender(true); });
+  if (a === 'stock-details') return dialog('Stock details', stockDetailsForm(state.inventory.find((v) => v.variantId === key)));
+  if (a === 'stock-buffer') return dialog('Stock buffer', editForm('stock-buffer', '', '<p class="compact-copy wide">Online orders cannot take a variant below this many units. Your own till is not held to it.</p>' + input('Units to keep back', 'buffer', (state.checkout && state.checkout.stockBuffer) || 0, 'number', 'min="0" step="1" required'), 'Save buffer'));
   if (a === 'stock-adjust') return dialog('Adjust stock', adjustForm(state.inventory.find((v) => v.variantId === key)));
   if (a === 'location-new') return dialog('Add location', editForm('location-record', '', input('Name', 'name', '', 'text', 'required maxlength="80"')));
   if (a === 'location-edit') return dialog('Rename location', editForm('location-record', key, input('Name', 'name', state.locations.find((l) => l.id === key)?.name || '', 'text', 'required maxlength="80"')));
@@ -1383,7 +1420,16 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'theme-use') return withBusy(async () => { await api('sfx_store_save', { p: { theme: key } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Theme updated.'); rerender(); });
   if (a === 'razorpay-clear') return withBusy(async () => { await api('sfx_store_set_razorpay', { p: { clear: true } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay disconnected.'); rerender(); });
   if (a === 'order-fulfill') {
-    return dialog('Fulfil order', editForm('order-fulfill', key, input('Tracking reference (optional)', 'tracking', '', 'text', 'maxlength="100"'), 'Mark as fulfilled'));
+    const o = state.orders.find((x) => x.id === key);
+    const qty = (o?.remaining || []).filter((r) => r.qty > 0).map((r) => input(esc(r.name) + (r.label && r.label !== 'Default' ? ' · ' + esc(r.label) : '') + ' (' + r.qty + ' left)', 'q_' + r.variantId, String(r.qty), 'number', 'min="0" max="' + r.qty + '"')).join('');
+    return dialog('Fulfil items', editForm('order-fulfill', key, qty + input('Carrier (optional)', 'carrier', '', 'text', 'maxlength="80"') + input('Tracking number (optional)', 'tracking', '', 'text', 'maxlength="100"') + input('Tracking link (optional, https)', 'trackingUrl', '', 'text', 'maxlength="400"') + '<label class="check"><input type="checkbox" name="notify" checked> Tell the customer</label>', 'Create shipment'));
+  }
+  if (a === 'shipment-edit') {
+    const sh = state.orders.flatMap((x) => x.shipments || []).find((x) => x.id === key);
+    return dialog('Edit tracking', editForm('shipment-edit', key, input('Carrier', 'carrier', sh?.carrier || '', 'text', 'maxlength="80"') + input('Tracking number', 'tracking', sh?.tracking || '', 'text', 'maxlength="100"') + input('Tracking link (https)', 'trackingUrl', sh?.trackingUrl || '', 'text', 'maxlength="400"'), 'Save tracking'));
+  }
+  if (a === 'shipment-set') {
+    return withBusy(async () => { await api('sfx_shipment_update', { p_id: key, p: { status: detail } }); await refreshOrders(); save('Shipment updated.'); rerender(); });
   }
   if (a === 'order-cancel') {
     return withBusy(async () => { await api('sfx_order_set_status', { p_id: key, p_status: 'cancelled' }); await refreshOrders(); save('Order cancelled.'); rerender(); });
