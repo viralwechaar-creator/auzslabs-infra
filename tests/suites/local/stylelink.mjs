@@ -45,6 +45,12 @@ export default async function run({ stack }) {
     assert(r.name === 'Link Shirt Web' && Number(r.price) === 980 && r.category === 'Tops' && r.tags.includes('web-only') && r.description === 'From the web', JSON.stringify(r));
   }, 'critical');
 
+  await s.check('Changing only the price of an imported product (several sizes) changes every size', async () => {
+    await ok('sfx_product_save', { p_id: prod.id, p: { name: 'Link Shirt Web', category: 'Tops', price: 1111, status: 'active' } });
+    const vs = await q('select price from sfx_variants where product_id=$1', [prod.id]);
+    assert(vs.length >= 2 && vs.every((v) => Number(v.price) === 1111), JSON.stringify(vs));
+  }, 'critical');
+
   await s.check('A product created in the storefront appears in AUZsStyle with sizes and stock', async () => {
     const np = await ok('sfx_product_save', { p_id: null, p: { name: 'Web Born Tee', category: 'Tees', price: 500, status: 'active', variants: [{ label: 'Black / S', price: 500, stock: 4 }, { label: 'Black / M', price: 500, stock: 3 }] } });
     const st = (await q("select * from sty_styles where tenant_id=$1 and name='Web Born Tee'", [tid]))[0]; assert(st, 'style not created');
