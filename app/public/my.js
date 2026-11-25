@@ -220,7 +220,7 @@
     ['pos', 'POS', '/index.html', function (d) { return own(d, 'pos'); }],
     ['mob', 'Phone shop', '/mob.html', function (d) { return own(d, 'mobile'); }],
     ['sty', 'Clothing', '/style.html', function (d) { return own(d, 'style'); }],
-    ['fin', 'Money', '/finance.html', function (d) { return own(d, 'finance'); }],
+    ['fin', 'Money', '/accounts.html#/home?sec=fin-home', function (d) { return own(d, 'finance'); }],
     ['payroll', 'Staff and pay', '/payroll.html', function (d) { return own(d, 'payroll'); }],
     ['accounts', 'Accounts', '/accounts.html', function (d) { return own(d, 'accounting'); }],
     ['scan', 'Scan to bill', '/scan.html', function (d) { return own(d, 'accounting') || own(d, 'scan'); }],

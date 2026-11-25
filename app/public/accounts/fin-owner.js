@@ -1,9 +1,9 @@
 /* Finance: Owner & loans (ported from AUZsFinance's p-owner.js). Capital put in, drawings taken, and loans
    taken or given with principal and interest kept apart. */
 'use strict';
-page('fin-owner', { title: 'Finance: Owner & loans', icon: 'wallet', async render(v) {
+page('fin-owner', { title: 'Owner & loans', icon: 'wallet', async render(v) {
   await ensureFin();
-  v.header({ title: 'Finance: Owner & loans', actions: [canFin('admin') ? { label: 'Add owner or partner', icon: 'plus', run: () => finPartnerSheet() } : null] });
+  v.header({ title: 'Owner & loans', actions: [canFin('admin') ? { label: 'Add owner or partner', icon: 'plus', run: () => finPartnerSheet() } : null] });
   const [partners, loans] = await Promise.all([api('fin_partner_list'), api('fin_loan_list')]);
   v.root.append(section('Owner and partners', partners.length ? h('div', { class: 'list' }, partners.map((p) => liRow({ icon: 'user', tone: 'gray', title: p.name, value: inr(p.net), onclick: () => finPartnerDetail(p) })))
     : empty('user', 'No owner added yet', 'Record money you put in or take out and it appears here.', canFin('write') ? h('button', { class: 'btn fill', onclick: () => addTxn({ kind: 'capital_in' }) }, 'Owner put money in') : null)));

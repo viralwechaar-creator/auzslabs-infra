@@ -2,10 +2,10 @@
    sheet. Nothing is ever deleted: a wrong entry is cancelled (reversed) and can be re-entered. */
 'use strict';
 let FIN_ACT = { q: '', kind: '', review: '', evidence: '', from: '', to: '' };
-page('fin-activity', { title: 'Finance: Activity', icon: 'swap', async render(v) {
+page('fin-activity', { title: 'Cash entries', icon: 'swap', async render(v) {
   await ensureFin();
   ['review', 'evidence'].forEach((k) => { if (v.q.get(k)) FIN_ACT[k] = v.q.get(k); });
-  v.header({ title: 'Finance: Activity', actions: [canFin('write') ? { label: 'Add entry', icon: 'plus', primary: true, run: () => addTxn() } : null, { label: 'Export', icon: 'download', run: () => exportCsv() }] });
+  v.header({ title: 'Cash entries', actions: [canFin('write') ? { label: 'Add entry', icon: 'plus', primary: true, run: () => addTxn() } : null, { label: 'Export', icon: 'download', run: () => exportCsv() }] });
   const list = h('div'); let rows = [];
   const chipsEl = h('div', { class: 'chips' });
   const FILT = [['', 'All'], ['review:needs_review', 'To check'], ['evidence:none', 'No proof'], ['evidence:pending', 'Bill to come'], ['kind:expense', 'Paid out'], ['kind:money_in', 'Received'], ['kind:drawing', 'Owner took'], ['kind:capital_in', 'Owner put in']];

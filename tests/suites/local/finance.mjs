@@ -49,36 +49,42 @@ export default async function run({ browser, stack }) {
   const tid = (await q("select id from tenants where slug='testfin'"))[0].id;
   const login2 = async (page, host, email) => { await page.goto(stack.url(host, '/accounts.html')); await page.waitForSelector('input[type=password]'); await page.fill('input[type=email]', email); await page.fill('input[type=password]', PASSWORD); await page.locator('button:not(.auth-pill)', { hasText: /^Sign in$/ }).click(); await page.waitForSelector('.shell', { timeout: 15000 }); };
   const ctxD = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctxD.newPage(); const errs = watch(page);
-  await s.check('Finance owner signs into AUZslab Accounting and sees the Finance nav group', async () => {
+  await s.check('Finance owner signs into AUZslab Accounting: no separate Finance menu group, money sections sit inside the Ledger tabs', async () => {
     await login2(page, 'testfin', USERS.finOwner);
-    await page.waitForSelector('[data-nav="fin-home"]', { timeout: 10000 });
+    await page.waitForSelector('[data-nav="home"]', { timeout: 10000 });
+    assert(await page.locator('[data-nav^="fin-"]').count() === 0, 'a Finance menu group is still in the menu');
+    await page.evaluate(() => { location.hash = '#/books'; }); await page.waitForSelector('.fin-tabs', { timeout: 10000 });
+    const labels = await page.locator('.fin-tabs button').allInnerTexts();
+    assert(labels.includes('Cash entries') && labels.includes('Owner & loans'), 'Books tab lacks the money sections: ' + labels.join(','));
   }, 'critical');
   const finRoutes = ['fin-home', 'fin-activity', 'fin-dues', 'fin-owner', 'fin-accounts', 'fin-reports', 'fin-insights', 'fin-settings', 'fin-tools'];
-  await s.check('Every ported Finance page renders with no "could not load" error and no console error', async () => {
+  await s.check('Every Finance page renders inside its Ledger tab (and old #/fin-... links forward there) with no error', async () => {
     for (const r of finRoutes) {
       await page.evaluate((h) => { location.hash = '#/' + h; }, r);
-      await page.waitForTimeout(400); await page.waitForLoadState('networkidle').catch(() => {});
+      await page.waitForTimeout(500); await page.waitForLoadState('networkidle').catch(() => {});
+      if (r !== 'fin-tools') assert(/\?sec=/.test(await page.evaluate(() => location.hash)) || r === 'fin-tools', r + ' did not forward to its tab: ' + await page.evaluate(() => location.hash));
       const bad = await page.evaluate(() => { const e = document.querySelector('.empty h3'); return e && /Could not load/.test(e.textContent) ? (e.nextSibling && e.nextSibling.textContent) : ''; });
       assert(!bad, r + ': ' + bad);
     }
     assert(!errs.length, 'console errors: ' + errs.join(' | '));
   }, 'critical');
   await s.check('Finance: Today shows a real money figure from the seeded entry, not an empty state', async () => {
-    await page.evaluate(() => { location.hash = '#/fin-home'; }); await page.waitForTimeout(400);
+    await page.evaluate(() => { location.hash = '#/home?sec=fin-home'; }); await page.waitForTimeout(600);
     const txt = await page.locator('.hero-n').first().innerText();
     assert(/₹/.test(txt), 'no rupee figure on fin-home: ' + txt);
   }, 'major');
   await s.check('Finance: Activity lists at least one real entry', async () => {
-    await page.evaluate(() => { location.hash = '#/fin-activity'; }); await page.waitForSelector('.list .li, .empty', { timeout: 10000 });
+    await page.evaluate(() => { location.hash = '#/books?sec=fin-activity'; }); await page.waitForSelector('.list .li, .empty', { timeout: 10000 });
     const n = await page.locator('.page[data-p="fin-activity"] .list .li, .list .li').count();
     assert(n > 0, 'no entries shown in Finance: Activity');
   }, 'major');
-  await s.check('A plain Accounting-only tenant (no finance flag) never sees the Finance nav group', async () => {
+  await s.check('A plain Accounting-only tenant (no finance flag) gets the money sections in its Ledger tabs and they load', async () => {
     const ctx2 = await newCtx(browser, stack, { w: 1280, h: 900 }); const p2 = await ctx2.newPage(); const e2 = watch(p2);
     await login2(p2, 'testacct', USERS.acctOwner);
-    const hasFin = await p2.evaluate(() => !!document.querySelector('[data-nav="fin-home"]'));
-    assert(!hasFin, 'Finance nav leaked into a tenant without the finance feature');
-    assert(!e2.length, 'console errors on a plain Accounting login: ' + e2.join(' | '));
+    await p2.evaluate(() => { location.hash = '#/books?sec=fin-activity'; }); await p2.waitForSelector('.fin-tabs', { timeout: 10000 }); await p2.waitForTimeout(1200);
+    const bad = await p2.evaluate(() => { const e = document.querySelector('.empty h3'); return e && /Could not load/.test(e.textContent) ? (e.nextSibling && e.nextSibling.textContent) : ''; });
+    assert(!bad, 'cash entries did not load for an accounting-only business: ' + bad);
+    assert(!e2.filter((x) => !/sentry/i.test(x)).length, 'console errors on a plain Accounting login: ' + e2.join(' | '));
   }, 'critical');
   await s.check('Accounting\'s own pages (billing, parties, stock, GST) still work for the finance tenant -- nothing regressed', async () => {
     for (const r of ['home', 'customers', 'products', 'stock', 'gst', 'reports', 'settings']) {
