@@ -94,6 +94,12 @@ function recentBand(except, title) {
 }
 const photos = (s) => { const out = []; const push = (u) => { if (u && !out.includes(u)) out.push(u); }; push(s.photoUrl); (s.photos || []).forEach(push); Object.values(s.colourPhotos || {}).forEach((a) => (a || []).forEach(push)); return out; };
 const pickPic = (s, role) => { const u = (s.photoUse || {})[role]; return u && photos(s).includes(u) ? u : photos(s)[0]; };
+// Description formatting made by the owner: **bold**, *italic*, "- " lists, [text](https://link). Built as DOM nodes, never as HTML.
+const richNodes = (t) => {
+  const inl = (x) => { const out = []; const re = /\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|\[([^\]\n]+)\]\((https:\/\/[^\s)]+)\)/g; let i = 0, m; while ((m = re.exec(x))) { if (m.index > i) out.push(x.slice(i, m.index)); out.push(m[1] ? E('strong', null, m[1]) : m[2] ? E('em', null, m[2]) : E('a', { href: m[4], target: '_blank', rel: 'noopener noreferrer', style: { textDecoration: 'underline' } }, m[3])); i = re.lastIndex; } if (i < x.length) out.push(x.slice(i)); return out; };
+  return String(t || '').trim().split(/\n{2,}/).filter(Boolean).map((b) => { const ls = b.split('\n'); return ls.every((l) => /^\s*[-*] /.test(l)) ? E('ul', null, ls.map((l) => E('li', null, inl(l.replace(/^\s*[-*] /, ''))))) : E('p', null, ls.flatMap((l, i) => i ? [E('br'), ...inl(l)] : inl(l))); });
+};
+const plain = (t) => String(t || '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^\s*[-*] /gm, '').replace(/\s+/g, ' ').trim();
 const withFirst = (list, u) => (u && list.includes(u) ? [u, ...list.filter((x) => x !== u)] : list);
 const photosFor = (s, colour) => { const cp = (s.colourPhotos || {})[colour] || []; const rest = photos(s).filter((u) => !cp.includes(u)); return [...cp, ...rest]; };
 const minimalPhotosFor = (style, colour) => {
@@ -533,7 +539,7 @@ function stack(list, label) {
     const bl = String(s.details || '').split(/\n+/).map((x) => x.trim()).filter(Boolean).slice(0, 4);
     const spec = [['Brand', s.brand], ['Fabric', s.fabric], ['For', s.gender], ['Season', s.season], ['Collection', s.collection]].filter((r) => r[1]);
     pcat.textContent = [s.category, s.brand].filter(Boolean).join(' · ');
-    pd.textContent = s.description || ''; pd.hidden = !s.description;
+    clear(pd); if (s.description) pd.append(...richNodes(s.description)); pd.hidden = !s.description;
     clear(pbl); bl.forEach((b) => pbl.append(E('li', null, b))); pbl.hidden = !bl.length;
     clear(psp); spec.forEach((r) => psp.append(E('div', null, E('span', null, r[0]), E('b', null, cap(String(r[1])))))); psp.hidden = !spec.length;
     clear(pco); colours(s).slice(0, 8).forEach((c) => pco.append(E('i', { title: c, style: { background: hex(c) } }))); pco.hidden = !pco.children.length;
@@ -1079,7 +1085,7 @@ V.p = (v, id) => {
     if (k === 's') return E('div', { class: 'dtl' }, E('div', null, (cfg().shipping || {}).note || 'We ship across India. Delivery usually takes 3 to 7 days.'), (cfg().shipping || {}).fee > 0 ? E('div', null, 'Shipping ' + inr(cfg().shipping.fee) + ((cfg().shipping || {}).freeOver > 0 ? ', free above ' + inr(cfg().shipping.freeOver) : '') + '.') : E('div', null, 'Free shipping.'), E('div', null, 'Returns within ' + (D.shop.returnDays || 30) + ' days of delivery, tags intact. ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'Read more')));
     const bullets = String(s.details || '').split(/\n+/).map((x) => x.trim()).filter(Boolean);
     const rows = [['Brand', s.brand], ['Fabric', s.fabric], ['Season', s.season], ['For', s.gender], ['Collection', s.collection], ['Weight', s.weightG ? s.weightG + ' g' : ''], ['Code', s.code]].filter((r) => r[1]);
-    return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, s.description)) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
+    return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, richNodes(s.description))) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
       !bullets.length && !s.description && !rows.length ? E('div', { class: 'mut' }, 'More details coming soon.') : null);
   };
   const details = minimal ? E('section', { class: 'minimal-product-details', 'aria-label': 'Product information' }) : null;
@@ -1103,7 +1109,7 @@ V.p = (v, id) => {
         E('div', { class: 'pr' }, inr(displayedPrice), discount > 0 ? [E('s', null, inr(s.mrp)), E('b', null, discount + '% off')] : null)),
       colours(s).length ? E('div', { class: 'fx' }, E('span', { class: 'lbl' }, 'Colour · ' + colour), E('div', { class: 'dots2', style: { marginTop: '8px' } }, colours(s).map((c) => E('button', { class: c === colour ? 'on' : '', 'aria-label': c, onclick: () => { colour = c; size = ''; cur = 0; paintGal(); paintInfo(); } }, E('span', { class: 'c', style: { background: hex(c) } }))))) : null,
       sizesOf(s).length ? E('div', { class: 'fx' }, E('div', { style: { display: 'flex', justifyContent: 'space-between' } }, E('span', { class: 'lbl' }, modelOptions ? 'Model' : 'Size'), hasSizeGuide ? E('button', { class: 'tiny', style: { textDecoration: 'underline', color: 'var(--mut)' }, onclick: sizeGuide }, 'Size guide') : null),
-        E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; paintInfo(); } }, x.size)))) : null,
+        E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; if (x.image) { const gi = (minimal ? minimalPhotosFor(s, colour) : photosFor(s, colour)).indexOf(x.image); if (gi >= 0) { cur = gi; paintGal(); } } paintInfo(); } }, x.size)))) : null,
       chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
       gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
       E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
@@ -1144,7 +1150,7 @@ V.p = (v, id) => {
       E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc(`public_${PFX}_notify_me`, { p_slug: SLUG, p: { variantId: vsel.value, phone: ph.value, name: ((LS.get('me', {}) || {}).first) || '' } }); sh.close(); toast('Done. We will message you.'); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'Notify me')));
   }
   paintGal(); paintInfo();
-  try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: s.description || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
+  try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: plain(s.description) || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
   let more = minimal ? minimalRelatedProducts(s)
     : STY.filter((x) => x.id !== s.id && (x.category === s.category || (s.collection && x.collection === s.collection))).slice(0, 8);
   if (!minimal && more.length < 4) { const have = new Set(more.map((x) => x.id)); more = more.concat(newest(STY.length).filter((x) => x.id !== s.id && !have.has(x.id))).slice(0, Math.max(4, more.length)); }
@@ -1162,7 +1168,7 @@ V.p = (v, id) => {
   rpc(`public_${PFX}_reviews`, { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
     const box = E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Reviews'), E('span', { class: 'mut tiny' }, stars(rv.avg) + ' ' + rv.avg + ' · ' + rv.count + (rv.count === 1 ? ' review' : ' reviews'))), E('div', { class: 'frm' }, (rv.items || []).slice(0, 8).map((r) => E('div', { class: 'card' }, E('div', null, E('b', null, stars(r.rating)), r.title ? ' ' + r.title : ''), r.body ? E('div', { class: 'mut' }, r.body) : null, E('div', { class: 'tiny mut' }, (r.name || 'Customer') + ' · verified buyer')))));
     if (related?.isConnected) v.insertBefore(box, related); else if (info.isConnected) v.append(box); }).catch(() => {});
-  setMeta(s.name + ' · ' + D.shop.name, (s.description || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
+  setMeta(s.name + ' · ' + D.shop.name, (plain(s.description) || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
   // on a wide screen the details card folds up by itself when you scroll down to the other products, so it never covers them
   const bands = [...v.querySelectorAll('.band')];
   if (!isMin() && bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
@@ -1199,7 +1205,7 @@ function minimalRecommendations(title, products, destination) {
 V.bag = (v) => {
   const ls = bagLines();
   if (!ls.length) { const rec = newest(6); v.append(E('div', { class: 'empty' }, E('h1', null, 'Your bag is empty'), E('div', { class: 'mut' }, 'Pieces you add will wait here.'), E('a', { class: 'btn', href: link('shop') }, 'Shop now')), rec.length ? E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Products you may like')), gridOf(rec)) : null, recentBand(null)); return; }
-  const list = E('div', { class: 'card' }, E('h2', { style: { marginBottom: '6px' } }, 'Bag'), ls.map((l) => E('div', { class: 'ln' }, E('a', { class: 'im', href: link('p/' + l.s.id) }, photosFor(l.s, l.vr.colour)[0] ? E('img', { src: photosFor(l.s, l.vr.colour)[0], alt: '' }) : placeholder(l.s.name)),
+  const list = E('div', { class: 'card' }, E('h2', { style: { marginBottom: '6px' } }, 'Bag'), ls.map((l) => E('div', { class: 'ln' }, E('a', { class: 'im', href: link('p/' + l.s.id) }, (l.vr.image || photosFor(l.s, l.vr.colour)[0]) ? E('img', { src: (l.vr.image || photosFor(l.s, l.vr.colour)[0]), alt: '' }) : placeholder(l.s.name)),
     E('div', null, E('div', { class: 't' }, l.s.name), E('div', { class: 's' }, [l.vr.colour, l.vr.size].filter(Boolean).join(' · ')), E('div', { class: 'qty', style: { marginTop: '6px' } }, E('button', { onclick: () => { l.q > 1 ? (bag.find((b) => b.v === l.v).q -= 1) : bag.splice(bag.findIndex((b) => b.v === l.v), 1); saveBag(); route(); } }, '–'), E('span', null, l.q), E('button', { onclick: () => { addBag(l.v, 1); route(); } }, '+'))),
     E('div', { style: { textAlign: 'right' } }, E('div', null, inr(l.vr.price * l.q)), E('button', { class: 'tiny mut', style: { textDecoration: 'underline', marginTop: '8px' }, onclick: () => { bag.splice(bag.findIndex((b) => b.v === l.v), 1); saveBag(); route(); } }, 'Remove')))));
   const t = bagTotal();
