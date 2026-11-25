@@ -634,3 +634,12 @@ body{background:#f5f5f3}.brand{line-height:1}.brand img{display:block;width:auto
 .ps-list{border-top:1px solid var(--line)}
 .ps-row{display:flex;justify-content:space-between;gap:10px;padding:9px 16px;border-top:1px solid var(--line);color:inherit;text-decoration:none;font-size:.85rem}
 .ps-row:first-child{border-top:0}.ps-row small{display:block;margin-top:2px;color:var(--muted);font-size:.72rem}.ps-row>span:last-child{text-align:right}
+/* Round 2: product editor extras */
+.rich{display:grid;gap:6px}.rich-label{font-weight:600}.rich-bar{display:flex;gap:6px;flex-wrap:wrap}.rich textarea{width:100%;min-height:140px}
+.rich-preview{border:1px dashed var(--line,#d6d6d6);border-radius:8px;padding:8px 12px;font-size:.92em}.rich-preview p{margin:.3em 0}.rich-preview ul{margin:.3em 0;padding-left:1.2em}
+.photo-move{display:flex;gap:6px;flex-wrap:wrap}.media-grid .product-photo{display:grid;gap:6px}.media-grid .product-photo img{aspect-ratio:1;object-fit:cover;border-radius:8px;width:100%}
+.tab-off{opacity:.45;cursor:not-allowed;padding:6px 12px}.checklist{margin:0 0 8px;padding-left:1.1em;display:grid;gap:4px}
+/* Round 5: hard-coded white cards must follow the dark theme */
+.shell[data-theme=dark] .metric{background:var(--paper)}
+/* Round 5: the shared Team / Notifications panels (ds/admin-tab.js) read these tokens; map them to the storefront palette so dark mode works */
+.shell{--label:var(--ink);--label2:var(--muted);--card:var(--paper);--sep:var(--line);--fill2:var(--field);--bg:var(--work-bg,var(--paper))}

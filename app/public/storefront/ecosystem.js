@@ -6,7 +6,7 @@
 // preview also routed through this file is a separate, unrelated project and is not part of this build.
 import { menu, icons, emptyState } from './data.js';
 import { workspace } from './workspace.js';
-import { sb, api, boot, refreshRoles, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshLive, refreshStyleLink, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, boot, refreshRoles, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshLive, refreshVisitors, refreshStyleLink, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 export const $ = (selector) => document.querySelector(selector);
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -76,12 +76,12 @@ export const pathFor = (id) => dashboardPath + '#/' + id;
 // is mid-typing) refetches its own data every time it's opened, the same "show it, then make sure it's
 // current" shape as AUZsStyle's store.js caching -- catches an order placed, or a status changed, from
 // another tab or by a teammate since this page last loaded.
-const LIST_REFRESH = { 'live-view': refreshLive, orders: refreshOrders, products: () => Promise.all([refreshProducts(), refreshStyleLink()]), collections: refreshCollections, domains: refreshDomains, customers: refreshCustomers, discounts: refreshDiscounts, inventory: refreshInventory, transfers: refreshLocations, categories: refreshCategories, drafts: refreshDrafts, channels: () => Promise.all([refreshDrafts(), refreshStyleLink()]), returns: refreshReturns, 'abandoned-checkouts': refreshAbandoned, shipping: refreshCheckout, companies: refreshCompanies, segments: refreshSegments, growth: refreshCampaigns, builder: () => Promise.all([refreshMarketplace(), refreshInstalls()]), billing: refreshPlan, roles: refreshRoles };
+const LIST_REFRESH = { home: refreshVisitors, analytics: refreshVisitors, 'live-view': refreshLive, orders: refreshOrders, products: () => Promise.all([refreshProducts(), refreshStyleLink()]), collections: refreshCollections, domains: refreshDomains, customers: refreshCustomers, discounts: refreshDiscounts, inventory: refreshInventory, transfers: refreshLocations, categories: refreshCategories, drafts: refreshDrafts, channels: () => Promise.all([refreshDrafts(), refreshStyleLink()]), returns: refreshReturns, 'abandoned-checkouts': refreshAbandoned, shipping: refreshCheckout, companies: refreshCompanies, segments: refreshSegments, growth: refreshCampaigns, builder: () => Promise.all([refreshMarketplace(), refreshInstalls()]), billing: refreshPlan, roles: refreshRoles };
 let lastRefreshedRoute = '';
 
 export function rerender(skipRefresh) {
   handlePage = null;
-  const requested = location.hash.replace(/^#\/?/, '').split('?')[0];
+  const requested = location.hash.replace(/^#\/?/, '').split('?')[0] || 'home';
   const [parent, record] = requested.split('/');
   // Refetches once per visit to a list page (never while editing a record, and never twice for the render
   // this refetch itself causes -- lastRefreshedRoute is the guard against that second case).
@@ -133,7 +133,7 @@ export function rerender(skipRefresh) {
     '<button type="button" data-action="toggle-nav" aria-controls="workspace-sidebar" aria-expanded="' + navOpen + '">' + icon('menu') + '<span>Menu</span></button></div>' +
     '<button type="button" class="mq-round" data-action="global-search" aria-label="Search">' + icon('search') + '</button></nav>';
   const previousArea = $('.work-area');
-  const route = location.hash || '#/home';
+  const route = location.hash && !/^#\/?$/.test(location.hash) ? location.hash : '#/home';
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
   $('#app').innerHTML = '<div class="shell' + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
   $('.work-area').scrollTop = scrollTop;

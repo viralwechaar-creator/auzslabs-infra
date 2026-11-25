@@ -94,6 +94,12 @@ function recentBand(except, title) {
 }
 const photos = (s) => { const out = []; const push = (u) => { if (u && !out.includes(u)) out.push(u); }; push(s.photoUrl); (s.photos || []).forEach(push); Object.values(s.colourPhotos || {}).forEach((a) => (a || []).forEach(push)); return out; };
 const pickPic = (s, role) => { const u = (s.photoUse || {})[role]; return u && photos(s).includes(u) ? u : photos(s)[0]; };
+// Description formatting made by the owner: **bold**, *italic*, "- " lists, [text](https://link). Built as DOM nodes, never as HTML.
+const richNodes = (t) => {
+  const inl = (x) => { const out = []; const re = /\*\*([^*\n]+)\*\*|\*([^*\n]+)\*|\[([^\]\n]+)\]\((https:\/\/[^\s)]+)\)/g; let i = 0, m; while ((m = re.exec(x))) { if (m.index > i) out.push(x.slice(i, m.index)); out.push(m[1] ? E('strong', null, m[1]) : m[2] ? E('em', null, m[2]) : E('a', { href: m[4], target: '_blank', rel: 'noopener noreferrer', style: { textDecoration: 'underline' } }, m[3])); i = re.lastIndex; } if (i < x.length) out.push(x.slice(i)); return out; };
+  return String(t || '').trim().split(/\n{2,}/).filter(Boolean).map((b) => { const ls = b.split('\n'); return ls.every((l) => /^\s*[-*] /.test(l)) ? E('ul', null, ls.map((l) => E('li', null, inl(l.replace(/^\s*[-*] /, ''))))) : E('p', null, ls.flatMap((l, i) => i ? [E('br'), ...inl(l)] : inl(l))); });
+};
+const plain = (t) => String(t || '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/^\s*[-*] /gm, '').replace(/\s+/g, ' ').trim();
 const withFirst = (list, u) => (u && list.includes(u) ? [u, ...list.filter((x) => x !== u)] : list);
 const photosFor = (s, colour) => { const cp = (s.colourPhotos || {})[colour] || []; const rest = photos(s).filter((u) => !cp.includes(u)); return [...cp, ...rest]; };
 const minimalPhotosFor = (style, colour) => {
@@ -533,7 +539,7 @@ function stack(list, label) {
     const bl = String(s.details || '').split(/\n+/).map((x) => x.trim()).filter(Boolean).slice(0, 4);
     const spec = [['Brand', s.brand], ['Fabric', s.fabric], ['For', s.gender], ['Season', s.season], ['Collection', s.collection]].filter((r) => r[1]);
     pcat.textContent = [s.category, s.brand].filter(Boolean).join(' · ');
-    pd.textContent = s.description || ''; pd.hidden = !s.description;
+    clear(pd); if (s.description) pd.append(...richNodes(s.description)); pd.hidden = !s.description;
     clear(pbl); bl.forEach((b) => pbl.append(E('li', null, b))); pbl.hidden = !bl.length;
     clear(psp); spec.forEach((r) => psp.append(E('div', null, E('span', null, r[0]), E('b', null, cap(String(r[1])))))); psp.hidden = !spec.length;
     clear(pco); colours(s).slice(0, 8).forEach((c) => pco.append(E('i', { title: c, style: { background: hex(c) } }))); pco.hidden = !pco.children.length;
@@ -842,6 +848,7 @@ function customSections(v, list) {
   const sections = list || (PREVIEW && PREVIEW_SECTIONS ? PREVIEW_SECTIONS : (cfg().customSections || []));
   sections.forEach((s, i) => {
     let el = customSection(s);
+    if (el && s.props) { if (s.props.space === 'compact' || s.props.space === 'roomy') el.classList.add('sp-' + s.props.space); if (s.props.align === 'left') el.classList.add('al-left'); }
     if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));
     if (!el) return;
     if (PREVIEW) {
@@ -1079,7 +1086,7 @@ V.p = (v, id) => {
     if (k === 's') return E('div', { class: 'dtl' }, E('div', null, (cfg().shipping || {}).note || 'We ship across India. Delivery usually takes 3 to 7 days.'), (cfg().shipping || {}).fee > 0 ? E('div', null, 'Shipping ' + inr(cfg().shipping.fee) + ((cfg().shipping || {}).freeOver > 0 ? ', free above ' + inr(cfg().shipping.freeOver) : '') + '.') : E('div', null, 'Free shipping.'), E('div', null, 'Returns within ' + (D.shop.returnDays || 30) + ' days of delivery, tags intact. ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'Read more')));
     const bullets = String(s.details || '').split(/\n+/).map((x) => x.trim()).filter(Boolean);
     const rows = [['Brand', s.brand], ['Fabric', s.fabric], ['Season', s.season], ['For', s.gender], ['Collection', s.collection], ['Weight', s.weightG ? s.weightG + ' g' : ''], ['Code', s.code]].filter((r) => r[1]);
-    return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, s.description)) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
+    return E('div', { class: 'dtl' }, bullets.length ? E('div', null, E('h3', null, 'Details'), E('ul', null, bullets.map((b) => E('li', null, b)))) : null, s.description ? E('div', null, E('h3', null, 'Description'), E('div', null, richNodes(s.description))) : null, rows.length ? E('dl', null, rows.flatMap(([k, val]) => [E('dt', null, k), E('dd', null, val)])) : null,
       !bullets.length && !s.description && !rows.length ? E('div', { class: 'mut' }, 'More details coming soon.') : null);
   };
   const details = minimal ? E('section', { class: 'minimal-product-details', 'aria-label': 'Product information' }) : null;
@@ -1103,7 +1110,7 @@ V.p = (v, id) => {
         E('div', { class: 'pr' }, inr(displayedPrice), discount > 0 ? [E('s', null, inr(s.mrp)), E('b', null, discount + '% off')] : null)),
       colours(s).length ? E('div', { class: 'fx' }, E('span', { class: 'lbl' }, 'Colour · ' + colour), E('div', { class: 'dots2', style: { marginTop: '8px' } }, colours(s).map((c) => E('button', { class: c === colour ? 'on' : '', 'aria-label': c, onclick: () => { colour = c; size = ''; cur = 0; paintGal(); paintInfo(); } }, E('span', { class: 'c', style: { background: hex(c) } }))))) : null,
       sizesOf(s).length ? E('div', { class: 'fx' }, E('div', { style: { display: 'flex', justifyContent: 'space-between' } }, E('span', { class: 'lbl' }, modelOptions ? 'Model' : 'Size'), hasSizeGuide ? E('button', { class: 'tiny', style: { textDecoration: 'underline', color: 'var(--mut)' }, onclick: sizeGuide }, 'Size guide') : null),
-        E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; paintInfo(); } }, x.size)))) : null,
+        E('div', { class: 'fwrap', style: { marginTop: '8px' } }, vs.map((x) => E('button', { class: 'sz' + (x.size === size ? ' on' : '') + (x.left < 1 ? ' off' : ''), onclick: () => { size = x.size; if (x.image) { const gi = (minimal ? minimalPhotosFor(s, colour) : photosFor(s, colour)).indexOf(x.image); if (gi >= 0) { cur = gi; paintGal(); } } paintInfo(); } }, x.size)))) : null,
       chosen && chosen.left > 0 && chosen.left <= 3 ? E('div', { class: 'left fx' }, 'Only ' + chosen.left + ' left in this size') : null,
       gone ? E('div', { class: 'note fx' }, 'This piece is sold out right now.') : E('div', { class: 'fx', style: { display: 'flex', alignItems: 'center', gap: '10px' } }, E('span', { class: 'lbl' }, 'Qty'), E('div', { class: 'qty' }, E('button', { onclick: () => { qty = Math.max(1, qty - 1); paintInfo(); } }, '–'), E('span', null, qty), E('button', { onclick: () => { qty = Math.min(chosen ? (chosen.left >= 9 ? 20 : chosen.left) : 9, qty + 1); paintInfo(); } }, '+'))),
       E('div', { class: 'row2' }, E('button', { class: 'btn out', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
@@ -1144,7 +1151,7 @@ V.p = (v, id) => {
       E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc(`public_${PFX}_notify_me`, { p_slug: SLUG, p: { variantId: vsel.value, phone: ph.value, name: ((LS.get('me', {}) || {}).first) || '' } }); sh.close(); toast('Done. We will message you.'); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'Notify me')));
   }
   paintGal(); paintInfo();
-  try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: s.description || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
+  try { document.querySelectorAll('script[data-ld]').forEach((x) => x.remove()); const ld = document.createElement('script'); ld.type = 'application/ld+json'; ld.dataset.ld = '1'; ld.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: s.name, image: photos(s).slice(0, 4), description: plain(s.description) || s.name, brand: s.brand ? { '@type': 'Brand', name: s.brand } : undefined, sku: s.code || undefined, offers: { '@type': 'Offer', priceCurrency: 'INR', price: s.price, availability: isGone(s) ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock' } }); document.head.append(ld); } catch (e) { /* no JSON-LD */ }
   let more = minimal ? minimalRelatedProducts(s)
     : STY.filter((x) => x.id !== s.id && (x.category === s.category || (s.collection && x.collection === s.collection))).slice(0, 8);
   if (!minimal && more.length < 4) { const have = new Set(more.map((x) => x.id)); more = more.concat(newest(STY.length).filter((x) => x.id !== s.id && !have.has(x.id))).slice(0, Math.max(4, more.length)); }
@@ -1162,7 +1169,7 @@ V.p = (v, id) => {
   rpc(`public_${PFX}_reviews`, { p_slug: SLUG, p_style: s.id }).then((rv) => { if (!rv || !rv.count || !document.body.contains(v)) return;
     const box = E('section', { class: 'band' }, E('div', { class: 'hd' }, E('h2', null, 'Reviews'), E('span', { class: 'mut tiny' }, stars(rv.avg) + ' ' + rv.avg + ' · ' + rv.count + (rv.count === 1 ? ' review' : ' reviews'))), E('div', { class: 'frm' }, (rv.items || []).slice(0, 8).map((r) => E('div', { class: 'card' }, E('div', null, E('b', null, stars(r.rating)), r.title ? ' ' + r.title : ''), r.body ? E('div', { class: 'mut' }, r.body) : null, E('div', { class: 'tiny mut' }, (r.name || 'Customer') + ' · verified buyer')))));
     if (related?.isConnected) v.insertBefore(box, related); else if (info.isConnected) v.append(box); }).catch(() => {});
-  setMeta(s.name + ' · ' + D.shop.name, (s.description || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
+  setMeta(s.name + ' · ' + D.shop.name, (plain(s.description) || s.name).slice(0, 150), photos(s)[0], location.origin + location.pathname + '?p=' + s.id);
   // on a wide screen the details card folds up by itself when you scroll down to the other products, so it never covers them
   const bands = [...v.querySelectorAll('.band')];
   if (!isMin() && bands.length && window.matchMedia('(min-width:900px)').matches && 'IntersectionObserver' in window) {
@@ -1199,7 +1206,7 @@ function minimalRecommendations(title, products, destination) {
 V.bag = (v) => {
   const ls = bagLines();
   if (!ls.length) { const rec = newest(6); v.append(E('div', { class: 'empty' }, E('h1', null, 'Your bag is empty'), E('div', { class: 'mut' }, 'Pieces you add will wait here.'), E('a', { class: 'btn', href: link('shop') }, 'Shop now')), rec.length ? E('section', { class: 'sec' }, E('div', { class: 'hd' }, E('span', { class: 'lbl' }, 'Products you may like')), gridOf(rec)) : null, recentBand(null)); return; }
-  const list = E('div', { class: 'card' }, E('h2', { style: { marginBottom: '6px' } }, 'Bag'), ls.map((l) => E('div', { class: 'ln' }, E('a', { class: 'im', href: link('p/' + l.s.id) }, photosFor(l.s, l.vr.colour)[0] ? E('img', { src: photosFor(l.s, l.vr.colour)[0], alt: '' }) : placeholder(l.s.name)),
+  const list = E('div', { class: 'card' }, E('h2', { style: { marginBottom: '6px' } }, 'Bag'), ls.map((l) => E('div', { class: 'ln' }, E('a', { class: 'im', href: link('p/' + l.s.id) }, (l.vr.image || photosFor(l.s, l.vr.colour)[0]) ? E('img', { src: (l.vr.image || photosFor(l.s, l.vr.colour)[0]), alt: '' }) : placeholder(l.s.name)),
     E('div', null, E('div', { class: 't' }, l.s.name), E('div', { class: 's' }, [l.vr.colour, l.vr.size].filter(Boolean).join(' · ')), E('div', { class: 'qty', style: { marginTop: '6px' } }, E('button', { onclick: () => { l.q > 1 ? (bag.find((b) => b.v === l.v).q -= 1) : bag.splice(bag.findIndex((b) => b.v === l.v), 1); saveBag(); route(); } }, '–'), E('span', null, l.q), E('button', { onclick: () => { addBag(l.v, 1); route(); } }, '+'))),
     E('div', { style: { textAlign: 'right' } }, E('div', null, inr(l.vr.price * l.q)), E('button', { class: 'tiny mut', style: { textDecoration: 'underline', marginTop: '8px' }, onclick: () => { bag.splice(bag.findIndex((b) => b.v === l.v), 1); saveBag(); route(); } }, 'Remove')))));
   const t = bagTotal();
@@ -1207,8 +1214,9 @@ V.bag = (v) => {
     E('div', { class: 'two' }, list, E('div', { class: 'card stick sum' }, E('div', { class: 't' }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 'mut tiny' }, shipLine(t)), freeBar(t), E('a', { class: 'btn wide', href: link('checkout') }, 'Process to checkout'))), recentBand(null));
 };
 function freeBar(sub) { const fo = +((cfg().shipping || {}).freeOver) || 0; if (!(fo > 0)) return null; const left = Math.max(fo - sub, 0); return E('div', null, E('div', { class: 'mut tiny' }, left ? 'Add ' + inr(left) + ' more for free shipping' : 'You have free shipping'), E('div', { class: 'fbar' }, E('i', { style: { width: Math.min(100, Math.round(sub / fo * 100)) + '%' } }))); }
-function shipFee(sub) { const sh = cfg().shipping || {}; const fee = +sh.fee || 0, fo = +sh.freeOver || 0; return fo > 0 && sub >= fo ? 0 : fee; }
-function shipLine(sub) { const sh = cfg().shipping || {}; const f = shipFee(sub); return f ? 'Shipping ' + inr(f) + ((+sh.freeOver > 0) ? ' · free above ' + inr(sh.freeOver) : '') : 'Free shipping'; }
+function shipZone(state) { const st = String(state || '').trim().toLowerCase(); return st ? ((cfg().shipping || {}).zones || []).find((z) => (z.states || []).some((x) => String(x).trim().toLowerCase() === st)) : null; }
+function shipFee(sub, state) { const sh = shipZone(state) || cfg().shipping || {}; const fee = +sh.fee || 0, fo = +sh.freeOver || 0; return fo > 0 && sub >= fo ? 0 : fee; }
+function shipLine(sub, state) { const sh = shipZone(state) || cfg().shipping || {}; const f = shipFee(sub, state); return f ? 'Shipping ' + inr(f) + ((+sh.freeOver > 0) ? ' · free above ' + inr(sh.freeOver) : '') : 'Free shipping'; }
 
 const STATES = ['Andhra Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Odisha', 'Punjab', 'Rajasthan', 'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Other'];
 V.checkout = (v) => {
@@ -1221,7 +1229,7 @@ V.checkout = (v) => {
   let pay = methods[0] ? methods[0][0] : '';
   const payBox = E('div', { class: 'frm checkout-payment', role: 'radiogroup', 'aria-label': 'Payment method' }); const payPaint = () => { clear(payBox); if (!methods.length) { payBox.append(E('div', { class: 'note' }, 'This store is not taking online orders right now. Please contact the store.')); return; } methods.forEach(([k, l, d]) => payBox.append(E('div', { class: 'opt' + (pay === k ? ' on' : ''), role: 'radio', 'aria-checked': pay === k, tabindex: 0, onclick: () => { pay = k; payPaint(); }, onkeydown: (e) => { if (e.key !== ' ' && e.key !== 'Enter') return; e.preventDefault(); pay = k; payPaint(); payBox.querySelector('.on')?.focus(); } }, E('i', { class: 'r' }), E('div', null, E('div', null, l), E('div', { class: 'mut tiny' }, d))))); };
   payPaint();
-  const t = bagTotal(), sh = shipFee(t); const save = E('input', { type: 'checkbox', checked: !!saved.name });
+  const t = bagTotal(); let sh = shipFee(t, (LS.get('me', {}) || {}).state || 'Rajasthan'); const shipNote = E('div', { class: 'note' }, shipLine(t, (LS.get('me', {}) || {}).state || 'Rajasthan')); const save = E('input', { type: 'checkbox', checked: !!saved.name });
   let coupon = null; // { code, discount, msg }
   const sumBox = E('div');
   const paintSum = () => { clear(sumBox); const d = coupon ? Math.min(coupon.discount, t + sh) : 0; sumBox.append(E('div', { class: 't', style: { paddingTop: '8px', borderTop: '1px solid var(--line)' } }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, sh ? inr(sh) : 'Free')), d ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon ' + coupon.code), E('span', null, '– ' + inr(d))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(t + sh - d)))); };
@@ -1251,7 +1259,7 @@ V.checkout = (v) => {
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Place order'; }
   };
   // fill city and state from the PIN code (free India Post lookup); if it is unreachable the person just types them
-  const pinAuto = async () => { const p = (F.pin.value || '').trim(); if (!/^\d{6}$/.test(p)) return; try { const r = await fetch('https://api.postalpincode.in/pincode/' + p); const j = await r.json(); const po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) { if (!F.city.value) F.city.value = po.District || po.Block || ''; const st = STATES.find((x) => x.toLowerCase() === String(po.State || '').toLowerCase()); if (st) F.state.value = st; } } catch (e) { /* offline or blocked: manual entry */ } };
+  const pinAuto = async () => { const p = (F.pin.value || '').trim(); if (!/^\d{6}$/.test(p)) return; try { const r = await fetch('https://api.postalpincode.in/pincode/' + p); const j = await r.json(); const po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) { if (!F.city.value) F.city.value = po.District || po.Block || ''; const st = STATES.find((x) => x.toLowerCase() === String(po.State || '').toLowerCase()); if (st) F.state.value = st; if (typeof reship === "function") reship(); } } catch (e) { /* offline or blocked: manual entry */ } };
   // remember the bag against the phone so the shop can remind the customer (only if the shop switched this on)
   let lastCart = ''; const saveCart = () => { const ph = (F.phone.value || '').replace(/\D/g, ''); if (!cfg().abandonWa || ph.length < 10 || lastCart === ph) return; lastCart = ph; rpc(`public_${PFX}_cart_save`, { p_slug: SLUG, p: { phone: ph, name: (F.first.value || '').trim(), lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } }).catch(() => {}); };
   v.append(E('div', { class: 'shophd' }, E('h1', null, 'Checkout')), E('div', { class: 'two' },
@@ -1259,10 +1267,11 @@ V.checkout = (v) => {
       E('h2', null, 'Delivery'), E('div', { class: 'f2' }, f('first', 'First name', { ac: 'given-name' }), f('last', 'Last name', { ac: 'family-name', opt: true })), f('pin', 'PIN code', { mode: 'numeric', ac: 'postal-code', max: 6 }), f('address', 'Address', { ac: 'street-address' }), f('address2', 'Apartment, suite, etc.', { opt: true }),
       E('div', { class: 'f2' }, f('city', 'City'), f('state', 'State', { select: STATES, def: 'Rajasthan' })), f('country', 'Country', { select: ['India'], def: 'India' }), f('note', 'Notes for the store (optional)', { area: true }),
       E('label', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, save, 'Save this information for next time'),
-      E('h2', null, 'Shipping method'), E('div', { class: 'note' }, shipLine(t)), E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
+      E('h2', null, 'Shipping method'), shipNote, E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
     E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't checkout-line' }, isMin() ? E('div', { class: 'checkout-line-thumb' }, pickPic(l.s) ? E('img', { src: pickPic(l.s), alt: '' }) : placeholder(l.s.name)) : null, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
       E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, E('label', { class: 'fld', style: { flex: 1 } }, cin), capplyBtn), cmsg, sumBox, err, btn,
       E('div', { class: 'mut tiny' }, 'By placing the order you agree to the ', E('a', { href: link('policy/terms'), style: { textDecoration: 'underline' } }, 'terms'), ' and the ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'returns policy'), '.'))));
+  const reship = () => { const stv = F.state && F.state.value; sh = shipFee(t, stv); shipNote.textContent = shipLine(t, stv); paintSum(); }; if (F.state) F.state.addEventListener('change', reship); reship();
   F.pin.addEventListener('input', pinAuto); F.pin.addEventListener('change', pinAuto); F.phone.addEventListener('blur', saveCart); F.phone.addEventListener('change', saveCart);
 };
 // card / UPI / net banking with the shop's own Razorpay account; the server checks the signature before anything is marked paid
@@ -1461,7 +1470,7 @@ V.page = (v, slug) => {
   v.append(E('article', { class: 'minimal-feature' },
     page.sections ? null : E('a', { href: link('sitemap') }, '← Sitemap'), E('h1', null, page.title),
     page.image ? E('img', { src: page.image, alt: '' }) : null,
-    page.sections ? null : E('div', { class: 'art' }, para(page.body)),
+    page.sections ? null : E('div', { class: 'art' }, richNodes(page.body)),
     href ? E('a', { class: 'btn', href }, page.cta || 'Explore') : null));
   if (page.sections) customSections(v, page.sections);
 };

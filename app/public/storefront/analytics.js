@@ -1,4 +1,4 @@
-import {refreshLive} from './api.js';
+import {refreshLive, refreshVisitors} from './api.js';
 import {button, close, dialog, esc, link, money, pathFor, rerender, save, state, uid} from './ecosystem.js';
 
 const DAY = 86400000;
@@ -121,7 +121,7 @@ function dashboard(){
   const progress = target ? 100*targetValue/target.value : 0;
   const goal = target ? panel('Performance target','<p>'+format(target.metric,targetValue)+' of '+format(target.metric,target.value)+' · '+percent(progress)+' in the selected period</p>'+
     '<progress class="analytics-target" aria-label="'+esc(metrics[target.metric].label+' target progress')+'" max="100" value="'+Math.min(100,progress)+'"></progress>',button('Edit target','analytics-target','compact')) : '';
-  return filtersForm()+'<div class="metrics">'+cards+'</div>'+goal+'<div class="analytics-grid">'+
+  return filtersForm()+'<div class="metrics">'+cards+'</div>'+goal+visitorPanel(false)+'<div class="analytics-grid">'+
     panel('Recorded sales over time',trend(series(current,window,'sales'),comparison?series(previous,comparison,'sales'):[],'sales'),reportLink('View report','sales'))+
     panel('Payment breakdown',table(['Status','Orders','Order totals'],['Paid','Pending','Refunded'].map(status=>{
       const orders=current.filter(row=>row.payment===status);
@@ -129,7 +129,35 @@ function dashboard(){
     }))+'<p class="compact-copy">Taxes, shipping, discounts and partial refunds require separately recorded amounts.</p>')+'</div>'+
     '<div class="analytics-grid paired">'+panel('Sales by channel',bars(group(current,'channel','sales'),money),reportLink('View report','channel'))+
     panel('Top products by sales',bars(group(current,'item','sales'),money),reportLink('View report','product'))+'</div>'+
-    panel('Campaign acquisition',campaignTable(),reportLink('View report','source'));
+    panel('Campaign acquisition',campaignBars()+campaignTable(),reportLink('View report','source'));
+}
+
+// ---- Visitors: real anonymous visit events (same store, same Asia/Kolkata days as Live view) ----
+export function visitorPanel(compact){
+  const v = state.visitors;
+  if(!v) return panel('Visitors','<p class="compact-copy">Loading visitor data…</p>');
+  if(v.error) return panel('Visitors','<p class="empty">Visitor data is unavailable right now. This is not the same as zero visits. Try again in a moment.</p>',button('Retry','visitors-refresh','compact'));
+  const total = Number(v.visitors)||0;
+  const kpi = (label,value,note) => '<article class="metric analytics-kpi"><span>'+esc(label)+'</span><strong>'+esc(String(value))+'</strong><small>'+esc(note)+'</small></article>';
+  const rate = (n,d) => d ? (100*n/d).toFixed(1)+'%' : '—';
+  const cards = '<div class="metrics">'+kpi('Visitors',total,'Last '+v.days+' days, anonymous browsers')+kpi('Page views',v.views,'Pages opened')+kpi('Added to bag',v.bag,rate(v.bag,total)+' of visitors')+kpi('Reached checkout',v.checkout,rate(v.checkout,total)+' of visitors')+kpi('Placed an order',v.ordered,rate(v.ordered,total)+' of visitors')+'</div>';
+  if(!total) return panel('Visitors',cards+'<p class="empty">No visits recorded in the last '+v.days+' days. Share your store link to start seeing traffic here.</p>');
+  const series = v.series||[]; const highest = Math.max(1,...series.map(r=>r.visitors));
+  const points = series.map((r,i)=>[(series.length===1?50:i*100/(series.length-1)),42-r.visitors*36/highest]);
+  const line = points.length===1?'<circle class="analytics-line" cx="'+points[0][0]+'" cy="'+points[0][1]+'" r="0.8"/>':'<polyline class="analytics-line" points="'+points.map(p=>p.join(',')).join(' ')+'"/>';
+  const dayLabel = key => formatDate(dayValue(key));
+  const chart = '<div class="analytics-trend"><div class="analytics-axis"><span>'+highest+'</span><span>0</span></div><svg viewBox="0 0 100 44" preserveAspectRatio="none" role="img" aria-label="Visitors per day">'+
+    '<path d="M0 6H100 M0 24H100 M0 42H100" class="analytics-gridlines"/>'+line+'</svg></div><div class="analytics-axis-dates"><span>'+dayLabel(series[0].day)+'</span><span>'+dayLabel(series.at(-1).day)+'</span></div><p class="analytics-legend">Visitors per day</p>';
+  if(compact) return panel('Website visitors','<div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr))">'+kpi('Visitors',total,'Last '+v.days+' days')+kpi('Added to bag',v.bag,rate(v.bag,total))+kpi('Ordered',v.ordered,rate(v.ordered,total))+'</div>'+chart,link('Analytics',pathFor('analytics'),'compact'));
+  const dev = bars((v.devices||[]).map(d=>[d.device,d.visitors]),n=>String(n));
+  const pg = bars((v.pages||[]).map(p=>[p.page,p.views]),n=>String(n));
+  return panel('Visitors',cards+chart,button('Refresh','visitors-refresh','compact'))+'<div class="analytics-grid paired">'+panel('Visitors by device',dev)+panel('Most viewed pages',pg)+'</div>';
+}
+export function campaignBars(){
+  const rows = (state.campaigns||[]).filter(c=>Number(c.orders)>0||Number(c.revenue)>0);
+  if(!rows.length) return '<p class="compact-copy">No campaign has brought an order yet. Add a campaign under Growth to compare sources.</p>';
+  return '<p class="compact-copy">Orders attributed to each campaign</p>'+bars(rows.map(c=>[c.name+' · '+(c.channel||c.source||''),Number(c.orders)||0]),n=>n+(n===1?' order':' orders'))+
+    '<p class="compact-copy">Revenue</p>'+bars(rows.map(c=>[c.name,Number(c.revenue)||0]),money);
 }
 function campaignTable(){
   return '<p class="compact-copy">Lifetime campaign totals. The sample campaigns have no dated sessions, so dashboard date filters apply to order data only.</p>'+
@@ -264,6 +292,7 @@ function dispatch(type,target,event,record,report){
     save();
     return rerender();
   }
+  if(action==='visitors-refresh'){ return refreshVisitors().then(()=>rerender(true)); }
   if(action==='analytics-refresh'){
     refreshed=new Date();
     return refreshLive().then(()=>rerender(true));
@@ -291,7 +320,7 @@ export function analyticsPage(id,record){
   const report = [...standardReports,...customReports()].find(row=>row.id===record);
   const title = id==='analytics'?'Analytics':id==='live-view'?'Live view':record==='explore'?'New exploration':report?.name||'Reports';
   const refreshedAt = new Intl.DateTimeFormat('en-IN',{hour:'numeric',minute:'2-digit',timeZone:'Asia/Kolkata'}).format(refreshed);
-  const subtitle = id==='reports'?'Browse saved reports or build one from your order data.':'Local preview · Refreshed at '+refreshedAt+' IST';
+  const subtitle = id==='reports'?'Browse saved reports or build one from your order data.':'Live data from your store · refreshed at '+refreshedAt+' IST';
   const header = '<div class="page-head"><div><h1>'+esc(title)+'</h1><p>'+esc(subtitle)+'</p></div><div class="actions">'+
     (id==='analytics'?button(state.analyticsTarget?'Edit target':'Set target','analytics-target'):'')+link('New exploration',pathFor('reports/explore'),'primary')+'</div></div>';
   let content;

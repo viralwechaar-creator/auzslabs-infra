@@ -7,7 +7,7 @@
 // customers/segments/companies, growth/discounts, content pages/files/custom data, markets, staff & roles,
 // most of Settings) is NOT wired to anything fake: it shows a clearly labeled "Coming soon" panel instead
 // of a form that would quietly save nowhere.
-import { analyticsPage } from './analytics.js';
+import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
@@ -168,14 +168,32 @@ function collectionDetail(id) {
 
 // ---------- Product detail ----------
 const recordTabs = [['details', 'Details'], ['media', 'Media'], ['variants', 'Variants']];
+// Safe formatting for product descriptions: **bold**, *italic*, "- " lists and [text](https://link). Everything is escaped first.
+function richHtml(t) {
+  const inline = (x) => esc(x).replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>').replace(/\[([^\]\n]+)\]\((https:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  return String(t || '').trim().split(/\n{2,}/).filter(Boolean).map((b) => { const ls = b.split('\n'); return ls.every((l) => /^\s*[-*] /.test(l)) ? '<ul>' + ls.map((l) => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>' : '<p>' + ls.map(inline).join('<br>') + '</p>'; }).join('');
+}
+function linkPicker() {
+  const base = state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html' : ''; if (!base) return '';
+  const pg = cfgList('pages').filter((x) => x.slug && x.name).map((x) => '<option value="' + esc(base + '#/page/' + x.slug) + '">' + esc(x.name) + '</option>').join('');
+  const pr = (state.products || []).filter((x) => x.status === 'Active').slice(0, 100).map((x) => '<option value="' + esc(base + '?view=p&p=' + encodeURIComponent(x.id)) + '">' + esc(x.name) + '</option>').join('');
+  if (!pg && !pr) return '';
+  return '<select data-linkpick aria-label="Link to a page or product"><option value="">Link to a page or product…</option>' + (pg ? '<optgroup label="Pages">' + pg + '</optgroup>' : '') + (pr ? '<optgroup label="Products">' + pr + '</optgroup>' : '') + '</select>';
+}
+function richArea(label, name, value, dis) {
+  const bar = dis ? '' : '<div class="rich-bar" role="toolbar" aria-label="Formatting">' + button('<b>B</b>', 'rich-fmt:bold', 'compact') + button('<i>I</i>', 'rich-fmt:italic', 'compact') + button('• List', 'rich-fmt:list', 'compact') + button('Link', 'rich-fmt:link', 'compact') + linkPicker() + '</div>';
+  return '<div class="wide rich"><span class="rich-label">' + label + '</span>' + bar + '<textarea name="' + name + '" rows="7" aria-label="' + label + '" ' + dis + '>' + esc(value) + '</textarea><div class="rich-preview" data-rich-preview aria-label="Preview">' + (value ? richHtml(value) : '<p class="compact-copy">A preview of your formatting shows here.</p>') + '</div></div>';
+}
+let editImages = [];
 function variantEditor(variants) {
   const dis = canWrite() ? '' : 'disabled';
-  return variants.length ? table(['Variant', 'SKU', 'Barcode', 'Price (₹)', 'Stock', ''], variants.map((v, i) => [
+  return variants.length ? table(['Variant', 'SKU', 'Barcode', 'Price (₹)', 'Stock'].concat(editImages.length ? ['Picture'] : [], ['']), variants.map((v, i) => [
     input('Variant name', 'variantLabel' + i, v.label, 'text', 'required maxlength="80" ' + dis) + '<input type="hidden" name="variantId' + i + '" value="' + esc(v.id || '') + '">',
     input('SKU', 'variantSku' + i, v.sku, 'text', 'maxlength="60" ' + dis),
     input('Barcode', 'variantBarcode' + i, v.barcode, 'text', 'maxlength="60" ' + dis),
     input('Price', 'variantPrice' + i, v.price, 'number', 'required min="0" step="0.01" ' + dis),
     input('Stock', 'variantStock' + i, v.stock, 'number', 'required min="0" step="1" ' + dis),
+    ...(editImages.length ? ['<label>Picture<select name="variantImage' + i + '" ' + dis + '><option value="">Product pictures</option>' + editImages.map((src, n) => '<option value="' + esc(src) + '"' + (src === v.image ? ' selected' : '') + '>Picture ' + (n + 1) + (n === 0 ? ' (main)' : '') + '</option>').join('') + '</select></label>'] : []),
     canWrite() ? button('Remove', 'variant-remove:' + i, 'compact danger') : '',
   ])) : '<p class="compact-copy">This product has no variants yet. Generate them from options above, or add a row.</p>';
 }
@@ -201,7 +219,7 @@ function generateVariants(formEl) {
   const labels = combos(options); if (labels.length > 100) throw new Error('That makes ' + labels.length + ' variants. The limit is 100. Remove some values.');
   const current = collectVariants(formEl); const byLabel = new Map(current.map((v) => [v.label.toLowerCase(), v]));
   const basePrice = current[0]?.price ?? 0; let fresh = 0, kept = 0;
-  const next = labels.map((label) => { const old = byLabel.get(label.toLowerCase()); if (old) { kept++; return { ...old, label }; } fresh++; return { label, sku: '', barcode: '', price: basePrice, stock: 0 }; });
+  const next = labels.map((label) => { const old = byLabel.get(label.toLowerCase()); if (old) { kept++; return { ...old, label }; } fresh++; return { label, sku: '', barcode: '', price: basePrice, stock: 0, image: '' }; });
   const removed = current.filter((v) => !labels.some((l) => l.toLowerCase() === v.label.toLowerCase())).length;
   formEl.querySelector('.product-variant-grid').innerHTML = variantEditor(next);
   return { total: labels.length, fresh, kept, removed };
@@ -243,30 +261,31 @@ function productDetail(id) {
   const r = p || { status: 'Draft', variants: [{ label: 'Default', sku: '', price: 0, stock: 0 }], media: [] };
   const candidate = new URLSearchParams(location.hash.split('?')[1] || '').get('tab');
   const tab = p && recordTabs.some(([k]) => k === candidate) ? candidate : 'details';
-  const tabNav = p ? '<nav class="tabs" aria-label="Product detail">' + recordTabs.map(([k, name]) => '<a href="' + pathFor('products/' + encodeURIComponent(p.id) + '?tab=' + k) + '"' + (k === tab ? ' aria-current="page"' : '') + '>' + name + '</a>').join('') + '</nav>' : '';
+  const tabNav = !p ? '<nav class="tabs" aria-label="Product detail"><a aria-current="page" href="#" onclick="return false">Details</a><span class="tab-off" title="Save the details first">Media</span><span class="tab-off" title="Save the details first">Variants</span></nav><p class="compact-copy">Step 1 of 3: save the details as a draft, then add media and variants. You can leave and come back; drafts stay in Products.</p>' : p ? '<nav class="tabs" aria-label="Product detail">' + recordTabs.map(([k, name]) => '<a href="' + pathFor('products/' + encodeURIComponent(p.id) + '?tab=' + k) + '"' + (k === tab ? ' aria-current="page"' : '') + '>' + name + '</a>').join('') + '</nav>' : '';
   const dis = canWrite() ? '' : 'disabled';
   const ex = r.extra || {};
   let view = '';
   if (tab === 'details') {
     view = '<form data-form="edit" data-key="product-record" data-id="' + esc(p?.id || '') + '" class="product-record"><div class="record-layout"><div>' +
-      panel('Product information', body('<div class="field-grid">' + input('Title', 'name', r.name, 'text', 'required maxlength="160" ' + dis) + area('Description', 'description', r.description, dis) + '</div>')) +
+      panel('Product information', body('<div class="field-grid">' + input('Title', 'name', r.name, 'text', 'required maxlength="160" ' + dis) + richArea('Description', 'description', r.description, dis) + '</div>')) +
       panel('Pricing', body('<div class="field-grid">' + input('Price in ₹', 'price', r.price ?? 0, 'number', 'min="0" step="0.01" required ' + dis) + input('Compare-at price in ₹', 'compareAt', r.compare, 'number', 'min="0" step="0.01" ' + dis) + '</div>')) +
       panel('Pricing details', body('<div class="field-grid">' + input('Cost per unit in ₹', 'cost', ex.cost ?? '', 'number', 'min="0" step="0.01" ' + dis) + input('HSN or tax code', 'hsn', ex.hsn || '', 'text', 'maxlength="20" ' + dis) + '</div>')) +
       panel('Organization', body('<div class="field-grid">' + '<label>Category<input name="category2" list="cat-list" value="' + esc(r.category) + '" ' + dis + '></label><datalist id="cat-list">' + ((state.categories?.categories) || []).map((c) => '<option value="' + esc(c.name) + '">').join('') + '</datalist>' + input('Product type', 'type', ex.type || '', 'text', 'maxlength="80" ' + dis) + input('Vendor or maker', 'vendor', ex.vendor || '', 'text', 'maxlength="80" ' + dis) + input('Weight in grams', 'weight', ex.weight ?? '', 'number', 'min="0" step="0.01" ' + dis) + input('Country of origin', 'origin', ex.origin || '', 'text', 'maxlength="60" ' + dis) + '</div>')) +
       tagsCollectionsPanel(p, dis) + customFieldInputs(ex.custom) +
       panel('Search listing', body('<div class="field-grid">' + input('Page title', 'seoTitle', ex.seoTitle || '', 'text', 'maxlength="70" ' + dis) + input('URL handle', 'handle', p ? r.handle : '', 'text', 'pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="made-from-title" ' + dis) + area('Search description', 'seoDescription', ex.seoDescription || '', 'maxlength="160" ' + dis) + '</div><div data-seo-preview>' + seoPreview(ex.seoTitle || r.name, p ? r.handle : '', ex.seoDescription || r.description) + '</div>')) +
       '</div><aside>' + panel('Status', body('<div class="stack">' + select('Catalog status', 'status', ['Draft', 'Active', 'Archived'], r.status) + (canWrite() ? '' : '<p class="compact-copy">Only an owner or manager can change this.</p>') + '</div>')) +
-      (p ? panel('Stock', body('<p>' + esc(r.stock) + ' available across ' + (r.variants || []).length + ' variant(s)</p>')) : '') + (p ? productSales(r) : '') + '</aside></div>' +
-      '<div class="product-save actions">' + (canWrite() ? '<button class="btn primary">' + (p ? 'Save changes' : 'Create product') + '</button>' : '') + wl('Cancel', 'products') + '</div></form>';
+      (p && r.status === 'Draft' ? panel('Finish setting up', body('<ul class="checklist"><li>Details: saved</li><li>' + wl('Media: ' + ((r.media || []).length || 'none yet'), 'products/' + encodeURIComponent(p.id) + '?tab=media') + '</li><li>' + wl('Variants: ' + (r.variants || []).length, 'products/' + encodeURIComponent(p.id) + '?tab=variants') + '</li></ul><p class="compact-copy">Set the status to Active when it is ready to sell.</p>')) : '') + (p ? panel('Stock', body('<p>' + esc(r.stock) + ' available across ' + (r.variants || []).length + ' variant(s)</p>')) : '') + (p ? productSales(r) : '') + '</aside></div>' +
+      '<div class="product-save actions">' + (canWrite() ? '<button class="btn primary">' + (p ? 'Save changes' : 'Create product') + '</button>' + (p ? '' : '<button class="btn" name="intent" value="draft">Save draft and add media</button>') : '') + wl('Cancel', 'products') + '</div></form>';
   } else if (tab === 'media') {
     const existing = [...new Set([r.image, ...(r.media || [])].filter(Boolean))];
     const main = Number(ex.mainIndex || 0);
-    const photos = existing.map((src, i) => '<div class="product-photo">' + image(src, 'Product image ' + (i + 1)) + (canWrite() ? '<label class="inline"><input type="radio" name="mainIndex" value="' + i + '"' + (i === (main < existing.length ? main : 0) ? ' checked' : '') + '> Main image</label><label class="inline"><input type="checkbox" name="remove" value="' + i + '"> Remove</label>' : '') + '</div>').join('');
+    const photos = existing.map((src, i) => '<div class="product-photo" data-src="' + esc(src) + '">' + image(src, 'Product image ' + (i + 1)) + (canWrite() ? '<div class="photo-move">' + button('◀ Earlier', 'photo-move:-1', 'compact') + button('Later ▶', 'photo-move:1', 'compact') + '</div>' + '<label class="inline"><input type="radio" name="mainIndex" value="' + i + '"' + (i === (main < existing.length ? main : 0) ? ' checked' : '') + '> Main image</label><label class="inline"><input type="checkbox" name="remove" value="' + i + '"> Remove</label>' : '') + '</div>').join('');
     view = panel('Product media', body(canWrite()
       ? '<form data-form="edit" data-key="product-media" data-id="' + esc(p.id) + '">' + (photos ? '<div class="media-grid">' + photos + '</div>' : '<p class="compact-copy">No images yet. Add up to six. The main image shows on the storefront card.</p>') +
         '<input type="hidden" name="existing" value="' + esc(JSON.stringify(existing)) + '"><div class="field-grid" style="margin-top:12px">' + '<label class="wide">Upload photos from this device<input type="file" accept="image/*" multiple></label>' + input('Or add an image link (https://...)', 'imageUrl', '', 'url') + '</div><div class="actions"><button class="btn primary">Save images</button></div></form>'
       : (photos ? '<div class="media-grid">' + photos + '</div>' : '<p class="compact-copy">No images yet.</p>')));
   } else if (tab === 'variants') {
+    editImages = [...new Set([r.image, ...(r.media || [])].filter(Boolean))];
     const intro = '<p class="compact-copy">Define options such as Material and Finish, then generate every combination. Each variant has its own SKU, barcode, price and stock.</p>';
     const grid = variantEditor(r.variants || []);
     const editable = canWrite()
@@ -290,7 +309,7 @@ function addVariantRow(formEl) {
 }
 function collectVariants(formEl) {
   const data = new FormData(formEl); const out = [];
-  for (let i = 0; data.has('variantLabel' + i); i++) out.push({ id: data.get('variantId' + i) || undefined, label: data.get('variantLabel' + i), sku: data.get('variantSku' + i), barcode: data.get('variantBarcode' + i), price: Number(data.get('variantPrice' + i)) || 0, stock: Number(data.get('variantStock' + i)) || 0 });
+  for (let i = 0; data.has('variantLabel' + i); i++) out.push({ id: data.get('variantId' + i) || undefined, label: data.get('variantLabel' + i), sku: data.get('variantSku' + i), barcode: data.get('variantBarcode' + i), price: Number(data.get('variantPrice' + i)) || 0, stock: Number(data.get('variantStock' + i)) || 0, image: data.get('variantImage' + i) || '' });
   return out;
 }
 
@@ -327,7 +346,24 @@ function themePage() {
     panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));
 }
 // ---------- Theme editor: a store's own draft for one install (section list, add/edit/remove, publish) ----------
+// internal links a section or menu can point to (pages and products of this store)
+function linkOptions() {
+  const base = '/store.html';
+  const o = [['Shop', base + '#/shop'], ['Collections', base + '#/collections'], ['Contact', base + '#/contact'], ['About', base + '#/about']];
+  (ed?.pages || []).forEach((pg) => o.push([pg.title, base + '#/page/' + pg.slug]));
+  cfgList('pages').filter((x) => x.slug && x.name).forEach((x) => o.push([x.name, base + '#/page/' + x.slug]));
+  (state.products || []).filter((x) => x.status === 'Active').slice(0, 60).forEach((x) => o.push([x.name, base + '?view=p&p=' + encodeURIComponent(x.id)]));
+  return o;
+}
+const linkList = () => '<datalist id="te-links">' + linkOptions().map(([n, u]) => '<option value="' + esc(u) + '">' + esc(n) + '</option>').join('') + '</datalist>';
+const spaceFields = (p) => '<label>Spacing<select name="space">' + [['compact', 'Compact'], ['normal', 'Normal'], ['roomy', 'Roomy']].map(([k, l]) => '<option value="' + k + '"' + ((p.space || 'normal') === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
+  '<label>Text alignment<select name="align">' + [['center', 'Centered'], ['left', 'Left']].map(([k, l]) => '<option value="' + k + '"' + ((p.align || 'center') === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>';
 function sectionFieldsFor(s) {
+  const p = s.props || {};
+  const fields = sectionFieldsBase(s);
+  return fields ? fields.replace(/(<input type="url" name="(?:href)")/g, '$1 list="te-links"') + linkList() + (s.type === 'announcement' || s.type === 'booking' ? '' : spaceFields(p)) : fields;
+}
+function sectionFieldsBase(s) {
   const p = s.props || {};
   if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + input('Button link', 'href', p.href, 'url');
   if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
@@ -373,14 +409,15 @@ function edListHtml() {
   if (!ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. Sections show on your home page after the store’s own content.</p>';
   return ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(sectionLabel[x.type] || x.type) + '</span><small>' + esc(String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
 }
+const chromePicker = (dis) => '<label class="wide">Add a link to a page or product<select data-chrome-pick' + dis + '><option value="">Choose…</option>' + linkOptions().map(([n, u]) => '<option value="' + esc(n + ' | ' + u) + '">' + esc(n) + '</option>').join('') + '</select></label>';
 function edChromeHtml(kind) {
   const w = canWrite(); const dis = w ? '' : ' disabled';
   if (kind === 'header') return '<div class="panel-title"><h2>Header</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="header"><div class="field-grid te-fields">' +
     input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + input('Announcement link (optional)', 'announceHref', ed.header.announceHref, 'text', 'placeholder="/shop or https://..."' + dis) +
-    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + '</div></form></div>';
+    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
   return '<div class="panel-title"><h2>Footer</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="footer"><div class="field-grid te-fields">' +
     area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
-    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + '</div></form></div>';
+    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + '</div></form></div>';
 }
 function edRightHtml() {
   if (ed.cur === 'header' || ed.cur === 'footer') return edChromeHtml(ed.cur);
@@ -493,6 +530,7 @@ function edHandle(a, key) {
 }
 function edPicked(v) { ed.cur = v; edBind(); ed.sel = ed.sections.length && (v === 'home' || v.startsWith('p:')) ? 0 : -1; ed.snapped = false; edRefresh('lrbp'); }
 function edChromeInput(target) {
+  if (target.matches && target.matches('[data-chrome-pick]')) { const f = target.closest('form'), ta = f?.querySelector('textarea[name=links]'); if (ta && target.value) { ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + target.value; target.value = ''; ta.dispatchEvent(new Event('input', { bubbles: true })); } return true; }
   const form = target.closest('form[data-form="te-chrome"], form[data-form="te-page"]'); if (!form || !ed || !canWrite()) return false;
   if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
   const d = Object.fromEntries(new FormData(form));
@@ -639,7 +677,7 @@ function customersList() {
 }
 function customersPage() {
   const o = lb.customers;
-  return head('Customers', 'People who ordered from your store, plus customers you add by hand.', canWrite() ? button('Add customer', 'customer-new', 'primary') : '') +
+  return head('Customers', 'People who ordered from your store, plus customers you add by hand.', canWrite() ? button('Add customer', 'customer-new', 'primary') : '') + tabs('customers', [['customers', 'Customers'], ['segments', 'Segments'], ['companies', 'Companies']]) +
     panel('All customers', '<div class="filters"><input id="cl-query" type="search" aria-label="Search customers" placeholder="Search name, phone or email" value="' + esc(o.q) + '">' + sortSel('cl-sort', [['name', 'Name A to Z'], ['orders', 'Most orders'], ['spend', 'Highest spend'], ['recent', 'Latest order']], o.sort) + '</div><div id="customers-results">' + customersList() + '</div>');
 }
 function customerForm(c) {
@@ -729,10 +767,15 @@ function returnForm(order) {
   const rows = (order.lines || []).map((l, i) => '<input type="hidden" name="vid' + i + '" value="' + esc(l.variantId) + '">' + input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (ordered ' + l.qty + ')', 'rq' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1"')).join('');
   return editForm('return-record', order.id, rows + area('Reason', 'reason', '', 'maxlength="500"'), 'Create return');
 }
+function parseZones(t) {
+  return String(t || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => { const [name, states, fee, freeOver] = l.split('|').map((x) => x.trim());
+    if (!name || !states) throw new Error('Zone line ' + (i + 1) + ' needs a name and at least one state, like: South | Kerala, Tamil Nadu | 60 | 800');
+    return { name, states: states.split(',').map((x) => x.trim()).filter(Boolean), fee: Number(fee) || 0, freeOver: Number(freeOver) || 0 }; });
+}
 function shippingPage() {
   const sh = state.checkout.shipping || {};
   return head('Shipping', 'What customers pay for delivery at checkout.', '') + tabs('shipping', orderTabs) +
-    panel('Delivery charge', body(canWrite() ? editForm('checkout-settings', '', input('Delivery fee (Rs)', 'fee', sh.fee ?? 0, 'number', 'min="0" step="1"') + input('Free delivery above (Rs, 0 = never)', 'freeOver', sh.freeOver ?? 0, 'number', 'min="0" step="1"') + area('Note shown to customers', 'note', sh.note || '', 'maxlength="300"'), 'Save shipping') :
+    panel('Delivery charge', body(canWrite() ? editForm('checkout-settings', '', input('Delivery fee (Rs)', 'fee', sh.fee ?? 0, 'number', 'min="0" step="1"') + input('Free delivery above (Rs, 0 = never)', 'freeOver', sh.freeOver ?? 0, 'number', 'min="0" step="1"') + area('Note shown to customers', 'note', sh.note || '', 'maxlength="300"') + area('Shipping zones (optional). One per line: Zone name | State, State | Fee | Free above. The customer\'s state picks the zone; any other state pays the delivery fee above.', 'zones', (sh.zones || []).map((z) => [z.name, (z.states || []).join(', '), z.fee, z.freeOver].join(' | ')).join('\n'), 'rows="4" maxlength="2000" placeholder="Rajasthan | Rajasthan | 40 | 500"'), 'Save shipping') :
       '<p class="compact-copy">Fee Rs ' + Number(sh.fee || 0) + (Number(sh.freeOver) > 0 ? ', free above Rs ' + Number(sh.freeOver) : '') + '.</p>'));
 }
 function abandonedPage() {
@@ -794,16 +837,24 @@ const storeLink = (path) => state.store.published && state.tenant?.slug ? 'https
 function pageForm(pg) {
   const v = pg || { status: 'Hidden' };
   return editForm('page-record', pg?.id, input('Page title', 'name', v.name || '', 'text', 'required maxlength="120"') + input('URL handle', 'slug', v.slug || '', 'text', 'pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="60" placeholder="about-us"') +
-    area('Content', 'content', v.content || '', 'rows="8" maxlength="10000"') + input('Cover image URL', 'image', v.image || '', 'url') +
+    richArea('Content', 'content', v.content || '', '') + input('Cover image URL', 'image', v.image || '', 'url') +
     select('Visibility', 'status', ['Hidden', 'Visible', 'Scheduled'], v.status || 'Hidden') + input('Publish on (for Scheduled)', 'publishAt', v.publishAt || '', 'datetime-local') +
     input('Search title', 'seoTitle', v.seoTitle || '', 'text', 'maxlength="70"') + area('Search description', 'seoDescription', v.seoDescription || '', 'rows="2" maxlength="160"'), 'Save page');
 }
+let pgf = { q: '', status: '' };
+const pageState = (x) => x.status === 'Scheduled' ? (x.publishAt && new Date(x.publishAt) > new Date() ? 'Scheduled' : x.publishAt ? 'Visible' : 'Hidden') : x.status;
+function pagesList() {
+  const q = pgf.q.trim().toLowerCase();
+  const pages = cfgList('pages').filter((x) => (!q || (x.name + ' ' + x.slug).toLowerCase().includes(q)) && (!pgf.status || pageState(x) === pgf.status));
+  const rows = pages.map((x) => [(canWrite() ? '<input type="checkbox" class="pg-sel" value="' + esc(x.id) + '" aria-label="Select ' + esc(x.name) + '">' : ''), esc(x.name), esc('/' + x.slug),
+    badge(pageState(x), pageState(x) === 'Visible' ? '' : 'neutral') + (pageState(x) === 'Scheduled' ? '<small> goes live ' + esc(dateValue(x.publishAt)) + '</small>' : ''), x.updatedOn ? dateValue(x.updatedOn) : '—',
+    (pageState(x) === 'Visible' && storeLink('page/' + x.slug) ? link('View', storeLink('page/' + x.slug), 'compact') : '') + (canWrite() ? button('Copy', 'page-copy:' + x.id, 'compact') : '') + rowActions('page', x.id)]);
+  return table(['', 'Page', 'URL', 'Visibility', 'Updated', ''], rows) + (pages.length ? '' : '<p class="compact-copy">' + (cfgList('pages').length ? 'No pages match your search.' : 'No pages yet. Add one and set it to Visible to publish it.') + '</p>');
+}
 function storePagesPage(bare) {
-  const pages = cfgList('pages');
-  const rows = pages.map((x) => [esc(x.name), esc('/' + x.slug), badge(x.status, x.status === 'Visible' ? '' : 'neutral'), x.updatedOn ? dateValue(x.updatedOn) : '—',
-    (x.status === 'Visible' && storeLink('page/' + x.slug) ? link('View', storeLink('page/' + x.slug), 'compact') : '') + rowActions('page', x.id)]);
+  const bulk = canWrite() ? '<div class="actions">' + button('Select all', 'pages-all', 'compact') + button('Make visible', 'pages-bulk:Visible', 'compact') + button('Hide', 'pages-bulk:Hidden', 'compact') + button('Delete selected', 'pages-bulk:delete', 'compact danger') + '</div>' : '';
   return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
-    panel('Store pages', table(['Page', 'URL', 'Visibility', 'Updated', ''], rows) + (pages.length ? '' : '<p class="compact-copy">No pages yet. Add one and set it to Visible to publish it.</p>'));
+    panel('Store pages', '<div class="filters"><input id="pg-query" type="search" aria-label="Search pages" placeholder="Search pages" value="' + esc(pgf.q) + '"><select id="pg-status" aria-label="Filter by visibility">' + ['', 'Visible', 'Hidden', 'Scheduled'].map((o) => '<option value="' + o + '"' + (o === pgf.status ? ' selected' : '') + '>' + (o || 'All visibility') + '</option>').join('') + '</select></div>' + bulk + '<div id="pages-results">' + pagesList() + '</div>');
 }
 function contentPage(id) {
   const pages = cfgList('pages'), files = cfgList('files'), fields = cfgList('customFields');
@@ -837,7 +888,7 @@ async function contentAction(a, key) {
 async function contentSubmit(key, rid, data) {
   const m = /^(page|file|field|market)-record$/.exec(key); if (!m) return false;
   const list = contentRecords[m[1]][0]; const items = cfgList(list).slice(); const rec = { ...data };
-  if (m[1] === 'page') { rec.slug = slugify(rec.slug || rec.name); rec.updatedOn = new Date().toISOString().slice(0, 10); if (!rec.slug) throw new Error('Enter a page title.'); if (items.some((x) => x.slug === rec.slug && x.id !== rid)) throw new Error('Another page already uses that URL handle.'); }
+  if (m[1] === 'page') { rec.slug = slugify(rec.slug || rec.name); rec.updatedOn = new Date().toISOString().slice(0, 10); if (rec.status === 'Scheduled' && !rec.publishAt) throw new Error('Choose the date and time this page goes live.'); if (!rec.slug) throw new Error('Enter a page title.'); if (items.some((x) => x.slug === rec.slug && x.id !== rid)) throw new Error('Another page already uses that URL handle.'); }
   if (rid) { const i = items.findIndex((x) => x.id === rid); if (i < 0) throw new Error('Not found.'); items[i] = { ...items[i], ...rec }; } else items.push({ id: newId(), ...rec });
   await saveList(list, items); save('Saved.'); close(); rerender(true); return true;
 }
@@ -943,7 +994,7 @@ function homeExtras() {
   if (f.accounting) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html']);
   if (f.salon && state.tenant?.slug) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
   const shortcuts = apps.length ? '<div class="stack">' + apps.map(([n, d, u]) => '<a class="btn" href="' + esc(u) + '" data-handoff="1"><strong>' + esc(n) + '</strong> · ' + esc(d) + '</a>').join('') + '</div>' : '<p class="compact-copy">Your other AUZslab apps appear here when your plan includes them.</p>';
-  return '<div class="cols">' + panel('Acquisition by campaign', body(acq), wl('Growth', 'growth', 'compact')) + panel('Website sessions', body('<p class="compact-copy">Visit counts are not recorded for online stores yet. Orders and campaigns above are real; sessions will appear when visit tracking is added.</p>')) + '</div>' + panel('Your apps', body(shortcuts));
+  return '<div class="cols">' + panel('Acquisition by campaign', body(campaignBars() + acq), wl('Growth', 'growth', 'compact')) + visitorPanel(true) + '</div>' + panel('Your apps', body(shortcuts));
 }
 
 // ---------- Theme library actions: new from a starter, import a ZIP package, rename, duplicate, delete (db/395) ----------
@@ -1054,9 +1105,11 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
-  if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'), el = f.querySelector('[data-seo-preview]'); if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
+  if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'); if (target.name === 'description') { const rp = f.querySelector('[data-rich-preview]'); if (rp) rp.innerHTML = target.value ? richHtml(target.value) : '<p class="compact-copy">A preview of your formatting shows here.</p>'; } const el = f.querySelector('[data-seo-preview]'); if (!el) return; if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
   if ((type === 'input' || type === 'change') && /^ol-(query|pay|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.orders[k === 'query' ? 'q' : k] = target.value; $('#orders-results').innerHTML = ordersList(); return; }
   if ((type === 'input' || type === 'change') && /^cl-(query|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.customers[k === 'query' ? 'q' : k] = target.value; $('#customers-results').innerHTML = customersList(); return; }
+  if ((type === 'input' || type === 'change') && /^pg-(query|status)$/.test(target.id)) { pgf[target.id === 'pg-query' ? 'q' : 'status'] = target.value; const el = $('#pages-results'); if (el) el.innerHTML = pagesList(); return; }
+  if (type === 'change' && target.matches && target.matches('[data-linkpick]')) { const ta = target.closest('.rich')?.querySelector('textarea'); if (ta && target.value) { const st = ta.selectionStart, en = ta.selectionEnd, label = ta.value.slice(st, en) || target.options[target.selectedIndex].text, ins = '[' + label + '](' + target.value + ')'; ta.value = ta.value.slice(0, st) + ins + ta.value.slice(en); ta.dispatchEvent(new Event('input', { bubbles: true })); } target.value = ''; return; }
   if ((type === 'input' || type === 'change') && ['table-query'].includes(target.id)) { $('#table-results').innerHTML = productsList(target.value); return; }
   if ((type === 'input' || type === 'change') && target.id === 'collection-query') { $('#collection-results').innerHTML = collectionList(target.value); return; }
   if (type === 'submit' && target.dataset.form === 'section') {
@@ -1074,13 +1127,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     try {
       if (key === 'product-record') {
         if (!data.name?.trim()) { flash('Enter a product title.'); return; }
-        const p = await api('sfx_product_save', { p_id: rid, p: { name: data.name, description: data.description, price: data.price, compareAt: data.compareAt, category: data.category2 ?? data.category, handle: data.handle || undefined, status: data.status.toLowerCase() } });
+        const p = await api('sfx_product_save', { p_id: rid, p: { name: data.name, description: data.description, price: data.price, compareAt: data.compareAt, category: data.category2 ?? data.category, handle: data.handle || undefined, status: (event?.submitter?.value === 'draft' ? 'draft' : data.status.toLowerCase()) } });
         await api('sfx_product_extra_save', { p_id: rid || p.id, p: { cost: data.cost, hsn: data.hsn, vendor: data.vendor, type: data.type, weight: data.weight, origin: data.origin, seoTitle: data.seoTitle, seoDescription: data.seoDescription, custom: readCustomFields(data) } });
         const pid = rid || p.id;
         await api('sfx_product_set_tags', { p_id: pid, p_tags: data.tags || '' });
         await api('sfx_product_set_collections', { p_id: pid, p_collections: values.getAll('collections').join(',') });
         await Promise.all([refreshProducts(), refreshCategories(), refreshMemberships(), refreshCollections()]); save(rid ? 'Product updated.' : 'Product created.'); close();
-        if (!rid) location.hash = '/products/' + p.id; else rerender();
+        if (!rid) location.hash = '/products/' + p.id + (event?.submitter?.value === 'draft' ? '?tab=media' : ''); else rerender();
       } else if (key === 'product-media') {
         const fd = new FormData(target); const had = JSON.parse(data.existing || '[]'); const drop = new Set(fd.getAll('remove').map(Number));
         let list = had.filter((_, i) => !drop.has(i)); const mainSrc = had[Number(data.mainIndex || 0)];
@@ -1152,7 +1205,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'return-rzp-refund') {
         await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
       } else if (key === 'checkout-settings') {
-        await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note }, abandonCapture: state.checkout.abandonCapture } });
+        await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note, zones: parseZones(data.zones) }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);
       } else if (key === 'bulk-apply') {
         const ids = bulkIds(); const patch = { status: data.status || undefined, category: data.category || undefined, pricePct: data.pricePct || undefined };
@@ -1237,6 +1290,32 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'campaign-delete') return withBusy(async () => { if (!confirm('Delete this campaign?')) return; await api('sfx_campaign_delete', { p_id: key }); await refreshCampaigns(); save('Campaign deleted.'); rerender(true); });
   if (a === 'plan-pay') { const out = $('#plan-feedback'); target.disabled = true; out.textContent = 'Starting payment…'; return payPlan(out).catch((e) => { out.textContent = e.message; }).finally(() => { target.disabled = false; }); }
   if (a === 'plan-request') return withBusy(async () => { await api('request_storefront_reactivation', { p_notes: null }); save('Request sent. We will get back to you.'); });
+  if (a === 'pages-all') { const boxes = [...document.querySelectorAll('.pg-sel')]; const on = boxes.some((b) => !b.checked); boxes.forEach((b) => { b.checked = on; }); return; }
+  if (a === 'page-copy') return withBusy(async () => { const items = cfgList('pages'), src = items.find((x) => x.id === key); if (!src) return; let slug = src.slug + '-copy', n = 2; while (items.some((x) => x.slug === slug)) slug = src.slug + '-copy-' + n++; await saveList('pages', [...items, { ...src, id: 'pg' + Date.now().toString(36), name: src.name + ' (copy)', slug, status: 'Hidden', publishAt: '', updatedOn: new Date().toISOString().slice(0, 10) }]); save('Page copied as hidden.'); rerender(true); });
+  if (a === 'pages-bulk') {
+    const ids = new Set([...document.querySelectorAll('.pg-sel:checked')].map((b) => b.value)); if (!ids.size) { flash('Tick the pages you want to change first.'); return; }
+    return withBusy(async () => { const items = cfgList('pages');
+      if (key === 'delete') { if (!confirm('Delete ' + ids.size + ' page(s)? This cannot be undone.')) return; await saveList('pages', items.filter((x) => !ids.has(x.id))); }
+      else await saveList('pages', items.map((x) => ids.has(x.id) ? { ...x, status: key, publishAt: '', updatedOn: new Date().toISOString().slice(0, 10) } : x));
+      save(ids.size + ' page(s) updated.'); rerender(true); });
+  }
+  if (a === 'rich-fmt') {
+    const ta = target.closest('.rich')?.querySelector('textarea'); if (!ta) return;
+    const st = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(st, en);
+    let ins = sel, c0 = st, c1 = en;
+    if (key === 'bold') { ins = '**' + (sel || 'bold text') + '**'; } else if (key === 'italic') { ins = '*' + (sel || 'italic text') + '*'; }
+    else if (key === 'list') { ins = (sel || 'Item one\nItem two').split('\n').map((l) => '- ' + l.replace(/^[-*] /, '')).join('\n'); }
+    else if (key === 'link') { const u = prompt('Link address (https://...)', 'https://'); if (!u || !/^https:\/\/[^\s)]+$/.test(u)) { if (u) flash('Use a link that starts with https://'); return; } ins = '[' + (sel || 'link text') + '](' + u + ')'; }
+    ta.value = ta.value.slice(0, st) + ins + ta.value.slice(en); ta.focus(); ta.setSelectionRange(st, st + ins.length); ta.dispatchEvent(new Event('input', { bubbles: true })); return;
+  }
+  if (a === 'photo-move') {
+    const box = target.closest('.product-photo'), f = target.closest('form'), dir = Number(key); if (!box || !f) return;
+    const sib = dir < 0 ? box.previousElementSibling : box.nextElementSibling; if (!sib || !sib.classList.contains('product-photo')) return;
+    dir < 0 ? sib.before(box) : sib.after(box);
+    const boxes = [...f.querySelectorAll('.product-photo')]; f.querySelector('[name=existing]').value = JSON.stringify(boxes.map((x) => x.dataset.src));
+    boxes.forEach((x, i) => { const r = x.querySelector('[name=mainIndex]'), c = x.querySelector('[name=remove]'); if (r) r.value = i; if (c) c.value = i; });
+    flash('Order changed. Press Save images to keep it.'); return;
+  }
   if (a === 'variant-add') { addVariantRow(target.closest('form')); return; }
   if (a === 'variant-generate') { try { const r = generateVariants(target.closest('form')); flash(r.total + ' variants: ' + r.fresh + ' new, ' + r.kept + ' kept' + (r.removed ? ', ' + r.removed + ' will be removed when you save' : '') + '. Review the rows, then Save variants.'); } catch (e) { flash(e.message); } return; }
   if (a === 'variant-remove') { const f = target.closest('form'); const list = collectVariants(f); list.splice(Number(key), 1); f.querySelector('.product-variant-grid').innerHTML = variantEditor(list); return; }

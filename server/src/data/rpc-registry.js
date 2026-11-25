@@ -860,6 +860,7 @@ export const RPC = {
   public_sfx_notify_me: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
   public_sfx_coupon_check: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
   sfx_live_visitors: { params: [], auth: true },
+  sfx_visitor_summary: { params: ['p_days'], auth: true },
   public_sfx_track: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
   public_sfx_place_order: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
   public_sfx_order: { params: ['p_token'], auth: false },
