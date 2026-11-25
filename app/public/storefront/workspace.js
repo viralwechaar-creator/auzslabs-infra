@@ -7,7 +7,7 @@
 // customers/segments/companies, growth/discounts, content pages/files/custom data, markets, staff & roles,
 // most of Settings) is NOT wired to anything fake: it shows a clearly labeled "Coming soon" panel instead
 // of a form that would quietly save nowhere.
-import { analyticsPage } from './analytics.js';
+import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
@@ -943,7 +943,7 @@ function homeExtras() {
   if (f.accounting) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html']);
   if (f.salon && state.tenant?.slug) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
   const shortcuts = apps.length ? '<div class="stack">' + apps.map(([n, d, u]) => '<a class="btn" href="' + esc(u) + '" data-handoff="1"><strong>' + esc(n) + '</strong> · ' + esc(d) + '</a>').join('') + '</div>' : '<p class="compact-copy">Your other AUZslab apps appear here when your plan includes them.</p>';
-  return '<div class="cols">' + panel('Acquisition by campaign', body(acq), wl('Growth', 'growth', 'compact')) + panel('Website sessions', body('<p class="compact-copy">Visit counts are not recorded for online stores yet. Orders and campaigns above are real; sessions will appear when visit tracking is added.</p>')) + '</div>' + panel('Your apps', body(shortcuts));
+  return '<div class="cols">' + panel('Acquisition by campaign', body(campaignBars() + acq), wl('Growth', 'growth', 'compact')) + visitorPanel(true) + '</div>' + panel('Your apps', body(shortcuts));
 }
 
 // ---------- Theme library actions: new from a starter, import a ZIP package, rename, duplicate, delete (db/395) ----------
