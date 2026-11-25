@@ -878,6 +878,7 @@ export const RPC = {
   sfdev_ledger_list: { params: [], auth: true },
   sfx_admin_theme_queue: { params: [], auth: true },
   sfx_admin_theme_list: { params: [], auth: true },
+  sfx_admin_theme_price_set: { params: ['p_theme_id', 'p_price_cents'], auth: true },
   sfx_admin_theme_approve: { params: ['p_theme_id'], auth: true },
   sfx_admin_theme_reject: { params: ['p_theme_id', 'p_reason'], auth: true },
   sfx_admin_ledger_list: { params: [], auth: true },

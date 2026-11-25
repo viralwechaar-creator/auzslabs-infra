@@ -305,7 +305,7 @@ const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', 
 function themeCard(t) {
   const price = t.priceCents > 0 ? money(t.priceCents / 100) : 'Free';
   const buy = t.installed ? badge('Installed') :
-    t.priceCents > 0 ? badge('Coming soon', 'neutral') :
+    t.priceCents > 0 ? '<p class="compact-copy">Premium theme. Checkout is being switched on; contact AUZslab to unlock it for your store.</p>' :
     canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
   return '<article class="card"><div class="tile-img">' + (image(t.previewImageUrl, t.name) || '<div class="tile-img placeholder"></div>') +
     '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
@@ -323,7 +323,7 @@ function themePage() {
   const market = state.marketplace.map((t) => ({ ...t, installed: owned.has(t.id) }));
   return head('Theme', 'Browse the theme marketplace, install a theme, and customize what you install.', canWrite() ? button('Import ZIP', 'theme-import') + button('New theme', 'theme-new', 'primary') : '') + tabs('builder', websiteTabs) +
     panel('Your installed themes', state.installs.length ? '<div class="cards">' + state.installs.map(installRow).join('') + '</div>' : body('<p class="compact-copy">You haven’t installed a theme yet. Install one from the marketplace below.</p>')) +
-    panel('Theme marketplace', '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
+    panel('Theme marketplace', body('<p class="compact-copy">Prices on this page are always current and are set by AUZslab. Free themes install instantly; premium themes show their price and are unlocked with AUZslab.</p>') + '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
     panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));
 }
 // ---------- Theme editor: a store's own draft for one install (section list, add/edit/remove, publish) ----------
