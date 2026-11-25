@@ -12,6 +12,7 @@ export const RPC = {
   provision_tenant: { params: ['p_name', 'p_slug', 'p_niche'], auth: true },
   provision_custom_tenant: { params: ['p_name', 'p_slug', 'p_brief'], auth: true },
   public_menu: { params: ['tenant_slug'], auth: false },
+  public_sfx_theme_prices: { params: [], auth: false },
   public_reviews: { params: ['tenant_slug'], auth: false },
   public_site_content: { params: [], auth: false },
   admin_site_content_save: { params: ['p'], auth: true },
