@@ -86,6 +86,10 @@ export async function refreshStyleLink() { try { state.styleLink = await api('sf
 export async function refreshLive() { try { state.liveVisitors = await api('sfx_live_visitors'); } catch (e) { state.liveVisitors = { error: true }; } }
 export async function refreshVisitors(days = 14) { try { state.visitors = await api('sfx_visitor_summary', { p_days: days }); } catch (e) { state.visitors = { error: true }; } }
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
+export async function refreshInsights() {
+  const [funnel, profit, inventory, rfm, cohorts, sessions] = await Promise.all([api('sfx_report_funnel', { p_days: 30 }), api('sfx_report_profit', { p_days: 30 }), api('sfx_report_inventory', { p_days: 30 }), api('sfx_report_rfm'), api('sfx_report_cohorts', { p_months: 6 }), api('sfx_report_sessions', { p_days: 30 })]);
+  state.insights = { funnel, profit, inventory, rfm, cohorts, sessions };
+}
 export async function refreshBlog() { state.blog = await api('sfx_blog_list'); }
 export async function refreshRedirects() { state.redirects = await api('sfx_redirect_list'); }
 export async function refreshRevisions() { state.revisions = await api('sfx_revision_list'); }

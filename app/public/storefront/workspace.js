@@ -11,7 +11,7 @@ import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInsights, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -940,6 +940,22 @@ function storePagesPage(bare) {
   return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
     panel('Store pages', '<div class="filters"><input id="pg-query" type="search" aria-label="Search pages" placeholder="Search pages" value="' + esc(pgf.q) + '"><select id="pg-status" aria-label="Filter by visibility">' + ['', 'Visible', 'Hidden', 'Scheduled'].map((o) => '<option value="' + o + '"' + (o === pgf.status ? ' selected' : '') + '>' + (o || 'All visibility') + '</option>').join('') + '</select></div>' + bulk + '<div id="pages-results">' + pagesList() + '</div>');
 }
+function insightsPage() {
+  const r = state.insights; if (!r) return head('Insights', 'Loading your reports...', '');
+  const pct = (v) => v == null ? '—' : Number(v) + '%';
+  const f = r.funnel, pf = r.profit;
+  const funnel = panel('Visitor funnel (last ' + f.days + ' days)', table(['Step', 'Visitors', 'From the step before'], f.steps.map((s2, i) => [esc(s2.step), s2.count, i === 0 || !f.steps[i - 1].count ? '—' : Math.round(100 * s2.count / f.steps[i - 1].count) + '%'])) +
+    '<p class="compact-copy">Conversion rate: ' + pct(f.conversionRate) + ' · One-page visits: ' + pct(r.sessions.singleEventShare) + ' · ' + r.sessions.sessions + ' sessions</p>');
+  const profit = panel('Sales and profit (last ' + pf.days + ' days)', table(['Measure', 'Amount'], [['Orders', pf.orders], ['Gross sales', money(pf.grossSales)], ['Discounts', money(pf.discounts)], ['Refunds', money(pf.refunds)], ['Shipping charged', money(pf.shipping)], ['Tax collected', money(pf.tax)], ['Net sales', '<strong>' + money(pf.netSales) + '</strong>'], ['Average order', pf.averageOrder == null ? '—' : money(pf.averageOrder)],
+    ['Profit on items with a known cost', money(pf.profitOnKnownCost)], ['Share of sales with a known cost', pct(pf.costCoverage)]]) +
+    (pf.costCoverage != null && pf.costCoverage < 100 ? '<p class="compact-copy">Profit only counts items whose cost you entered, so it is incomplete until the share above is 100%. Add costs in Inventory, Details.</p>' : ''));
+  const inv = panel('Inventory (last ' + r.inventory.days + ' days)', table(['Product', 'Variant', 'Sold', 'Available', 'Sold of what was there', 'Days of stock', 'Class', 'Note'],
+    (r.inventory.rows || []).slice(0, 25).map((x) => [esc(x.product), esc(x.variant), x.sold, x.available, pct(x.sellThrough), x.daysOfCover == null ? '—' : x.daysOfCover, x.abc, { out_of_stock: 'Out of stock', dead_stock: 'Not selling', low_cover: 'Running low' }[x.flag] || ''])) +
+    '<p class="compact-copy">Stock value at cost: ' + money(r.inventory.stockValueAtCost) + (r.inventory.stockWithoutCost ? ' · ' + r.inventory.stockWithoutCost + ' item(s) in stock have no cost entered.' : '') + '</p>');
+  const cust = panel('Customers by recency, frequency and spend', table(['Group', 'Customers', 'Spent'], (r.rfm.segments || []).map((x) => [esc(x.segment), x.customers, money(x.money)])));
+  const coh = panel('Customers who came back', table(['First order month', 'Customers', 'Came back later'], (r.cohorts || []).map((c) => [dateValue(c.month), c.customers, (c.retention || []).slice(1).map((k) => '+' + k.monthsLater + 'm: ' + k.returned).join(' · ') || '—'])));
+  return head('Insights', 'Funnel, sales, profit, stock and customer reports. Cancelled and test orders are never counted.', '') + funnel + profit + inv + cust + coh;
+}
 function blogPage() {
   const rows = (state.blog || []).map((b) => [esc(b.title), '<code>/blog/' + esc(b.handle) + '</code>', badge(b.status === 'published' ? 'Published' : 'Draft', b.status === 'published' ? '' : 'neutral'), dateValue(b.updatedAt),
     canWrite() ? button('Edit', 'blog-edit:' + b.id, 'compact') + button('Delete', 'blog-delete:' + b.id, 'compact danger') : '']);
@@ -1197,6 +1213,7 @@ export function workspace(id, record) {
   else if (productTabs.some(([k]) => k === id)) html = productsPage(id);
   else if (id === 'builder' && record) html = editorPage(record);
   else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages', 'store-directory'].includes(id)) html = websitePage(id);
+  else if (id === 'insights') html = insightsPage();
   else if (id === 'customers') html = customersPage();
   else if (id === 'discounts') html = discountsPage();
   else if (id === 'segments') html = segmentsPage();

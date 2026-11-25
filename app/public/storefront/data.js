@@ -21,7 +21,7 @@ export const menu = [
   { id: 'discounts', name: 'Discounts', icon: 'tag' },
   { id: 'content', name: 'Content', icon: 'file', children: [['pages', 'Pages and menus'], ['blog', 'Blog'], ['redirects', 'Redirects'], ['versions', 'Saved versions'], ['files', 'Files'], ['data', 'Custom data'], ['custom-fields', 'Typed fields']] },
   { id: 'markets', name: 'Markets', icon: 'globe' },
-  { id: 'analytics', name: 'Analytics', icon: 'chart', children: [['reports', 'Reports'], ['live-view', 'Live view']] },
+  { id: 'analytics', name: 'Analytics', icon: 'chart', children: [['reports', 'Reports'], ['insights', 'Insights'], ['live-view', 'Live view']] },
   { label: 'Sales channels' },
   { id: 'channels', name: 'All channels', icon: 'swap' },
   { id: 'website', name: 'Online store', icon: 'store', children: [['builder', 'Theme'], ['templates', 'Themes'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']] },
