@@ -42,6 +42,7 @@ export const RPC = {
   submit_job_application_resume: { params: ['p_id', 'p_filename'], auth: false },
   admin_list_job_applications: { params: ['p_status'], defaults: { p_status: 'pending' }, auth: true },
   admin_job_application_resume: { params: ['p_id'], auth: true },
+  admin_lead_make_salesos: { params: ['p_lead', 'p_post'], auth: true },
   admin_review_job_application: { params: ['p_id', 'p_decision', 'p_post', 'p_reject_reason'], defaults: { p_post: null, p_reject_reason: null }, auth: true },
   sos_field_session_start: { params: [], auth: true },
   sos_field_session_current: { params: [], auth: true },

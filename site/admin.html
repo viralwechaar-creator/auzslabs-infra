@@ -1796,6 +1796,7 @@ async function loadLeads() {
       </div>
       ${l.message ? `<div class="req-section req-body">${esc(l.message)}</div>` : ''}
       <div class="req-actions">
+        ${l.kind === 'career' && l.status !== 'converted' ? `<select data-post class="field-input" style="max-width:170px">${SOS_POSTS.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select><button data-salesos class="req-primary">Make SalesOS login</button>` : ''}
         <button data-use>Use for onboarding</button>
         <button data-demo>Copy demo link</button>
         <button data-del class="req-danger">Delete</button>
@@ -1813,6 +1814,14 @@ async function loadLeads() {
       document.getElementById('name').value = lead.business || lead.name;
       document.getElementById('niche').value = (lead.niche === 'gym' || lead.niche === 'general' ? 'retail' : lead.niche) || 'retail';
       document.getElementById('ownerEmail').value = lead.contact.includes('@') ? lead.contact : '';
+    };
+    const sosBtn = tr.querySelector('[data-salesos]');
+    if (sosBtn) sosBtn.onclick = async () => {
+      const post = tr.querySelector('[data-post]').value;
+      if (!confirm('Create a "' + post + '" SalesOS login for ' + lead.name + '? They sign in with the email they gave (Google or forgot password).')) return;
+      sosBtn.disabled = true; const { error: e2 } = await sb.rpc('admin_lead_make_salesos', { p_lead: id, p_post: post });
+      if (e2) { sosBtn.disabled = false; alert(e2.message); return; }
+      loadLeads();
     };
     const demoBtn = tr.querySelector('[data-demo]');
     if (demoBtn) demoBtn.onclick = () => copyDemoLink('lead', id, demoBtn);
