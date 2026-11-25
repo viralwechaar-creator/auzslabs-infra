@@ -724,7 +724,7 @@ function customerForm(c) {
 }
 
 // ---------- Discounts ----------
-const discountValueLabel = (d) => d.kind === 'percent' ? Number(d.value) + '% off' : 'Rs ' + Number(d.value) + ' off';
+const discountValueLabel = (d) => (d.automatic ? 'Automatic · ' : '') + (d.kind === 'percent' ? Number(d.value) + '% off' : d.kind === 'free_shipping' ? 'Free shipping' : d.kind === 'buy_x_get_y' ? 'Buy ' + d.buyQty + ' get ' + d.getQty + (Number(d.getPercent) < 100 ? ' at ' + Number(d.getPercent) + '% off' : ' free') : 'Rs ' + Number(d.value) + ' off') + (d.productIds && d.productIds.length ? ' (chosen product)' : '');
 function discountsPage() {
   const rows = (state.discounts || []).map((d) => [
     '<strong>' + esc(d.code) + '</strong>', discountValueLabel(d), d.minOrder != null ? money(d.minOrder) : '—', d.expiresAt ? dateValue(d.expiresAt) : 'No expiry',
@@ -735,12 +735,19 @@ function discountsPage() {
     panel('All discounts', table(['Code', 'Offer', 'Minimum order', 'Expires', 'Used', 'Status', ''], rows));
 }
 function discountForm(d) {
-  const exp = d?.expiresAt ? String(d.expiresAt).slice(0, 10) : '';
-  return editForm('discount-record', d?.id, input('Code', 'code', d?.code || '', 'text', 'required maxlength="30" pattern="[A-Za-z0-9_\\-]{2,30}" style="text-transform:uppercase"') +
-    select('Type', 'kind', [['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)']], d?.kind || 'percent') +
-    input('Value', 'value', d?.value ?? '', 'number', 'required min="0.01" step="0.01"') +
+  const exp = d?.expiresAt ? String(d.expiresAt).slice(0, 10) : ''; const st = d?.startsAt ? String(d.startsAt).slice(0, 10) : '';
+  const prods = [['', 'All products']].concat((state.products || []).map((p) => [p.id, p.name]));
+  return editForm('discount-record', d?.id, input('Code or name', 'code', d?.code || '', 'text', 'required maxlength="30"') +
+    select('Type', 'kind', [['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)'], ['free_shipping', 'Free shipping'], ['buy_x_get_y', 'Buy X get Y']], d?.kind || 'percent') +
+    input('Value (percent or Rs, not needed for free shipping or Buy X get Y)', 'value', d?.value ?? '', 'number', 'min="0" step="0.01"') +
+    input('Buy this many (Buy X get Y)', 'buyQty', d?.buyQty ?? '', 'number', 'min="1" step="1"') + input('Get this many (Buy X get Y)', 'getQty', d?.getQty ?? '', 'number', 'min="1" step="1"') +
+    input('Gift discount percent (100 = free)', 'getPercent', d?.getPercent ?? 100, 'number', 'min="1" max="100" step="1"') +
+    select('Applies to', 'productId', prods, (d?.productIds || [])[0] || '') +
+    select('How customers get it', 'automatic', [['no', 'They type the code'], ['yes', 'Applied automatically (no code needed)']], d?.automatic ? 'yes' : 'no') +
     input('Minimum order (Rs, optional)', 'minOrder', d?.minOrder ?? '', 'number', 'min="0" step="0.01"') +
-    input('Expires on (optional)', 'expiresAt', exp, 'date') + input('Usage limit (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"'));
+    input('Starts on (optional)', 'startsAt', st, 'date') + input('Expires on (optional)', 'expiresAt', exp, 'date') +
+    input('Total uses allowed (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"') + input('Uses per customer (optional)', 'perCustomerLimit', d?.perCustomerLimit ?? '', 'number', 'min="1" step="1"') +
+    select('First order only', 'firstOrderOnly', [['no', 'Any customer'], ['yes', 'Only a customer\'s first order']], d?.firstOrderOnly ? 'yes' : 'no'));
 }
 
 // ---------- Inventory, Transfers, Categories ----------
@@ -1265,7 +1272,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshCustomers(); save(rid ? 'Customer updated.' : 'Customer added.'); close(); rerender(true);
       } else if (key === 'discount-record') {
         const expiresAt = data.expiresAt ? new Date(data.expiresAt + 'T23:59:59').toISOString() : '';
-        await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, usageLimit: data.usageLimit } });
+        const startsAt = data.startsAt ? new Date(data.startsAt + 'T00:00:00').toISOString() : '';
+        await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, startsAt, usageLimit: data.usageLimit, perCustomerLimit: data.perCustomerLimit,
+          buyQty: data.buyQty, getQty: data.getQty, getPercent: data.getPercent, automatic: data.automatic === 'yes', firstOrderOnly: data.firstOrderOnly === 'yes', productIds: data.productId ? [data.productId] : [] } });
         await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); rerender(true);
       } else if (key === 'stock-details') {
         await api('sfx_variant_meta_save', { p_variant: rid, p: { cost: data.cost === '' ? '' : String(data.cost), needsShipping: data.needsShipping !== 'no' } });
