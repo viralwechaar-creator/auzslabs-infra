@@ -68,6 +68,21 @@
     # never leaves its own address (iOS shows a browser toolbar on any jump to another address). Only these files, from the
     # app folder; the marketing site's own sb-client.js, vendor/ and assets/ stay untouched (the page loads its own copy
     # as /storefront/sb-client.js, a link to the shared file).
+    # Old pages that search engines still list (apps and pages that were retired): send people, and Google, to the closest live page.
+    @oldProducts path /pos.html /billing.html /crm.html /inventory.html /qr-ordering.html /payroll.html /accounting.html /scan-and-bill.html /intelligence.html /platform.html /business-cafes.html /business-clothing.html /business-mobile-repair.html /business-retail.html /business-salons.html
+    redir @oldProducts /products.html permanent
+    @oldThemes path /web-design.html /build.html
+    redir @oldThemes /themes.html permanent
+    @oldPartners path /partners.html
+    redir @oldPartners /developers.html permanent
+    @oldContact path /careers.html /join.html /join-team.html
+    redir @oldContact /contact.html permanent
+    @oldDemo path /demo.html /open.html
+    redir @oldDemo /live-demo.html permanent
+    @oldCart path /checkout.html
+    redir @oldCart /cart.html permanent
+    @oldKit path /nav-kit.html
+    redir @oldKit / permanent
     @sfx path /storefront.html /storefront/* /store.html /store/* /theme-dev.html /ds/mydata.js /ds/admin-tab.js /manifest-storefront.json /icon-storefront* /config.js /tenant.js /site-kiln.html /salon/index.html /salon/menu/* /salon/assets/* /salon/preview/*
     handle @sfx {
         root * /srv/app
