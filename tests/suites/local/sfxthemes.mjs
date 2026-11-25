@@ -55,4 +55,34 @@ export default async function run({ browser, stack }) {
     assert(row.sections.some((x) => (x.props || {}).heading === 'Saved heading'), JSON.stringify(row.sections.map((x) => x.type)));
     assert(!e4.filter((x) => !/sentry|fonts|\/uploads\//i.test(x)).length, e4.slice(0, 3).join(' | ').slice(0, 400));
   }, 'major');
+  await s.check('Theme editor: header, footer and a new page are saved and shown on the store', async () => {
+    const r = await q("select id from sfx_theme_installs where name='Editor theme' order by id desc limit 1"); const id = r[0].id;
+    const pg = await ctx.newPage(); await pg.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await pg.waitForTimeout(500);
+    const draft = { sections: [{ id: 'a1', type: 'text', props: { heading: 'Home', body: 'x' } }], header: { announceText: 'Free shipping over 999', announceHref: '/shop', links: [{ label: 'Lookbook', href: '/page/lookbook' }] }, footer: { about: 'Small shop, big care.', note: 'Made in India', links: [{ label: 'Contact', href: '/page/contact' }] }, pages: [{ slug: 'lookbook', title: 'Lookbook', template: 'lookbook', sections: [{ id: 'p1', type: 'text', props: { heading: 'Spring looks', body: 'Fresh.' } }] }, { slug: 'bad slug', title: 'x', sections: [] }] };
+    const sv = await pg.evaluate(async ([e, p, i, d]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); const r = await c.rpc('sfx_theme_customize_save', { p_install_id: i, p_content: d }); return r.error ? { error: r.error.message } : { ok: 1 }; }, [USERS.cafeOwner, PASSWORD, id, draft]); assert(!sv.error, sv.error);
+    const pub = await pg.evaluate(async ([e, p, i]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); const a = await c.rpc('sfx_theme_install_set_active', { p_install_id: i }); const r = await c.rpc('sfx_theme_customize_publish', { p_install_id: i }); const st = await c.rpc('public_sfx_store', { p_slug: 'testcafe' }); return { err: (a.error || r.error || st.error || {}).message, cfg: st.data && st.data.config }; }, [USERS.cafeOwner, PASSWORD, id]);
+    assert(!pub.err, pub.err);
+    const cf = pub.cfg || {};
+    assert(cf.themeHeader && cf.themeHeader.announceText === 'Free shipping over 999' && cf.themeHeader.links.length === 1, 'header: ' + JSON.stringify(cf.themeHeader));
+    assert(cf.themeFooter && cf.themeFooter.note === 'Made in India' && cf.themeFooter.links.length === 1, 'footer: ' + JSON.stringify(cf.themeFooter));
+    assert(Array.isArray(cf.themePages) && cf.themePages.length === 2 && cf.themePages[0].slug === 'lookbook' && cf.themePages[1].slug === 'bad-slug' && cf.themePages[0].sections.length === 1, 'pages: ' + JSON.stringify(cf.themePages));
+  }, 'major');
+  await s.check('Theme editor UI: add a page template, edit header and footer, save', async () => {
+    const id = (await q("select id from sfx_theme_installs where name='Editor theme' order by id desc limit 1"))[0].id;
+    const pg = await ctx.newPage(); const e5 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await pg.waitForTimeout(800);
+    await pg.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    await pg.goto('about:blank'); await pg.goto(stack.url('testcafe', '/storefront.html#/builder/' + id), { waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    await pg.selectOption('#te-add-page-tpl', 'faq'); await pg.locator('[data-action="te-addpage"]').click(); await pg.waitForTimeout(600);
+    assert(/FAQ/.test(await pg.locator('#te-page').innerText()), 'FAQ page not listed');
+    assert(await pg.locator('.te-item').count() === 4, 'faq sections: ' + await pg.locator('.te-item').count());
+    await pg.selectOption('#te-page', 'header'); await pg.waitForTimeout(400);
+    await pg.fill('#te-right input[name=announceText]', 'Editor header note'); await pg.waitForTimeout(300);
+    await pg.selectOption('#te-page', 'footer'); await pg.waitForTimeout(400);
+    await pg.fill('#te-right input[name=note]', 'Editor footer note'); await pg.waitForTimeout(300);
+    await pg.locator('[data-action="te-save"]').click(); await pg.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [id]))[0].draft_content;
+    assert(row.header.announceText === 'Editor header note' && row.footer.note === 'Editor footer note' && row.pages.some((p) => p.template === 'faq'), JSON.stringify(row).slice(0, 400));
+    assert(!e5.filter((x) => !/sentry|fonts|\/uploads\//i.test(x)).length, e5.slice(0, 3).join(' | ').slice(0, 300));
+  }, 'major');
 }

@@ -341,23 +341,60 @@ function sectionFieldsFor(s) {
 // ---- Theme editor: sections list | live preview of the store | settings of the selected section ----
 const SECTION_DEFAULTS = { hero: { heading: 'New heading', sub: 'A short line about your store.' }, text: { heading: 'About us', body: 'Tell your story here.' }, image: { url: '', caption: '' }, button: { text: 'Shop now', href: '/store.html' }, announcement: { text: 'Free shipping on orders over ₹999' }, booking: { heading: 'Book an appointment', note: '' } };
 let ed = null; // the open editor: { id, sections, sel, undo, redo, saved, device, snapped }
-const edJson = () => JSON.stringify(ed.sections);
+const edJson = () => JSON.stringify({ sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages });
+const PAGE_TEMPLATES = {
+  about: ['About us', [{ type: 'hero', props: { heading: 'Our story', sub: 'Who we are and why we make what we make.' } }, { type: 'text', props: { heading: 'How it started', body: 'Tell visitors where the idea came from.' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'text', props: { heading: 'What we care about', body: 'Quality, honest prices and people.' } }]],
+  contact: ['Contact', [{ type: 'hero', props: { heading: 'Get in touch', sub: 'We usually reply within a day.' } }, { type: 'text', props: { heading: 'Visit or call', body: 'Add your address, opening hours and phone number here.' } }, { type: 'button', props: { text: 'Browse the shop', href: '/shop' } }]],
+  faq: ['FAQ', [{ type: 'hero', props: { heading: 'Questions, answered', sub: 'Quick answers about orders, delivery and returns.' } }, { type: 'text', props: { heading: 'How long does delivery take?', body: 'Write your answer here.' } }, { type: 'text', props: { heading: 'Can I return an item?', body: 'Write your answer here.' } }, { type: 'text', props: { heading: 'How do I track my order?', body: 'Write your answer here.' } }]],
+  lookbook: ['Lookbook', [{ type: 'hero', props: { heading: 'The lookbook', sub: 'Pieces styled the way we wear them.' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'button', props: { text: 'Shop the looks', href: '/shop' } }]],
+  blank: ['New page', [{ type: 'text', props: { heading: 'New page', body: 'Write something here.' } }]],
+};
+const linesOf = (links) => (links || []).map((l) => l.label + ' | ' + l.href).join('\n');
+const parseLinks = (txt, max) => String(txt || '').split('\n').map((x) => x.trim()).filter(Boolean).slice(0, max).map((x) => { const [label, ...r] = x.split('|'); return { label: (label || '').trim(), href: r.join('|').trim() }; }).filter((l) => l.label && l.href);
+const pageSlug = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page';
+const edCurPage = () => (ed.cur.startsWith('p:') ? ed.pages[Number(ed.cur.slice(2))] : null);
+function edBind() { const p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : p ? p.sections : ed.home; if (ed.cur !== 'home' && !p && ed.cur !== 'header' && ed.cur !== 'footer') ed.cur = 'home'; }
+function edApply(doc) { ed.home = doc.sections || []; ed.header = doc.header || { announceText: '', announceHref: '', links: [] }; ed.footer = doc.footer || { about: '', note: '', links: [] }; ed.pages = doc.pages || []; edBind(); }
+const edView = () => (edCurPage() ? 'page/' + edCurPage().slug : '');
 const edDirty = () => edJson() !== ed.saved;
 function edSnapshot() { ed.undo.push(edJson()); if (ed.undo.length > 50) ed.undo.shift(); ed.redo = []; }
 function edPost(scroll) {
   const f = $('#te-frame'); if (!f?.contentWindow) return;
-  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.sections }, location.origin); if (ed.sel >= 0) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
+  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, view: edView() }, location.origin); if (ed.sel >= 0 && (ed.cur === 'home' || edCurPage())) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
+}
+function edPageSelect() {
+  const opts = [['home', 'Home page'], ['header', 'Header'], ['footer', 'Footer'], ...ed.pages.map((p, i) => ['p:' + i, 'Page: ' + p.title])];
+  return '<select id="te-page" aria-label="Page">' + opts.map(([v, t]) => '<option value="' + esc(v) + '"' + (ed.cur === v ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
 }
 function edListHtml() {
+  if (ed.cur === 'header') return '<p class="compact-copy">The header block: an announcement bar and extra menu links. Edit it on the right.</p>';
+  if (ed.cur === 'footer') return '<p class="compact-copy">The footer block: a short text and links shown in the footer. Edit it on the right.</p>';
+  if (edCurPage() && !ed.sections.length) return '<p class="compact-copy">This page has no sections yet. Add one below.</p>';
   if (!ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. Sections show on your home page after the store’s own content.</p>';
   return ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(sectionLabel[x.type] || x.type) + '</span><small>' + esc(String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
 }
+function edChromeHtml(kind) {
+  const w = canWrite(); const dis = w ? '' : ' disabled';
+  if (kind === 'header') return '<div class="panel-title"><h2>Header</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="header"><div class="field-grid te-fields">' +
+    input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + input('Announcement link (optional)', 'announceHref', ed.header.announceHref, 'text', 'placeholder="/shop or https://..."' + dis) +
+    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + '</div></form></div>';
+  return '<div class="panel-title"><h2>Footer</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="footer"><div class="field-grid te-fields">' +
+    area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
+    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + '</div></form></div>';
+}
 function edRightHtml() {
+  if (ed.cur === 'header' || ed.cur === 'footer') return edChromeHtml(ed.cur);
   const x = ed.sections[ed.sel];
   if (!x) return '<div class="panel-title"><h2>Section settings</h2></div><div class="panel-body"><p class="compact-copy">Pick a section on the left, or click it in the preview, to edit it.</p></div>';
   const w = canWrite();
   return '<div class="panel-title"><h2>' + esc(sectionLabel[x.type] || x.type) + '</h2></div><div class="panel-body"><form data-form="te-section"><div class="field-grid te-fields">' + sectionFieldsFor(x) + '</div>' +
     (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Remove section', 'te-remove') + '</div>' : '') + '</form></div>';
+}
+function edPageTools() {
+  const p = edCurPage();
+  const tpl = '<select id="te-add-page-tpl" aria-label="Page template">' + Object.entries(PAGE_TEMPLATES).map(([k, v]) => '<option value="' + k + '">' + esc(v[0]) + '</option>').join('') + '</select>' + button('Add page', 'te-addpage');
+  if (!p) return ed.pages.length >= 8 ? '' : tpl;
+  return '<form data-form="te-page" class="te-pagetools"><label>Title<input name="title" value="' + esc(p.title) + '" maxlength="60"></label><label>Address<input name="slug" value="' + esc(p.slug) + '" maxlength="40"></label></form>' + button('Remove page', 'te-rmpage');
 }
 function edBarHtml() {
   const i = state.installs.find((v) => v.id === ed.id);
@@ -370,6 +407,7 @@ function edRefresh(parts = 'lbr', scroll = false) {
   if (parts.includes('l')) { const el = $('#te-list'); if (el) el.innerHTML = edListHtml(); }
   if (parts.includes('r')) { const el = $('#te-right'); if (el) el.innerHTML = edRightHtml(); }
   if (parts.includes('b')) { const el = $('#te-actions'); if (el) el.innerHTML = edBarHtml(); }
+  if (parts.includes('p')) { const el = $('#te-page-wrap'); if (el) el.innerHTML = edPageSelect(); const t = $('#te-page-tools'); if (t) t.innerHTML = edPageTools(); }
   edPost(scroll);
 }
 if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
@@ -418,15 +456,15 @@ function editorPage(installId) {
   const i = state.installs.find((x) => x.id === installId);
   if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
   if (i.draftContent?.kind === 'studs') return studsEditor(i);
-  if (!ed || ed.id !== installId) { const sections = structuredClone(i.draftContent?.sections || []); ed = { id: installId, sections, sel: sections.length ? 0 : -1, undo: [], redo: [], saved: JSON.stringify(sections), device: 'desktop', snapped: false }; }
+  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, home: sections, sections, header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
   const w = canWrite();
   const types = Object.entries(sectionLabel).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
   const unpublished = !state.store.published ? '<div class="notice te-note">Your store is switched off, so the preview may show “not open yet”. Turn it on under Online store to see it here.</div>' : '';
   return head(esc(i.themeName), 'Design your home page sections and see them live. Nothing goes public until you review and publish.', '<span id="te-actions" class="te-actions">' + edBarHtml() + '</span>', ['builder', 'Theme']) + unpublished +
     '<div class="te"><aside class="panel te-left"><div class="panel-title"><h2>Sections</h2></div><div class="panel-body"><div id="te-list" class="te-list">' + edListHtml() + '</div>' +
     (w ? '<div class="te-add"><select id="te-add-type" aria-label="Section type">' + types + '</select>' + button('Add section', 'te-add', 'primary') + '</div>' : '') +
-    '<p class="compact-copy te-soon">More page templates, header and footer blocks are coming in a later release.</p></div></aside>' +
-    '<div class="te-mid"><div class="te-bar"><label>Page<select disabled aria-label="Page template"><option>Home page</option></select></label><div class="seg" role="group" aria-label="Device">' +
+    '</div></aside>' +
+    '<div class="te-mid"><div class="te-bar"><label>Edit<span id="te-page-wrap">' + edPageSelect() + '</span></label>' + (w ? '<span id="te-page-tools">' + edPageTools() + '</span>' : '') + '<div class="seg" role="group" aria-label="Device">' +
     ['desktop', 'tablet', 'mobile'].map((d) => '<button type="button" class="btn compact' + (ed.device === d ? ' primary' : '') + '" data-action="te-device:' + d + '">' + d[0].toUpperCase() + d.slice(1) + '</button>').join('') + '</div></div>' +
     '<div class="te-stage"><iframe id="te-frame" class="te-frame ' + ed.device + '" src="/store.html?preview=draft&shop=' + encodeURIComponent(state.tenant?.slug || '') + '#/" title="Live preview of your store"></iframe></div></div>' +
     '<aside class="panel te-right" id="te-right">' + edRightHtml() + '</aside></div>';
@@ -436,11 +474,30 @@ function edHandle(a, key) {
   if (a === 'te-select') { ed.sel = Number(key); ed.snapped = false; edRefresh('lr', true); return true; }
   if (a === 'te-device') { ed.device = key; const f = $('#te-frame'); if (f) f.className = 'te-frame ' + key; document.querySelectorAll('[data-action^="te-device:"]').forEach((b) => b.classList.toggle('primary', b.dataset.action === 'te-device:' + key)); return true; }
   if (!canWrite()) return false;
+  if (a === 'te-addpage') {
+    if (ed.pages.length >= 8) return true;
+    const t = PAGE_TEMPLATES[$('#te-add-page-tpl')?.value || 'blank'] || PAGE_TEMPLATES.blank; const kind = $('#te-add-page-tpl')?.value || 'blank';
+    edSnapshot(); let slug = pageSlug(t[0]); let n = 2; const base = slug; while (ed.pages.some((p) => p.slug === slug)) slug = base + '-' + n++;
+    ed.pages.push({ slug, title: t[0], template: kind, sections: t[1].map((x) => ({ id: uid(), type: x.type, props: { ...x.props } })) });
+    ed.cur = 'p:' + (ed.pages.length - 1); edBind(); ed.sel = 0; ed.snapped = true; edRefresh('lrbp'); return true;
+  }
+  if (a === 'te-rmpage') { const p = edCurPage(); if (!p || !confirm('Remove the page "' + p.title + '"?')) return true; edSnapshot(); ed.pages.splice(Number(ed.cur.slice(2)), 1); ed.cur = 'home'; edBind(); ed.sel = ed.sections.length ? 0 : -1; ed.snapped = true; edRefresh('lrbp'); return true; }
   if (a === 'te-add') { const type = $('#te-add-type')?.value || 'text'; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(SECTION_DEFAULTS[type] || {}) } }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
   if (a === 'te-remove') { if (ed.sel < 0) return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
   if (a === 'te-up' || a === 'te-down') { const to = ed.sel + (a === 'te-up' ? -1 : 1); if (!ed.sections[to]) return true; edSnapshot(); const [x] = ed.sections.splice(ed.sel, 1); ed.sections.splice(to, 0, x); ed.sel = to; ed.snapped = true; edRefresh('lrb', true); return true; }
-  if (a === 'te-undo' || a === 'te-redo') { const from = a === 'te-undo' ? ed.undo : ed.redo, to = a === 'te-undo' ? ed.redo : ed.undo; if (!from.length) return true; to.push(edJson()); ed.sections = JSON.parse(from.pop()); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
+  if (a === 'te-undo' || a === 'te-redo') { const from = a === 'te-undo' ? ed.undo : ed.redo, to = a === 'te-undo' ? ed.redo : ed.undo; if (!from.length) return true; to.push(edJson()); edApply(JSON.parse(from.pop())); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrbp'); return true; }
   return false;
+}
+function edPicked(v) { ed.cur = v; edBind(); ed.sel = ed.sections.length && (v === 'home' || v.startsWith('p:')) ? 0 : -1; ed.snapped = false; edRefresh('lrbp'); }
+function edChromeInput(target) {
+  const form = target.closest('form[data-form="te-chrome"], form[data-form="te-page"]'); if (!form || !ed || !canWrite()) return false;
+  if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
+  const d = Object.fromEntries(new FormData(form));
+  if (form.dataset.form === 'te-page') { const p = edCurPage(); if (!p) return true; p.title = String(d.title || '').slice(0, 60); p.slug = pageSlug(d.slug || d.title); const o = $('#te-page-wrap'); if (o) o.innerHTML = edPageSelect(); }
+  else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
+  else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12) };
+  const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
+  edPost(); return true;
 }
 function edInput(target) {
   const form = target.closest('form[data-form="te-section"]'); if (!form || !ed || ed.sel < 0 || !canWrite()) return false;
@@ -452,7 +509,7 @@ function edInput(target) {
 }
 async function edSave() {
   const i = state.installs.find((x) => x.id === ed.id); if (!i) return;
-  const content = { ...(i.draftContent || {}), sections: ed.sections };
+  const content = { ...(i.draftContent || {}), sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages };
   await api('sfx_theme_customize_save', { p_install_id: ed.id, p_content: content });
   i.draftContent = content; ed.saved = edJson(); edRefresh('b');
 }
@@ -980,6 +1037,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (type === 'input' && target.id === 'settings-query') { settingsFilter(target.value); return; }
   if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
   if (id === 'builder' && sd && (type === 'input' || type === 'change') && target.closest && target.closest('#studs-form')) { studsRead(); return; }
+  if (id === 'builder' && ed && type === 'change' && target.id === 'te-page') { edPicked(target.value); return; }
+  if (id === 'builder' && ed && type === 'input' && target.closest && target.closest('form[data-form="te-chrome"], form[data-form="te-page"]')) { edChromeInput(target); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }

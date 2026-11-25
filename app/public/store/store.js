@@ -262,7 +262,7 @@ function shell() {
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' },
-      E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
+      E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), ...((themeHeader() || {}).links || []).map((l) => themeLink(l, 'deskonly')), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')),
       E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
@@ -283,7 +283,8 @@ function shell() {
       E('button', { 'aria-label': 'Saved', onclick: () => go('wishlist') }, icon('mark'), countBadge(() => wish.length)), E('button', { 'aria-label': 'Stores', onclick: () => go('stores') }, icon('pin'))),
     E('div', { class: 'chatwrap' }, E('button', { class: 'zfab dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('button', { class: 'chat', 'aria-label': 'Contact us', onclick: toContact }, icon('chat'))));
   const root = $('#app'); clear(root);
-  root.append(c.announce ? E('div', { class: 'announce' }, c.announce) : null, top, E('main', { id: 'view' }), footer(), dock, E('button', { class: 'zfab zdesk dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('button', { class: 'chatfab', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')),
+  const th = themeHeader() || {}; const annText = th.announceText || c.announce;
+  root.append(annText ? E('div', { class: 'announce' }, th.announceText && th.announceHref ? E('a', { href: themeHref(th.announceHref), style: { color: 'inherit' } }, annText) : annText) : null, top, E('main', { id: 'view' }), footer(), dock, E('button', { class: 'zfab zdesk dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')), E('button', { class: 'chatfab', 'aria-label': 'Contact us', onclick: toContact }, icon('chat')),
     E('div', { class: 'menu', id: 'menu' }), E('div', { class: 'srch', id: 'srch' }));
 
   if (!minimal) scheduleWelcome(toContact);
@@ -323,9 +324,19 @@ function minimalDestination(value) {
   const route = target.replace(/^\//, '');
   return publicStoreView.test(route) ? link(route) : '';
 }
+// Theme editor header / footer blocks and extra pages (db/399). In the editor preview the unsaved draft is used instead.
+let PREVIEW_CHROME = null;
+const themeHeader = () => (PREVIEW_CHROME ? PREVIEW_CHROME.header : cfg().themeHeader) || null;
+const themeFooter = () => (PREVIEW_CHROME ? PREVIEW_CHROME.footer : cfg().themeFooter) || null;
+const themePages = () => (PREVIEW_CHROME ? PREVIEW_CHROME.pages : cfg().themePages) || [];
+function themeHref(h) {
+  h = String(h || ''); if (/^https:\/\//i.test(h) || h.startsWith('#/')) return h;
+  return h === '/' || !h.startsWith('/') ? link('') : link(h.slice(1));
+}
+const themeLink = (l, cls) => E('a', { class: cls || '', href: themeHref(l.href), target: /^https:/i.test(l.href) ? '_blank' : null, rel: /^https:/i.test(l.href) ? 'noopener' : null }, l.label);
 function minimalPages() {
   const seen = new Set();
-  return (cfg().minimalPages || []).flatMap((entry) => {
+  return [...(cfg().minimalPages || []), ...themePages().filter((p) => p && p.title)].flatMap((entry) => {
     const slug = slugOf(entry?.slug || entry?.title);
     if (!entry?.title || !slug || seen.has(slug)) return [];
     seen.add(slug);
@@ -347,7 +358,7 @@ function openMenu() {
   const nav = (p) => (e) => { e.preventDefault(); close(); location.hash = '#/' + p; };
   const a = (txt, p, cls) => E('a', { class: cls || '', href: link(p), onclick: nav(p) }, txt);
   const cols = D.collections.filter((c) => c.styleIds.length).slice(0, 3);
-  const more = [blogsOn() ? ['Journal', 'blog'] : null, mediaOn() ? ['Media & gallery', 'media'] : null, jobsOn() ? ['Careers', 'careers'] : null, ['Our stores', 'stores'], ['Our story', 'about'], ['FAQs', 'faq'], ['Contact', 'contact'], ['My account & orders', 'me']].filter(Boolean);
+  const more = [blogsOn() ? ['Journal', 'blog'] : null, mediaOn() ? ['Media & gallery', 'media'] : null, jobsOn() ? ['Careers', 'careers'] : null, ['Our stores', 'stores'], ['Our story', 'about'], ['FAQs', 'faq'], ['Contact', 'contact'], ...minimalPages().map((p) => [p.title, 'page/' + p.slug]), ['My account & orders', 'me']].filter(Boolean);
   const panel = E('div', { class: 'mp' },
     E('div', { class: 'mhd' }, E('b', null, D.shop.name), E('button', { class: 'ic mx', 'aria-label': 'Close', onclick: close }, icon('x'))),
     E('nav', { class: 'mbig' }, a('New arrivals', 'shop?new=1', 'b'), a('All products', 'shop', 'b'), ...cols.map((c) => a(c.name, 'shop?col=' + c.id, 'b'))),
@@ -373,7 +384,7 @@ function openMinimalMenu() {
         E('span', { class: 'minimal-mega-swatches', 'aria-hidden': 'true' }, palette.map((colour) => E('i', { style: { backgroundColor: colour } })) )])],
   ];
   dialog.append(E('div', { class: 'minimal-mega-top' },
-    E('nav', { 'aria-label': 'Featured links' }, item('New in', 'shop?new=1'), item('Collections', 'collections')),
+    E('nav', { 'aria-label': 'Featured links' }, item('New in', 'shop?new=1'), item('Collections', 'collections'), ((themeHeader() || {}).links || []).map((l) => themeLink(l))),
     E('div', { class: 'minimal-mega-brand' }, item(D.shop.name, '')),
     E('div', { class: 'minimal-mega-actions' }, action('Search', 'search', openMinimalSearch),
       action('Notifications', 'bell', openMinimalNotifications), item('My account', 'me'), action('Bag', 'bag', openMinimalBag), close)),
@@ -827,8 +838,8 @@ function bookingSection(p) {
 // unsaved draft sections by postMessage, so the canvas updates as they type. Same-origin only; ignored otherwise.
 const PREVIEW = new URLSearchParams(location.search).get('preview') === 'draft';
 let PREVIEW_SECTIONS = null;
-function customSections(v) {
-  const sections = PREVIEW && PREVIEW_SECTIONS ? PREVIEW_SECTIONS : (cfg().customSections || []);
+function customSections(v, list) {
+  const sections = list || (PREVIEW && PREVIEW_SECTIONS ? PREVIEW_SECTIONS : (cfg().customSections || []));
   sections.forEach((s, i) => {
     let el = customSection(s);
     if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));
@@ -844,6 +855,12 @@ if (PREVIEW) {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'auz-draft' || !Array.isArray(e.data.sections)) return;
     PREVIEW_SECTIONS = e.data.sections.slice(0, 60);
+    const chrome = JSON.stringify({ h: e.data.header, f: e.data.footer, p: e.data.pages });
+    const chromeChanged = chrome !== (PREVIEW_CHROME && PREVIEW_CHROME.__j);
+    if (e.data.header !== undefined || e.data.footer !== undefined || e.data.pages !== undefined) PREVIEW_CHROME = { header: e.data.header || null, footer: e.data.footer || null, pages: Array.isArray(e.data.pages) ? e.data.pages : [], __j: chrome };
+    const want = '#/' + (e.data.view || '');
+    if (e.data.view !== undefined && (location.hash || '#/') !== want && !(want === '#/' && (location.hash === '' || location.hash === '#'))) { location.hash = want; return; }
+    if (typeof route === 'function' && typeof shell === 'function' && chromeChanged && D) { const y = scrollY; shell(); route(); scrollTo(0, y); return; }
     if (typeof route === 'function' && (!location.hash || /^#\/?$/.test(location.hash))) { const y = scrollY; route(); scrollTo(0, y); }
   });
   window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'auz-highlight') { document.querySelectorAll('.custom-section.sel').forEach((n) => n.classList.remove('sel')); const n = document.querySelector('[data-sec="' + Number(e.data.index) + '"]'); if (n) { n.classList.add('sel'); if (e.data.scroll) n.scrollIntoView({ block: 'center', behavior: 'smooth' }); } } });
@@ -1442,10 +1459,11 @@ V.page = (v, slug) => {
   if (!page) return v.append(E('div', { class: 'empty' }, E('h1', null, 'Page not found'), E('a', { class: 'btn', href: link('sitemap') }, 'Browse the sitemap')));
   const href = minimalDestination(page.link);
   v.append(E('article', { class: 'minimal-feature' },
-    E('a', { href: link('sitemap') }, '← Sitemap'), E('h1', null, page.title),
+    page.sections ? null : E('a', { href: link('sitemap') }, '← Sitemap'), E('h1', null, page.title),
     page.image ? E('img', { src: page.image, alt: '' }) : null,
-    E('div', { class: 'art' }, para(page.body)),
+    page.sections ? null : E('div', { class: 'art' }, para(page.body)),
     href ? E('a', { class: 'btn', href }, page.cta || 'Explore') : null));
+  if (page.sections) customSections(v, page.sections);
 };
 V.sitemap = (v) => {
   const sections = [
@@ -1484,8 +1502,9 @@ function footer() {
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), blogsOn() ? E('a', { href: link('blog') }, 'Journal') : null, mediaOn() ? E('a', { href: link('media') }, 'Media & gallery') : null, jobsOn() ? E('a', { href: link('careers') }, 'Careers') : null, E('a', { href: link('contact') }, 'Contact')),
+    themeFooter() && (themeFooter().about || (themeFooter().links || []).length) ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'More'), themeFooter().about ? E('p', { class: 'ftabout' }, themeFooter().about) : null, ...(themeFooter().links || []).map((l) => themeLink(l))) : null,
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
-    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), isMin() ? E('a', { href: link('sitemap') }, 'Sitemap') : null, E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
+    E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), themeFooter() && themeFooter().note ? E('span', { class: 'ftnote' }, themeFooter().note) : null, isMin() ? E('a', { href: link('sitemap') }, 'Sitemap') : null, E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
   tog.onclick = () => { const on = wrap.classList.toggle('open'); tog.setAttribute('aria-expanded', String(on)); tog.querySelector('.pl').textContent = on ? '\u2013' : '+'; };
   return wrap;
 }
@@ -1532,7 +1551,7 @@ function route() {
   else if (minimal) $('#chatwel')?.remove();
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
   const article = id === 'blog' && parts[1] ? (cfg().blogs || []).find((item) => item && slugOf(item.title) === parts[1]) : null;
-  const page = minimal && id === 'page' ? minimalPages().find((item) => item.slug === parts[1]) : null;
+  const page = id === 'page' ? minimalPages().find((item) => item.slug === parts[1]) : null;
   document.title = (id === 'home' ? '' : (article?.title || page?.title || cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id)) + ' · ') + D.shop.name;
   const viewPath = parts.join('/');
   const filters = id === 'shop' && q$().col ? { col: q$().col } : {};
