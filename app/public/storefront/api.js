@@ -63,7 +63,7 @@ export function toOrder(o) {
     payment: o.paymentStatus === 'paid' ? 'Paid' : o.paymentStatus === 'failed' ? 'Failed' : 'Pending',
     status: o.fulfilmentStatus === 'partial' && o.status !== 'cancelled' && o.status !== 'returned' ? 'Partially fulfilled' : o.status === 'fulfilled' ? 'Fulfilled' : o.status === 'cancelled' ? 'Cancelled' : o.status === 'returned' ? 'Returned' : 'Unfulfilled',
     channel: o.channel === 'in_store' ? 'In-store' : 'Online store', fulfilment: o.fulfilmentStatus || 'unfulfilled', delivery: o.deliveryStatus || 'none', oversold: !!o.oversold, shipments: o.shipments || [], remaining: o.remaining || [], quantity: (o.lines || []).reduce((s, l) => s + (l.qty || 1), 0), date: String(o.createdAt || '').slice(0, 10),
-    item: (o.lines || [])[0]?.name || '', note: o.note || '', tracking: o.tracking || '', lines: o.lines || [], timeline: o.timeline || [],
+    isTest: !!o.isTest, refunded: Number(o.refundedAmount || 0), refundState: o.refundState || 'none', refunds: o.refunds || [], cancelReason: o.cancelReason || '', item: (o.lines || [])[0]?.name || '', note: o.note || '', tracking: o.tracking || '', lines: o.lines || [], timeline: o.timeline || [],
   };
 }
 

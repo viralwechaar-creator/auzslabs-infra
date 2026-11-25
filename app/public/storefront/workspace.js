@@ -116,9 +116,13 @@ function orderDetail(id) {
       '<small>' + (x.items || []).map((i) => esc(i.name) + (i.label && i.label !== 'Default' ? ' · ' + esc(i.label) : '') + ' × ' + i.qty).join(', ') + '</small>' +
       '<small>' + (x.carrier ? esc(x.carrier) + ' ' : '') + (x.tracking ? (x.trackingUrl ? '<a href="' + esc(x.trackingUrl) + '" target="_blank" rel="noopener">' + esc(x.tracking) + '</a>' : esc(x.tracking)) : 'No tracking added') + '</small></div><div>' + acts + '</div></div>';
   }).join('');
+  const refundRows = (o.refunds || []).map((r) => '<div class="launch"><div class="info"><strong>' + money(r.amount) + '</strong> · ' + esc({ manual: 'Paid back by you', razorpay: 'Razorpay', store_credit: 'Store credit' }[r.method] || r.method) + '<small>' + esc(r.reason || '') + ' ' + new Date(r.createdAt).toLocaleDateString('en-IN') + '</small></div></div>').join('');
+  const canRefund = canWrite() && o.refunded < o.total && o.status !== 'Cancelled' && (o.payment === 'Paid' || o.refunded > 0 || o.status === 'Fulfilled');
+  const refundPanel = panel('Refunds', body('<div class="stack">' + (refundRows || '<p class="empty">Nothing refunded.</p>') + (o.refunded > 0 ? '<p class="compact-copy">Refunded ' + money(o.refunded) + ' of ' + money(o.total) + '.</p>' : '') +
+    (canRefund ? button('Record a refund', 'refund-new:' + o.id) : '') + (canWrite() ? button(o.isTest ? 'Unmark test order' : 'Mark as test order', 'order-test:' + o.id + ':' + (o.isTest ? 'off' : 'on')) : '') + '</div>'));
   const shipPanel = panel('Fulfilment', body('<div class="stack">' + (ships || '<p class="empty">Nothing shipped yet.</p>') + (left > 0 && (o.shipments || []).length ? '<p class="compact-copy">' + left + ' item(s) still to ship.</p>' : '') + '</div>'));
-  return head('Order #' + esc(o.number), dateValue(o.date), actions, ['orders', 'Orders']) +
-    '<div class="record-layout"><div>' + panel('Items', lines) + shipPanel + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfilment</div>' + status(o.status) + '</div><div class="launch"><div class="info">Delivery</div><strong>' + dlabel + '</strong></div><div class="launch"><div class="info">Channel</div><strong>' + esc(o.channel) + (o.oversold ? ' · oversold, check stock' : '') + '</strong></div></div>')) +
+  return head('Order #' + esc(o.number) + (o.isTest ? ' (test)' : ''), dateValue(o.date), actions, ['orders', 'Orders']) +
+    '<div class="record-layout"><div>' + panel('Items', lines) + shipPanel + refundPanel + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfilment</div>' + status(o.status) + '</div><div class="launch"><div class="info">Delivery</div><strong>' + dlabel + '</strong></div><div class="launch"><div class="info">Channel</div><strong>' + esc(o.channel) + (o.oversold ? ' · oversold, check stock' : '') + '</strong></div></div>')) +
     panel('Timeline', body('<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
     '</div><aside>' + panel('Customer', body('<p>' + esc(o.customer || '—') + '</p>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
 }
@@ -1239,6 +1243,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'shipment-edit') {
         await api('sfx_shipment_update', { p_id: rid, p: { carrier: data.carrier || '', tracking: data.tracking || '', trackingUrl: data.trackingUrl || '' } });
         await refreshOrders(); save('Tracking saved.'); close(); rerender();
+      } else if (key === 'return-receive') {
+        const r = state.returns.find((x) => x.id === rid);
+        await api('sfx_return_receive', { p_id: rid, p_lines: (r.lines || []).map((l, i) => ({ variantId: l.variantId, restock: data['k' + i] !== 'no' })) }); await refreshReturns(); save('Return received.'); close(); rerender(true);
+      } else if (key === 'order-cancel') {
+        await api('sfx_order_cancel', { p_order: rid, p: { reason: data.reason, restock: data.restock !== 'no' } }); await refreshOrders(); save('Order cancelled.'); close(); rerender(true);
+      } else if (key === 'refund-record') {
+        await api('sfx_refund_record', { p_order: rid, p: { amount: Number(data.amount), method: data.method, reason: data.reason } }); await refreshOrders(); save('Refund recorded.'); close(); rerender(true);
       } else if (key === 'order-note') {
         await api('sfx_order_note', { p_id: rid, p_note: data.note }); await refreshOrders(); save('Note saved.'); rerender();
       } else if (key === 'business') {
@@ -1351,6 +1362,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'draft-convert') return withBusy(async () => { const r = await api('sfx_draft_convert', { p_id: key }); await Promise.all([refreshDrafts(), refreshOrders()]); save('Order ' + r.number + ' created.'); rerender(true); });
   if (a === 'draft-delete') return withBusy(async () => { if (!confirm('Delete this draft?')) return; await api('sfx_draft_delete', { p_id: key }); await refreshDrafts(); save('Draft deleted.'); rerender(true); });
   if (a === 'return-new') return dialog('Start a return', returnForm(state.orders.find((o) => o.id === key)));
+  if (a === 'return-set' && detail === 'received') { const r = state.returns.find((x) => x.id === key);
+    return dialog('Receive returned items', editForm('return-receive', key, '<p class="compact-copy wide">Choose what happens to each item you got back.</p>' +
+      (r.lines || []).map((l, i) => '<input type="hidden" name="v' + i + '" value="' + esc(l.variantId) + '">' + select(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' × ' + l.qty, 'k' + i, [['yes', 'Put back on sale'], ['no', 'Do not restock (damaged or opened)']], 'yes')).join(''), 'Mark received')); }
   if (a === 'return-set') {
     if (detail === 'refunded') { const r = state.returns.find((x) => x.id === key);
       if (r.online) return dialog('Refund through Razorpay', editForm('return-rzp-refund', key, '<p class="compact-copy wide">This order was paid online. The refund goes back to the customer\'s card or UPI through your own Razorpay account. Returned items are worth ' + money(r.value) + '.</p>' + input('Amount to refund (Rs)', 'amount', r.value, 'number', 'required min="1" step="0.01"'), 'Refund through Razorpay'));
@@ -1431,9 +1445,12 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'shipment-set') {
     return withBusy(async () => { await api('sfx_shipment_update', { p_id: key, p: { status: detail } }); await refreshOrders(); save('Shipment updated.'); rerender(); });
   }
-  if (a === 'order-cancel') {
-    return withBusy(async () => { await api('sfx_order_set_status', { p_id: key, p_status: 'cancelled' }); await refreshOrders(); save('Order cancelled.'); rerender(); });
-  }
+  if (a === 'order-cancel') return dialog('Cancel order', editForm('order-cancel', key, '<p class="compact-copy wide">The customer is not charged for items that were never shipped. Nothing can be undone after this.</p>' +
+    select('Reason', 'reason', [['Customer changed mind', 'Customer changed mind'], ['Out of stock', 'Out of stock'], ['Wrong details', 'Wrong details'], ['Fraud risk', 'Fraud risk'], ['Other', 'Other']], 'Customer changed mind') +
+    select('Items', 'restock', [['yes', 'Put the items back on sale'], ['no', 'Do not restock (damaged or lost)']], 'yes'), 'Cancel order'));
+  if (a === 'refund-new') { const o = state.orders.find((x) => x.id === key); return dialog('Record a refund', editForm('refund-record', key, '<p class="compact-copy wide">Pay the customer back yourself (cash, UPI, bank), then record it here. You can refund up to ' + money(o.total - o.refunded) + ' more.</p>' +
+    input('Amount (Rs)', 'amount', '', 'number', 'required min="0.01" step="0.01"') + select('How it was paid back', 'method', [['manual', 'Cash, UPI or bank'], ['store_credit', 'Store credit']], 'manual') + input('Reason', 'reason', '', 'text', 'maxlength="200"'), 'Record refund')); }
+  if (a === 'order-test') return withBusy(async () => { await api('sfx_order_mark_test', { p_order: key, p_test: detail === 'on' }); await refreshOrders(); save(detail === 'on' ? 'Marked as a test order.' : 'Unmarked.'); rerender(true); });
   if (a === 'theme-install') return withBusy(async () => {
     const r = await api('sfx_theme_install', { p_theme_id: key });
     await Promise.all([refreshMarketplace(), refreshInstalls()]);

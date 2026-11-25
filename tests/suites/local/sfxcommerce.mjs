@@ -94,7 +94,7 @@ export default async function run({ browser, stack }) {
     await q("update sfx_orders set status='fulfilled' where id=$1", [o]);
     await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(1500);
     await page.locator('[data-action^="return-new:"]').click(); await page.fill('#dialog input[name=rq0]', '1'); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1200);
-    for (const st of ['approved', 'received']) { await page.locator('[data-action$=":' + st + '"]').first().click(); await page.waitForTimeout(900); }
+    for (const st of ['approved', 'received']) { await page.locator('[data-action$=":' + st + '"]').first().click(); await page.waitForTimeout(900); if (st === 'received') { await page.locator('#dialog button.primary').click(); await page.waitForTimeout(900); } }
     await page.locator('[data-action$=":refunded"]').first().click(); await page.waitForTimeout(500); await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1000);
     assert((await q("select status from sfx_returns"))[0].status === 'refunded', 'not refunded');
   }, 'critical');
