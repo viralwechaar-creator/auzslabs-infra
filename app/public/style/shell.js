@@ -21,7 +21,9 @@ const allowed = (def) => !!def && (!def.perm || (typeof def.perm === 'function' 
 const NAV = [['sell', 'Sell', 'cart'], ['stock', 'Stock', 'shirt'], ['bills', 'Bills', 'receipt'], ['home', 'Overview', 'home'], ['gst', 'GST', 'percent'], ['intel', 'Buying intelligence', 'bolt'], ['buy', 'Buy', 'truck'], ['people', 'People', 'users'], ['receipts', 'Money received', 'moneyIn'], ['drawer', 'Cash drawer', 'drawer'], ['expenses', 'Expenses', 'wallet'], ['store', 'Online store', 'storefront'], ['ai', 'AI connector', 'chip'], ['admin', 'Admin', 'shieldUser'], ['settings', 'Settings', 'gear']];
 const storefrontOn = () => !!(S.dash && S.dash.features && S.dash.features.storefront && (S.dash.enabled_features || {}).storefront !== false);
 const capOff = (k) => !!(S.ctx && S.ctx.caps && S.ctx.caps[k] === false);
-const navList = () => NAV.filter(([id]) => allowed(PAGES[id]) && !(id === 'store' && capOff('online_store')));
+// A business that also has the Storefront edits its website there. AUZsStyle is then only the till: no website or design pages, just a way across.
+const legacyStoreOff = () => capOff('online_store') || storefrontOn();
+const navList = () => NAV.filter(([id]) => allowed(PAGES[id]) && !(id === 'store' && legacyStoreOff()));
 const tabsFor = () => navList().slice(0, 4).map((x) => x[0]);
 
 function showLogin(msg) {
@@ -270,7 +272,7 @@ function moreSheet() {
       liRow({ icon: 'plus', title: t('Customer request'), chevron: true, onclick: () => { s.close(); requestSheet({}); } }),
        liRow({ icon: 'cash', title: t('Shift'), chevron: true, onclick: () => { s.close(); shiftSheet(); } }),
       storefrontOn() ? liRow({ icon: 'storefront', title: t('Storefront dashboard'), chevron: true, onclick: () => { s.close(); location.href = window.auzAppUrl('/storefront.html'); } }) : null,
-      capOff('online_store') ? null : liRow({ icon: 'globe', title: t('Open my website'), chevron: true, onclick: () => { s.close(); window.open(billOrigin() + '/store.html', '_blank', 'noopener'); } })),
+      legacyStoreOff() ? null : liRow({ icon: 'globe', title: t('Open my website'), chevron: true, onclick: () => { s.close(); window.open(billOrigin() + '/store.html', '_blank', 'noopener'); } })),
     rest.length ? section(t('More'), h('div', { class: 'list' }, rest.map(([id, l, ic]) => liRow({ icon: ic, title: t(l), chevron: true, onclick: () => { s.close(); go(id); } })))) : null,
     h('div', { class: 'list' },
       brs.length > 1 ? liRow({ icon: 'building', tone: 'gray', title: t('Branches'), sub: branchName(), chevron: true, onclick: (e) => { s.close(); setTimeout(() => pickBranch($('.topbar .tt')), 50); } }) : null,
@@ -308,7 +310,7 @@ async function route_() {
   cleanup.forEach((f) => { try { f(); } catch { /* ignore */ } }); cleanup = [];
   route = parseHash();
   let def = PAGES[route.id];
-  if (!def || !allowed(def)) { route = { id: 'sell', args: [], q: new URLSearchParams() }; def = PAGES.sell; }
+  if (!def || !allowed(def) || (route.id === 'store' && legacyStoreOff())) { route = { id: 'sell', args: [], q: new URLSearchParams() }; def = PAGES.sell; }
   const main = $('#main'); if (!main) return;
   const root = h('div', { class: 'page' + (def.pos ? ' pos-page' : ''), 'data-p': route.id });
   clear(main).append(root);
@@ -361,7 +363,7 @@ function header(o, root) {
   acts.forEach((a) => r.append(h('button', { class: 'btn ' + (desk ? (a.primary ? 'fill' : '') : 'plain') + (!desk ? ' icon' : ''), type: 'button', 'aria-label': a.label, title: a.label, onclick: a.run }, a.icon ? icon(a.icon, 20) : null, desk ? a.label : null)));
   if (route.id !== 'drawer' && allowed(PAGES.drawer)) r.append(h('button', { class: 'btn plain icon', type: 'button', 'aria-label': t('Cash drawer'), title: t('Cash drawer'), onclick: () => go('drawer') }, icon('cash', 20)));
   r.append(bellBtn());
-  r.append(capOff('online_store') || !desk ? null : h('a', { class: 'btn plain icon', href: 'https://' + ((S.dash.tenant && S.dash.tenant.slug) || '') + '.auzslab.in/store.html', target: '_blank', rel: 'noopener', 'aria-label': 'Open my online store', title: 'Open my online store' }, icon('globe', 20)));
+  r.append(legacyStoreOff() || !desk ? null : h('a', { class: 'btn plain icon', href: 'https://' + ((S.dash.tenant && S.dash.tenant.slug) || '') + '.auzslab.in/store.html', target: '_blank', rel: 'noopener', 'aria-label': 'Open my online store', title: 'Open my online store' }, icon('globe', 20)));
   if (root) { const old = root.querySelector(':scope > .large-title'); if (old) old.remove(); }
   if (!desk && root && !o.noLarge) root.prepend(h('h1', { class: 'large-title' }, o.title));
 }

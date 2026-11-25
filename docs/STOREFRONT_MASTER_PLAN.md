@@ -20,9 +20,9 @@ Source: the Shopify lesson series (Modules 1-11) plus the owner's decisions. Sho
 | F | Checkout settings: fields, payment methods order, shipping tiers + reasons, tax rules (CGST/SGST/IGST), purchase limits | built, tested (checkout page fields change what the public checkout shows only through config; theme code not rewritten) |
 | G | Content/themes: blogs, redirects on handle change, theme revisions + restore, SEO fields, custom data (metafields/metaobjects) | built, tested (themes revisions cover store settings and theme choice, not section content edits; public pages for blog/redirects need the store theme code to call the new public RPCs) |
 | H | Analytics: sessions, funnel, cohorts, RFM, inventory reports, profit with cost coverage, dashboard layout | built, tested (new Insights page; dashboard card choice has backend only) |
-| I | Settings: roles/permissions split, security screen, notifications log, domains records, languages/markets, privacy, billing records | planned |
-| J | AUZsStyle shared mode + migration + storefront link tab | planned |
-| K | Razorpay Route onboarding and settlements; apps hub + API | planned |
-| L | Admin UI blueprint pass (patterns, unsaved-changes, field errors, filtered-empty, selection scope) | planned |
+| I | Settings: roles/permissions split, security screen, notifications log, domains records, languages/markets, privacy, billing records | built, tested (roles screen for the new keys not built) |
+| J | AUZsStyle shared mode + migration + storefront link tab | built, tested (in-store sales shared; returns in AUZsStyle not copied) |
+| K | Razorpay Route onboarding and settlements; apps hub + API | built, tested (Route dormant and untested against Razorpay; read-only API) |
+| L | Admin UI blueprint pass (patterns, unsaved-changes, field errors, filtered-empty, selection scope) | built, tested (unsaved changes, inline errors, filtered-empty, selection scope) |
 
 Blocked on owner/outside services (not built, flagged): Razorpay Route approval, WhatsApp authentication template approval, email sender domain verification, courier accounts, domain registrar, Hindi review.

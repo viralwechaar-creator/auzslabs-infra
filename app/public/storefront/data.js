@@ -28,7 +28,7 @@ export const menu = [
   { id: 'apps', name: 'Apps and plans', icon: 'grid' },
   { label: 'Business' },
   { id: 'team', name: 'Staff and access', icon: 'team', children: [['roles', 'Roles'], ['locations', 'Locations']] },
-  { id: 'settings', name: 'Settings', icon: 'settings', children: [['notifications', 'Notifications'], ['policies', 'Store policies'], ['privacy-settings', 'Customer privacy'], ['billing', 'Billing and renewals'], ['security', 'Sign-in and support'], ['switch-apps', 'Switch apps']] },
+  { id: 'settings', name: 'Settings', icon: 'settings', children: [['notifications', 'Notifications'], ['policies', 'Store policies'], ['privacy-settings', 'Customer privacy'], ['billing', 'Billing and renewals'], ['activity', 'Activity log'], ['staff-security', 'Staff security'], ['messages', 'Customer messages'], ['security', 'Sign-in and support'], ['switch-apps', 'Switch apps']] },
 ];
 
 export const icons = {

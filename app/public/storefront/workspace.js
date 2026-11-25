@@ -10,10 +10,11 @@
 import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
-import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInsights, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { dirty, appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
+import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInsights, refreshAccess, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
-const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
+const table = (heading, rows, emptyNote) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '">' + (emptyNote || '<p class="empty">No records yet.</p>') + '</td></tr>') + '</tbody></table></div>';
+const filteredEmpty = (total, shown) => total > 0 && shown === 0 ? '<p class="empty">No results match your filters.</p><p><button type="button" class="btn compact" data-action="clear-filters">Clear filters</button></p>' : undefined;
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
 const body = (value) => '<div class="panel-body">' + value + '</div>';
 const head = (title, description, actions = '', parent = '') => '<div class="page-head"><div>' + (parent ? '<a class="trail" href="' + pathFor(parent[0]) + '">' + parent[1] + '</a>' : '') + '<h1>' + title + '</h1><p>' + description + '</p></div><div class="actions">' + actions + '</div></div>';
@@ -141,7 +142,8 @@ function productsList(query = '') {
     && (!pf.stock || (pf.stock === 'out' ? Number(p.stock) <= 0 : pf.stock === 'low' ? Number(p.stock) > 0 && Number(p.stock) < 5 : Number(p.stock) >= 5)));
   const sorters = { name: (a, b) => cmp((a.name || '').toLowerCase(), (b.name || '').toLowerCase()), 'price-asc': (a, b) => a.price - b.price, 'price-desc': (a, b) => b.price - a.price, 'stock-asc': (a, b) => a.stock - b.stock, 'stock-desc': (a, b) => b.stock - a.stock };
   if (sorters[pf.sort]) items.sort(sorters[pf.sort]);
-  return table(canWrite() ? ['', 'Product', 'Category', 'Status', 'Price', 'Available'] : ['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => (canWrite() ? ['<input type="checkbox" data-bulk="' + esc(p.id) + '" aria-label="Select ' + esc(p.name) + '">'] : []).concat([productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock])));
+  return table(canWrite() ? ['', 'Product', 'Category', 'Status', 'Price', 'Available'] : ['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => (canWrite() ? ['<input type="checkbox" data-bulk="' + esc(p.id) + '" aria-label="Select ' + esc(p.name) + '">'] : []).concat([productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock])), filteredEmpty(state.products.length, items.length)) +
+    (canWrite() && items.length ? '<p class="compact-copy" id="bulk-scope" data-total="' + items.length + '" aria-live="polite"></p>' : '');
 }
 function productFilters() {
   const cats = [...new Set(state.products.map((p) => p.category).filter(Boolean))].sort(); const tagSet = [...new Set(Object.values(state.productTags || {}).flat())].sort();
@@ -629,7 +631,8 @@ function billingPage() {
   const actions = !canWrite() ? '<p class="compact-copy">Only an owner can change the plan.</p>' : p.plan_status === 'active' ? '' :
     '<div class="actions">' + button('Pay now and ' + (p.plan_status === 'trial' ? 'keep my store going' : 'reactivate'), 'plan-pay', 'primary') + button('Ask AUZslab to reactivate me', 'plan-request') + '</div><output id="plan-feedback" role="status"></output>';
   return head('Billing and renewals', 'Your storefront plan.', badge(label, p.plan_status === 'active' ? '' : 'warn'), ['settings', 'Settings']) +
-    panel('Plan', body('<p class="compact-copy">' + esc(msg) + '</p>' + actions));
+    panel('Plan', body('<p class="compact-copy">' + esc(msg) + '</p>' + actions)) +
+    (state.access && state.access.bills ? panel('Payments for your plan', table(['Date', 'Amount', 'Status', 'Reference'], state.access.bills.map((b) => [dateValue(b.at), money(b.amount), esc(b.status), esc(b.reference || '—')]))) : '');
 }
 function loadRzp() { return new Promise((ok, no) => { if (window.Razorpay) return ok(); const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = ok; s.onerror = () => no(new Error('Could not load the payment window. Check your connection.')); document.head.append(s); }); }
 async function payPlan(out) {
@@ -668,6 +671,20 @@ function channelsPage() {
     '</div>') +
     panel('Add a channel', body('<p class="compact-copy">More ways to sell, such as WhatsApp ordering and marketplaces, are not available yet. We will list them here when they are ready.</p>'));
 }
+function apiPanels() {
+  const a = state.access || {}; const out = [];
+  if (a.keys) {
+    out.push(panel('API keys', body('<p class="compact-copy">Let another program read your orders, products and stock. Keys can only read, and only your own shop. Read the list at <code>/storefront-api/v1/orders</code>, <code>/products</code> and <code>/inventory</code> with the header <code>Authorization: Bearer your-key</code>.</p>' +
+      table(['Name', 'Starts with', 'Created', 'Last used', ''], a.keys.map((k) => [esc(k.name), '<code>' + esc(k.prefix) + '…</code>', dateValue(k.createdAt), k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('en-IN') : 'Never', k.revoked ? badge('Revoked', 'warn') : (canWrite() ? button('Revoke', 'apikey-revoke:' + k.id, 'compact danger') : '')])) + (canWrite() ? button('Create a key', 'apikey-new', 'primary') : '')), ''));
+  }
+  if (a.route) {
+    const r = a.route; const label = { not_started: 'Not set up', pending: 'Waiting for details', needs_info: 'Needs more information', active: 'Active', suspended: 'Paused' }[r.status] || r.status;
+    out.push(panel('Payouts through AUZslab', body('<p class="compact-copy">Status: ' + badge(label, r.status === 'active' ? '' : 'neutral') + (r.bankLast4 ? ' · Bank account ending ' + esc(r.bankLast4) : '') + '</p>' +
+      '<p class="compact-copy">Paid so far ' + money(r.settled) + ' · On the way ' + money(r.pending) + '. Payouts through AUZslab start when AUZslab switches them on for your store. Until then, connect your own Razorpay under Payments.</p>' +
+      table(['Order', 'Amount', 'Fee', 'You receive', 'Status'], (a.settlements || []).map((x) => [esc(x.order || '—'), money(x.gross), money(x.fee), money(x.net), esc(x.status)])), '')));
+  }
+  return out.join('');
+}
 function appsPage() {
   const pl = state.plan || {}; const planLabel = { trial: 'Free trial', active: 'Active', paused: 'Paused', cancelled: 'Cancelled' }[pl.plan_status] || pl.plan_status || 'Active';
   const f = state.features || {}; const doms = (state.domains || []);
@@ -682,9 +699,30 @@ function appsPage() {
     panel('Your plan', body('<div class="stack">' + badge(planLabel, pl.plan_status === 'active' || !pl.plan_status ? '' : 'warn') + '<p class="compact-copy">' + (pl.trial_ends_at && pl.plan_status === 'trial' ? 'Your free trial ends on ' + esc(dateValue(pl.trial_ends_at)) + '. ' : '') + 'Pay, renew or ask for help under Billing and renewals.</p>' + wl('Billing and renewals', 'billing') + '</div>')) +
     panel('Connected services', '<div class="channel-list">' + connected + '</div>') +
     (appLinks().length ? panel('Other AUZslab apps for this business', '<div class="switch-apps">' + appLinks().map(([n, d, u, ic]) => '<a class="switch-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span><strong>' + esc(n) + '</strong><small>' + esc(d) + '</small></span></a>').join('') + '</div>') : '') +
+    apiPanels() +
     panel('Third-party apps', body('<p class="compact-copy">An app marketplace is not available. Every service above is built in and works without installing anything.</p>'));
 }
+const noAccess = (t) => head(t, 'Your role does not include this.', '', ['settings', 'Settings']) + panel('Not available', body('<p class="compact-copy">Ask the store owner for the settings permission to see this page.</p>'));
+function accessPage(id) {
+  const a = state.access; if (!a) return head('Loading', '', '');
+  if (id === 'activity') {
+    if (!a.audit) return noAccess('Activity log');
+    return head('Activity log', 'Refunds, store credit, tax, checkout, shipping, discounts and restored versions, with who did them.', '', ['settings', 'Settings']) +
+      panel('Recent activity', table(['When', 'Who', 'What', 'Details'], a.audit.map((x) => [new Date(x.at).toLocaleString('en-IN'), esc(x.who), esc(x.action), esc(Object.entries(x.detail || {}).map(([k, v]) => k + ': ' + v).join(' · '))])));
+  }
+  if (id === 'staff-security') {
+    if (!a.staff) return noAccess('Staff security');
+    const weak = a.staff.filter((x) => !x.twoFactor && x.role !== 'cashier');
+    return head('Staff security', 'Who can open your store admin, and how well their sign-in is protected.', '', ['settings', 'Settings']) +
+      (weak.length ? panel('Needs attention', body('<p class="compact-copy">' + weak.length + ' owner or manager account(s) do not use two-step sign-in. Ask them to turn it on in their AUZslab account.</p>')) : '') +
+      panel('People with access', table(['Name', 'Role', 'Two-step sign-in', 'Last seen', 'Active sessions', 'Login'], a.staff.map((x) => [esc(x.name || '—'), esc(x.roleName || x.role), x.twoFactor ? badge('On') : badge('Off', 'warn'), x.lastSeen ? new Date(x.lastSeen).toLocaleString('en-IN') : '—', x.sessions, x.loginOff ? badge('Turned off', 'warn') : badge('Allowed')])));
+  }
+  if (id === 'messages') return head('Customer messages', 'WhatsApp messages sent to your customers from your store and apps. Phone numbers are hidden except the last four digits.', '', ['settings', 'Settings']) +
+    panel('Recent messages', table(['When', 'To', 'Message', 'Status', 'Problem'], (a.messages || []).map((m) => [new Date(m.at).toLocaleString('en-IN'), esc(m.to), esc(m.template), esc(m.status), esc(m.error || '')])));
+  return '';
+}
 function management(id) {
+  if (['activity', 'staff-security', 'messages'].includes(id)) return accessPage(id);
   if (id === 'apps') return appsPage();
   if (id === 'policies') return policiesPage();
   if (id === 'privacy-settings') return privacySettingsPage();
@@ -1074,6 +1112,11 @@ async function roleAssign(select) {
 }
 
 // ---------- Products: bulk edit and CSV export ----------
+function scopeLine() {
+  const el = $('#bulk-scope'); if (!el) return;
+  const total = Number(el.dataset.total || 0), n = document.querySelectorAll('input[data-bulk]:checked').length;
+  el.innerHTML = n === 0 ? '' : n >= total ? 'All ' + total + ' product' + (total === 1 ? '' : 's') + ' in this list are selected. Changes apply to these ' + total + '.' : n + ' of ' + total + ' selected. <button type="button" class="btn compact" data-action="bulk-all">Select all ' + total + ' in this list</button>';
+}
 const bulkIds = () => [...document.querySelectorAll('input[data-bulk]:checked')].map((x) => x.dataset.bulk);
 function bulkForm(count) {
   return editForm('bulk-apply', '', '<p class="compact-copy wide">Changing ' + count + ' product' + (count === 1 ? '' : 's') + '. Leave a field empty to keep it as it is.</p>' +
@@ -1226,10 +1269,21 @@ export function workspace(id, record) {
 }
 
 // ---------- actions ----------
+function formError(form, message) {
+  if (!form || !form.querySelector) return;
+  let box = form.querySelector('.form-error');
+  if (!box) { box = document.createElement('div'); box.className = 'form-error'; box.setAttribute('role', 'alert'); box.style.cssText = 'color:#b42318;background:#fef3f2;border:1px solid #fda29b;border-radius:8px;padding:8px 10px;margin:0 0 10px;font-size:13px'; form.prepend(box); }
+  box.textContent = message;
+  const bad = [...form.querySelectorAll('input[required],select[required],textarea[required]')].find((el) => !String(el.value || '').trim());
+  const target = bad || form.querySelector('input:not([type=hidden]),select,textarea');
+  if (bad) bad.setAttribute('aria-invalid', 'true');
+  if (target && typeof target.focus === 'function') target.focus();
+}
 async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); } }
 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (type === 'input' && target.id === 'settings-query') { settingsFilter(target.value); return; }
+  if (type === 'change' && target.matches && target.matches('input[data-bulk]')) scopeLine();
   if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
   if (id === 'builder' && sd && (type === 'input' || type === 'change') && target.closest && target.closest('#studs-form')) { studsRead(); return; }
   if (id === 'builder' && ed && type === 'change' && target.id === 'te-page') { edPicked(target.value); return; }
@@ -1305,6 +1359,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshOrders(); save('Tracking saved.'); close(); rerender();
       } else if (key === 'credit-adjust') {
         await api('sfx_credit_adjust', { p_customer: rid, p_delta: Number(data.delta), p_note: data.note }); await refreshCustomers(); save('Store credit updated.'); close(); rerender(true);
+      } else if (key === 'apikey-record') {
+        const k = await api('sfx_api_key_create', { p_name: data.name }); await refreshAccess(); save('Key created.');
+        dialog('Your new key', '<p class="compact-copy">' + esc(k.note) + '</p><p><code style="word-break:break-all;user-select:all">' + esc(k.key) + '</code></p>' + button('Done', 'close-dialog', 'primary')); rerender(true);
       } else if (key === 'blog-record') {
         await api('sfx_blog_save', { p_id: rid, p: { title: data.title, handle: data.handle, excerpt: data.excerpt, body: data.body, author: data.author, tags: String(data.tags || '').split(',').map((x) => x.trim()).filter(Boolean), seoTitle: data.seoTitle, seoDescription: data.seoDescription, status: data.status } });
         await refreshBlog(); save('Post saved.'); close(); rerender(true);
@@ -1411,7 +1468,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_store_set_razorpay', { p: { keyId: data.keyId, secret: data.secret } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay connected.'); close(); rerender();
       } else return;
-    } catch (e) { flash(e.message); }
+    } catch (e) { flash(e.message); formError(target, e.message); }
     finally { if (submitBtn) submitBtn.disabled = false; }
     return;
   }
@@ -1493,6 +1550,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     save(on ? (key === 'sync' ? 'Synced.' : 'Linked. ' + (r.styles || 0) + ' AUZsStyle products shared.') : 'Unlinked.'); rerender(true);
   });
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
+  if (a === 'apikey-new') return dialog('Create an API key', editForm('apikey-record', '', input('Name (what will use it)', 'name', '', 'text', 'required maxlength="60" placeholder="Accounting export"'), 'Create key'));
+  if (a === 'apikey-revoke') return withBusy(async () => { if (!confirm('Revoke this key? Anything using it stops working.')) return; await api('sfx_api_key_revoke', { p_id: key }); await refreshAccess(); save('Key revoked.'); rerender(true); });
+  if (a === 'clear-filters') { for (const k of Object.keys(pf)) pf[k] = ''; const q = $('#table-query'); if (q) q.value = ''; for (const el of document.querySelectorAll('[id^="pf-"]')) el.value = ''; const r = $('#table-results'); if (r) r.innerHTML = productsList(''); return; }
+  if (a === 'bulk-all') { for (const el of document.querySelectorAll('input[data-bulk]')) el.checked = true; scopeLine(); return; }
   if (a === 'bulk-open') { const n = bulkIds().length; if (!n) { flash('Tick the products you want to change first.'); return; } return dialog('Bulk edit', bulkForm(n)); }
   if (a === 'products-csv') return downloadProductsCsv();
   if (await themeAction(a, key)) return;
