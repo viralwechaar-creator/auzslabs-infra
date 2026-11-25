@@ -82,6 +82,17 @@ export default async function run({ browser, stack }) {
     const html = await pub.locator('.art').first().innerHTML().catch(() => '');
     assert(/<strong>love<\/strong>/.test(html) && /<ul>/.test(html), 'formatting not rendered: ' + html.slice(0, 200));
   }, 'critical');
+  await s.check('Shipping zones: the customer state picks the fee; other states use the flat fee; bad zones are refused', async () => {
+    const cs = (z) => rpc(stack, 'sfx_checkout_settings_save', { p: { shipping: { fee: 50, freeOver: 0, zones: z } } }, owner);
+    const bad = await cs([{ name: 'X', states: [], fee: 10 }]); assert(bad.data?.error || bad.error || /1 to 40|states/i.test(JSON.stringify(bad.data)), 'empty zone accepted: ' + JSON.stringify(bad.data).slice(0, 150));
+    const ok = await cs([{ name: 'South', states: ['Kerala', 'Tamil Nadu'], fee: 80, freeOver: 0 }, { name: 'Home', states: ['Rajasthan'], fee: 0, freeOver: 0 }]);
+    assert(!ok.data?.error, JSON.stringify(ok.data).slice(0, 200));
+    const v = (await q('select id from sfx_variants where product_id=$1 limit 1', [pid]))[0].id; await q('update sfx_variants set stock=50 where product_id=$1', [pid]);
+    const order = async (state) => { await q("delete from sfx_orders where tenant_id=$1", [tid]); const r = await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: 'Z Buyer', phone: '98765' + Math.floor(10000 + Math.random() * 89999), address: '12 Park Road, Ward 4', city: 'Jodhpur', state, pin: '342001', lines: [{ variantId: v, qty: 1 }] } }); if (!(await q('select 1 from sfx_orders where tenant_id=$1', [tid])).length) throw new Error('order failed: ' + JSON.stringify(r).slice(0, 300)); return Number((await q('select shipping from sfx_orders where tenant_id=$1 order by created_at desc limit 1', [tid]))[0]?.shipping); };
+    const k = await order('Kerala'); assert(k === 80, 'zone fee not applied: got ' + k + ' cfg ' + JSON.stringify((await q('select config->\'shipping\' as c from sfx_stores where tenant_id=$1', [tid]))[0]));
+    assert(await order('Rajasthan') === 0, 'free zone not applied');
+    assert(await order('Punjab') === 50, 'flat fee not used for other states');
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();

@@ -748,10 +748,15 @@ function returnForm(order) {
   const rows = (order.lines || []).map((l, i) => '<input type="hidden" name="vid' + i + '" value="' + esc(l.variantId) + '">' + input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (ordered ' + l.qty + ')', 'rq' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1"')).join('');
   return editForm('return-record', order.id, rows + area('Reason', 'reason', '', 'maxlength="500"'), 'Create return');
 }
+function parseZones(t) {
+  return String(t || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => { const [name, states, fee, freeOver] = l.split('|').map((x) => x.trim());
+    if (!name || !states) throw new Error('Zone line ' + (i + 1) + ' needs a name and at least one state, like: South | Kerala, Tamil Nadu | 60 | 800');
+    return { name, states: states.split(',').map((x) => x.trim()).filter(Boolean), fee: Number(fee) || 0, freeOver: Number(freeOver) || 0 }; });
+}
 function shippingPage() {
   const sh = state.checkout.shipping || {};
   return head('Shipping', 'What customers pay for delivery at checkout.', '') + tabs('shipping', orderTabs) +
-    panel('Delivery charge', body(canWrite() ? editForm('checkout-settings', '', input('Delivery fee (Rs)', 'fee', sh.fee ?? 0, 'number', 'min="0" step="1"') + input('Free delivery above (Rs, 0 = never)', 'freeOver', sh.freeOver ?? 0, 'number', 'min="0" step="1"') + area('Note shown to customers', 'note', sh.note || '', 'maxlength="300"'), 'Save shipping') :
+    panel('Delivery charge', body(canWrite() ? editForm('checkout-settings', '', input('Delivery fee (Rs)', 'fee', sh.fee ?? 0, 'number', 'min="0" step="1"') + input('Free delivery above (Rs, 0 = never)', 'freeOver', sh.freeOver ?? 0, 'number', 'min="0" step="1"') + area('Note shown to customers', 'note', sh.note || '', 'maxlength="300"') + area('Shipping zones (optional). One per line: Zone name | State, State | Fee | Free above. The customer\'s state picks the zone; any other state pays the delivery fee above.', 'zones', (sh.zones || []).map((z) => [z.name, (z.states || []).join(', '), z.fee, z.freeOver].join(' | ')).join('\n'), 'rows="4" maxlength="2000" placeholder="Rajasthan | Rajasthan | 40 | 500"'), 'Save shipping') :
       '<p class="compact-copy">Fee Rs ' + Number(sh.fee || 0) + (Number(sh.freeOver) > 0 ? ', free above Rs ' + Number(sh.freeOver) : '') + '.</p>'));
 }
 function abandonedPage() {
@@ -1181,7 +1186,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'return-rzp-refund') {
         await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
       } else if (key === 'checkout-settings') {
-        await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note }, abandonCapture: state.checkout.abandonCapture } });
+        await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note, zones: parseZones(data.zones) }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);
       } else if (key === 'bulk-apply') {
         const ids = bulkIds(); const patch = { status: data.status || undefined, category: data.category || undefined, pricePct: data.pricePct || undefined };

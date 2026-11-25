@@ -1213,8 +1213,9 @@ V.bag = (v) => {
     E('div', { class: 'two' }, list, E('div', { class: 'card stick sum' }, E('div', { class: 't' }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 'mut tiny' }, shipLine(t)), freeBar(t), E('a', { class: 'btn wide', href: link('checkout') }, 'Process to checkout'))), recentBand(null));
 };
 function freeBar(sub) { const fo = +((cfg().shipping || {}).freeOver) || 0; if (!(fo > 0)) return null; const left = Math.max(fo - sub, 0); return E('div', null, E('div', { class: 'mut tiny' }, left ? 'Add ' + inr(left) + ' more for free shipping' : 'You have free shipping'), E('div', { class: 'fbar' }, E('i', { style: { width: Math.min(100, Math.round(sub / fo * 100)) + '%' } }))); }
-function shipFee(sub) { const sh = cfg().shipping || {}; const fee = +sh.fee || 0, fo = +sh.freeOver || 0; return fo > 0 && sub >= fo ? 0 : fee; }
-function shipLine(sub) { const sh = cfg().shipping || {}; const f = shipFee(sub); return f ? 'Shipping ' + inr(f) + ((+sh.freeOver > 0) ? ' · free above ' + inr(sh.freeOver) : '') : 'Free shipping'; }
+function shipZone(state) { const st = String(state || '').trim().toLowerCase(); return st ? ((cfg().shipping || {}).zones || []).find((z) => (z.states || []).some((x) => String(x).trim().toLowerCase() === st)) : null; }
+function shipFee(sub, state) { const sh = shipZone(state) || cfg().shipping || {}; const fee = +sh.fee || 0, fo = +sh.freeOver || 0; return fo > 0 && sub >= fo ? 0 : fee; }
+function shipLine(sub, state) { const sh = shipZone(state) || cfg().shipping || {}; const f = shipFee(sub, state); return f ? 'Shipping ' + inr(f) + ((+sh.freeOver > 0) ? ' · free above ' + inr(sh.freeOver) : '') : 'Free shipping'; }
 
 const STATES = ['Andhra Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Delhi', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Odisha', 'Punjab', 'Rajasthan', 'Tamil Nadu', 'Telangana', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Other'];
 V.checkout = (v) => {
@@ -1227,7 +1228,7 @@ V.checkout = (v) => {
   let pay = methods[0] ? methods[0][0] : '';
   const payBox = E('div', { class: 'frm checkout-payment', role: 'radiogroup', 'aria-label': 'Payment method' }); const payPaint = () => { clear(payBox); if (!methods.length) { payBox.append(E('div', { class: 'note' }, 'This store is not taking online orders right now. Please contact the store.')); return; } methods.forEach(([k, l, d]) => payBox.append(E('div', { class: 'opt' + (pay === k ? ' on' : ''), role: 'radio', 'aria-checked': pay === k, tabindex: 0, onclick: () => { pay = k; payPaint(); }, onkeydown: (e) => { if (e.key !== ' ' && e.key !== 'Enter') return; e.preventDefault(); pay = k; payPaint(); payBox.querySelector('.on')?.focus(); } }, E('i', { class: 'r' }), E('div', null, E('div', null, l), E('div', { class: 'mut tiny' }, d))))); };
   payPaint();
-  const t = bagTotal(), sh = shipFee(t); const save = E('input', { type: 'checkbox', checked: !!saved.name });
+  const t = bagTotal(); let sh = shipFee(t, (LS.get('me', {}) || {}).state || 'Rajasthan'); const shipNote = E('div', { class: 'note' }, shipLine(t, (LS.get('me', {}) || {}).state || 'Rajasthan')); const save = E('input', { type: 'checkbox', checked: !!saved.name });
   let coupon = null; // { code, discount, msg }
   const sumBox = E('div');
   const paintSum = () => { clear(sumBox); const d = coupon ? Math.min(coupon.discount, t + sh) : 0; sumBox.append(E('div', { class: 't', style: { paddingTop: '8px', borderTop: '1px solid var(--line)' } }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, sh ? inr(sh) : 'Free')), d ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon ' + coupon.code), E('span', null, '– ' + inr(d))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(t + sh - d)))); };
@@ -1257,7 +1258,7 @@ V.checkout = (v) => {
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Place order'; }
   };
   // fill city and state from the PIN code (free India Post lookup); if it is unreachable the person just types them
-  const pinAuto = async () => { const p = (F.pin.value || '').trim(); if (!/^\d{6}$/.test(p)) return; try { const r = await fetch('https://api.postalpincode.in/pincode/' + p); const j = await r.json(); const po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) { if (!F.city.value) F.city.value = po.District || po.Block || ''; const st = STATES.find((x) => x.toLowerCase() === String(po.State || '').toLowerCase()); if (st) F.state.value = st; } } catch (e) { /* offline or blocked: manual entry */ } };
+  const pinAuto = async () => { const p = (F.pin.value || '').trim(); if (!/^\d{6}$/.test(p)) return; try { const r = await fetch('https://api.postalpincode.in/pincode/' + p); const j = await r.json(); const po = j && j[0] && j[0].PostOffice && j[0].PostOffice[0]; if (po) { if (!F.city.value) F.city.value = po.District || po.Block || ''; const st = STATES.find((x) => x.toLowerCase() === String(po.State || '').toLowerCase()); if (st) F.state.value = st; if (typeof reship === "function") reship(); } } catch (e) { /* offline or blocked: manual entry */ } };
   // remember the bag against the phone so the shop can remind the customer (only if the shop switched this on)
   let lastCart = ''; const saveCart = () => { const ph = (F.phone.value || '').replace(/\D/g, ''); if (!cfg().abandonWa || ph.length < 10 || lastCart === ph) return; lastCart = ph; rpc(`public_${PFX}_cart_save`, { p_slug: SLUG, p: { phone: ph, name: (F.first.value || '').trim(), lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } }).catch(() => {}); };
   v.append(E('div', { class: 'shophd' }, E('h1', null, 'Checkout')), E('div', { class: 'two' },
@@ -1265,10 +1266,11 @@ V.checkout = (v) => {
       E('h2', null, 'Delivery'), E('div', { class: 'f2' }, f('first', 'First name', { ac: 'given-name' }), f('last', 'Last name', { ac: 'family-name', opt: true })), f('pin', 'PIN code', { mode: 'numeric', ac: 'postal-code', max: 6 }), f('address', 'Address', { ac: 'street-address' }), f('address2', 'Apartment, suite, etc.', { opt: true }),
       E('div', { class: 'f2' }, f('city', 'City'), f('state', 'State', { select: STATES, def: 'Rajasthan' })), f('country', 'Country', { select: ['India'], def: 'India' }), f('note', 'Notes for the store (optional)', { area: true }),
       E('label', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, save, 'Save this information for next time'),
-      E('h2', null, 'Shipping method'), E('div', { class: 'note' }, shipLine(t)), E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
+      E('h2', null, 'Shipping method'), shipNote, E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
     E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't checkout-line' }, isMin() ? E('div', { class: 'checkout-line-thumb' }, pickPic(l.s) ? E('img', { src: pickPic(l.s), alt: '' }) : placeholder(l.s.name)) : null, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
       E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, E('label', { class: 'fld', style: { flex: 1 } }, cin), capplyBtn), cmsg, sumBox, err, btn,
       E('div', { class: 'mut tiny' }, 'By placing the order you agree to the ', E('a', { href: link('policy/terms'), style: { textDecoration: 'underline' } }, 'terms'), ' and the ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'returns policy'), '.'))));
+  const reship = () => { const stv = F.state && F.state.value; sh = shipFee(t, stv); shipNote.textContent = shipLine(t, stv); paintSum(); }; if (F.state) F.state.addEventListener('change', reship); reship();
   F.pin.addEventListener('input', pinAuto); F.pin.addEventListener('change', pinAuto); F.phone.addEventListener('blur', saveCart); F.phone.addEventListener('change', saveCart);
 };
 // card / UPI / net banking with the shop's own Razorpay account; the server checks the signature before anything is marked paid
