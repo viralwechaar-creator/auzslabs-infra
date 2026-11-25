@@ -15,7 +15,7 @@ Source: the Shopify lesson series (Modules 1-11) plus the owner's decisions. Sho
 | A | Order lifecycle: separate payment/fulfilment/delivery states, per-shipment fulfilment records with items + tracking + events, order channel tag, oversold flag, timeline events | built, tested |
 | B | Inventory: stock states (available/committed/unavailable), stock buffer, adjustments with reasons, versioned product edits, "needs shipping" and cost per variant (cost snapshot on order lines) | built, tested |
 | C | Returns/refunds/cancel as separate records with restock choice; draft orders; test-order flag | built, tested (draft orders already existed) |
-| D | Customers: stable customer id on orders, address snapshots, consent record, sign-in by code (email + WhatsApp), account portal, store credit | planned |
+| D | Customers: stable customer id on orders, address snapshots, consent record, sign-in by code (email + WhatsApp), account portal, store credit | built, tested (customer account page UI, credit redemption at checkout, SMS not built) |
 | E | Discounts/marketing: discount calculator, buy-X-get-Y, free shipping, UTM/touch log, campaign attribution | planned |
 | F | Checkout settings: fields, payment methods order, shipping tiers + reasons, tax rules (CGST/SGST/IGST), purchase limits | planned |
 | G | Content/themes: blogs, redirects on handle change, theme revisions + restore, SEO fields, custom data (metafields/metaobjects) | planned |

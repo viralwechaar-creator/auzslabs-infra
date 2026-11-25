@@ -189,3 +189,13 @@ export function sendRenewalEmail({ to, business, days, renewalDate }) {
 }
 
 // Join-the-team emails (db/177-178). All quiet no-ops without RESEND_API_KEY; the admin still sees the application in Admin -> Team.
+
+// One-time sign-in code for a shop customer (storefront account). The shop name is what the customer recognises.
+export const sendCustomerLoginCode = ({ to, shop, code }) => send({
+  to, label: 'customer sign-in code', subject: `${shop}: your sign-in code`,
+  html: emailLayout({
+    preheader: `Your sign-in code is ${code}`, kicker: shop, title: 'Your sign-in code',
+    body: `<p style="margin:0 0 12px;font-size:28px;letter-spacing:6px;font-weight:700">${escapeHtml(code)}</p><p style="margin:0">Enter this code to see your orders. It works for 10 minutes.</p>`,
+    note: 'If you did not ask for this, you can ignore this email. Nobody can sign in without the code.',
+  }),
+});

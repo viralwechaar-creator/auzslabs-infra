@@ -709,7 +709,7 @@ function customersList() {
   list.sort(o.sort === 'orders' ? (a, b) => b.orderCount - a.orderCount : o.sort === 'spend' ? (a, b) => b.lifetimeSpend - a.lifetimeSpend : o.sort === 'recent' ? (a, b) => cmp(b.lastOrderAt || '', a.lastOrderAt || '') : (a, b) => cmp((a.name || '').toLowerCase(), (b.name || '').toLowerCase()));
   const rows = list.map((c) => [
     esc(c.name), esc(c.phone || '—'), esc(c.email || '—'), c.orderCount, money(c.lifetimeSpend), dateValue(c.lastOrderAt),
-    c.manual && canWrite() ? button('Edit', 'customer-edit:' + c.id, 'compact') + button('Delete', 'customer-delete:' + c.id, 'compact danger') : (canWrite() ? button('Save as customer', 'customer-adopt:' + encodeURIComponent(c.phone || ''), 'compact') : ''),
+    (String(c.id).startsWith('order:') ? '' : button('Details', 'customer-detail:' + c.id, 'compact')) + (c.manual && canWrite() ? button('Edit', 'customer-edit:' + c.id, 'compact') + button('Delete', 'customer-delete:' + c.id, 'compact danger') : (canWrite() ? button('Save as customer', 'customer-adopt:' + encodeURIComponent(c.phone || ''), 'compact') : '')),
   ]);
   return table(['Name', 'Phone', 'Email', 'Orders', 'Total spent', 'Last order', ''], rows);
 }
@@ -1243,6 +1243,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'shipment-edit') {
         await api('sfx_shipment_update', { p_id: rid, p: { carrier: data.carrier || '', tracking: data.tracking || '', trackingUrl: data.trackingUrl || '' } });
         await refreshOrders(); save('Tracking saved.'); close(); rerender();
+      } else if (key === 'credit-adjust') {
+        await api('sfx_credit_adjust', { p_customer: rid, p_delta: Number(data.delta), p_note: data.note }); await refreshCustomers(); save('Store credit updated.'); close(); rerender(true);
       } else if (key === 'return-receive') {
         const r = state.returns.find((x) => x.id === rid);
         await api('sfx_return_receive', { p_id: rid, p_lines: (r.lines || []).map((l, i) => ({ variantId: l.variantId, restock: data['k' + i] !== 'no' })) }); await refreshReturns(); save('Return received.'); close(); rerender(true);
@@ -1343,6 +1345,18 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   const action = target.dataset.action; if (!action) return;
   const [a, key, detail] = action.split(':');
   if (a === 'customer-new') return dialog('Add customer', customerForm(null));
+  if (a === 'customer-detail' || a === 'consent-set') return withBusy(async () => {
+    if (a === 'consent-set') await api('sfx_customer_consent', { p_id: key, p_marketing: detail === 'on', p_source: 'staff' });
+    const d = await api('sfx_customer_detail', { p_id: key });
+    const addr = (d.addresses || []).map((x) => '<li>' + esc([x.address, x.city, x.state, x.pin].filter(Boolean).join(', ')) + (x.isDefault ? ' (default)' : '') + '</li>').join('') || '<li>No saved address.</li>';
+    const moves = (d.creditMoves || []).slice(0, 6).map((m) => '<li>' + (m.delta > 0 ? '+' : '') + money(m.delta) + ' · ' + esc(m.reason) + (m.note ? ' · ' + esc(m.note) : '') + '</li>').join('') || '<li>No credit activity.</li>';
+    dialog(d.name, '<div class="stack"><p class="compact-copy">' + esc(d.phone || '') + ' ' + esc(d.email || '') + '</p>' +
+      '<p><strong>Marketing messages:</strong> ' + (d.acceptsMarketing ? 'Agreed' : 'Not agreed') + (d.consentAt ? ' <small>(' + new Date(d.consentAt).toLocaleDateString('en-IN') + ' · ' + esc(d.consentSource || '') + ')</small>' : '') + '</p>' +
+      (canWrite() ? button(d.acceptsMarketing ? 'Record withdrawal' : 'Record agreement', 'consent-set:' + d.id + ':' + (d.acceptsMarketing ? 'off' : 'on')) : '') +
+      '<p><strong>Store credit:</strong> ' + money(d.creditBalance) + '</p><ul>' + moves + '</ul>' + (canWrite() ? button('Add or remove credit', 'credit-adjust:' + d.id) : '') +
+      '<p><strong>Addresses</strong></p><ul>' + addr + '</ul></div>');
+  });
+  if (a === 'credit-adjust') return dialog('Store credit', editForm('credit-adjust', key, input('Amount (use a minus to remove)', 'delta', '', 'number', 'required step="0.01"') + input('Note', 'note', '', 'text', 'maxlength="200"'), 'Save'));
   if (a === 'customer-edit') return dialog('Edit customer', customerForm(state.customers.find((c) => c.id === key)));
   if (a === 'customer-adopt') { const c = state.customers.find((x) => x.phone === decodeURIComponent(key)); return dialog('Save as customer', customerForm({ ...c, id: null })); }
   if (a === 'customer-delete') return withBusy(async () => { if (!confirm('Delete this customer record? Their past orders are not affected.')) return; await api('sfx_customer_delete', { p_id: key }); await refreshCustomers(); save('Customer deleted.'); rerender(true); });

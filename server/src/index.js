@@ -15,6 +15,7 @@ import { handle as handleData } from './routes/data.js';
 import { handle as handleStorage } from './routes/storage.js';
 import { handle as handleAdmin } from './routes/admin.js';
 import { handle as handleWhatsApp } from './routes/whatsapp.js';
+import { handle as handleSfxCustomer } from './routes/sfxcustomer.js';
 import { startWhatsAppWorker } from './whatsapp.js';
 import { startSyncWorker } from './sync-worker.js';
 import { handle as handleLicence, gate as licenceGate } from './routes/licence.js';
@@ -29,7 +30,7 @@ initErrorTracking(); // dormant unless SENTRY_DSN is set -- see errors.js
 
 // Request flow: CORS preflight -> identify the caller -> try each route module in order (first one that handles it
 // wins) -> 404. Each module in routes/ owns one area; see docs/BACKEND_MAP.md. Order matters only where paths overlap.
-const ROUTE_MODULES = [handleLicence, handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp, handleOffline, handleCloud, handleGst, handleSites, handleOauth, handleMcp];
+const ROUTE_MODULES = [handleLicence, handleSystem, handleAuth, handlePayments, handleData, handleStorage, handleAdmin, handleWhatsApp, handleSfxCustomer, handleOffline, handleCloud, handleGst, handleSites, handleOauth, handleMcp];
 
 setWsCounter(wsCount);
 const server = http.createServer(async (req, res) => {
