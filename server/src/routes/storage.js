@@ -61,7 +61,7 @@ export async function handle(ctx) {
     if (!rows.length) throw new HttpError(403, 'not authorized for this employee');
     const doc = await readDocUpload({ tenantId, empId, filename });
     if (!doc) throw new HttpError(404, 'not found');
-    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=31536000' });
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=31536000', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
     res.end(doc.buffer);
     return;
   }
@@ -192,7 +192,7 @@ export async function handle(ctx) {
     if (!file) throw new HttpError(404, 'no receipt');
     const doc = await readDocUpload({ tenantId: 'sos-expenses', empId: sosReceiptGet[1], filename: file });
     if (!doc) throw new HttpError(404, 'not found');
-    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600' });
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
     res.end(doc.buffer);
     return;
   }
@@ -216,7 +216,7 @@ export async function handle(ctx) {
     if (!file) throw new HttpError(404, 'no file');
     const doc = await readDocUpload({ tenantId: 'sos-documents', empId: sosDocGet[1], filename: file });
     if (!doc) throw new HttpError(404, 'not found');
-    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600' });
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
     res.end(doc.buffer);
     return;
   }
@@ -232,7 +232,7 @@ export async function handle(ctx) {
     if (!file) throw new HttpError(404, 'no file');
     const doc = await readDocUpload({ tenantId: 'sos-documents', empId: sosDocAdminGet[1], filename: file });
     if (!doc) throw new HttpError(404, 'not found');
-    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600' });
+    res.writeHead(200, { 'Content-Type': doc.type, 'Cache-Control': 'private, max-age=3600', ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
     res.end(doc.buffer);
     return;
   }

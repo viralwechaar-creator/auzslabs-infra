@@ -2014,7 +2014,7 @@ async function loadSalesOsAdmin() {
   docsEl.innerHTML = (docs || []).length
     ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Document</th><th>Staff</th><th>Status</th><th></th></tr>${(docs || []).map((d) => `
       <tr><td>${esc(d.label)}</td><td>${esc(d.staffName)}</td><td>${d.uploaded ? 'On file' : 'Pending'}</td>
-      <td>${d.uploaded ? `<a href="#" data-doc="${d.id}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open</a>` : ''}</td></tr>`).join('')}</table></div>`
+      <td>${d.uploaded ? `<a href="#" data-doc="${d.id}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open</a> <a href="#" data-doc="${d.id}" data-dl="${esc(d.label)}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Download</a>` : ''}</td></tr>`).join('')}</table></div>`
     : emptyDoodle('No documents uploaded yet.');
   docsEl.querySelectorAll('[data-doc]').forEach((link) => {
     link.onclick = async (e) => {
@@ -2023,8 +2023,10 @@ async function loadSalesOsAdmin() {
         const { data: s } = await sb.auth.getSession();
         const r = await fetch(CFG.url + '/storage/sos-staff-doc-admin/' + link.dataset.doc, { headers: { Authorization: 'Bearer ' + s.session.access_token } });
         if (!r.ok) throw new Error('missing');
-        window.open(URL.createObjectURL(await r.blob()), '_blank', 'noopener');
-      } catch (e2) { alert('The document could not be loaded.'); }
+        const blob = await r.blob(); const u = URL.createObjectURL(blob);
+        if (link.dataset.dl) { const ext = (blob.type.split('/')[1] || 'bin').replace('jpeg', 'jpg').replace('+xml', ''); const x = document.createElement('a'); x.href = u; x.download = link.dataset.dl.replace(/[^\w\- ]+/g, '') + '.' + ext; document.body.append(x); x.click(); x.remove(); }
+        else window.open(u, '_blank', 'noopener');
+      } catch (e2) { alert('The document could not be loaded: ' + (e2 && e2.message ? e2.message : 'network error')); }
     };
   });
 
@@ -2135,7 +2137,7 @@ async function openStaffProfileModal(staffId, staffName) {
 
     <div class="label" style="margin-top:18px">Documents on file</div>
     <div>${(docs || []).length ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Document</th><th>Category</th><th>Status</th><th></th></tr>${(docs || []).map((d) => `
-      <tr><td>${esc(d.label)}</td><td>${esc(d.category || '')}</td><td>${d.uploaded ? 'On file' : 'Pending'}</td><td>${d.uploaded ? `<a href="#" data-spdoc="${d.id}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open</a>` : ''}</td></tr>`).join('')}</table></div>` : emptyDoodle('No documents uploaded yet.')}</div>
+      <tr><td>${esc(d.label)}</td><td>${esc(d.category || '')}</td><td>${d.uploaded ? 'On file' : 'Pending'}</td><td>${d.uploaded ? `<a href="#" data-spdoc="${d.id}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open</a> <a href="#" data-spdoc="${d.id}" data-dl="${esc(d.label)}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Download</a>` : ''}</td></tr>`).join('')}</table></div>` : emptyDoodle('No documents uploaded yet.')}</div>
 
     <div class="label" style="margin-top:18px">Exit management</div>
     <div class="onb-grid">
@@ -2154,7 +2156,9 @@ async function openStaffProfileModal(staffId, staffName) {
   const g = (id) => document.getElementById(id);
   body.querySelectorAll('[data-spdoc]').forEach((link) => { link.onclick = async (e) => { e.preventDefault(); try {
     const { data: ss } = await sb.auth.getSession(); const r = await fetch(CFG.url + '/storage/sos-staff-doc-admin/' + link.dataset.spdoc, { headers: { Authorization: 'Bearer ' + ss.session.access_token } });
-    if (!r.ok) throw new Error('missing'); window.open(URL.createObjectURL(await r.blob()), '_blank', 'noopener'); } catch (e2) { alert('The document could not be loaded.'); } }; });
+    if (!r.ok) throw new Error('missing'); const blob = await r.blob(); const u = URL.createObjectURL(blob);
+    if (link.dataset.dl) { const ext = (blob.type.split('/')[1] || 'bin').replace('jpeg', 'jpg').replace('+xml', ''); const x = document.createElement('a'); x.href = u; x.download = link.dataset.dl.replace(/[^\w\- ]+/g, '') + '.' + ext; document.body.append(x); x.click(); x.remove(); }
+    else window.open(u, '_blank', 'noopener'); } catch (e2) { alert('The document could not be loaded: ' + (e2 && e2.message ? e2.message : 'network error')); } }; });
   g('spPdf').onclick = async () => {
     const btn = g('spPdf'), msg = g('spPdfMsg'); btn.disabled = true; msg.textContent = 'Preparing the PDF...';
     try {
