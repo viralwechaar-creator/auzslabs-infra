@@ -103,20 +103,22 @@
         apps.sort((x, y) => (y[0] === last) - (x[0] === last));
         if (!document.getElementById('auzAppPickCss')) {
           const st = document.createElement('style'); st.id = 'auzAppPickCss';
-          st.textContent = '#auzAppPick{--bg:#fff;--fg:#111;--mut:#6b6b6b;--line:#e6e4e0;--tile:#f6f5f3;--ac:#800020;position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;animation:apf .2s ease-out}' +
-            '@media (prefers-color-scheme:dark){#auzAppPick{--bg:#161616;--fg:#f4f2ee;--mut:#a09b94;--line:#2b2b2b;--tile:#202020}}' +
-            '#auzAppPick .sh{background:var(--bg);color:var(--fg);width:100%;max-width:460px;border-radius:26px 26px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.3);animation:apu .28s cubic-bezier(.2,.9,.25,1)}' +
-            '#auzAppPick .gr{width:42px;height:5px;border-radius:5px;background:var(--line);margin:2px auto 16px}' +
-            '#auzAppPick h2{margin:0;font-size:22px;letter-spacing:-.02em}#auzAppPick .sub{margin:4px 0 16px;color:var(--mut);font-size:14px}' +
-            '#auzAppPick .ls{display:grid;gap:10px}' +
-            '#auzAppPick button.ap{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:52px 1fr 20px;gap:14px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--tile);border:1px solid var(--line);transition:transform .15s,border-color .15s;animation:apu .35s both}' +
-            '#auzAppPick button.ap:hover,#auzAppPick button.ap:focus-visible{border-color:var(--ac);outline:none;transform:translateY(-2px)}#auzAppPick button.ap:active{transform:scale(.98)}' +
-            '#auzAppPick .ic{width:52px;height:52px;border-radius:15px;background:#111;color:#fff;display:grid;place-items:center}#auzAppPick button.ap.first .ic{background:var(--ac)}' +
-            '#auzAppPick .ic svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}' +
-            '#auzAppPick .t{font-weight:700;font-size:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}#auzAppPick .d{font-size:13px;color:var(--mut);margin-top:2px;line-height:1.35}' +
-            '#auzAppPick .chip{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--line);color:var(--mut)}#auzAppPick .chip.l{background:var(--ac);color:#fff}' +
-            '#auzAppPick .go{width:20px;height:20px;color:var(--mut)}#auzAppPick .go svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
-            '@media (min-width:600px){#auzAppPick{align-items:center}#auzAppPick .sh{border-radius:26px;padding-bottom:22px}}' +
+          st.textContent = '#auzAppPick{--bg:#eeeeee;--card:#fff;--ink:#0c0c0c;--mut:#8a8a8a;--dim:#5f5f5f;--line:#e0e0e0;--sh:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.05);position:fixed;inset:0;z-index:2147483000;background:rgba(12,12,12,.55);display:flex;align-items:flex-end;justify-content:center;font:400 13px/1.5 ui-sans-serif,-apple-system,"SF Pro Text",Inter,"Segoe UI",system-ui,sans-serif;letter-spacing:.005em;-webkit-font-smoothing:antialiased;animation:apf .2s ease-out}' +
+            '@media (prefers-color-scheme:dark){:root:not([data-theme=light]) #auzAppPick{--bg:#141414;--card:#202020;--ink:#f2f2f0;--mut:#8e8e8e;--dim:#b3b3b3;--line:#333;--sh:0 1px 2px rgba(0,0,0,.4)}}' +
+            ':root[data-theme=dark] #auzAppPick{--bg:#141414;--card:#202020;--ink:#f2f2f0;--mut:#8e8e8e;--dim:#b3b3b3;--line:#333;--sh:0 1px 2px rgba(0,0,0,.4)}' +
+            '#auzAppPick .sh{background:var(--bg);color:var(--ink);width:100%;max-width:440px;border-radius:26px 26px 0 0;padding:10px 12px calc(14px + env(safe-area-inset-bottom,0px));animation:apu .28s cubic-bezier(.2,.9,.25,1)}' +
+            '#auzAppPick .gr{width:38px;height:4px;border-radius:4px;background:var(--line);margin:2px auto 14px}' +
+            '#auzAppPick .hd{padding:0 8px}#auzAppPick .ey{font:500 8.5px/1 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}' +
+            '#auzAppPick h2{color:var(--ink);margin:8px 0 0;font-size:22px;line-height:1.14;font-weight:700;letter-spacing:-.015em}#auzAppPick .sub{margin:6px 0 14px;color:var(--dim);font-size:12px}' +
+            '#auzAppPick .ls{display:grid;gap:8px}' +
+            '#auzAppPick button.ap{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:44px 1fr 30px;gap:12px;align-items:center;padding:10px 12px 10px 10px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh);transition:transform .15s,border-color .15s;animation:apu .35s both}' +
+            '#auzAppPick button.ap:hover,#auzAppPick button.ap:focus-visible{border-color:var(--ink);outline:none;transform:translateY(-1px)}#auzAppPick button.ap:active{transform:scale(.985)}' +
+            '#auzAppPick .ic{width:44px;height:44px;border-radius:14px;background:var(--ink);color:var(--card);display:grid;place-items:center}' +
+            '#auzAppPick .ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}' +
+            '#auzAppPick .t{color:var(--ink);font-weight:650;font-size:13.5px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}#auzAppPick .d{font-size:11.5px;color:var(--dim);margin-top:1px;line-height:1.4}' +
+            '#auzAppPick .chip{font:500 8px/1 "Space Mono",ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;padding:4px 7px;border-radius:99px;border:1px solid var(--line);color:var(--mut)}#auzAppPick .chip.l{background:var(--ink);border-color:var(--ink);color:var(--card)}' +
+            '#auzAppPick .go{width:30px;height:30px;border-radius:50%;background:var(--bg);color:var(--ink);display:grid;place-items:center}#auzAppPick .go svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
+            '@media (min-width:600px){#auzAppPick{align-items:center}#auzAppPick .sh{border-radius:26px;padding-bottom:14px}}' +
             '@media (prefers-reduced-motion:reduce){#auzAppPick,#auzAppPick *{animation:none!important;transition:none!important}}' +
             '@keyframes apf{from{opacity:0}}@keyframes apu{from{opacity:0;transform:translateY(16px)}}';
           document.head.append(st);
@@ -126,11 +128,11 @@
         const box = document.createElement('div'); box.id = 'auzAppPick'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Choose where to go');
         const sh = document.createElement('div'); sh.className = 'sh';
         const gr = document.createElement('div'); gr.className = 'gr';
-        const h = document.createElement('h2'); h.textContent = 'Where do you want to go?';
+        const hd = document.createElement('div'); hd.className = 'hd'; const ey = document.createElement('div'); ey.className = 'ey'; ey.textContent = 'AUZslab \u00b7 choose an app'; const h = document.createElement('h2'); h.textContent = 'Where do you want to go?';
         const sub = document.createElement('p'); sub.className = 'sub'; sub.textContent = (d.tenant.name ? d.tenant.name + ' · ' : '') + 'pick an app to open';
         const ls = document.createElement('div'); ls.className = 'ls';
         apps.forEach((a, k) => {
-          const b = document.createElement('button'); b.type = 'button'; b.className = 'ap' + (k === 0 ? ' first' : ''); b.style.animationDelay = (60 + k * 60) + 'ms';
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'ap'; b.style.animationDelay = (60 + k * 60) + 'ms';
           const ic = document.createElement('span'); ic.className = 'ic'; ic.append(svg(ICON[a[0]] || ICON['Online store']));
           const tx = document.createElement('span'); const t = document.createElement('span'); t.className = 't'; t.append(document.createTextNode(a[0]));
           const chip = document.createElement('span'); chip.className = 'chip' + (a[0] === last ? ' l' : ''); chip.textContent = a[0] === last ? 'Last used' : (TAG[a[0]] || 'App'); t.append(chip);
@@ -140,7 +142,7 @@
           b.onclick = () => { try { localStorage.setItem('auz.lastApp', a[0]); } catch (e) {} to(a[2]); };
           ls.append(b);
         });
-        sh.append(gr, h, sub, ls); box.append(sh);
+        hd.append(ey, h, sub); sh.append(gr, hd, ls); box.append(sh);
         box.addEventListener('click', (e) => { if (e.target === box) box.remove(); });
         document.body.append(box); const f = ls.querySelector('button'); if (f) f.focus(); return true;
       }
