@@ -90,16 +90,59 @@
       if (apps.length === 1) return to(apps[0][2]);
       if (apps.length > 1) {
         if (document.getElementById('auzAppPick')) return true;
-        const box = document.createElement('div'); box.id = 'auzAppPick'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Choose where to go');
-        box.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif';
-        const card = document.createElement('div'); card.style.cssText = 'background:#fff;color:#111;border-radius:18px;max-width:420px;width:100%;padding:22px;display:grid;gap:10px';
-        const h = document.createElement('h2'); h.textContent = 'Where do you want to go?'; h.style.cssText = 'margin:0 0 4px;font-size:20px'; card.append(h);
-        apps.forEach((a) => {
-          const b = document.createElement('button'); b.type = 'button'; b.style.cssText = 'text-align:left;border:1px solid #ddd;background:#fafafa;border-radius:12px;padding:12px 14px;cursor:pointer;font:inherit;color:inherit';
-          const t = document.createElement('div'); t.textContent = a[0]; t.style.fontWeight = '700'; const n = document.createElement('div'); n.textContent = a[1]; n.style.cssText = 'font-size:13px;color:#666';
-          b.append(t, n); b.onclick = () => to(a[2]); card.append(b);
+        // Chooser sheet: a bottom sheet on phones, a centred card on larger screens; one tile per app with its own icon, a one-line
+        // description and the app you used last on top. Plain DOM + one style tag (no innerHTML), light and dark, reduced-motion safe.
+        const ICON = {
+          AUZsStyle: '<path d="M8 4l-4 3 2 4 2-1v10h8V10l2 1 2-4-4-3a4 4 0 0 1-8 0z"/>',
+          AUZsLedger: '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M9 9h6M9 13h6M9 17h3"/>',
+          'Salon console': '<circle cx="7" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><path d="M9 9l11 9M9 15l11-9"/>',
+          'Online store': '<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9h16v2a3 3 0 0 1-5.3 1.9 3 3 0 0 1-4.7 0A3 3 0 0 1 4 11z"/><path d="M6 14v6h12v-6"/>',
+        };
+        const TAG = { AUZsStyle: 'Shop till', AUZsLedger: 'Books', 'Salon console': 'Salon', 'Online store': 'Website' };
+        const last = (() => { try { return localStorage.getItem('auz.lastApp'); } catch (e) { return null; } })();
+        apps.sort((x, y) => (y[0] === last) - (x[0] === last));
+        if (!document.getElementById('auzAppPickCss')) {
+          const st = document.createElement('style'); st.id = 'auzAppPickCss';
+          st.textContent = '#auzAppPick{--bg:#fff;--fg:#111;--mut:#6b6b6b;--line:#e6e4e0;--tile:#f6f5f3;--ac:#800020;position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;animation:apf .2s ease-out}' +
+            '@media (prefers-color-scheme:dark){#auzAppPick{--bg:#161616;--fg:#f4f2ee;--mut:#a09b94;--line:#2b2b2b;--tile:#202020}}' +
+            '#auzAppPick .sh{background:var(--bg);color:var(--fg);width:100%;max-width:460px;border-radius:26px 26px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.3);animation:apu .28s cubic-bezier(.2,.9,.25,1)}' +
+            '#auzAppPick .gr{width:42px;height:5px;border-radius:5px;background:var(--line);margin:2px auto 16px}' +
+            '#auzAppPick h2{margin:0;font-size:22px;letter-spacing:-.02em}#auzAppPick .sub{margin:4px 0 16px;color:var(--mut);font-size:14px}' +
+            '#auzAppPick .ls{display:grid;gap:10px}' +
+            '#auzAppPick button.ap{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:52px 1fr 20px;gap:14px;align-items:center;padding:12px 14px;border-radius:18px;background:var(--tile);border:1px solid var(--line);transition:transform .15s,border-color .15s;animation:apu .35s both}' +
+            '#auzAppPick button.ap:hover,#auzAppPick button.ap:focus-visible{border-color:var(--ac);outline:none;transform:translateY(-2px)}#auzAppPick button.ap:active{transform:scale(.98)}' +
+            '#auzAppPick .ic{width:52px;height:52px;border-radius:15px;background:#111;color:#fff;display:grid;place-items:center}#auzAppPick button.ap.first .ic{background:var(--ac)}' +
+            '#auzAppPick .ic svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}' +
+            '#auzAppPick .t{font-weight:700;font-size:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}#auzAppPick .d{font-size:13px;color:var(--mut);margin-top:2px;line-height:1.35}' +
+            '#auzAppPick .chip{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--line);color:var(--mut)}#auzAppPick .chip.l{background:var(--ac);color:#fff}' +
+            '#auzAppPick .go{width:20px;height:20px;color:var(--mut)}#auzAppPick .go svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}' +
+            '@media (min-width:600px){#auzAppPick{align-items:center}#auzAppPick .sh{border-radius:26px;padding-bottom:22px}}' +
+            '@media (prefers-reduced-motion:reduce){#auzAppPick,#auzAppPick *{animation:none!important;transition:none!important}}' +
+            '@keyframes apf{from{opacity:0}}@keyframes apu{from{opacity:0;transform:translateY(16px)}}';
+          document.head.append(st);
+        }
+        const ns = 'http://www.w3.org/2000/svg';
+        const svg = (inner, cls) => { const e = document.createElementNS(ns, 'svg'); e.setAttribute('viewBox', '0 0 24 24'); e.setAttribute('aria-hidden', 'true'); if (cls) e.setAttribute('class', cls); const g = document.createElementNS(ns, 'g'); const tmp = new DOMParser().parseFromString('<svg xmlns="' + ns + '">' + inner + '</svg>', 'image/svg+xml').documentElement; [...tmp.childNodes].forEach((n) => g.append(document.importNode(n, true))); e.append(g); return e; };
+        const box = document.createElement('div'); box.id = 'auzAppPick'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Choose where to go');
+        const sh = document.createElement('div'); sh.className = 'sh';
+        const gr = document.createElement('div'); gr.className = 'gr';
+        const h = document.createElement('h2'); h.textContent = 'Where do you want to go?';
+        const sub = document.createElement('p'); sub.className = 'sub'; sub.textContent = (d.tenant.name ? d.tenant.name + ' · ' : '') + 'pick an app to open';
+        const ls = document.createElement('div'); ls.className = 'ls';
+        apps.forEach((a, k) => {
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'ap' + (k === 0 ? ' first' : ''); b.style.animationDelay = (60 + k * 60) + 'ms';
+          const ic = document.createElement('span'); ic.className = 'ic'; ic.append(svg(ICON[a[0]] || ICON['Online store']));
+          const tx = document.createElement('span'); const t = document.createElement('span'); t.className = 't'; t.append(document.createTextNode(a[0]));
+          const chip = document.createElement('span'); chip.className = 'chip' + (a[0] === last ? ' l' : ''); chip.textContent = a[0] === last ? 'Last used' : (TAG[a[0]] || 'App'); t.append(chip);
+          const dd = document.createElement('div'); dd.className = 'd'; dd.textContent = a[1]; tx.append(t, dd);
+          const go = document.createElement('span'); go.className = 'go'; go.append(svg('<path d="M9 5l7 7-7 7"/>'));
+          b.append(ic, tx, go);
+          b.onclick = () => { try { localStorage.setItem('auz.lastApp', a[0]); } catch (e) {} to(a[2]); };
+          ls.append(b);
         });
-        box.append(card); document.body.append(box); return true;
+        sh.append(gr, h, sub, ls); box.append(sh);
+        box.addEventListener('click', (e) => { if (e.target === box) box.remove(); });
+        document.body.append(box); const f = ls.querySelector('button'); if (f) f.focus(); return true;
       }
     } catch (e) {}
     return false;
