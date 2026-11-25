@@ -1,3 +1,4 @@
+import {refreshLive} from './api.js';
 import {button, close, dialog, esc, link, money, pathFor, rerender, save, state, uid} from './ecosystem.js';
 
 const DAY = 86400000;
@@ -176,8 +177,11 @@ function explorer(config){
 function live(){
   const orders = sourceOrders().slice().sort((a,b)=>b.date.localeCompare(a.date));
   const current = inRange(orders,{start:today(),end:today()});
-  return '<div class="notice">This preview reads order records in this browser. Real-time visitors, carts and checkout events require a storefront event feed.</div>'+
-    '<div class="metrics">'+[['Sales today',money(total(paid(current),'total'))],['Orders today',current.length],['Visitors now','Unavailable']].map(([label,value])=>'<article class="metric"><span>'+label+'</span><strong>'+value+'</strong></article>').join('')+'</div>'+
+  const lv = state.liveVisitors;
+  const num = key => lv && !lv.error ? String(lv[key] ?? 0) : 'Unavailable';
+  const people = lv && !lv.error && lv.visitors && lv.visitors.length ? panel('On your store now',table(['Page','Device','Doing','Last seen'],lv.visitors.map(v=>[v.page||'/',v.device||'—',v.doing,new Intl.DateTimeFormat('en-IN',{hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'Asia/Kolkata'}).format(new Date(v.seen))])),button('Refresh','analytics-refresh','compact')) : '';
+  return '<div class="notice">Visitors are people active on your store in the last 5 minutes. It counts anonymous browsers, not names.</div>'+
+    '<div class="metrics">'+[['Sales today',money(total(paid(current),'total'))],['Orders today',current.length],['Visitors now',num('now')],['Visitors today',num('today')],['Bag now',num('inBag')],['At checkout now',num('inCheckout')]].map(([label,value])=>'<article class="metric"><span>'+label+'</span><strong>'+value+'</strong></article>').join('')+'</div>'+people+
     panel('Recent order activity',table(['Order','Order date','Sales channel','Payment','Fulfillment','Total'],
       orders.slice(0,12).map(row=>['#'+row.id,row.date,row.channel,row.payment,row.status,money(row.total)])),button('Refresh','analytics-refresh','compact'));
 }
@@ -262,7 +266,7 @@ function dispatch(type,target,event,record,report){
   }
   if(action==='analytics-refresh'){
     refreshed=new Date();
-    return rerender();
+    return refreshLive().then(()=>rerender(true));
   }
   if(action==='analytics-target'){
     const current = state.analyticsTarget;

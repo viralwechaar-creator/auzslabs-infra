@@ -82,6 +82,7 @@ export async function uploadImage(file) {
 }
 export async function refreshCollections() { state.collections = (await api('sfx_collection_list')).map(toCollection); }
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
+export async function refreshLive() { try { state.liveVisitors = await api('sfx_live_visitors'); } catch (e) { state.liveVisitors = { error: true }; } }
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
 export async function refreshDiscounts() { state.discounts = await api('sfx_discount_list'); }
 export async function refreshInventory() { const [inv, mv] = await Promise.all([api('sfx_inventory_list'), api('sfx_stock_moves_list', {})]); state.inventory = inv; state.stockMoves = mv; }

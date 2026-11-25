@@ -309,5 +309,16 @@ export default async function run({ browser, stack }) {
     assert(await mp.locator('form input[name=name], input[name=businessName], form').count() > 0 && await mp.locator('.settings-list').count() === 0, 'business profile form missing');
     await mctx.close();
   });
-  await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save|x\.test|\/uploads\//i.test(e)).length, errs.filter((e) => !/sentry|fonts|sfx_discount_save|x\.test|\/uploads\//i.test(e)).slice(0, 3).join(' | ')); });
+  await s.check('Live view shows visitors tracked on the store, and an anonymous caller cannot read them', async () => {
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(600);
+    const out = await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      await c.auth.signOut(); const anon = await c.rpc('sfx_live_visitors');
+      await c.rpc('public_sfx_track', { p_slug: 'testcafe', p: { events: [{ k: 'view', sid: 'abcdefgh12345', p: '/shop', dev: 'phone' }, { k: 'bag', sid: 'abcdefgh12345', p: '/bag', dev: 'phone' }, { k: 'view', sid: 'zzzzzzzz99999', p: '/', dev: 'desktop' }, { k: 'evil', sid: 'qqqqqqqq11111', p: '/' }] } });
+      await c.auth.signInWithPassword({ email: e, password: p }); const r = await c.rpc('sfx_live_visitors'); return { anon: !!anon.error, err: r.error && r.error.message, d: r.data }; }, [USERS.cafeOwner, PASSWORD]);
+    assert(out.anon, 'anonymous read allowed'); assert(!out.err, out.err);
+    assert(out.d.now === 2 && out.d.inBag === 1 && out.d.visitors.length === 2, JSON.stringify(out.d));
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/live-view'), { waitUntil: 'load' }); await page.waitForTimeout(2000);
+    const t = await page.locator('body').innerText(); assert(/Visitors now/i.test(t) && /On your store now/i.test(t) && /\/shop/.test(t), t.slice(0, 400));
+  }, 'major');
+  await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save|sfx_live_visitors|x\.test|\/uploads\//i.test(e)).length, errs.filter((e) => !/sentry|fonts|sfx_discount_save|sfx_live_visitors|x\.test|\/uploads\//i.test(e)).slice(0, 3).join(' | ')); });
 }
