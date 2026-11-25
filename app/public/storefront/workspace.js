@@ -173,8 +173,15 @@ function richHtml(t) {
   const inline = (x) => esc(x).replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>').replace(/\[([^\]\n]+)\]\((https:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
   return String(t || '').trim().split(/\n{2,}/).filter(Boolean).map((b) => { const ls = b.split('\n'); return ls.every((l) => /^\s*[-*] /.test(l)) ? '<ul>' + ls.map((l) => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>' : '<p>' + ls.map(inline).join('<br>') + '</p>'; }).join('');
 }
+function linkPicker() {
+  const base = state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html' : ''; if (!base) return '';
+  const pg = cfgList('pages').filter((x) => x.slug && x.name).map((x) => '<option value="' + esc(base + '#/page/' + x.slug) + '">' + esc(x.name) + '</option>').join('');
+  const pr = (state.products || []).filter((x) => x.status === 'Active').slice(0, 100).map((x) => '<option value="' + esc(base + '?view=p&p=' + encodeURIComponent(x.id)) + '">' + esc(x.name) + '</option>').join('');
+  if (!pg && !pr) return '';
+  return '<select data-linkpick aria-label="Link to a page or product"><option value="">Link to a page or product…</option>' + (pg ? '<optgroup label="Pages">' + pg + '</optgroup>' : '') + (pr ? '<optgroup label="Products">' + pr + '</optgroup>' : '') + '</select>';
+}
 function richArea(label, name, value, dis) {
-  const bar = dis ? '' : '<div class="rich-bar" role="toolbar" aria-label="Formatting">' + button('<b>B</b>', 'rich-fmt:bold', 'compact') + button('<i>I</i>', 'rich-fmt:italic', 'compact') + button('• List', 'rich-fmt:list', 'compact') + button('Link', 'rich-fmt:link', 'compact') + '</div>';
+  const bar = dis ? '' : '<div class="rich-bar" role="toolbar" aria-label="Formatting">' + button('<b>B</b>', 'rich-fmt:bold', 'compact') + button('<i>I</i>', 'rich-fmt:italic', 'compact') + button('• List', 'rich-fmt:list', 'compact') + button('Link', 'rich-fmt:link', 'compact') + linkPicker() + '</div>';
   return '<div class="wide rich"><span class="rich-label">' + label + '</span>' + bar + '<textarea name="' + name + '" rows="7" aria-label="' + label + '" ' + dis + '>' + esc(value) + '</textarea><div class="rich-preview" data-rich-preview aria-label="Preview">' + (value ? richHtml(value) : '<p class="compact-copy">A preview of your formatting shows here.</p>') + '</div></div>';
 }
 let editImages = [];
@@ -806,16 +813,24 @@ const storeLink = (path) => state.store.published && state.tenant?.slug ? 'https
 function pageForm(pg) {
   const v = pg || { status: 'Hidden' };
   return editForm('page-record', pg?.id, input('Page title', 'name', v.name || '', 'text', 'required maxlength="120"') + input('URL handle', 'slug', v.slug || '', 'text', 'pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="60" placeholder="about-us"') +
-    area('Content', 'content', v.content || '', 'rows="8" maxlength="10000"') + input('Cover image URL', 'image', v.image || '', 'url') +
+    richArea('Content', 'content', v.content || '', '') + input('Cover image URL', 'image', v.image || '', 'url') +
     select('Visibility', 'status', ['Hidden', 'Visible', 'Scheduled'], v.status || 'Hidden') + input('Publish on (for Scheduled)', 'publishAt', v.publishAt || '', 'datetime-local') +
     input('Search title', 'seoTitle', v.seoTitle || '', 'text', 'maxlength="70"') + area('Search description', 'seoDescription', v.seoDescription || '', 'rows="2" maxlength="160"'), 'Save page');
 }
+let pgf = { q: '', status: '' };
+const pageState = (x) => x.status === 'Scheduled' ? (x.publishAt && new Date(x.publishAt) > new Date() ? 'Scheduled' : x.publishAt ? 'Visible' : 'Hidden') : x.status;
+function pagesList() {
+  const q = pgf.q.trim().toLowerCase();
+  const pages = cfgList('pages').filter((x) => (!q || (x.name + ' ' + x.slug).toLowerCase().includes(q)) && (!pgf.status || pageState(x) === pgf.status));
+  const rows = pages.map((x) => [(canWrite() ? '<input type="checkbox" class="pg-sel" value="' + esc(x.id) + '" aria-label="Select ' + esc(x.name) + '">' : ''), esc(x.name), esc('/' + x.slug),
+    badge(pageState(x), pageState(x) === 'Visible' ? '' : 'neutral') + (pageState(x) === 'Scheduled' ? '<small> goes live ' + esc(dateValue(x.publishAt)) + '</small>' : ''), x.updatedOn ? dateValue(x.updatedOn) : '—',
+    (pageState(x) === 'Visible' && storeLink('page/' + x.slug) ? link('View', storeLink('page/' + x.slug), 'compact') : '') + (canWrite() ? button('Copy', 'page-copy:' + x.id, 'compact') : '') + rowActions('page', x.id)]);
+  return table(['', 'Page', 'URL', 'Visibility', 'Updated', ''], rows) + (pages.length ? '' : '<p class="compact-copy">' + (cfgList('pages').length ? 'No pages match your search.' : 'No pages yet. Add one and set it to Visible to publish it.') + '</p>');
+}
 function storePagesPage(bare) {
-  const pages = cfgList('pages');
-  const rows = pages.map((x) => [esc(x.name), esc('/' + x.slug), badge(x.status, x.status === 'Visible' ? '' : 'neutral'), x.updatedOn ? dateValue(x.updatedOn) : '—',
-    (x.status === 'Visible' && storeLink('page/' + x.slug) ? link('View', storeLink('page/' + x.slug), 'compact') : '') + rowActions('page', x.id)]);
+  const bulk = canWrite() ? '<div class="actions">' + button('Select all', 'pages-all', 'compact') + button('Make visible', 'pages-bulk:Visible', 'compact') + button('Hide', 'pages-bulk:Hidden', 'compact') + button('Delete selected', 'pages-bulk:delete', 'compact danger') + '</div>' : '';
   return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
-    panel('Store pages', table(['Page', 'URL', 'Visibility', 'Updated', ''], rows) + (pages.length ? '' : '<p class="compact-copy">No pages yet. Add one and set it to Visible to publish it.</p>'));
+    panel('Store pages', '<div class="filters"><input id="pg-query" type="search" aria-label="Search pages" placeholder="Search pages" value="' + esc(pgf.q) + '"><select id="pg-status" aria-label="Filter by visibility">' + ['', 'Visible', 'Hidden', 'Scheduled'].map((o) => '<option value="' + o + '"' + (o === pgf.status ? ' selected' : '') + '>' + (o || 'All visibility') + '</option>').join('') + '</select></div>' + bulk + '<div id="pages-results">' + pagesList() + '</div>');
 }
 function contentPage(id) {
   const pages = cfgList('pages'), files = cfgList('files'), fields = cfgList('customFields');
@@ -849,7 +864,7 @@ async function contentAction(a, key) {
 async function contentSubmit(key, rid, data) {
   const m = /^(page|file|field|market)-record$/.exec(key); if (!m) return false;
   const list = contentRecords[m[1]][0]; const items = cfgList(list).slice(); const rec = { ...data };
-  if (m[1] === 'page') { rec.slug = slugify(rec.slug || rec.name); rec.updatedOn = new Date().toISOString().slice(0, 10); if (!rec.slug) throw new Error('Enter a page title.'); if (items.some((x) => x.slug === rec.slug && x.id !== rid)) throw new Error('Another page already uses that URL handle.'); }
+  if (m[1] === 'page') { rec.slug = slugify(rec.slug || rec.name); rec.updatedOn = new Date().toISOString().slice(0, 10); if (rec.status === 'Scheduled' && !rec.publishAt) throw new Error('Choose the date and time this page goes live.'); if (!rec.slug) throw new Error('Enter a page title.'); if (items.some((x) => x.slug === rec.slug && x.id !== rid)) throw new Error('Another page already uses that URL handle.'); }
   if (rid) { const i = items.findIndex((x) => x.id === rid); if (i < 0) throw new Error('Not found.'); items[i] = { ...items[i], ...rec }; } else items.push({ id: newId(), ...rec });
   await saveList(list, items); save('Saved.'); close(); rerender(true); return true;
 }
@@ -1069,6 +1084,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'); if (target.name === 'description') { const rp = f.querySelector('[data-rich-preview]'); if (rp) rp.innerHTML = target.value ? richHtml(target.value) : '<p class="compact-copy">A preview of your formatting shows here.</p>'; } const el = f.querySelector('[data-seo-preview]'); if (!el) return; if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
   if ((type === 'input' || type === 'change') && /^ol-(query|pay|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.orders[k === 'query' ? 'q' : k] = target.value; $('#orders-results').innerHTML = ordersList(); return; }
   if ((type === 'input' || type === 'change') && /^cl-(query|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.customers[k === 'query' ? 'q' : k] = target.value; $('#customers-results').innerHTML = customersList(); return; }
+  if ((type === 'input' || type === 'change') && /^pg-(query|status)$/.test(target.id)) { pgf[target.id === 'pg-query' ? 'q' : 'status'] = target.value; const el = $('#pages-results'); if (el) el.innerHTML = pagesList(); return; }
+  if (type === 'change' && target.matches && target.matches('[data-linkpick]')) { const ta = target.closest('.rich')?.querySelector('textarea'); if (ta && target.value) { const st = ta.selectionStart, en = ta.selectionEnd, label = ta.value.slice(st, en) || target.options[target.selectedIndex].text, ins = '[' + label + '](' + target.value + ')'; ta.value = ta.value.slice(0, st) + ins + ta.value.slice(en); ta.dispatchEvent(new Event('input', { bubbles: true })); } target.value = ''; return; }
   if ((type === 'input' || type === 'change') && ['table-query'].includes(target.id)) { $('#table-results').innerHTML = productsList(target.value); return; }
   if ((type === 'input' || type === 'change') && target.id === 'collection-query') { $('#collection-results').innerHTML = collectionList(target.value); return; }
   if (type === 'submit' && target.dataset.form === 'section') {
@@ -1249,6 +1266,15 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'campaign-delete') return withBusy(async () => { if (!confirm('Delete this campaign?')) return; await api('sfx_campaign_delete', { p_id: key }); await refreshCampaigns(); save('Campaign deleted.'); rerender(true); });
   if (a === 'plan-pay') { const out = $('#plan-feedback'); target.disabled = true; out.textContent = 'Starting payment…'; return payPlan(out).catch((e) => { out.textContent = e.message; }).finally(() => { target.disabled = false; }); }
   if (a === 'plan-request') return withBusy(async () => { await api('request_storefront_reactivation', { p_notes: null }); save('Request sent. We will get back to you.'); });
+  if (a === 'pages-all') { const boxes = [...document.querySelectorAll('.pg-sel')]; const on = boxes.some((b) => !b.checked); boxes.forEach((b) => { b.checked = on; }); return; }
+  if (a === 'page-copy') return withBusy(async () => { const items = cfgList('pages'), src = items.find((x) => x.id === key); if (!src) return; let slug = src.slug + '-copy', n = 2; while (items.some((x) => x.slug === slug)) slug = src.slug + '-copy-' + n++; await saveList('pages', [...items, { ...src, id: 'pg' + Date.now().toString(36), name: src.name + ' (copy)', slug, status: 'Hidden', publishAt: '', updatedOn: new Date().toISOString().slice(0, 10) }]); save('Page copied as hidden.'); rerender(true); });
+  if (a === 'pages-bulk') {
+    const ids = new Set([...document.querySelectorAll('.pg-sel:checked')].map((b) => b.value)); if (!ids.size) { flash('Tick the pages you want to change first.'); return; }
+    return withBusy(async () => { const items = cfgList('pages');
+      if (key === 'delete') { if (!confirm('Delete ' + ids.size + ' page(s)? This cannot be undone.')) return; await saveList('pages', items.filter((x) => !ids.has(x.id))); }
+      else await saveList('pages', items.map((x) => ids.has(x.id) ? { ...x, status: key, publishAt: '', updatedOn: new Date().toISOString().slice(0, 10) } : x));
+      save(ids.size + ' page(s) updated.'); rerender(true); });
+  }
   if (a === 'rich-fmt') {
     const ta = target.closest('.rich')?.querySelector('textarea'); if (!ta) return;
     const st = ta.selectionStart, en = ta.selectionEnd, sel = ta.value.slice(st, en);

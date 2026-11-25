@@ -1467,7 +1467,7 @@ V.page = (v, slug) => {
   v.append(E('article', { class: 'minimal-feature' },
     page.sections ? null : E('a', { href: link('sitemap') }, '← Sitemap'), E('h1', null, page.title),
     page.image ? E('img', { src: page.image, alt: '' }) : null,
-    page.sections ? null : E('div', { class: 'art' }, para(page.body)),
+    page.sections ? null : E('div', { class: 'art' }, richNodes(page.body)),
     href ? E('a', { class: 'btn', href }, page.cta || 'Explore') : null));
   if (page.sections) customSections(v, page.sections);
 };

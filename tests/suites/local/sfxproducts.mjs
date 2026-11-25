@@ -63,6 +63,25 @@ export default async function run({ browser, stack }) {
     assert(await page.locator('select[name=variantImage0]').count() === 1, 'no picture select');
     await s.shot(page, 'sfx-variant-pictures');
   }, 'critical');
+  await s.check('Pages: search, bulk visibility, copy, scheduled needs a date, public page shows formatting', async () => {
+    await q("update sfx_stores set config = jsonb_set(coalesce(config,'{}'::jsonb), '{pages}', $2::jsonb) where tenant_id=$1", [tid, JSON.stringify([
+      { id: 'pgA', name: 'About us', slug: 'about-us', status: 'Hidden', content: 'We **love** tea\n\n- one\n- two' }, { id: 'pgB', name: 'Shipping', slug: 'shipping', status: 'Hidden', content: 'Fast' }])]);
+    await open('#/pages');
+    await page.fill('#pg-query', 'ship'); await page.waitForTimeout(300);
+    assert(await page.locator('.pg-sel').count() === 1, 'search did not filter');
+    await page.fill('#pg-query', ''); await page.waitForTimeout(300);
+    await page.click('[data-action="pages-all"]'); await page.click('[data-action="pages-bulk:Visible"]'); await page.waitForTimeout(1500);
+    let pages = (await q('select config->\'pages\' as p from sfx_stores where tenant_id=$1', [tid]))[0].p;
+    assert(pages.every((x) => x.status === 'Visible'), JSON.stringify(pages.map((x) => x.status)));
+    await page.click('[data-action="page-copy:pgA"]'); await page.waitForTimeout(1500);
+    pages = (await q('select config->\'pages\' as p from sfx_stores where tenant_id=$1', [tid]))[0].p;
+    assert(pages.length === 3 && pages.some((x) => x.slug === 'about-us-copy' && x.status === 'Hidden'), 'copy missing');
+    const r = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data;
+    assert((r.config.minimalPages || []).some((x) => x.slug === 'about-us') && !(r.config.minimalPages || []).some((x) => x.slug === 'about-us-copy'), 'public visibility wrong');
+    const pub = await ctx.newPage(); await pub.goto(stack.url('testcafe', '/store.html?design=minimal#/page/about-us'), { waitUntil: 'load' }); await pub.waitForTimeout(3000);
+    const html = await pub.locator('.art').first().innerHTML().catch(() => '');
+    assert(/<strong>love<\/strong>/.test(html) && /<ul>/.test(html), 'formatting not rendered: ' + html.slice(0, 200));
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();
