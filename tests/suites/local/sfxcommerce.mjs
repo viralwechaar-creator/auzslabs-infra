@@ -27,7 +27,7 @@ export default async function run({ browser, stack }) {
     await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1000);
     assert(/exceed 100/.test(await page.locator('#toast').innerText()), 'no refusal message');
     assert((await q("select count(*)::int n from sfx_discounts where upper(code)='HALF'"))[0].n === 0, 'saved anyway');
-    await page.keyboard.press('Escape');
+    page.once('dialog', (d) => d.accept()); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
   });
   await s.check('Archive then re-activate a code', async () => {
     await page.locator('[data-action^="discount-toggle:"]').first().click(); await page.waitForTimeout(900);
