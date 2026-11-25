@@ -45,7 +45,10 @@ export async function handle(ctx) {
       { title: 'Exit record', rows: pairsOf(data.exit) },
     ];
     const buf = await buildStaffPdf({ name, sections, docs });
-    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="staff-profile.pdf"', 'Cache-Control': 'no-store', 'Content-Length': buf.length });
+    const h = { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="staff-profile.pdf"', 'Cache-Control': 'no-store', 'Content-Length': buf.length };
+    // the admin page is on another address, so the browser needs these or it blocks the download ("Failed to fetch")
+    if (origin) { h['Access-Control-Allow-Origin'] = origin; h['Vary'] = 'Origin'; h['Access-Control-Expose-Headers'] = 'Content-Disposition'; }
+    res.writeHead(200, h);
     res.end(buf); return;
   }
   // ---- admin: open a business's apps as its owner (limited 8 h session, audit-logged) ----
