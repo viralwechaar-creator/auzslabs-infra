@@ -1,0 +1,23 @@
+/* Studs look for the store's own pages (checkout, account, orders, policies) that Studs frames but does not draw.
+   They live in the page, not the Studs shadow root, so they are styled here, only while body.studs-on is set. */
+body.studs-on #view{--sf-ink:#141414;--sf-line:#d2d2d2;--sf-muted:#575757;--sf-surface:#f7f7f7;max-width:1180px;margin:0 auto;padding:28px var(--gutter,clamp(18px,4vw,70px)) 56px;background:#fff;color:var(--sf-ink);font-family:Arial,Helvetica,sans-serif}
+body.studs-on #view h1,body.studs-on #view h2,body.studs-on #view h3{font-family:"Arial Narrow","Bahnschrift SemiCondensed",Arial,sans-serif;font-weight:700;letter-spacing:.01em;text-transform:uppercase;color:var(--sf-ink)}
+body.studs-on #view h1{font-size:clamp(26px,4vw,40px);line-height:1;margin:0 0 18px}
+body.studs-on #view h2{font-size:15px;margin:0 0 10px}
+body.studs-on #view .fld input,body.studs-on #view .fld select,body.studs-on #view .fld textarea,body.studs-on #view input:not([type=checkbox]):not([type=radio]),body.studs-on #view select,body.studs-on #view textarea{height:44px;border-radius:0;border:1px solid var(--sf-line);background:#fff;color:var(--sf-ink);padding:0 12px;font-size:13px;box-shadow:none}
+body.studs-on #view textarea{height:72px;padding:10px 12px;border-radius:0}
+body.studs-on #view .fld input:focus,body.studs-on #view .fld select:focus,body.studs-on #view .fld textarea:focus{border-color:var(--sf-ink);outline:2px solid var(--sf-ink);outline-offset:1px}
+body.studs-on #view .fld label,body.studs-on #view .fld .lbl{font-family:"Arial Narrow",Arial,sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--sf-muted)}
+body.studs-on #view .fld.bad input,body.studs-on #view .fld.bad select{border-color:#b3261e}
+body.studs-on #view .btn{height:46px;border-radius:0;padding:0 22px;background:var(--sf-ink);color:#fff;font-family:"Arial Narrow",Arial,sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em}
+body.studs-on #view .btn.out{background:#fff;color:var(--sf-ink);box-shadow:none;border:1px solid var(--sf-ink)}
+body.studs-on #view .btn.sm{height:34px;font-size:11px;padding:0 14px}
+body.studs-on #view .btn.wide{height:50px;border-radius:0}
+body.studs-on #view .card,body.studs-on #view .frm,body.studs-on #view .note,body.studs-on #view .ln,body.studs-on #view .ord,body.studs-on #view .box{border-radius:0;box-shadow:none}
+body.studs-on #view .card,body.studs-on #view .ord,body.studs-on #view .box{border:1px solid var(--sf-line);background:#fff}
+body.studs-on #view .note{background:var(--sf-surface);border:1px solid var(--sf-line)}
+body.studs-on #view .sum .g{border-top:1px solid var(--sf-ink);font-size:14px;font-weight:700}
+body.studs-on #view .checkout-payment label,body.studs-on #view .pm{border-radius:0;border:1px solid var(--sf-line);background:#fff}
+body.studs-on #view .checkout-payment label:has(input:checked),body.studs-on #view .pm.on{border-color:var(--sf-ink);outline:1px solid var(--sf-ink)}
+body.studs-on #view a{color:inherit;text-underline-offset:4px}
+body.studs-on #view .tiny{color:var(--sf-muted)}
