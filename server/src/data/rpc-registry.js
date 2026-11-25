@@ -827,6 +827,8 @@ export const RPC = {
   sfx_checkout_settings_get: { params: [], auth: true },
   sfx_checkout_settings_save: { params: ['p'], jsonb: ['p'], auth: true },
   sfx_tax_settings_save: { params: ['p'], jsonb: ['p'], auth: true },
+  sfx_stores_get: { params: [], auth: true },
+  sfx_stores_save: { params: ['p'], jsonb: ['p'], auth: true },
   public_sfx_cart_save: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
   sfx_abandoned_list: { params: [], auth: true },
   sfx_abandoned_delete: { params: ['p_id'], auth: true },

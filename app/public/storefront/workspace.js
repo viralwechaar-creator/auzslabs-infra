@@ -11,7 +11,7 @@ import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, apiPost, applyContext, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -315,7 +315,7 @@ function collectVariants(formEl) {
 }
 
 // ---------- Online store: overview / theme / domains / payments ----------
-const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['domains', 'Domains'], ['checkout', 'Payments']];
+const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']];
 // ---------- Theme marketplace (phase 2, db/375) ----------
 // Real marketplace: built-in Minimal/Classic are now plain rows in sfx_themes (migrated in, not
 // hardcoded), alongside any developer theme an admin has approved. "Install" copies the approved
@@ -584,6 +584,7 @@ function websitePage(id) {
   if (id === 'website') return websiteOverview();
   if (id === 'builder' || id === 'templates') return themePage();
   if (id === 'domains') return domainPage();
+  if (id === 'store-directory') return storeDirPage();
   if (id === 'checkout') return checkoutPage();
   return storePagesPage();
 }
@@ -784,6 +785,20 @@ function returnsPage() {
 function returnForm(order) {
   const rows = (order.lines || []).map((l, i) => '<input type="hidden" name="vid' + i + '" value="' + esc(l.variantId) + '">' + input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (ordered ' + l.qty + ')', 'rq' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1"')).join('');
   return editForm('return-record', order.id, rows + area('Reason', 'reason', '', 'maxlength="500"'), 'Create return');
+}
+function storeDirPage() {
+  const list = state.storeDir || [];
+  const cards = list.map((x) => '<div class="channel-row"><div class="ch-main"><strong>' + esc(x.name) + '</strong>' + (x.featured ? badge('Featured') : '') + '<small>' + esc([x.address, x.city].filter(Boolean).join(', ') || 'No address yet') + (x.phone ? ' · ' + esc(x.phone) : '') + (x.hours ? ' · ' + esc(x.hours) : '') + '</small></div>' +
+    (canWrite() ? button('Edit', 'dir-edit:' + x.id, 'compact') + button('Delete', 'dir-delete:' + x.id, 'compact danger') : '') + '</div>').join('');
+  const url = storeLink('stores');
+  return head('Stores', 'The shops, studios or pickup points customers can visit. They appear on your online store\'s Our stores page.', canWrite() ? button('Add store', 'dir-new', 'primary') : '', ['website', 'Online store']) + tabs('store-directory', websiteTabs) +
+    panel('Your stores', list.length ? '<div class="channel-list">' + cards + '</div>' + (url ? '<p class="compact-copy">' + link('View Our stores page', url) + '</p>' : '') : body('<p class="compact-copy">No stores yet. Add your first one. Until then the Our stores page shows your business address if you have one.</p>'));
+}
+function storeDirForm(x) {
+  const v = x || {};
+  return editForm('dir-record', v.id, input('Store name', 'name', v.name || '', 'text', 'required maxlength="80"') + input('Address', 'address', v.address || '', 'text', 'maxlength="300"') + input('City', 'city', v.city || '', 'text', 'maxlength="80"') +
+    input('Phone', 'phone', v.phone || '', 'tel', 'maxlength="30"') + input('Opening hours', 'hours', v.hours || '', 'text', 'maxlength="200" placeholder="Mon to Sat, 10am to 8pm"') + input('Map link (https://...)', 'map', v.map || '', 'url') +
+    '<input type="hidden" name="photo" value="' + esc(v.photo || '') + '"><label class="wide">Photo<input type="file" accept="image/*"></label>' + '<label class="inline"><input type="checkbox" name="featured" value="1"' + (v.featured ? ' checked' : '') + '> Show first</label>', 'Save store');
 }
 function taxesPage() {
   const t = state.checkout.tax || { rate: 0, inclusive: true, gstin: '', label: 'GST' }; const on = Number(t.rate) > 0;
@@ -1108,7 +1123,7 @@ export function workspace(id, record) {
   else if (id === 'collections' && record) html = collectionDetail(record);
   else if (productTabs.some(([k]) => k === id)) html = productsPage(id);
   else if (id === 'builder' && record) html = editorPage(record);
-  else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages'].includes(id)) html = websitePage(id);
+  else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages', 'store-directory'].includes(id)) html = websitePage(id);
   else if (id === 'customers') html = customersPage();
   else if (id === 'discounts') html = discountsPage();
   else if (id === 'segments') html = segmentsPage();
@@ -1231,6 +1246,11 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_return_set', { p_id: rid, p_status: 'refunded', p_amount: Number(data.amount) }); await refreshReturns(); save('Refund recorded.'); close(); rerender(true);
       } else if (key === 'return-rzp-refund') {
         await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
+      } else if (key === 'dir-record') {
+        const file = target.querySelector('input[type=file]')?.files?.[0]; const photo = file ? await uploadImage(file) : (data.photo || '');
+        const rec = { id: rid || undefined, name: data.name, address: data.address, city: data.city, phone: data.phone, hours: data.hours, map: data.map, photo, featured: data.featured === '1' };
+        const cur = state.storeDir || []; const list = rid ? cur.map((x) => x.id === rid ? rec : x) : (rec.featured ? [rec, ...cur] : [...cur, rec]);
+        await api('sfx_stores_save', { p: list }); await refreshStoreDir(); save('Store saved.'); close(); rerender(true);
       } else if (key === 'tax-settings') {
         await api('sfx_tax_settings_save', { p: { rate: data.rate, label: data.label, gstin: data.gstin, inclusive: !/^Do not/.test(data.inclusive || '') } });
         await refreshCheckout(); save('Tax settings saved.'); rerender(true);
@@ -1320,6 +1340,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'campaign-delete') return withBusy(async () => { if (!confirm('Delete this campaign?')) return; await api('sfx_campaign_delete', { p_id: key }); await refreshCampaigns(); save('Campaign deleted.'); rerender(true); });
   if (a === 'plan-pay') { const out = $('#plan-feedback'); target.disabled = true; out.textContent = 'Starting payment…'; return payPlan(out).catch((e) => { out.textContent = e.message; }).finally(() => { target.disabled = false; }); }
   if (a === 'plan-request') return withBusy(async () => { await api('request_storefront_reactivation', { p_notes: null }); save('Request sent. We will get back to you.'); });
+  if (a === 'dir-new') return dialog('Add store', storeDirForm(null));
+  if (a === 'dir-edit') return dialog('Edit store', storeDirForm((state.storeDir || []).find((x) => x.id === key)));
+  if (a === 'dir-delete') return withBusy(async () => { if (!confirm('Delete this store?')) return; await api('sfx_stores_save', { p: (state.storeDir || []).filter((x) => x.id !== key) }); await refreshStoreDir(); save('Store deleted.'); rerender(true); });
   if (a === 'pages-all') { const boxes = [...document.querySelectorAll('.pg-sel')]; const on = boxes.some((b) => !b.checked); boxes.forEach((b) => { b.checked = on; }); return; }
   if (a === 'page-copy') return withBusy(async () => { const items = cfgList('pages'), src = items.find((x) => x.id === key); if (!src) return; let slug = src.slug + '-copy', n = 2; while (items.some((x) => x.slug === slug)) slug = src.slug + '-copy-' + n++; await saveList('pages', [...items, { ...src, id: 'pg' + Date.now().toString(36), name: src.name + ' (copy)', slug, status: 'Hidden', publishAt: '', updatedOn: new Date().toISOString().slice(0, 10) }]); save('Page copied as hidden.'); rerender(true); });
   if (a === 'pages-bulk') {

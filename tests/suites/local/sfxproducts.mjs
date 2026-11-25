@@ -132,6 +132,15 @@ export default async function run({ browser, stack }) {
     await open('#/apps'); t = await page.locator('main').innerText(); assert(/Connected services/.test(t) && /Your plan/.test(t) && !/coming in a later release/.test(t), 'apps page: ' + t.slice(0, 120));
     await ts({ rate: 0 });
   }, 'critical');
+  await s.check('Stores directory: saved from the dashboard, cleaned, and shown on the public store', async () => {
+    const bad = await rpc(stack, 'sfx_stores_save', { p: [{ name: 'X', map: 'javascript:alert(1)' }] }, owner); assert(/https/.test(JSON.stringify(bad.data)), 'bad map accepted: ' + JSON.stringify(bad.data).slice(0, 120));
+    const ok = await rpc(stack, 'sfx_stores_save', { p: [{ name: 'Jodhpur flagship', address: '12 Sardarpura', city: 'Jodhpur', phone: '9876543210', hours: '10 to 8', map: 'https://maps.google.com/?q=x', featured: true }, { name: 'Pickup point', address: 'Near Clock Tower' }] }, owner);
+    assert(!ok.data?.error, JSON.stringify(ok.data).slice(0, 160));
+    const pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert((pub.config.stores || []).length === 2 && pub.config.stores[0].name === 'Jodhpur flagship', JSON.stringify(pub.config.stores).slice(0, 160));
+    await open('#/store-directory'); const t = await page.locator('main').innerText(); assert(/Jodhpur flagship/.test(t) && /Add store/.test(t), 'dashboard page: ' + t.slice(0, 120));
+    const sp = await ctx.newPage(); await sp.goto(stack.url('testcafe', '/store.html?design=minimal#/stores'), { waitUntil: 'load' }); await sp.waitForTimeout(3000);
+    assert(/Jodhpur flagship/.test(await sp.locator('body').innerText()), 'public Our stores page missing the store');
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();
