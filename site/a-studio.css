@@ -8,7 +8,7 @@ html body.a-studio main.content{padding:0 var(--pad) 50px}
 .as-c{background:#f1f1f0;position:relative}
 .as-title{padding:26px 22px;text-align:left;border-radius:26px 0 0 0}
 html body.a-studio main.content .as-title h1{font-size:clamp(46px,9vw,104px)!important;font-weight:600!important;letter-spacing:-.06em!important;line-height:.9;color:#2a2a2a!important;margin:0}
-.as-title h1 b{color:#111111}.as-title small{display:block;margin-top:10px;font-size:9px;color:#888}
+.as-title h1 b{color:#800020}.as-title small{display:block;margin-top:10px;font-size:9px;color:#888}
 .as-metal{border-radius:0 26px 0 0;background:conic-gradient(from 20deg,#f4f4f4,#8e8e8e,#f4f4f4,#6f6f6f,#f4f4f4,#a0a0a0,#f4f4f4);animation:asSpin 12s linear infinite}
 @keyframes asSpin{to{filter:hue-rotate(0deg);transform:none}}
 .as-metal::after{content:"";position:absolute;inset:0;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.7),transparent 30%);animation:asRot 6s linear infinite;mix-blend-mode:overlay}
@@ -16,7 +16,7 @@ html body.a-studio main.content .as-title h1{font-size:clamp(46px,9vw,104px)!imp
 .as-num{grid-column:1;grid-row:2;display:none}
 .as-frame{grid-template-columns:minmax(0,.9fr) minmax(0,2fr)}
 .as-title{grid-column:1/2}.as-metal{grid-column:2}
-.as-num{display:block;grid-column:1;grid-row:2;background:#111111;min-height:300px;border-radius:0 0 0 26px;overflow:hidden}
+.as-num{display:block;grid-column:1;grid-row:2;background:#800020;min-height:300px;border-radius:0 0 0 26px;overflow:hidden}
 .as-hatch{position:absolute;left:0;right:0;top:0;height:40%;background:repeating-linear-gradient(135deg,#1b1b1b 0 2px,transparent 2px 9px);border-bottom:2px solid #1b1b1b}
 .as-n{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:#1b1b1b}
 .as-n span{display:block;font-size:clamp(46px,8vw,90px);font-weight:300;letter-spacing:-.05em;line-height:1}
@@ -35,7 +35,7 @@ html body.a-studio main.content .as-body h2{font-size:clamp(20px,3vw,32px)!impor
 .as .st-cmp,.as .st-own,.as .st-two,.as .st-case{max-width:1100px;margin:34px auto 0}
 .as .st-cmp{display:grid;gap:12px}@media(min-width:800px){.as .st-cmp{grid-template-columns:1fr 1fr}}
 .as .st-cmp>div{border-radius:26px;padding:28px;background:#fff;box-shadow:0 10px 26px rgba(0,0,0,.07)}
-.as .st-cmp .b{background:#111111;color:#fff}.as .st-cmp .b *{color:#fff}
+.as .st-cmp .b{background:#800020;color:#fff}.as .st-cmp .b *{color:#fff}
 .as .st-case{border-radius:26px;padding:30px;background:#1b1b1b;color:#fff;box-shadow:0 20px 40px rgba(0,0,0,.2)}.as .st-case *{color:#fff}.as .st-case .mk-eye{color:#aaa}
 .as .st-ws{border-radius:26px}
 @media(max-width:700px){.as-frame{grid-template-columns:1fr}.as-title,.as-metal,.as-num,.as-panel{grid-column:1;grid-row:auto}.as-metal{height:120px}.as-num{min-height:150px}}
@@ -45,3 +45,9 @@ html body.a-studio main.content .as-body h2{font-size:clamp(20px,3vw,32px)!impor
 }
 .as .st-case .mk-btn,.as .st-case a{background:#fff!important;color:#000!important;border-radius:999px}
 .as-title{overflow:hidden}
+
+/* Studio keeps its original warm palette and wine accent (the rest of the site moved to neutral greys) */
+body.a-studio{--bg:#efeeed;--mut:#8b8987;--dim:#5f5d5b;--line:#e2e0de;--soft:#f6f5f4;--accent:#800020;--cbg:#ebe9e5;--cwine:#800020;--mk-soft:#f6f5f3;--mk-line:#dcdad7;--mk-wine:#800020}
+:root[data-theme=dark] body.a-studio{--bg:#141313;--card:#201f1e;--ink:#f2f2f0;--mut:#8f8d8b;--dim:#b4b2b0;--line:#33312f;--soft:#1a1918;--accent:#800020}
+html body.a-studio .u-dock .chat{background:#800020}
+body.a-studio .ph:not(.has){background:radial-gradient(120% 80% at 85% 10%,rgba(128,0,32,.55),transparent 60%),linear-gradient(160deg,#1b1b1b,#050505)!important}

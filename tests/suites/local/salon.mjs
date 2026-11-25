@@ -297,6 +297,7 @@ export default async function run({ browser, stack }) {
     await q(`update salon_store set data = jsonb_set(data, '{settings,heroPhoto}', '"/salon/assets/template-hero.svg"') where tenant_id = (select id from tenants where slug = 'salondemo') and key = 'site'`);
     await new Promise((r) => setTimeout(r, 31000)); // the public site answer is cached for 30 s
     const again = await c.call('GET', '/site'); assert(/hero-photo\.jpg/.test(again.data.settings.heroPhoto || ''), 'old demo still shows the placeholder hero: ' + again.data.settings.heroPhoto);
+    assert(/logo-plum\.png$/.test(again.data.settings.logo || '') && /logo-cream\.png$/.test(again.data.settings.logoLight || ''), 'the demo salon does not show the original logo: ' + again.data.settings.logo);
   }, 'major');
 
   // The live Showoff Salon demo: a demo salon on the records engine keeps its own menu and gets fresh fake activity (never the neutral template).

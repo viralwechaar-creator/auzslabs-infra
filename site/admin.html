@@ -997,10 +997,7 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
 
         <div class="a-side-group-label">Requests to review</div>
         <button class="a-side-btn" data-section="orders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Client requests<span class="a-row-badge" id="ordersBadge" style="display:none"></span></button>
-        <button class="a-side-btn" data-section="signupRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>Signup requests<span class="a-row-badge" id="notifBadgeSignupSide" style="display:none"></span></button>
-        <button class="a-side-btn" data-section="addonRequests"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Add-on requests<span class="a-row-badge" id="notifBadgeAddonSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="themeSubmissions"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11"/></svg>Themes and prices<span class="a-row-badge" id="notifBadgeThemeSide" style="display:none"></span></button>
-        <button class="a-side-btn" data-section="jobApplications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>Job applications<span class="a-row-badge" id="notifBadgeJobsSide" style="display:none"></span></button>
         <button class="a-side-btn" data-section="salesOs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></svg>SalesOS team</button>
         <button class="a-side-btn" data-section="idCards"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2.5"/><circle cx="8" cy="11" r="2.2"/><path d="M5 17c.4-1.8 1.6-2.8 3-2.8s2.6 1 3 2.8M14 9h5M14 13h5"/></svg>Staff ID cards</button>
         <button class="a-side-btn" data-section="onboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M19 4v4M17 6h4"/></svg>Onboard new</button>
@@ -1074,18 +1071,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="ordersList">Loading&hellip;</div>
       </section>
 
-      <section class="a-page" id="signupRequestsSection" data-title="Signup requests" data-parent="more">
-        <div class="label">Self-serve signups</div>
-        <h2 class="h-2">Cart requests</h2>
-        <div id="signupRequestsList">Loading&hellip;</div>
-      </section>
-
-      <section class="a-page" id="addonRequestsSection" data-title="Add-on requests" data-parent="more">
-        <div class="label">Existing clients</div>
-        <h2 class="h-2">Add-on requests</h2>
-        <div id="addonRequestsList">Loading&hellip;</div>
-      </section>
-
       <section class="a-page" id="themeSubmissionsSection" data-title="Themes and prices" data-parent="more">
         <div class="label">Storefront theme marketplace</div>
         <h2 class="h-2">Themes and prices</h2>
@@ -1102,12 +1087,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <input id="grantDevSlug" placeholder="business address (slug)" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;min-width:220px" required>
           <button type="submit" class="btn btn-primary">Grant developer access</button>
         </form>
-      </section>
-
-      <section class="a-page" id="jobApplicationsSection" data-title="Job applications" data-parent="more">
-        <div class="label">AUZslab SalesOS</div>
-        <h2 class="h-2">Job applications</h2>
-        <div id="jobApplicationsList">Loading&hellip;</div>
       </section>
 
       <section class="a-page" id="salesOsSection" data-title="SalesOS team" data-parent="more">
@@ -1326,14 +1305,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
         <div id="licList">Loading&hellip;</div>
       </section>
 
-      <section class="a-page" id="testimonialsSection" data-title="Testimonials" data-parent="more">
-        <div class="label">Homepage</div>
-        <h2 class="h-2">Client feedback</h2>
-        <p class="p">Clients can send feedback from their own dashboard. Nothing shows on the homepage until you approve it here &mdash; you can also lightly clean up the wording before it goes live (typos, length), without changing what they meant.</p>
-        <div class="row" style="gap:8px;margin:10px 0" id="testiTabs"></div>
-        <div id="testiList">Loading&hellip;</div>
-      </section>
-
       <section class="a-page" id="whatsappSection" data-title="WhatsApp" data-parent="more">
         <div class="label">Automatic messages</div>
         <h2 class="h-2">WhatsApp</h2>
@@ -1359,21 +1330,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="orders">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>
             <span class="grow">Client requests</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="signupRequests">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-            <span class="grow">Signup requests</span><span class="a-row-badge" id="notifBadgeSignupMore" style="display:none"></span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="addonRequests">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
-            <span class="grow">Add-on requests</span><span class="a-row-badge" id="notifBadgeAddonMore" style="display:none"></span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="jobApplications">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M15 3h4v4M19 3l-6 6"/></svg>
-            <span class="grow">Job applications</span><span class="a-row-badge" id="notifBadgeJobsMore" style="display:none"></span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="salesOs">
@@ -1413,11 +1369,6 @@ html[data-theme=dark] .status-pill.status-active{background:#f3f3f3;color:#000}
           <button class="a-nav-row" data-section="licences">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
             <span class="grow">Licences (offline app)</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
-          <button class="a-nav-row" data-section="testimonials">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 15h5l4 4v-4h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Z"/></svg>
-            <span class="grow">Testimonials</span><span class="a-row-badge" id="notifBadgeTestiMore" style="display:none"></span>
             <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="a-nav-row" data-section="privacyReq">
@@ -1671,8 +1622,8 @@ function resetMainScroll() {
 // Each section loads when it is opened (and again if its data is older than 20 seconds), not all at once at sign-in:
 // signing in used to fire about 11 database requests together; now it is 2.
 const SECTION_LOADERS = {
-  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), signupRequests: () => loadSignupRequests(), addonRequests: () => loadAddonRequests(), themeSubmissions: () => loadThemeSubmissions(), jobApplications: () => loadJobApplications(), salesOs: () => loadSalesOsAdmin(),
-  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), testimonials: () => loadTestimonials(), whatsapp: () => loadWhatsApp(),
+  leads: () => { loadLeads(); refreshOrdersBadge(); }, orders: () => loadOrders(), themeSubmissions: () => loadThemeSubmissions(), salesOs: () => loadSalesOsAdmin(),
+  users: () => loadUsers(), systemStats: () => loadSystemStats(), auditLog: () => loadAuditLog(), privacyReq: () => loadPrivacyReq(), licences: () => loadLicences(), whatsapp: () => loadWhatsApp(),
   postStudio: () => { const f = document.getElementById('postStudioFrame'); if (f && !f.getAttribute('src')) f.src = f.dataset.src; },
 };
 const sectionLoadedAt = {};
@@ -1706,8 +1657,6 @@ function openSection(name, opts = {}) {
   ensureSectionLoaded(name);
   if (name === 'home' && window.renderHome) window.renderHome();
   if (name === 'leads') markAdminNotifsRead('lead');
-  if (name === 'signupRequests') markAdminNotifsRead('signup_request');
-  if (name === 'addonRequests') markAdminNotifsRead('addon_request');
 }
 document.querySelectorAll('[data-section]').forEach((btn) => {
   btn.addEventListener('click', () => openSection(btn.dataset.section));
@@ -1740,8 +1689,6 @@ async function refreshAdminNotifBadges() {
     el.textContent = n ? (el.classList.contains('a-tab-badge') || el.classList.contains('a-row-badge') ? String(n) : ' (' + n + ')') : '';
   });
   setBadge(['notifBadgeLeadsSide', 'notifBadgeLeadsTab'], counts.lead || 0);
-  setBadge(['notifBadgeSignupSide', 'notifBadgeSignupMore'], counts.signup_request || 0);
-  setBadge(['notifBadgeAddonSide', 'notifBadgeAddonMore'], counts.addon_request || 0);
   const moreTotal = (counts.signup_request || 0) + (counts.addon_request || 0) + (document.querySelectorAll('#notifBadgeSetupSide:not([style*="display: none"])').length ? Number(document.getElementById('notifBadgeSetupSide').textContent) || 0 : 0);
   setBadge(['notifBadgeMoreTab'], moreTotal);
   try { const oc = await sb.rpc('admin_open_counts'); if (!oc.error && oc.data) { setBadge(['privReqBadge'], Number(oc.data.privacy) || 0); } } catch (e) { /* the badges are only a hint */ }
@@ -1881,61 +1828,6 @@ const featTone = (k) => 'tone-' + (TONE[k] || 'slate');
 const FEATURE_LABEL = { salon: 'AUZslab Salon', crm: 'CRM', booking: 'Booking', billing: 'Billing', inventory: 'Inventory', website_builder: 'Website Builder', membership: 'Memberships', helpdesk: 'Helpdesk', tasks: 'Tasks', purchases: 'Purchases', accounting: 'AUZsLedger', style: 'AUZsStyle' };
 const PRODUCT_KEYS = new Set(['accounting', 'style', 'salon']);
 
-async function loadSignupRequests() {
-  const listEl = document.getElementById('signupRequestsList');
-  const { data, error } = await sb.from('signup_requests').select('*').order('created_at');
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const pending = (data || []).filter((r) => r.status === 'pending');
-  const badgeEls = ['notifBadgeSetupSide'];
-  if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending signup requests.'); return; }
-
-  const rows = pending.slice().reverse().map((r) => {
-    const services = Object.entries(r.features || {}).filter(([, on]) => on)
-      .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
-    return `
-    <div class="req-card" data-id="${r.id}">
-      <div class="req-head">
-        <div>
-          <div class="req-name">${esc(r.business_name)}</div>
-          <div class="req-sub">${esc(r.slug)}.auzslab.in &middot; ${esc(NICHE_LABEL[r.niche] || r.niche || 'Type not given')}</div>
-        </div>
-      </div>
-      <div class="req-section req-body">${r.contact_name ? '<b style="color:var(--ink)">' + esc(r.contact_name) + '</b> &middot; ' : ''}${r.phone ? esc(r.phone) : 'No phone given'}${r.address ? ' &middot; ' + esc(r.address) : ''}</div>
-      <div class="req-section">${services}${r.notes ? '<div class="req-body" style="margin-top:4px">' + esc(r.notes) + '</div>' : ''}</div>
-      <div class="req-actions">
-        <button class="req-primary" data-approve>Approve</button>
-        <button data-demo>Copy demo link</button>
-        <button data-decline>Decline</button>
-        <button data-del class="req-danger">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  listEl.innerHTML = `<div class="req-grid">${rows}</div>`;
-
-  listEl.querySelectorAll('[data-id]').forEach((tr) => {
-    const id = tr.dataset.id;
-    const req = pending.find((p) => p.id === id);
-    const demoBtn = tr.querySelector('[data-demo]');
-    demoBtn.onclick = () => copyDemoLink('req', id, demoBtn);
-    tr.querySelector('[data-approve]').onclick = async () => {
-      const niche = prompt('Niche for this tenant (cafe / salon / retail / mobile)', req?.niche || 'retail');
-      if (niche === null) return;
-      const cleanNiche = ['cafe', 'salon', 'retail'].includes(niche.trim()) ? niche.trim() : 'retail';
-      const { error: appErr } = await sb.rpc('approve_signup_request', { p_request_id: id, p_niche: cleanNiche });
-      if (appErr) { alert(appErr.message); return; }
-      loadSignupRequests();
-      loadClients();
-    };
-    tr.querySelector('[data-decline]').onclick = async () => {
-      if (!confirm('Decline this request?')) return;
-      const { error: decErr } = await sb.rpc('decline_signup_request', { p_request_id: id });
-      if (decErr) { alert(decErr.message); return; }
-      loadSignupRequests();
-    };
-    tr.querySelector('[data-del]').onclick = async () => { if (await permanentDelete('signup_request', id, req.business_name)) loadSignupRequests(); };
-  });
-}
 
 async function loadThemeSubmissions() {
   const queueEl = document.getElementById('themeQueueList');
@@ -2012,106 +1904,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-async function loadAddonRequests() {
-  const listEl = document.getElementById('addonRequestsList');
-  const { data, error } = await sb.from('addon_requests').select('*').order('created_at');
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const pending = (data || []).filter((r) => r.status === 'pending');
-  if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending add-on requests.'); return; }
-
-  const rows = pending.slice().reverse().map((r) => {
-    const services = Object.entries(r.features || {}).filter(([, on]) => on)
-      .map(([k]) => `<span class="feature-tag ${featTone(k)}">${esc(FEATURE_LABEL[k] || k)}</span>`).join('') || '&mdash;';
-    return `
-    <div class="req-card" data-id="${r.id}">
-      <div class="req-head">
-        <div>
-          <div class="req-name">${esc(r.tenant_name)}</div>
-          <div class="req-sub">${esc(r.tenant_slug)}.auzslab.in</div>
-        </div>
-      </div>
-      <div class="req-section">${services}${r.notes ? '<div class="req-body" style="margin-top:4px">' + esc(r.notes) + '</div>' : ''}</div>
-      <div class="req-actions">
-        <button class="req-primary" data-approve>Approve</button>
-        <button data-decline>Decline</button>
-        <button data-del class="req-danger">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  listEl.innerHTML = `<div class="req-grid">${rows}</div>`;
-
-  listEl.querySelectorAll('[data-id]').forEach((tr) => {
-    const id = tr.dataset.id;
-    tr.querySelector('[data-approve]').onclick = async () => {
-      const { error: appErr } = await sb.rpc('approve_addon_request', { p_request_id: id });
-      if (appErr) { alert(appErr.message); return; }
-      loadAddonRequests();
-      loadClients();
-    };
-    tr.querySelector('[data-decline]').onclick = async () => {
-      if (!confirm('Decline this request?')) return;
-      const { error: decErr } = await sb.rpc('decline_addon_request', { p_request_id: id });
-      if (decErr) { alert(decErr.message); return; }
-      loadAddonRequests();
-    };
-    tr.querySelector('[data-del]').onclick = async () => { const nm = tr.querySelector('.req-name')?.textContent || 'this request'; if (await permanentDelete('addon_request', id, nm)) loadAddonRequests(); };
-  });
-}
 
 // AUZslab SalesOS job applications: no RLS policies on sos_applications (same discipline as
 // Accounting/AUZsStyle) -- reads and writes only through SECURITY DEFINER RPCs.
 const SOS_POSTS = ['Sales Executive', 'Sales Manager', 'Admin'];
-async function loadJobApplications() {
-  const listEl = document.getElementById('jobApplicationsList');
-  const { data, error } = await sb.rpc('admin_list_job_applications', { p_status: 'pending' });
-  if (error) { listEl.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  const pending = data || [];
-  if (!pending.length) { listEl.innerHTML = emptyDoodle('No pending job applications.'); return; }
-
-  const postOptions = SOS_POSTS.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
-  const rows = pending.slice().reverse().map((r) => `
-    <div class="req-card" data-id="${r.id}">
-      <div class="req-head"><div>
-        <div class="req-name">${esc(r.name)}</div>
-        <div class="req-sub">${esc(r.email)}${r.phone ? ' &middot; ' + esc(r.phone) : ''}</div>
-      </div></div>
-      ${r.note ? `<div class="req-section req-body">${esc(r.note)}</div>` : ''}
-      ${r.hasResume ? '<div class="req-section"><a href="#" data-resume class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open resume</a></div>' : ''}
-      <div class="req-section"><label style="font-size:12px;display:block;margin-bottom:4px">Assign post</label>
-        <select data-post class="field-input" style="width:100%">${postOptions}</select></div>
-      <div class="req-actions"><button class="req-primary" data-approve>Approve</button><button data-decline>Decline</button></div>
-    </div>`).join('');
-
-  listEl.innerHTML = `<div class="req-grid">${rows}</div>`;
-
-  listEl.querySelectorAll('[data-id]').forEach((tr) => {
-    const id = tr.dataset.id;
-    const resumeLink = tr.querySelector('[data-resume]');
-    if (resumeLink) resumeLink.onclick = async (e) => {
-      e.preventDefault();
-      try {
-        const { data: s } = await sb.auth.getSession();
-        const r = await fetch(CFG.url + '/storage/job-application-resume/' + id, { headers: { Authorization: 'Bearer ' + s.session.access_token } });
-        if (!r.ok) throw new Error('missing');
-        window.open(URL.createObjectURL(await r.blob()), '_blank', 'noopener');
-      } catch (e2) { alert('The resume could not be loaded.'); }
-    };
-    tr.querySelector('[data-approve]').onclick = async () => {
-      const post = tr.querySelector('[data-post]').value;
-      if (!confirm(`Approve and create a "${post}" login for this applicant?`)) return;
-      const { error: appErr } = await sb.rpc('admin_review_job_application', { p_id: id, p_decision: 'approve', p_post: post });
-      if (appErr) { alert(appErr.message); return; }
-      loadJobApplications();
-    };
-    tr.querySelector('[data-decline]').onclick = async () => {
-      const reason = prompt('Reason for declining (optional)') || null;
-      const { error: decErr } = await sb.rpc('admin_review_job_application', { p_id: id, p_decision: 'reject', p_reject_reason: reason });
-      if (decErr) { alert(decErr.message); return; }
-      loadJobApplications();
-    };
-  });
-}
 
 // AUZslab SalesOS team oversight, straight from the main admin console -- a platform admin has
 // no SalesOS login/profile of their own, so every call here goes through the admin_sos_*
@@ -3425,38 +3221,6 @@ document.getElementById('licMake').addEventListener('click', async () => {
   document.getElementById('licShop').value = ''; document.getElementById('licNote').value = ''; document.getElementById('licTenant').value = ''; loadLicences();
 });
 
-// ---- Testimonials (db/297): a client's own feedback, approved here before it shows on the homepage ----
-let testiTab = 'pending';
-async function loadTestimonials() {
-  const tabsHost = document.getElementById('testiTabs'), box = document.getElementById('testiList');
-  tabsHost.innerHTML = [['pending', 'Waiting for review'], ['approved', 'Live'], ['rejected', 'Not used']]
-    .map(([k, label]) => `<button class="btn ${testiTab === k ? 'btn-primary' : 'btn-ghost'}" data-testi-tab="${k}">${label}</button>`).join('');
-  tabsHost.querySelectorAll('[data-testi-tab]').forEach((b) => { b.onclick = () => { testiTab = b.dataset.testiTab; loadTestimonials(); }; });
-  box.innerHTML = 'Loading&hellip;';
-  const { data, error } = await sb.rpc('admin_list_testimonials', { p_status: testiTab });
-  if (error) { box.innerHTML = `<div class="err">${esc(error.message)}</div>`; return; }
-  if (!data || !data.length) { box.innerHTML = emptyDoodle(testiTab === 'pending' ? 'Nothing waiting for review.' : 'Nothing here yet.'); return; }
-  const stars = (n) => n ? '&#9733;'.repeat(n) + '&#9734;'.repeat(5 - n) : '&mdash;';
-  box.innerHTML = data.map((t) => `<div class="card" style="padding:14px;margin:10px 0;display:grid;gap:8px">
-    <div class="row" style="justify-content:space-between;flex-wrap:wrap"><b>${esc(t.businessName)}</b><span style="color:#c9a227">${stars(t.rating)}</span></div>
-    <div style="color:var(--ink-faint);font-size:12.5px">${esc(t.authorName || '')} &middot; ${new Date(t.submittedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} &middot; ${t.showBusiness ? 'business name shown' : 'business name hidden'}</div>
-    <p class="p" style="margin:0">${esc(t.quote)}</p>
-    ${testiTab === 'pending' ? `
-      <label style="display:grid;gap:4px"><span class="muted small">Shown publicly as (optional, leave blank to use their own words)</span><textarea class="input" data-testi-display="${t.id}" rows="2">${esc(t.displayText || '')}</textarea></label>
-      <div class="row" style="gap:8px"><button class="btn btn-primary" data-testi-approve="${t.id}">Approve</button><button class="btn btn-ghost" data-testi-reject="${t.id}">Don't use it</button></div>
-    ` : t.displayText ? `<div class="muted small">Shown publicly as: "${esc(t.displayText)}"</div>` : ''}
-  </div>`).join('');
-  box.querySelectorAll('[data-testi-approve]').forEach((b) => { b.onclick = async () => {
-    const id = b.dataset.testiApprove; const dt = box.querySelector(`[data-testi-display="${id}"]`).value;
-    b.disabled = true; const { error: e2 } = await sb.rpc('admin_review_testimonial', { p_id: id, p_decision: 'approved', p_display_text: dt || null });
-    if (e2) { alert(e2.message); b.disabled = false; return; } loadTestimonials();
-  }; });
-  box.querySelectorAll('[data-testi-reject]').forEach((b) => { b.onclick = async () => {
-    b.disabled = true; const { error: e2 } = await sb.rpc('admin_review_testimonial', { p_id: b.dataset.testiReject, p_decision: 'rejected' });
-    if (e2) { alert(e2.message); b.disabled = false; return; } loadTestimonials();
-  }; });
-}
-
 // ---- WhatsApp automation (db/184): the AUZslab number, which shops may use it, and the message log ----
 const WA_TONE = { queued: '#b8942f', sending: '#b8942f', sent: '#555', delivered: '#1a7f37', read: '#1a7f37', failed: '#b42318', skipped: '#888' };
 async function loadWhatsApp() {
@@ -3615,7 +3379,7 @@ async function loadWhatsApp() {
     var mix={};cl.forEach(function(c){Object.keys(c.features||{}).forEach(function(k){if(c.features[k]&&typeof PRODUCT_KEYS!=='undefined'&&PRODUCT_KEYS.has(k))mix[k]=(mix[k]||0)+1})});
     var mk=Object.keys(mix).sort(function(a,b){return mix[b]-mix[a]}).slice(0,5),mx=Math.max.apply(null,mk.map(function(k){return mix[k]}).concat([1]));
     function bd(id){var e=$(id);return e&&e.style.display!=='none'?(parseInt(e.textContent.replace(/\D/g,''))||0):0}
-    var need=[['Leads','leads',bd('notifBadgeLeadsTab')||bd('notifBadgeLeadsSide')],['Signup requests','signupRequests',bd('notifBadgeSignupMore')||bd('notifBadgeSignupSide')],['Add-on requests','addonRequests',bd('notifBadgeAddonMore')||bd('notifBadgeAddonSide')],['Open tasks','tasks',bd('tasksBadgeSide')||bd('tasksBadgeMore')],['Privacy requests','privacyReq',bd('privReqBadge')]];
+    var need=[['Leads','leads',bd('notifBadgeLeadsTab')||bd('notifBadgeLeadsSide')],['Privacy requests','privacyReq',bd('privReqBadge')]];
     var lab=typeof FEATURE_LABEL!=='undefined'?FEATURE_LABEL:{};
     function E(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
     var h='';

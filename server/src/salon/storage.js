@@ -172,6 +172,14 @@ async function initStorage(tenant) {
 }
 
 // The public half (cached). Everything the website, menu page and booking form need.
+// The demo salon shows the original plum / cream logo (the neutral template logos are the starting point for real clients). Display only, nothing is saved.
+export function demoDisplaySettings(tenant, settings) {
+  if (!tenant || !tenant.is_demo || !settings) return settings;
+  const tpl = (v) => /template-logo(-light)?\.svg$/.test(v || '');
+  if (!tpl(settings.logo) && !tpl(settings.logoLight)) return settings;
+  return { ...settings, logo: '/salon/assets/logo-plum.png', logoLight: '/salon/assets/logo-cream.png' };
+}
+
 export async function loadSite(tenant) {
   const hit = cacheGet(siteCache, tenant.id, SITE_TTL);
   return hit || once('site:' + tenant.id, () => loadSiteUncached(tenant));
@@ -195,6 +203,7 @@ async function loadSiteUncached(tenant) {
   }
   // A demo salon seeded before it had a hero photo still shows the grey placeholder: show the salon hero picture instead (display only, nothing is saved).
   if (tenant.is_demo && site && site.settings && /template-hero\.svg$/.test(site.settings.heroPhoto || '')) site = { ...site, settings: { ...site.settings, heroPhoto: '/salon/assets/hero-photo.jpg' } };
+  if (tenant.is_demo && site && site.settings) site = { ...site, settings: demoDisplaySettings(tenant, site.settings) };
   if (genOf(tid) === g) cacheSet(siteCache, tid, site);
   return site;
 }
