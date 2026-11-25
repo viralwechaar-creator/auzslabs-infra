@@ -116,6 +116,22 @@ export default async function run({ browser, stack }) {
     assert(/name="space"/.test(html) && /id="te-links"/.test(html), 'spacing controls or link list missing');
     await s.shot(page, 'sfx-theme-editor-spacing');
   }, 'critical');
+  await s.check('Taxes: inclusive keeps the total, exclusive adds tax, off changes nothing, bad GST number refused; Taxes and Apps pages open', async () => {
+    await rpc(stack, 'sfx_checkout_settings_save', { p: { shipping: { fee: 0, freeOver: 0, zones: [] } } }, owner);
+    const v = (await q('select id from sfx_variants where product_id=$1 limit 1', [pid]))[0].id; await q('update sfx_variants set stock=50, price=118 where product_id=$1', [pid]);
+    const ts = (t) => rpc(stack, 'sfx_tax_settings_save', { p: t }, owner);
+    const order = async () => { await q('delete from sfx_orders where tenant_id=$1', [tid]); await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: 'T Buyer', phone: '98765' + Math.floor(10000 + Math.random() * 89999), address: '12 Park Road, Ward 4', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', lines: [{ variantId: v, qty: 1 }] } });
+      const o = (await q('select total, tax from sfx_orders where tenant_id=$1 order by created_at desc limit 1', [tid]))[0]; return { total: Number(o.total), tax: Number(o.tax) }; };
+    let o = await order(); assert(o.total === 118 && o.tax === 0, 'tax off changed the order ' + JSON.stringify(o));
+    const bad = await ts({ rate: 18, gstin: 'NOTAGST' }); assert(/GST number/.test(JSON.stringify(bad.data)), 'bad GSTIN accepted: ' + JSON.stringify(bad.data).slice(0, 120));
+    const okr = await ts({ rate: 18, inclusive: true, gstin: '08ABCDE1234F1Z5', label: 'GST' }); assert(!okr.data?.error, JSON.stringify(okr.data).slice(0, 160));
+    o = await order(); assert(o.total === 118 && o.tax === 18, 'inclusive wrong ' + JSON.stringify(o));
+    await ts({ rate: 18, inclusive: false }); o = await order(); assert(o.tax === 21.24 && o.total === 139.24, 'exclusive wrong ' + JSON.stringify(o));
+    const pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert(pub.config.tax && pub.config.tax.rate === 18 && pub.config.tax.inclusive === false, 'public tax missing');
+    await open('#/taxes'); let t = await page.locator('main').innerText(); assert(/GST rate/.test(t) && /Save tax settings/.test(t), 'taxes page: ' + t.slice(0, 100));
+    await open('#/apps'); t = await page.locator('main').innerText(); assert(/Connected services/.test(t) && /Your plan/.test(t) && !/coming in a later release/.test(t), 'apps page: ' + t.slice(0, 120));
+    await ts({ rate: 0 });
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();

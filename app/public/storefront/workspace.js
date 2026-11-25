@@ -45,7 +45,7 @@ function home() {
 }
 
 // ---------- Orders ----------
-const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping']];
+const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']];
 function orderBar() {
   const o = lb.orders;
   return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order or customer" value="' + esc(o.q) + '">' +
@@ -94,6 +94,7 @@ function ordersPage(id) {
   if (id === 'drafts') return draftsPage();
   if (id === 'returns') return returnsPage();
   if (id === 'shipping') return shippingPage();
+  if (id === 'taxes') return taxesPage();
   if (id === 'abandoned-checkouts') return abandonedPage();
   return head('Orders', 'Orders placed on your storefront.', '') + tabs(id, orderTabs) +
     orderMetrics() +
@@ -643,7 +644,24 @@ function channelsPage() {
     '</div>') +
     panel('Add a channel', body('<p class="compact-copy">More ways to sell, such as WhatsApp ordering and marketplaces, are not available yet. We will list them here when they are ready.</p>'));
 }
+function appsPage() {
+  const pl = state.plan || {}; const planLabel = { trial: 'Free trial', active: 'Active', paused: 'Paused', cancelled: 'Cancelled' }[pl.plan_status] || pl.plan_status || 'Active';
+  const f = state.features || {}; const doms = (state.domains || []);
+  const row = (name, note, chip, href, cta) => '<div class="channel-row"><div class="ch-main"><strong>' + name + '</strong>' + chip + '<small>' + note + '</small></div>' + (href ? '<a class="btn compact" href="' + href + '">' + cta + '</a>' : '') + '</div>';
+  const connected = [
+    row('Online payments (Razorpay)', 'Card, UPI and net banking go straight to your own Razorpay account. Cash on delivery always works.', state.store.razorpayConnected ? badge('Connected') : badge('Not connected', 'neutral'), pathFor('checkout'), 'Manage'),
+    row('Domain', 'Your store address and any domain you already own.', doms.length ? badge(doms.length + ' connected') : badge('Using your AUZslab address', 'neutral'), pathFor('domains'), 'Manage'),
+    row('AUZsStyle shop', 'In-store billing, stock and tags sharing one catalogue with this store.', !f.style ? badge('Not on your plan', 'neutral') : styleLinkOn() ? badge('Linked') : badge('Not linked', 'warn'), pathFor('channels'), 'Manage'),
+    row('Visitor analytics', 'Anonymous visits, bag and checkout steps recorded by your store. No third-party tracker.', badge('On'), pathFor('analytics'), 'View'),
+  ].join('');
+  return head('Apps and plans', 'Your plan, and the services connected to your store.', '', ['settings', 'Settings']) +
+    panel('Your plan', body('<div class="stack">' + badge(planLabel, pl.plan_status === 'active' || !pl.plan_status ? '' : 'warn') + '<p class="compact-copy">' + (pl.trial_ends_at && pl.plan_status === 'trial' ? 'Your free trial ends on ' + esc(dateValue(pl.trial_ends_at)) + '. ' : '') + 'Pay, renew or ask for help under Billing and renewals.</p>' + wl('Billing and renewals', 'billing') + '</div>')) +
+    panel('Connected services', '<div class="channel-list">' + connected + '</div>') +
+    (appLinks().length ? panel('Other AUZslab apps for this business', '<div class="switch-apps">' + appLinks().map(([n, d, u, ic]) => '<a class="switch-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span><strong>' + esc(n) + '</strong><small>' + esc(d) + '</small></span></a>').join('') + '</div>') : '') +
+    panel('Third-party apps', body('<p class="compact-copy">An app marketplace is not available. Every service above is built in and works without installing anything.</p>'));
+}
 function management(id) {
+  if (id === 'apps') return appsPage();
   if (id === 'policies') return policiesPage();
   if (id === 'privacy-settings') return privacySettingsPage();
   if (id === 'roles') return rolesPage();
@@ -766,6 +784,15 @@ function returnsPage() {
 function returnForm(order) {
   const rows = (order.lines || []).map((l, i) => '<input type="hidden" name="vid' + i + '" value="' + esc(l.variantId) + '">' + input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (ordered ' + l.qty + ')', 'rq' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1"')).join('');
   return editForm('return-record', order.id, rows + area('Reason', 'reason', '', 'maxlength="500"'), 'Create return');
+}
+function taxesPage() {
+  const t = state.checkout.tax || { rate: 0, inclusive: true, gstin: '', label: 'GST' }; const on = Number(t.rate) > 0;
+  const sample = 1000, tx = on ? (t.inclusive ? sample * t.rate / (100 + Number(t.rate)) : sample * t.rate / 100) : 0;
+  return head('Taxes', 'GST on orders from your online store.', '') + tabs('taxes', orderTabs) +
+    panel('GST', body(canWrite() ? editForm('tax-settings', '', input('GST rate in % (0 = do not charge or show tax)', 'rate', t.rate ?? 0, 'number', 'min="0" max="28" step="0.1"') + input('Label shown to customers', 'label', t.label || 'GST', 'text', 'maxlength="20"') +
+      select('Your prices', 'inclusive', ['Include tax', 'Do not include tax (tax is added at checkout)'], t.inclusive === false ? 'Do not include tax (tax is added at checkout)' : 'Include tax') + input('Your GST number (optional, 15 characters)', 'gstin', t.gstin || '', 'text', 'maxlength="15" placeholder="08ABCDE1234F1Z5"') +
+      '<p class="compact-copy">' + (on ? 'On an order of ₹1,000 the ' + esc(t.label || 'GST') + ' is about ₹' + tx.toFixed(2) + (t.inclusive === false ? ', added to the total.' : ', already inside the price.') : 'Tax is off. Orders show no tax line.') + ' Tax applies to the goods after any discount, not to shipping. The same rate is used for every product.</p>', 'Save tax settings') :
+      '<p class="compact-copy">' + (on ? esc(t.label || 'GST') + ' ' + Number(t.rate) + '% ' + (t.inclusive === false ? 'added at checkout' : 'included in prices') : 'Tax is off.') + '</p>'));
 }
 function parseZones(t) {
   return String(t || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => { const [name, states, fee, freeOver] = l.split('|').map((x) => x.trim());
@@ -1204,6 +1231,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_return_set', { p_id: rid, p_status: 'refunded', p_amount: Number(data.amount) }); await refreshReturns(); save('Refund recorded.'); close(); rerender(true);
       } else if (key === 'return-rzp-refund') {
         await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
+      } else if (key === 'tax-settings') {
+        await api('sfx_tax_settings_save', { p: { rate: data.rate, label: data.label, gstin: data.gstin, inclusive: !/^Do not/.test(data.inclusive || '') } });
+        await refreshCheckout(); save('Tax settings saved.'); rerender(true);
       } else if (key === 'checkout-settings') {
         await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note, zones: parseZones(data.zones) }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);

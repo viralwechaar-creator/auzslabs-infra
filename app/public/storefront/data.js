@@ -14,7 +14,7 @@ export const templates = [
 // "Coming soon" rather than a form that quietly saves nowhere -- see workspace.js's REAL_SECTIONS.
 export const menu = [
   { id: 'home', name: 'Home', icon: 'home' },
-  { id: 'orders', name: 'Orders', icon: 'bag', children: [['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping']] },
+  { id: 'orders', name: 'Orders', icon: 'bag', children: [['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']] },
   { id: 'products', name: 'Products', icon: 'box', children: [['collections', 'Collections'], ['inventory', 'Inventory'], ['transfers', 'Transfers'], ['categories', 'Categories and tags']] },
   { id: 'customers', name: 'Customers', icon: 'user', children: [['segments', 'Segments'], ['companies', 'Companies']] },
   { id: 'growth', name: 'Growth', icon: 'spark' },
