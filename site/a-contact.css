@@ -93,3 +93,8 @@ html body.a-contact main.content .ct-path-choice{padding:10px 13px 16px!importan
 html body.a-contact main.content .ct-path-choice strong{font-size:.8rem!important}html body.a-contact main.content .ct-path-choice span{font-size:.7rem!important}
 html body.a-contact main.content .ac-side .ct-role-title{font-size:.76rem}
 html body.a-contact main.content .ct-shortcuts a{min-height:28px;font-size:.72rem}
+
+/* v3: rail icons dead-centre: the hidden text block inside each link must not take space */
+html body.a-contact main.content .ac-rail .ct-ch a{padding:0!important;gap:0!important;display:grid!important;place-items:center!important}
+html body.a-contact main.content .ac-rail .ct-ch a>div{display:none!important}
+html body.a-contact main.content .ac-rail .ct-ch a>svg{margin:0!important;grid-area:1/1}

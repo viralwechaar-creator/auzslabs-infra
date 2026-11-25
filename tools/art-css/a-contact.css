@@ -93,3 +93,8 @@ html body.a-contact main.content h1.ac-h{font-size:clamp(28px,4.2vw,50px)!import
 @P .ct-path-choice strong{font-size:.8rem!important}@P .ct-path-choice span{font-size:.7rem!important}
 @P .ac-side .ct-role-title{font-size:.76rem}
 @P .ct-shortcuts a{min-height:28px;font-size:.72rem}
+
+/* v3: rail icons dead-centre: the hidden text block inside each link must not take space */
+html body.a-contact main.content .ac-rail .ct-ch a{padding:0!important;gap:0!important;display:grid!important;place-items:center!important}
+html body.a-contact main.content .ac-rail .ct-ch a>div{display:none!important}
+html body.a-contact main.content .ac-rail .ct-ch a>svg{margin:0!important;grid-area:1/1}

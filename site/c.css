@@ -67,3 +67,15 @@ html body .u-dock .chat svg{width:22px;height:22px}
 .u-pill[data-signin-link] svg{width:17px;height:17px}
 /* whatever text an older script puts next to the account icon stays hidden (icon only) */
 .u-pill[data-signin-link]:has(svg) :not(svg){position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* One header-button look on every page (same as the home/contact pages): outlined pill and menu, plain moon and bell icons.
+   Needed because pages without e.css drew round white buttons and a filled black pill instead. */
+.u-top{box-shadow:none!important;backdrop-filter:none!important}
+.u-pill,.u-menu,.u-ic{background:none!important;box-shadow:none!important;border:0!important;font-size:9px!important;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)!important;height:auto!important;padding:6px 8px!important}
+.u-pill,.u-menu{border:1px solid #111!important;border-radius:6px!important;padding:8px 16px!important}
+.u-menu{width:38px!important;height:38px!important;padding:0!important}
+.u-ic{border:0!important;border-radius:0!important;width:32px;display:inline-flex;align-items:center;justify-content:center}
+.u-top .auzb{width:32px!important;height:32px!important;border:0!important;border-radius:0!important;background:none!important;color:var(--ink)!important}
+.u-top .auzb svg{width:15px!important;height:15px!important}
+.u-top .auzb i{top:2px!important;right:0!important}
+body.a-dark .u-pill,body.a-dark .u-menu{color:#f4f4f4!important}
