@@ -125,6 +125,7 @@ export default async function run({ browser, stack }) {
     await pg.evaluate(() => { location.hash = '#/checkout'; }); await pg.waitForTimeout(1200);
     assert(await pg.evaluate(() => { const h = document.querySelector('#studs-host'); return !!h && !h.hidden && h.contains(document.getElementById('view')) && !!h.shadowRoot.querySelector('.header'); }), 'checkout is not framed by the Studs header');
     await pg.screenshot({ path: '/tmp/claude-0/studs/int-d-checkout.png' }).catch(() => {});
+    assert(await pg.evaluate(() => { const i = document.querySelector('#view .fld input'); return !!i && getComputedStyle(i).borderRadius === '0px'; }), 'checkout fields are not in the Studs sharp style');
     const t = await pg.locator('#view').innerText(); assert(/checkout|delivery|contact|total/i.test(t), 'native checkout did not render: ' + t.slice(0, 120));
     await pg.evaluate(() => { location.hash = '#/me'; }); await pg.waitForTimeout(1000);
     assert(/sign in|phone|orders|account/i.test(await pg.locator('#app').innerText()), 'account page did not render');
