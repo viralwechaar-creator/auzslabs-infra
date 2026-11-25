@@ -11,7 +11,7 @@ import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -45,7 +45,7 @@ function home() {
 }
 
 // ---------- Orders ----------
-const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping']];
+const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']];
 function orderBar() {
   const o = lb.orders;
   return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order or customer" value="' + esc(o.q) + '">' +
@@ -94,6 +94,7 @@ function ordersPage(id) {
   if (id === 'drafts') return draftsPage();
   if (id === 'returns') return returnsPage();
   if (id === 'shipping') return shippingPage();
+  if (id === 'taxes') return taxesPage();
   if (id === 'abandoned-checkouts') return abandonedPage();
   return head('Orders', 'Orders placed on your storefront.', '') + tabs(id, orderTabs) +
     orderMetrics() +
@@ -314,7 +315,7 @@ function collectVariants(formEl) {
 }
 
 // ---------- Online store: overview / theme / domains / payments ----------
-const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['domains', 'Domains'], ['checkout', 'Payments']];
+const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']];
 // ---------- Theme marketplace (phase 2, db/375) ----------
 // Real marketplace: built-in Minimal/Classic are now plain rows in sfx_themes (migrated in, not
 // hardcoded), alongside any developer theme an admin has approved. "Install" copies the approved
@@ -385,8 +386,12 @@ const PAGE_TEMPLATES = {
   lookbook: ['Lookbook', [{ type: 'hero', props: { heading: 'The lookbook', sub: 'Pieces styled the way we wear them.' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'button', props: { text: 'Shop the looks', href: '/shop' } }]],
   blank: ['New page', [{ type: 'text', props: { heading: 'New page', body: 'Write something here.' } }]],
 };
-const linesOf = (links) => (links || []).map((l) => l.label + ' | ' + l.href).join('\n');
-const parseLinks = (txt, max) => String(txt || '').split('\n').map((x) => x.trim()).filter(Boolean).slice(0, max).map((x) => { const [label, ...r] = x.split('|'); return { label: (label || '').trim(), href: r.join('|').trim() }; }).filter((l) => l.label && l.href);
+const linesOf = (links) => (links || []).map((l) => l.label + ' | ' + l.href + ((l.children || []).map((c) => '\n- ' + c.label + ' | ' + c.href).join(''))).join('\n');
+// one link per line "Label | href"; a line starting with "- " is a sub-link of the line above it (header menus only use them)
+const parseLinks = (txt, max) => { const out = []; for (const raw of String(txt || '').split('\n')) { const x = raw.trim(); if (!x) continue; const child = /^-\s+/.test(x); const [label, ...r] = x.replace(/^-\s+/, '').split('|'); const l = { label: (label || '').trim(), href: r.join('|').trim() }; if (!l.label || !l.href) continue;
+  if (child && out.length) { const p = out[out.length - 1]; p.children = [...(p.children || []), l].slice(0, 8); } else if (!child && out.length < max) out.push(l); } return out; };
+const columnsText = (cols) => (cols || []).map((c) => '## ' + c.title + '\n' + (c.links || []).map((l) => l.label + ' | ' + l.href).join('\n')).join('\n\n');
+const parseColumns = (txt) => { const cols = []; for (const raw of String(txt || '').split('\n')) { const x = raw.trim(); if (!x) continue; if (/^##\s*/.test(x)) { if (cols.length < 3) cols.push({ title: x.replace(/^##\s*/, '').slice(0, 40), links: [] }); continue; } const c = cols[cols.length - 1]; if (!c) continue; const [label, ...r] = x.split('|'); const l = { label: (label || '').trim(), href: r.join('|').trim() }; if (l.label && l.href && c.links.length < 8) c.links.push(l); } return cols.filter((c) => c.title && c.links.length); };
 const pageSlug = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page';
 const edCurPage = () => (ed.cur.startsWith('p:') ? ed.pages[Number(ed.cur.slice(2))] : null);
 function edBind() { const p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : p ? p.sections : ed.home; if (ed.cur !== 'home' && !p && ed.cur !== 'header' && ed.cur !== 'footer') ed.cur = 'home'; }
@@ -414,10 +419,10 @@ function edChromeHtml(kind) {
   const w = canWrite(); const dis = w ? '' : ' disabled';
   if (kind === 'header') return '<div class="panel-title"><h2>Header</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="header"><div class="field-grid te-fields">' +
     input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + input('Announcement link (optional)', 'announceHref', ed.header.announceHref, 'text', 'placeholder="/shop or https://..."' + dis) +
-    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
+    area('Extra menu links. One per line: Label | /path or https://link (up to 8). A line starting with - is a sub-link of the line above.', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
   return '<div class="panel-title"><h2>Footer</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="footer"><div class="field-grid te-fields">' +
     area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
-    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + '</div></form></div>';
+    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + area('Footer columns (up to 3). Start each with ## Title, then one link per line.', 'columns', columnsText(ed.footer.columns), 'rows="7"' + dis + ' placeholder="## Help\nShipping | /store.html#/policy/shipping"') + '</div></form></div>';
 }
 function edRightHtml() {
   if (ed.cur === 'header' || ed.cur === 'footer') return edChromeHtml(ed.cur);
@@ -536,7 +541,7 @@ function edChromeInput(target) {
   const d = Object.fromEntries(new FormData(form));
   if (form.dataset.form === 'te-page') { const p = edCurPage(); if (!p) return true; p.title = String(d.title || '').slice(0, 60); p.slug = pageSlug(d.slug || d.title); const o = $('#te-page-wrap'); if (o) o.innerHTML = edPageSelect(); }
   else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
-  else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12) };
+  else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12), columns: parseColumns(d.columns) };
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
   edPost(); return true;
 }
@@ -583,6 +588,7 @@ function websitePage(id) {
   if (id === 'website') return websiteOverview();
   if (id === 'builder' || id === 'templates') return themePage();
   if (id === 'domains') return domainPage();
+  if (id === 'store-directory') return storeDirPage();
   if (id === 'checkout') return checkoutPage();
   return storePagesPage();
 }
@@ -643,7 +649,24 @@ function channelsPage() {
     '</div>') +
     panel('Add a channel', body('<p class="compact-copy">More ways to sell, such as WhatsApp ordering and marketplaces, are not available yet. We will list them here when they are ready.</p>'));
 }
+function appsPage() {
+  const pl = state.plan || {}; const planLabel = { trial: 'Free trial', active: 'Active', paused: 'Paused', cancelled: 'Cancelled' }[pl.plan_status] || pl.plan_status || 'Active';
+  const f = state.features || {}; const doms = (state.domains || []);
+  const row = (name, note, chip, href, cta) => '<div class="channel-row"><div class="ch-main"><strong>' + name + '</strong>' + chip + '<small>' + note + '</small></div>' + (href ? '<a class="btn compact" href="' + href + '">' + cta + '</a>' : '') + '</div>';
+  const connected = [
+    row('Online payments (Razorpay)', 'Card, UPI and net banking go straight to your own Razorpay account. Cash on delivery always works.', state.store.razorpayConnected ? badge('Connected') : badge('Not connected', 'neutral'), pathFor('checkout'), 'Manage'),
+    row('Domain', 'Your store address and any domain you already own.', doms.length ? badge(doms.length + ' connected') : badge('Using your AUZslab address', 'neutral'), pathFor('domains'), 'Manage'),
+    row('AUZsStyle shop', 'In-store billing, stock and tags sharing one catalogue with this store.', !f.style ? badge('Not on your plan', 'neutral') : styleLinkOn() ? badge('Linked') : badge('Not linked', 'warn'), pathFor('channels'), 'Manage'),
+    row('Visitor analytics', 'Anonymous visits, bag and checkout steps recorded by your store. No third-party tracker.', badge('On'), pathFor('analytics'), 'View'),
+  ].join('');
+  return head('Apps and plans', 'Your plan, and the services connected to your store.', '', ['settings', 'Settings']) +
+    panel('Your plan', body('<div class="stack">' + badge(planLabel, pl.plan_status === 'active' || !pl.plan_status ? '' : 'warn') + '<p class="compact-copy">' + (pl.trial_ends_at && pl.plan_status === 'trial' ? 'Your free trial ends on ' + esc(dateValue(pl.trial_ends_at)) + '. ' : '') + 'Pay, renew or ask for help under Billing and renewals.</p>' + wl('Billing and renewals', 'billing') + '</div>')) +
+    panel('Connected services', '<div class="channel-list">' + connected + '</div>') +
+    (appLinks().length ? panel('Other AUZslab apps for this business', '<div class="switch-apps">' + appLinks().map(([n, d, u, ic]) => '<a class="switch-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span><strong>' + esc(n) + '</strong><small>' + esc(d) + '</small></span></a>').join('') + '</div>') : '') +
+    panel('Third-party apps', body('<p class="compact-copy">An app marketplace is not available. Every service above is built in and works without installing anything.</p>'));
+}
 function management(id) {
+  if (id === 'apps') return appsPage();
   if (id === 'policies') return policiesPage();
   if (id === 'privacy-settings') return privacySettingsPage();
   if (id === 'roles') return rolesPage();
@@ -767,6 +790,29 @@ function returnForm(order) {
   const rows = (order.lines || []).map((l, i) => '<input type="hidden" name="vid' + i + '" value="' + esc(l.variantId) + '">' + input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (ordered ' + l.qty + ')', 'rq' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1"')).join('');
   return editForm('return-record', order.id, rows + area('Reason', 'reason', '', 'maxlength="500"'), 'Create return');
 }
+function storeDirPage() {
+  const list = state.storeDir || [];
+  const cards = list.map((x) => '<div class="channel-row"><div class="ch-main"><strong>' + esc(x.name) + '</strong>' + (x.featured ? badge('Featured') : '') + '<small>' + esc([x.address, x.city].filter(Boolean).join(', ') || 'No address yet') + (x.phone ? ' · ' + esc(x.phone) : '') + (x.hours ? ' · ' + esc(x.hours) : '') + '</small></div>' +
+    (canWrite() ? button('Edit', 'dir-edit:' + x.id, 'compact') + button('Delete', 'dir-delete:' + x.id, 'compact danger') : '') + '</div>').join('');
+  const url = storeLink('stores');
+  return head('Stores', 'The shops, studios or pickup points customers can visit. They appear on your online store\'s Our stores page.', canWrite() ? button('Add store', 'dir-new', 'primary') : '', ['website', 'Online store']) + tabs('store-directory', websiteTabs) +
+    panel('Your stores', list.length ? '<div class="channel-list">' + cards + '</div>' + (url ? '<p class="compact-copy">' + link('View Our stores page', url) + '</p>' : '') : body('<p class="compact-copy">No stores yet. Add your first one. Until then the Our stores page shows your business address if you have one.</p>'));
+}
+function storeDirForm(x) {
+  const v = x || {};
+  return editForm('dir-record', v.id, input('Store name', 'name', v.name || '', 'text', 'required maxlength="80"') + input('Address', 'address', v.address || '', 'text', 'maxlength="300"') + input('City', 'city', v.city || '', 'text', 'maxlength="80"') +
+    input('Phone', 'phone', v.phone || '', 'tel', 'maxlength="30"') + input('Opening hours', 'hours', v.hours || '', 'text', 'maxlength="200" placeholder="Mon to Sat, 10am to 8pm"') + input('Map link (https://...)', 'map', v.map || '', 'url') +
+    '<input type="hidden" name="photo" value="' + esc(v.photo || '') + '"><label class="wide">Photo<input type="file" accept="image/*"></label>' + '<label class="inline"><input type="checkbox" name="featured" value="1"' + (v.featured ? ' checked' : '') + '> Show first</label>', 'Save store');
+}
+function taxesPage() {
+  const t = state.checkout.tax || { rate: 0, inclusive: true, gstin: '', label: 'GST' }; const on = Number(t.rate) > 0;
+  const sample = 1000, tx = on ? (t.inclusive ? sample * t.rate / (100 + Number(t.rate)) : sample * t.rate / 100) : 0;
+  return head('Taxes', 'GST on orders from your online store.', '') + tabs('taxes', orderTabs) +
+    panel('GST', body(canWrite() ? editForm('tax-settings', '', input('GST rate in % (0 = do not charge or show tax)', 'rate', t.rate ?? 0, 'number', 'min="0" max="28" step="0.1"') + input('Label shown to customers', 'label', t.label || 'GST', 'text', 'maxlength="20"') +
+      select('Your prices', 'inclusive', ['Include tax', 'Do not include tax (tax is added at checkout)'], t.inclusive === false ? 'Do not include tax (tax is added at checkout)' : 'Include tax') + input('Your GST number (optional, 15 characters)', 'gstin', t.gstin || '', 'text', 'maxlength="15" placeholder="08ABCDE1234F1Z5"') +
+      '<p class="compact-copy">' + (on ? 'On an order of ₹1,000 the ' + esc(t.label || 'GST') + ' is about ₹' + tx.toFixed(2) + (t.inclusive === false ? ', added to the total.' : ', already inside the price.') : 'Tax is off. Orders show no tax line.') + ' Tax applies to the goods after any discount, not to shipping. The same rate is used for every product.</p>', 'Save tax settings') :
+      '<p class="compact-copy">' + (on ? esc(t.label || 'GST') + ' ' + Number(t.rate) + '% ' + (t.inclusive === false ? 'added at checkout' : 'included in prices') : 'Tax is off.') + '</p>'));
+}
 function parseZones(t) {
   return String(t || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => { const [name, states, fee, freeOver] = l.split('|').map((x) => x.trim());
     if (!name || !states) throw new Error('Zone line ' + (i + 1) + ' needs a name and at least one state, like: South | Kerala, Tamil Nadu | 60 | 800');
@@ -871,8 +917,9 @@ function fileForm(f) { return editForm('file-record', f?.id, input('Name', 'name
 function fieldForm(f) { return editForm('field-record', f?.id, input('Field name', 'name', f?.name || '', 'text', 'required maxlength="80"') + select('Applies to', 'appliesTo', ['Products', 'Customers', 'Orders', 'Collections'], f?.appliesTo || 'Products') + select('Value type', 'valueType', ['Text', 'Number', 'Yes or no', 'Date', 'List'], f?.valueType || 'Text'), 'Save field'); }
 function marketForm(m) { return editForm('market-record', m?.id, input('Market name', 'name', m?.name || '', 'text', 'required maxlength="80"') + input('Region (country or area)', 'region', m?.region || 'India', 'text', 'maxlength="80"') + select('Currency', 'currency', ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'], m?.currency || 'INR') + select('Language', 'language', ['English', 'Hindi'], m?.language || 'English') + select('Status', 'status', ['Active', 'Draft'], m?.status || 'Draft'), 'Save market'); }
 function marketsPage() {
-  const ms = cfgList('markets');
+  const ms = cfgList('markets'); const hi = !!(state.languages || {}).hindi;
   return head('Markets', 'Plan where your store sells and which currency and language each market shows. Checkout currently charges in your store currency.', canWrite() ? button('Add market', 'market-new', 'primary') : '') +
+    panel('Store languages', body('<p class="compact-copy">Your product names, descriptions and pages stay exactly as you wrote them. Turning Hindi on adds a हिंदी / English button on your store that translates the shop\'s own labels (bag, checkout, buttons). The Hindi wording should be checked by a Hindi speaker.</p>' + (canWrite() ? editForm('languages-settings', '', select('Hindi on your store', 'hindi', ['Off', 'On'], hi ? 'On' : 'Off'), 'Save language') : '<p class="compact-copy">Hindi is ' + (hi ? 'on' : 'off') + '.</p>'))) +
     panel('Markets', table(['Market', 'Region', 'Currency', 'Language', 'Status', ''], ms.map((m) => [esc(m.name), esc(m.region), esc(m.currency), esc(m.language), status(m.status), rowActions('market', m.id)])));
 }
 const contentRecords = { page: ['pages', pageForm, 'page'], file: ['files', fileForm, 'file'], field: ['customFields', fieldForm, 'field'], market: ['markets', marketForm, 'market'] };
@@ -1081,7 +1128,7 @@ export function workspace(id, record) {
   else if (id === 'collections' && record) html = collectionDetail(record);
   else if (productTabs.some(([k]) => k === id)) html = productsPage(id);
   else if (id === 'builder' && record) html = editorPage(record);
-  else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages'].includes(id)) html = websitePage(id);
+  else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages', 'store-directory'].includes(id)) html = websitePage(id);
   else if (id === 'customers') html = customersPage();
   else if (id === 'discounts') html = discountsPage();
   else if (id === 'segments') html = segmentsPage();
@@ -1204,6 +1251,16 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_return_set', { p_id: rid, p_status: 'refunded', p_amount: Number(data.amount) }); await refreshReturns(); save('Refund recorded.'); close(); rerender(true);
       } else if (key === 'return-rzp-refund') {
         await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
+      } else if (key === 'dir-record') {
+        const file = target.querySelector('input[type=file]')?.files?.[0]; const photo = file ? await uploadImage(file) : (data.photo || '');
+        const rec = { id: rid || undefined, name: data.name, address: data.address, city: data.city, phone: data.phone, hours: data.hours, map: data.map, photo, featured: data.featured === '1' };
+        const cur = state.storeDir || []; const list = rid ? cur.map((x) => x.id === rid ? rec : x) : (rec.featured ? [rec, ...cur] : [...cur, rec]);
+        await api('sfx_stores_save', { p: list }); await refreshStoreDir(); save('Store saved.'); close(); rerender(true);
+      } else if (key === 'languages-settings') {
+        await api('sfx_languages_save', { p: { hindi: data.hindi === 'On' } }); await refreshLanguages(); save('Language saved.'); rerender(true);
+      } else if (key === 'tax-settings') {
+        await api('sfx_tax_settings_save', { p: { rate: data.rate, label: data.label, gstin: data.gstin, inclusive: !/^Do not/.test(data.inclusive || '') } });
+        await refreshCheckout(); save('Tax settings saved.'); rerender(true);
       } else if (key === 'checkout-settings') {
         await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note, zones: parseZones(data.zones) }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);
@@ -1290,6 +1347,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'campaign-delete') return withBusy(async () => { if (!confirm('Delete this campaign?')) return; await api('sfx_campaign_delete', { p_id: key }); await refreshCampaigns(); save('Campaign deleted.'); rerender(true); });
   if (a === 'plan-pay') { const out = $('#plan-feedback'); target.disabled = true; out.textContent = 'Starting payment…'; return payPlan(out).catch((e) => { out.textContent = e.message; }).finally(() => { target.disabled = false; }); }
   if (a === 'plan-request') return withBusy(async () => { await api('request_storefront_reactivation', { p_notes: null }); save('Request sent. We will get back to you.'); });
+  if (a === 'dir-new') return dialog('Add store', storeDirForm(null));
+  if (a === 'dir-edit') return dialog('Edit store', storeDirForm((state.storeDir || []).find((x) => x.id === key)));
+  if (a === 'dir-delete') return withBusy(async () => { if (!confirm('Delete this store?')) return; await api('sfx_stores_save', { p: (state.storeDir || []).filter((x) => x.id !== key) }); await refreshStoreDir(); save('Store deleted.'); rerender(true); });
   if (a === 'pages-all') { const boxes = [...document.querySelectorAll('.pg-sel')]; const on = boxes.some((b) => !b.checked); boxes.forEach((b) => { b.checked = on; }); return; }
   if (a === 'page-copy') return withBusy(async () => { const items = cfgList('pages'), src = items.find((x) => x.id === key); if (!src) return; let slug = src.slug + '-copy', n = 2; while (items.some((x) => x.slug === slug)) slug = src.slug + '-copy-' + n++; await saveList('pages', [...items, { ...src, id: 'pg' + Date.now().toString(36), name: src.name + ' (copy)', slug, status: 'Hidden', publishAt: '', updatedOn: new Date().toISOString().slice(0, 10) }]); save('Page copied as hidden.'); rerender(true); });
   if (a === 'pages-bulk') {

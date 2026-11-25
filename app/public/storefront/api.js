@@ -93,6 +93,8 @@ export async function refreshCategories() { const [c, t] = await Promise.all([ap
 export async function refreshDrafts() { const [d, i] = await Promise.all([api('sfx_draft_list'), api('sfx_inventory_list')]); state.drafts = d; state.inventory = i; }
 export async function refreshReturns() { state.returns = await api('sfx_return_list'); }
 export async function refreshAbandoned() { const [a, c] = await Promise.all([api('sfx_abandoned_list'), api('sfx_checkout_settings_get')]); state.abandoned = a; state.checkout = c; }
+export async function refreshStoreDir() { state.storeDir = await api('sfx_stores_get'); }
+export async function refreshLanguages() { state.languages = await api('sfx_languages_get'); }
 export async function refreshCheckout() { state.checkout = await api('sfx_checkout_settings_get'); }
 export async function refreshCompanies() { const [c, cu] = await Promise.all([api('sfx_company_list'), api('sfx_customer_list')]); state.companies = c; state.customers = cu; }
 export async function refreshSegments() { state.segments = await api('sfx_segment_list'); }

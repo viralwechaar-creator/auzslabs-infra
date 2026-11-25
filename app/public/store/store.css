@@ -1072,3 +1072,7 @@ body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(10
 
 /* section spacing and alignment chosen in the theme editor */
 .custom-section.sp-compact{padding-block:14px}.custom-section.sp-roomy{padding-block:72px}.custom-section.al-left{text-align:left}
+
+/* header sub-menus and footer columns from the theme editor */
+.hdd{position:relative;display:inline-block}.hdd .hddm{display:none;position:absolute;left:0;top:100%;z-index:30;min-width:170px;padding:8px;background:var(--bg,#fff);border:1px solid var(--line,#e6e6e6);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.08);flex-direction:column;gap:4px}.hdd:hover .hddm,.hdd:focus-within .hddm{display:flex}.hdd .hddm a{padding:6px 8px;white-space:nowrap}
+.sublink{padding-left:18px!important;opacity:.85}
