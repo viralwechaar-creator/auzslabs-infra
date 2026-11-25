@@ -43,7 +43,7 @@ const scope = () => (S.dash && S.dash.tenant ? S.dash.tenant.slug : (window.TENA
 // ---------- which functions are which ----------
 // Changes that can wait on the device. Anything not listed here (and not a read) needs a connection.
 const QUEUEABLE = new Set([
-  'sty_sell', 'sty_return', 'sty_receive', 'sty_adjust', 'sty_save_style', 'sty_set_variant', 'sty_set_badge', 'sty_set_colour_photos', 'sty_set_photo_use',
+  'sty_sell', 'sty_return', 'sty_receive', 'sty_adjust', 'sty_save_style', 'sty_set_variant', 'sty_set_badge', 'sty_set_colour_photos', 'sty_set_photo_use', 'sty_set_tags',
   'sty_bulk_edit', 'sty_delete_styles', 'sty_transfer', 'sty_receive_transfer', 'sty_cancel_transfer', 'sty_save_supplier', 'sty_pay_supplier',
   'sty_save_customer', 'sty_collect_due', 'sty_void_sale', 'sty_collection_save', 'sty_collection_delete', 'sty_collection_members',
   'sty_coupon_save', 'sty_coupon_delete', 'sty_save_branch', 'sty_save_settings', 'sty_save_fy', 'sty_close_fy', 'sty_gst_period_file', 'sty_gst_period_reopen', 'sty_set_target', 'sty_hold_save', 'sty_shift_open', 'sty_shift_close',
@@ -261,6 +261,7 @@ const OVERLAY = {
           break;
         }
         case 'sty_set_badge': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.badge = e.args.p_badge || null; break; }
+        case 'sty_set_tags': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.tags = e.args.p_tags || []; break; }
         case 'sty_set_colour_photos': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.colourPhotos = e.args.p || {}; break; }
         case 'sty_set_photo_use': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.photoUse = e.args.p || {}; break; }
         case 'sty_delete_styles': for (const id of p.ids || []) { const i = cat.findIndex((z) => z.id === id); if (i >= 0) cat.splice(i, 1); } break;

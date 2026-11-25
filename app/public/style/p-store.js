@@ -18,7 +18,13 @@ page('store', {
     v.header({ title: t('Online store') });
     const body = h('div', { class: 'grid' });
     const tabs = seg(can('sty_manage') ? [['orders', t('Orders')], ['extras', t('Offers & reviews')], ['stats', t('Visitors')], ['edit', t('Store')]] : [['orders', t('Orders')]], OST.tab, (x) => { OST.tab = x; paint(); }, { full: true });
-    v.root.append(h('div', { class: 'grid' }, tabs, body));
+    const linkCard = h('div', { class: 'card', hidden: true });
+    v.root.append(h('div', { class: 'grid' }, linkCard, tabs, body));
+    api('sfx_style_link_status').then((l) => {
+      if (!l || !l.available) return;
+      linkCard.hidden = false;
+      linkCard.append(h('div', { class: 'ic-s' }, l.linked ? t('Linked with your Storefront: products, sizes, collections, tags, stock and online orders are shared both ways. Edit them here or in the Storefront.') : t('Your Storefront can share this catalogue and its orders with AUZsStyle. Link them in Storefront, Channels.')));
+    }).catch(() => {});
     async function paint() { clear(body); if (OST.tab === 'edit' && can('sty_manage')) await editor(body); else if (OST.tab === 'extras' && can('sty_manage')) await extras(body); else if (OST.tab === 'stats' && can('sty_manage')) await storeStats(body); else await orders(body); }
     paint();
   },
