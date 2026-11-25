@@ -134,7 +134,7 @@ function styleForm(s, done, scannedBarcode = '') {
     price: input({ type: 'number', mode: 'decimal', value: s ? s.price : '' }), mrp: input({ type: 'number', mode: 'decimal', value: s ? s.mrp : '' }), cost: input({ type: 'number', mode: 'decimal', value: s && s.cost != null ? s.cost : '' }),
     tax: input({ type: 'number', mode: 'decimal', value: s && s.taxPct != null ? s.taxPct : '', placeholder: t('auto') }),
     code: input({ value: s ? s.code || '' : '', placeholder: t('Your own code, e.g. TS-101') }),
-    type: input({ value: s ? s.subcategory || '' : '', placeholder: 'Slim fit, A-line, Sneakers' }), fabric: input({ value: s ? s.fabric || '' : '', placeholder: 'Cotton, Denim, Linen' }), collection: input({ value: s ? s.collection || '' : '', placeholder: 'Summer 2026' }),
+    type: input({ value: s ? s.subcategory || '' : '', placeholder: 'Slim fit, A-line, Sneakers' }), fabric: input({ value: s ? s.fabric || '' : '', placeholder: 'Cotton, Denim, Linen' }), collection: input({ value: s ? s.collection || '' : '', placeholder: 'Summer 2026' }), tags: input({ value: s ? (s.tags || []).join(', ') : '', placeholder: 'summer, cotton, new' }),
     weight: input({ type: 'number', mode: 'decimal', value: s && s.weightG ? s.weightG : '', placeholder: 'g' }), wash: input({ value: s ? s.washcare || '' : '', placeholder: 'Machine wash cold, do not bleach' }),
     desc: h('textarea', { class: 'textarea', rows: 2, placeholder: t('Short description for the customer') }, s ? s.description || '' : ''), det: h('textarea', { class: 'textarea', rows: 3, placeholder: t('Fit, pockets, stitching, model size…') }, s ? s.details || '' : ''), qty: input({ type: 'number', mode: 'numeric', value: '', placeholder: '0' }), photo: input({ value: s ? s.photoUrl || '' : '', placeholder: 'https://…' }),
   };
@@ -208,7 +208,7 @@ function styleForm(s, done, scannedBarcode = '') {
   const spanOf = (n) => { n.classList.add('span'); return n; };
   const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
     h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
-    h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)),
+    h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)), field(t('Tags'), f.tags),
     spanOf(cols), spanOf(colWrap), spanOf(useWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
     isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
     spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
@@ -251,6 +251,7 @@ function styleForm(s, done, scannedBarcode = '') {
       const cp = {}; cols.peek().forEach((c) => { const g = colPics[c] && colPics[c].get(); if (g && g.main) cp[c] = [g.main, ...g.extra]; });
       if (Object.keys(cp).length || Object.keys(colInit).length) await api('sty_set_colour_photos', { p_id: r.id, p: cp });
       { const want = JSON.stringify(Object.keys(use).sort().map((k) => [k, use[k]])), had = JSON.stringify(Object.keys((s && s.photoUse) || {}).sort().map((k) => [k, s.photoUse[k]])); if (want !== had) await api('sty_set_photo_use', { p_id: r.id, p: { card: use.card || '', hero: use.hero || '', banner: use.banner || '' } }); }
+      { const tagList = f.tags.value.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean), had = ((s && s.tags) || []).join(','); if (tagList.join(',') !== had) await api('sty_set_tags', { p_id: r.id, p_tags: tagList }); }
       if (badge !== ((s && s.badge) || '')) await api('sty_set_badge', { p_id: r.id, p_badge: badge || null });
       close(); S.catAt = 0; toast(t('Saved'));
       done && done();

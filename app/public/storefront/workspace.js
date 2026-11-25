@@ -11,7 +11,7 @@ import { analyticsPage } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
 import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, apiPost, applyContext, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
 const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
@@ -113,7 +113,7 @@ function orderDetail(id) {
 
 // ---------- Products ----------
 const productTabs = [['products', 'All products'], ['collections', 'Collections'], ['inventory', 'Inventory'], ['transfers', 'Transfers'], ['categories', 'Categories and tags']];
-const productLabel = (p) => '<div class="cell-product">' + image(p.image, '', 'thumb') + link(esc(p.name), 'products/' + encodeURIComponent(p.id)) + '</div>';
+const productLabel = (p) => '<div class="cell-product">' + image(p.image, '', 'thumb') + '<a href="' + pathFor('products/' + encodeURIComponent(p.id)) + '">' + esc(p.name) + '</a>' + '</div>';
 let pf = { status: '', category: '', tag: '', stock: '', sort: '' };
 // search / sort / filter bars shared by the list pages
 const lb = { orders: { q: '', sort: 'new', pay: '' }, customers: { q: '', sort: 'name' } };
@@ -141,13 +141,13 @@ function productsPage(id) {
     return head('Collections', 'Group products to feature on your storefront.', canWrite() ? wl('Create collection', 'collections/new', 'primary') : '') + tabs(id, productTabs) +
       panel('All collections', '<div class="filters"><input id="collection-query" type="search" aria-label="Search collections" placeholder="Search collections"><small id="collection-count"></small></div><div id="collection-results">' + collectionList() + '</div>');
   }
-  return head(title, 'Your catalog, shared by your storefront’s theme and checkout.', (canWrite() ? button('Bulk edit selected', 'bulk-open') + button('Import from AUZsStyle', 'style-import') : '') + button('Export CSV', 'products-csv') + (canWrite() ? wl('Add product', 'products/new', 'primary') : '')) + tabs(id, productTabs) +
+  return head(title, 'Your catalog, shared by your storefront’s theme and checkout.', (canWrite() ? button('Bulk edit selected', 'bulk-open') + styleLinkButton() : '') + button('Export CSV', 'products-csv') + (canWrite() ? wl('Add product', 'products/new', 'primary') : '')) + tabs(id, productTabs) +
     '<section class="summary-bar" aria-label="Product summary">' + summaryCell('Products', state.products.length) + summaryCell('Active', state.products.filter((x) => x.status === 'Active').length) + summaryCell('Draft or archived', state.products.filter((x) => x.status !== 'Active').length) + '</section>' +
     panel('All products', '<div class="filters"><input id="table-query" type="search" aria-label="Search products" placeholder="Search products">' + productFilters() + '<small id="table-count"></small></div><div id="table-results">' + productsList() + '</div>');
 }
 function collectionList(query = '') {
   return table(['Collection', 'Products'], state.collections.filter((c) => !query || c.name.toLowerCase().includes(query.toLowerCase())).map((c) => [
-    '<div class="cell-product">' + image(c.image, '', 'thumb') + link(esc(c.name), 'collections/' + encodeURIComponent(c.id)) + '</div>', c.productCount,
+    '<div class="cell-product">' + image(c.image, '', 'thumb') + '<a href="' + pathFor('collections/' + encodeURIComponent(c.id)) + '">' + esc(c.name) + '</a>' + '</div>', c.productCount,
   ]));
 }
 function collectionDetail(id) {
@@ -581,6 +581,12 @@ async function payPlan(out) {
   for (let i = 0; i < 20; i++) { await new Promise((r) => setTimeout(r, 2000)); await refreshPlan(); if (state.plan.plan_status === 'active') { const ctx = await api('sfx_context'); applyContext(ctx); save('Your plan is active.'); return rerender(true); } }
   out.textContent = 'Payment received. Your plan will switch on within a minute; refresh this page shortly.';
 }
+const styleLinkOn = () => !!(state.styleLink && state.styleLink.linked);
+function styleLinkButton() {
+  const l = state.styleLink || {};
+  if (!l.available) return '';
+  return l.linked ? badge('Linked with AUZsStyle') + button('Sync now', 'style-link:sync', 'compact') : button('Link AUZsStyle', 'style-link:on');
+}
 function channelsPage() {
   const paid = state.orders.filter((o) => String(o.payment).toLowerCase() === 'paid');
   const sales = paid.reduce((t, o) => t + Number(o.total || 0), 0);
@@ -592,7 +598,10 @@ function channelsPage() {
     panel('Your channels', '<div class="channel-list">' +
       row('Online store', 'Your public storefront with theme, checkout and domain.', live ? badge('Live') : badge('Not live yet', 'warn'), m('Orders', state.orders.length) + m('Sales', money(sales)) + m('Products', state.products.filter((p) => p.status === 'Active').length), pathFor('website'), 'Manage') +
       row('Draft orders', 'Phone, in-person and manual sales you create by hand.', drafts ? badge('In use') : badge('Ready', 'neutral'), m('Open drafts', drafts), pathFor('drafts'), 'Open') +
-      row('AUZsStyle shop', 'Your in-store till. Share its catalog and stock with the online store.', styleOn ? badge('Connected') : badge('Not connected', 'neutral'), styleOn ? m('Catalog', 'Import from AUZsStyle on Products') : '', styleOn ? pathFor('products') : '', 'Open products') +
+      row('AUZsStyle shop', 'Your in-store till, online and offline. Linked, it shares one catalogue, stock, collections, tags and orders with this store.', !styleOn ? badge('Not connected', 'neutral') : styleLinkOn() ? badge('Linked') : badge('Not linked', 'warn'),
+        styleOn ? (styleLinkOn() ? m('Shared products', (state.styleLink || {}).products || 0) + m('Till styles', (state.styleLink || {}).styles || 0) : m('Till styles', (state.styleLink || {}).styles || 0)) : '', '', '') +
+      (styleOn && canWrite() ? '<div class="channel-row"><div class="ch-main"><small>' + (styleLinkOn() ? 'Edits in either place show in both. An online order also appears in AUZsStyle, and a till sale updates online stock.' : 'Link them to use AUZsStyle as the point of sale for this online store.') + '</small></div>' +
+        (styleLinkOn() ? button('Sync now', 'style-link:sync', 'compact') + button('Unlink', 'style-link:off', 'compact danger') : button('Link AUZsStyle', 'style-link:on', 'primary')) + '<a class="btn compact" href="https://auzsstyle.auzslab.in/style.html" data-handoff="1">Open AUZsStyle</a></div>' : '') +
     '</div>') +
     panel('Add a channel', body('<p class="compact-copy">More ways to sell, such as WhatsApp ordering and marketplaces, are not available yet. We will list them here when they are ready.</p>'));
 }
@@ -1210,6 +1219,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'company-new') return dialog('Add company', companyForm(null));
   if (a === 'company-edit') return dialog('Edit company', companyForm(state.companies.find((c) => c.id === key)));
   if (a === 'company-delete') return withBusy(async () => { if (!confirm('Delete this company? Its customers are kept.')) return; await api('sfx_company_delete', { p_id: key }); await refreshCompanies(); save('Company deleted.'); rerender(true); });
+  if (a === 'style-link') return withBusy(async () => {
+    const on = key !== 'off';
+    if (key === 'on' && !confirm('Link AUZsStyle with this store? Your AUZsStyle products, sizes, colours, prices, stock, collections and tags become the shared catalogue, and products that only exist online are added to AUZsStyle. Edits in either place then show in both.')) return;
+    if (key === 'off' && !confirm('Unlink AUZsStyle? Both keep what they have now, but changes stop being shared.')) return;
+    const r = await api('sfx_style_link_set', { p_on: on }); await Promise.all([refreshProducts(), refreshStyleLink()]);
+    save(on ? (key === 'sync' ? 'Synced.' : 'Linked. ' + (r.styles || 0) + ' AUZsStyle products shared.') : 'Unlinked.'); rerender(true);
+  });
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
   if (a === 'bulk-open') { const n = bulkIds().length; if (!n) { flash('Tick the products you want to change first.'); return; } return dialog('Bulk edit', bulkForm(n)); }
   if (a === 'products-csv') return downloadProductsCsv();
