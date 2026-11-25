@@ -185,6 +185,17 @@ export default async function run({ stack }) {
     assert((await get(manager)).status === 403, 'a sales manager must not get the staff pdf');
     assert((await fetch(stack.apiBase + '/admin/sos-staff-pdf/' + exec2Id)).status === 401, 'anonymous allowed');
   }, 'critical');
+  await s.check('A contact-page job application becomes a SalesOS login in one step; other leads and non-admins are refused', async () => {
+    const mk = async (kind, email) => (await q("insert into leads (name, contact, message, kind, details) values ($1, $2, 'I want to sell', $3, '{\"phone\":\"9000000001\"}') returning id", ['Lead ' + kind, email + ' \u00b7 9000000001', kind]))[0].id;
+    const career = await mk('career', 'newhire.lead@test.local'), biz = await mk('business', 'bizlead@test.local');
+    await fails(manager, 'admin_lead_make_salesos', { p_lead: career, p_post: 'Sales Executive' }, /not authorized/i);
+    await fails(platformAdmin, 'admin_lead_make_salesos', { p_lead: biz, p_post: 'Sales Executive' }, /job application/i);
+    const r = await ok(platformAdmin, 'admin_lead_make_salesos', { p_lead: career, p_post: 'Sales Executive' });
+    assert(r.status === 'approved' && r.email === 'newhire.lead@test.local', JSON.stringify(r));
+    assert((await q("select count(*)::int n from auth_users where email='newhire.lead@test.local'"))[0].n === 1, 'login not created');
+    assert((await q('select status from leads where id=$1', [career]))[0].status === 'converted', 'lead not marked converted');
+    await fails(platformAdmin, 'admin_lead_make_salesos', { p_lead: career, p_post: 'Sales Executive' }, /already/i);
+  }, 'major');
   await s.check('A login from an unrelated tenant cannot call any sos_* function', async () => {
     const outsider = await login(USERS.cafeOwner);
     await fails(outsider, 'sos_my_leads', {}, /salesos|not a tenant member|not enabled/i);
