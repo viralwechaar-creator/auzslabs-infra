@@ -45,3 +45,9 @@ html body.a-studio{background:#ececea!important}
 }
 .as .st-case .mk-btn,.as .st-case a{background:#fff!important;color:#000!important;border-radius:999px}
 .as-title{overflow:hidden}
+
+/* Studio keeps its original warm palette and wine accent (the rest of the site moved to neutral greys) */
+body.a-studio{--bg:#efeeed;--mut:#8b8987;--dim:#5f5d5b;--line:#e2e0de;--soft:#f6f5f4;--accent:#800020;--cbg:#ebe9e5;--cwine:#800020;--mk-soft:#f6f5f3;--mk-line:#dcdad7;--mk-wine:#800020}
+:root[data-theme=dark] body.a-studio{--bg:#141313;--card:#201f1e;--ink:#f2f2f0;--mut:#8f8d8b;--dim:#b4b2b0;--line:#33312f;--soft:#1a1918;--accent:#800020}
+html body.a-studio .u-dock .chat{background:#800020}
+body.a-studio .ph:not(.has){background:radial-gradient(120% 80% at 85% 10%,rgba(128,0,32,.55),transparent 60%),linear-gradient(160deg,#1b1b1b,#050505)!important}

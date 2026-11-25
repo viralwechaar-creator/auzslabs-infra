@@ -13,6 +13,7 @@
     "google-auth-library": "^11.1.0",
     "jose": "^6.2.12",
     "jsonwebtoken": "^9.0.2",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.13.0",
     "sharp": "^0.34.0",
     "ws": "^8.18.0"

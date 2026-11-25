@@ -85,4 +85,18 @@ export default async function run({ browser, stack }) {
     assert(row.header.announceText === 'Editor header note' && row.footer.note === 'Editor footer note' && row.pages.some((p) => p.template === 'faq'), JSON.stringify(row).slice(0, 400));
     assert(!e5.filter((x) => !/sentry|fonts|\/uploads\//i.test(x)).length, e5.slice(0, 3).join(' | ').slice(0, 300));
   }, 'major');
+  await s.check('Admin sets a theme price; the store library shows it live and a premium install explains itself', async () => {
+    const pg = await ctx.newPage(); await pg.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await pg.waitForTimeout(500);
+    const th = (await q("select id from sfx_themes where slug='kiln-salon'"))[0].id;
+    const r = await pg.evaluate(async ([ae, oe, p, id]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      await c.auth.signInWithPassword({ email: oe, password: p }); const denied = await c.rpc('sfx_admin_theme_price_set', { p_theme_id: id, p_price_cents: 99900 });
+      await c.auth.signOut(); await c.auth.signInWithPassword({ email: ae, password: p }); const set = await c.rpc('sfx_admin_theme_price_set', { p_theme_id: id, p_price_cents: 99900 }); const bad = await c.rpc('sfx_admin_theme_price_set', { p_theme_id: id, p_price_cents: -5 });
+      await c.auth.signOut(); await c.auth.signInWithPassword({ email: oe, password: p }); const list = await c.rpc('sfx_theme_marketplace_list'); const row = (list.data || []).find((t) => t.id === id);
+      await q2(); return { denied: !!denied.error, set: set.error && set.error.message, bad: !!bad.error, price: row && row.priceCents }; function q2() {} }, [USERS.admin, USERS.cafeOwner, PASSWORD, th]);
+    assert(r.denied, 'a store owner could set a theme price'); assert(!r.set, r.set); assert(r.bad, 'negative price accepted'); assert(r.price === 99900, 'live price not shown: ' + r.price);
+    await q("update sfx_theme_installs set theme_id=theme_id where false"); await q("delete from sfx_theme_installs where theme_id=$1 and tenant_id=(select id from tenants where slug='testcafe')", [th]);
+    const inst = await pg.evaluate(async ([oe, p, id]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: oe, password: p }); const x = await c.rpc('sfx_theme_install', { p_theme_id: id }); return x.error && x.error.message; }, [USERS.cafeOwner, PASSWORD, th]);
+    assert(/premium theme/i.test(inst || ''), 'premium install message: ' + inst);
+    await q("update sfx_themes set price_cents=0 where id=$1", [th]);
+  }, 'major');
 }

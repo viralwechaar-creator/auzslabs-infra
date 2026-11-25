@@ -81,7 +81,7 @@ def _():
     S = [
      ('web', 'Custom website & online store', 'A website that looks like your brand and sells for you, designed with you and connected to your business.',
       ['Designed around your brand, not a template', 'Online store with cart, checkout and order tracking', 'QR table-ordering and takeaway pages for restaurants', 'You edit the words and pictures yourself', 'Orders land straight in your POS and CRM'],
-      ('addon_website', 'Request a website'), ('web-design.html', 'See the website work'), sk('Your website', [('Home page', 80, 0), ('Online store', 62, 1), ('Order tracking', 45, 0)], 'Orders reach your till')),
+      ('addon_website', 'Request a website'), sk('Your website', [('Home page', 80, 0), ('Online store', 62, 1), ('Order tracking', 45, 0)], 'Orders reach your till')),
      ('pos', 'POS, billing & CRM', 'Sell at the counter and the table, bill with GST, and know every customer, all in one place.',
       ['Counter, tables, kitchen tickets and kitchen display', 'GST invoices, split bills, due and credit tracking', 'Customer profiles, loyalty points, coupons and feedback', 'Stock levels, vendors, purchases and reorder alerts', 'Custom staff roles and permissions'],
       ('pos', 'Request POS, billing & CRM'), ('live-demo.html', 'Try the demo'), sk('Table 4 · open', [('Cappuccino', 40, 0), ('Club sandwich', 70, 0), ('Cold coffee', 52, 1)], 'Bill ready')),

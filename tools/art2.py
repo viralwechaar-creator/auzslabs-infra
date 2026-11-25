@@ -149,4 +149,3 @@ def webdesign():
     t = t.replace('<script src="a.js', '<script src="a.js').replace('</body>', '<script src="a2.js?v=1" defer></script></body>', 1)
     t = t.replace('</head>', '<link rel="stylesheet" href="a.css?v=1"></head>', 1) if 'a.css' not in t else t
     open(f, 'w', encoding='utf-8').write(t)
-PAGES['web-design'] = webdesign

@@ -32,3 +32,5 @@ html[data-theme=dark] .themes-page{--t-bg:#151515;--t-card:#202020;--t-ink:#f5f5
 .themes-page .t-cta p{color:var(--t-muted);font-size:.9rem;margin-top:4px}
 @media(max-width:900px){.t-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.t-grid{grid-template-columns:1fr}}.t-card{border-radius:16px}.t-body{padding:12px 14px!important;gap:6px!important}.themes-page .t-card h2{font-size:1.05rem!important}.themes-page .t-card p{font-size:.78rem!important;line-height:1.4!important}.t-btn{padding:7px 13px!important;font-size:12px!important}.t-foot small{font-size:.72rem!important}
 .themes-page .t-intro p{text-align:center!important;margin-inline:auto!important}
+
+.themes-page .t-intro .t-pricing-note{max-width:38em;margin:16px auto 0;padding:12px 16px;border:1px solid var(--t-line);border-radius:14px;background:var(--t-card);font-size:12.5px;line-height:1.55;color:var(--t-muted)}.themes-page .t-intro .t-pricing-note strong{color:var(--ink,#000)}

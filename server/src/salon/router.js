@@ -3,7 +3,7 @@ import { pool, withAuth } from '../db.js';
 import { captureError } from '../errors.js';
 import { staffLogin, verifyToken, signToken } from '../auth.js';
 import { DOMAIN, cleanString, fail, hex6, htmlEsc, limited, normalizeOrigin, readBody, round2, sendJson, staffPhone, todayStr, validDate } from './util.js';
-import { DEMO_PASSWORD, bookingCounts, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
+import { DEMO_PASSWORD, bookingCounts, demoDisplaySettings, freshDb, loadDb, loadSite, mutate, mutateStaffAdmin, originAllowed, payrollOn, readKey, readStaffAdmin, reseedDemo, tenantFor, usesGeneric, writeKey, writeStaffAdmin } from './storage.js';
 import { clearSession, getSession, hashPassword, ownerPasswordOk, setSession, verifyScrypt } from './session.js';
 import { EXPENSE_CATEGORIES, addBooking, addCashMove, addExpense, addInvoice, cashRangeSummary, cashSummary, clientsList, computeSlots, deletePackageDef, publicSite, saveClientProfile, savePackageDef, sellPackage, setCheckinStatus, settleInvoice, submitCheckin } from './rules.js';
 import { salonIcon, salonOgImage, saveUpload } from './brand.js';
@@ -263,14 +263,14 @@ export async function handleSalon(req, res, ip) {
         const mine = (db.invoices || []).filter((i) => i.createdBy && i.createdBy.id === me.sid);
         const { bgMusic, ...settings } = db.settings;
         return send(200, {
-          settings, menu: db.menu, content: {}, gallery: [], expenses: [],
+          settings: demoDisplaySettings(tenant, settings), menu: db.menu, content: {}, gallery: [], expenses: [],
           stylists: (db.stylists || []).filter((x) => x.visible && x.name !== 'Add name').map((x) => ({ id: x.id, name: x.name, role: x.role })),
           bookings: db.bookings || [], invoices: mine, clients: clientsList({ bookings: db.bookings, invoices: mine, clients: db.clients }),
           packages: (db.packages || []).filter((x) => x.active !== false), clientPackages: db.clientPackages || [], checkins: db.checkins || [], today: todayStr(),
         });
       }
       return send(200, {
-        settings: db.settings, menu: db.menu, content: db.content, stylists: db.stylists || [], gallery: db.gallery || [],
+        settings: demoDisplaySettings(tenant, db.settings), menu: db.menu, content: db.content, stylists: db.stylists || [], gallery: db.gallery || [],
         bookings: db.bookings || [], invoices: db.invoices || [], expenses: db.expenses || [], clients: clientsList(db),
         packages: db.packages || [], clientPackages: db.clientPackages || [], checkins: db.checkins || [], today: todayStr(),
       });
