@@ -141,6 +141,15 @@ export default async function run({ browser, stack }) {
     const sp = await ctx.newPage(); await sp.goto(stack.url('testcafe', '/store.html?design=minimal#/stores'), { waitUntil: 'load' }); await sp.waitForTimeout(3000);
     assert(/Jodhpur flagship/.test(await sp.locator('body').innerText()), 'public Our stores page missing the store');
   }, 'critical');
+  await s.check('Menus: header links keep one level of sub-links; footer keeps up to 3 clean columns; bad links dropped', async () => {
+    const c = (await q('select sfx_theme_chrome_clean($1::jsonb) as c', [JSON.stringify({
+      header: { announceText: '', links: [{ label: 'Shop', href: '/store.html#/shop', children: [{ label: 'Tees', href: '/store.html#/shop?c=tees', children: [{ label: 'deep', href: '/x' }] }, { label: 'Bad', href: 'javascript:alert(1)' }] }, { label: 'Plain', href: '/store.html#/about' }] },
+      footer: { about: '', note: '', links: [], columns: [{ title: 'Help', links: [{ label: 'Shipping', href: '/store.html#/policy/shipping' }, { label: 'Evil', href: 'javascript:1' }] }, { title: '', links: [{ label: 'x', href: '/x' }] }, { title: 'A', links: [{ label: 'a', href: '/a' }] }, { title: 'B', links: [{ label: 'b', href: '/b' }] }, { title: 'C', links: [{ label: 'c', href: '/c' }] }] } })]))[0].c;
+    const h = c.header.links; assert(h[0].children.length === 1 && h[0].children[0].label === 'Tees' && !('children' in h[0].children[0]) && !('children' in h[1]), 'header children wrong ' + JSON.stringify(h));
+    const f = c.footer.columns; assert(f.length === 3 && f[0].title === 'Help' && f[0].links.length === 1 && f.map((x) => x.title).join() === 'Help,A,B', 'footer columns wrong ' + JSON.stringify(f));
+    const old = (await q('select sfx_theme_chrome_clean($1::jsonb) as c', [JSON.stringify({ header: { links: [{ label: 'A', href: '/a' }] }, footer: { about: 'x', links: [{ label: 'B', href: '/b' }] } })]))[0].c;
+    assert(!('columns' in old.footer) && !('children' in old.header.links[0]), 'old shape changed: ' + JSON.stringify(old));
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();

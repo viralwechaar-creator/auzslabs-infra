@@ -268,7 +268,7 @@ function shell() {
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' },
-      E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), ...((themeHeader() || {}).links || []).map((l) => themeLink(l, 'deskonly')), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
+      E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), ...((themeHeader() || {}).links || []).map((l) => headerLink(l, 'deskonly')), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')),
       E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
@@ -339,6 +339,7 @@ function themeHref(h) {
   h = String(h || ''); if (/^https:\/\//i.test(h) || h.startsWith('#/')) return h;
   return h === '/' || !h.startsWith('/') ? link('') : link(h.slice(1));
 }
+const headerLink = (l, cls) => (l.children || []).length ? E('span', { class: 'hdd ' + (cls || '') }, themeLink(l), E('span', { class: 'hddm' }, l.children.map((c) => themeLink(c)))) : themeLink(l, cls);
 const themeLink = (l, cls) => E('a', { class: cls || '', href: themeHref(l.href), target: /^https:/i.test(l.href) ? '_blank' : null, rel: /^https:/i.test(l.href) ? 'noopener' : null }, l.label);
 function minimalPages() {
   const seen = new Set();
@@ -390,7 +391,7 @@ function openMinimalMenu() {
         E('span', { class: 'minimal-mega-swatches', 'aria-hidden': 'true' }, palette.map((colour) => E('i', { style: { backgroundColor: colour } })) )])],
   ];
   dialog.append(E('div', { class: 'minimal-mega-top' },
-    E('nav', { 'aria-label': 'Featured links' }, item('New in', 'shop?new=1'), item('Collections', 'collections'), ((themeHeader() || {}).links || []).map((l) => themeLink(l))),
+    E('nav', { 'aria-label': 'Featured links' }, item('New in', 'shop?new=1'), item('Collections', 'collections'), ((themeHeader() || {}).links || []).map((l) => [themeLink(l), ...(l.children || []).map((c) => themeLink(c, 'sublink'))])),
     E('div', { class: 'minimal-mega-brand' }, item(D.shop.name, '')),
     E('div', { class: 'minimal-mega-actions' }, action('Search', 'search', openMinimalSearch),
       action('Notifications', 'bell', openMinimalNotifications), item('My account', 'me'), action('Bag', 'bag', openMinimalBag), close)),
@@ -1514,6 +1515,7 @@ function footer() {
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), blogsOn() ? E('a', { href: link('blog') }, 'Journal') : null, mediaOn() ? E('a', { href: link('media') }, 'Media & gallery') : null, jobsOn() ? E('a', { href: link('careers') }, 'Careers') : null, E('a', { href: link('contact') }, 'Contact')),
+    ...((themeFooter() || {}).columns || []).map((col) => E('div', { class: 'col' }, E('span', { class: 'lbl' }, col.title), ...(col.links || []).map((l) => themeLink(l)))),
     themeFooter() && (themeFooter().about || (themeFooter().links || []).length) ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'More'), themeFooter().about ? E('p', { class: 'ftabout' }, themeFooter().about) : null, ...(themeFooter().links || []).map((l) => themeLink(l))) : null,
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
     E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), themeFooter() && themeFooter().note ? E('span', { class: 'ftnote' }, themeFooter().note) : null, isMin() ? E('a', { href: link('sitemap') }, 'Sitemap') : null, E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))

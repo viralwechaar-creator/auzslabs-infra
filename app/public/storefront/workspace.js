@@ -386,8 +386,12 @@ const PAGE_TEMPLATES = {
   lookbook: ['Lookbook', [{ type: 'hero', props: { heading: 'The lookbook', sub: 'Pieces styled the way we wear them.' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'button', props: { text: 'Shop the looks', href: '/shop' } }]],
   blank: ['New page', [{ type: 'text', props: { heading: 'New page', body: 'Write something here.' } }]],
 };
-const linesOf = (links) => (links || []).map((l) => l.label + ' | ' + l.href).join('\n');
-const parseLinks = (txt, max) => String(txt || '').split('\n').map((x) => x.trim()).filter(Boolean).slice(0, max).map((x) => { const [label, ...r] = x.split('|'); return { label: (label || '').trim(), href: r.join('|').trim() }; }).filter((l) => l.label && l.href);
+const linesOf = (links) => (links || []).map((l) => l.label + ' | ' + l.href + ((l.children || []).map((c) => '\n- ' + c.label + ' | ' + c.href).join(''))).join('\n');
+// one link per line "Label | href"; a line starting with "- " is a sub-link of the line above it (header menus only use them)
+const parseLinks = (txt, max) => { const out = []; for (const raw of String(txt || '').split('\n')) { const x = raw.trim(); if (!x) continue; const child = /^-\s+/.test(x); const [label, ...r] = x.replace(/^-\s+/, '').split('|'); const l = { label: (label || '').trim(), href: r.join('|').trim() }; if (!l.label || !l.href) continue;
+  if (child && out.length) { const p = out[out.length - 1]; p.children = [...(p.children || []), l].slice(0, 8); } else if (!child && out.length < max) out.push(l); } return out; };
+const columnsText = (cols) => (cols || []).map((c) => '## ' + c.title + '\n' + (c.links || []).map((l) => l.label + ' | ' + l.href).join('\n')).join('\n\n');
+const parseColumns = (txt) => { const cols = []; for (const raw of String(txt || '').split('\n')) { const x = raw.trim(); if (!x) continue; if (/^##\s*/.test(x)) { if (cols.length < 3) cols.push({ title: x.replace(/^##\s*/, '').slice(0, 40), links: [] }); continue; } const c = cols[cols.length - 1]; if (!c) continue; const [label, ...r] = x.split('|'); const l = { label: (label || '').trim(), href: r.join('|').trim() }; if (l.label && l.href && c.links.length < 8) c.links.push(l); } return cols.filter((c) => c.title && c.links.length); };
 const pageSlug = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page';
 const edCurPage = () => (ed.cur.startsWith('p:') ? ed.pages[Number(ed.cur.slice(2))] : null);
 function edBind() { const p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : p ? p.sections : ed.home; if (ed.cur !== 'home' && !p && ed.cur !== 'header' && ed.cur !== 'footer') ed.cur = 'home'; }
@@ -415,10 +419,10 @@ function edChromeHtml(kind) {
   const w = canWrite(); const dis = w ? '' : ' disabled';
   if (kind === 'header') return '<div class="panel-title"><h2>Header</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="header"><div class="field-grid te-fields">' +
     input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + input('Announcement link (optional)', 'announceHref', ed.header.announceHref, 'text', 'placeholder="/shop or https://..."' + dis) +
-    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
+    area('Extra menu links. One per line: Label | /path or https://link (up to 8). A line starting with - is a sub-link of the line above.', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
   return '<div class="panel-title"><h2>Footer</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="footer"><div class="field-grid te-fields">' +
     area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
-    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + '</div></form></div>';
+    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + area('Footer columns (up to 3). Start each with ## Title, then one link per line.', 'columns', columnsText(ed.footer.columns), 'rows="7"' + dis + ' placeholder="## Help\nShipping | /store.html#/policy/shipping"') + '</div></form></div>';
 }
 function edRightHtml() {
   if (ed.cur === 'header' || ed.cur === 'footer') return edChromeHtml(ed.cur);
@@ -537,7 +541,7 @@ function edChromeInput(target) {
   const d = Object.fromEntries(new FormData(form));
   if (form.dataset.form === 'te-page') { const p = edCurPage(); if (!p) return true; p.title = String(d.title || '').slice(0, 60); p.slug = pageSlug(d.slug || d.title); const o = $('#te-page-wrap'); if (o) o.innerHTML = edPageSelect(); }
   else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
-  else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12) };
+  else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12), columns: parseColumns(d.columns) };
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
   edPost(); return true;
 }
