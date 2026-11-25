@@ -6,12 +6,48 @@ import { sendStaffInviteEmail } from '../mail.js';
 import { safeResetBase } from '../config.js';
 import { myProfile } from '../lib/guards.js';
 import { HttpError, rateLimited, readJsonBody, readRawBody } from '../lib/http.js';
+import { buildStaffPdf, pairsOf } from '../lib/staffpdf.js';
+import { readDocUpload } from '../storage.js';
 import { signLicence, verifyLicence, publicFromPrivate, PRODUCTS } from '../licence.js';
 
 // Returns false when none of this module's routes matched, so the dispatcher in index.js tries the next module;
 // any other return (including the undefined that `return reply(...)` gives) means the request was handled.
 export async function handle(ctx) {
   const { req, res, url, user, ip, meta, reply, origin } = ctx;
+  // ---- admin: one PDF with a SalesOS staff member's whole profile and every uploaded document ----
+  const staffPdf = url.pathname.match(/^\/admin\/sos-staff-pdf\/([0-9a-f-]{36})$/i);
+  if (staffPdf && req.method === 'GET') {
+    if (!user) throw new HttpError(401, 'unauthorized');
+    if (rateLimited(`staffpdf:${user.id}`, 30, 10 * 60_000)) throw new HttpError(429, 'too many requests, try again later');
+    const staffId = staffPdf[1];
+    const data = await withAuth(user.id, async (client) => {
+      const one = async (sql) => { try { const { rows } = await client.query(sql, [staffId]); return rows[0] ? rows[0].r : null; } catch (e) { if (/not authorized|not a platform admin/i.test(e.message)) throw new HttpError(403, 'forbidden'); throw e; } };
+      const profile = await one('select admin_sos_staff_profile_get($1::uuid) as r');
+      const sens = await one('select admin_sos_staff_sensitive_get($1::uuid) as r');
+      const assets = await one('select admin_sos_staff_assets_list($1::uuid) as r');
+      const exit = await one('select admin_sos_staff_exit_get($1::uuid) as r');
+      const docs = (await one('select admin_sos_staff_documents($1::uuid) as r')) || [];
+      const files = [];
+      for (const d of docs) { let f = null; try { const { rows } = await client.query('select admin_sos_document_file($1::uuid) as f', [d.id]); f = rows[0] && rows[0].f; } catch { /* no file */ } files.push(f); }
+      return { profile, sens, assets, exit, docs, files };
+    });
+    const name = String(url.searchParams.get('name') || (data.profile && (data.profile.name || data.profile.employee_code)) || 'Staff member').slice(0, 80);
+    const docs = [];
+    for (let i = 0; i < data.docs.length; i++) {
+      const d = data.docs[i]; const f = data.files[i]; let up = null;
+      if (f) up = await readDocUpload({ tenantId: 'sos-documents', empId: d.id, filename: f });
+      docs.push({ label: d.label, category: d.category, uploaded: d.uploaded, buffer: up && up.buffer, type: up && up.type });
+    }
+    const sections = [
+      { title: 'Job and company', rows: pairsOf(data.profile) },
+      { title: 'Identity, salary and bank', rows: pairsOf(data.sens) },
+      { title: 'Company assets', rows: (data.assets || []).map((a) => [a.assetType || 'Asset', [a.assetDetail, a.status === 'returned' ? 'Returned ' + (a.returnDate || '') : 'Issued ' + (a.issueDate || '')].filter(Boolean).join(' - ')]) },
+      { title: 'Exit record', rows: pairsOf(data.exit) },
+    ];
+    const buf = await buildStaffPdf({ name, sections, docs });
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="staff-profile.pdf"', 'Cache-Control': 'no-store', 'Content-Length': buf.length });
+    res.end(buf); return;
+  }
   // ---- admin: open a business's apps as its owner (limited 8 h session, audit-logged) ----
   if (url.pathname === '/admin/login-as' && req.method === 'POST') {
     if (!user) throw new HttpError(401, 'unauthorized');

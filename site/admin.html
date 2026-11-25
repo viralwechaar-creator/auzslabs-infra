@@ -2259,7 +2259,8 @@ async function openStaffProfileModal(staffId, staffName) {
   const p = prof || {}, s = sens || {}, ex = exit || {};
 
   body.innerHTML = `
-    <div class="label">Staff profile</div><h3 class="h-2" style="margin-bottom:14px">${esc(staffName)}</h3>
+    <div class="label">Staff profile</div><h3 class="h-2" style="margin-bottom:6px">${esc(staffName)}</h3>
+    <div class="onb-foot" style="margin:0 0 14px"><button type="button" class="btn btn-primary" id="spPdf">Download whole profile and documents (PDF)</button><span class="small muted" id="spPdfMsg"></span></div>
     <div class="label">Job &amp; company</div>
     <div class="onb-grid">
       ${sosField('Employee ID', 'spEmployeeCode', p.employee_code)}
@@ -2321,8 +2322,8 @@ async function openStaffProfileModal(staffId, staffName) {
     </div>
 
     <div class="label" style="margin-top:18px">Documents on file</div>
-    <div>${(docs || []).length ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Document</th><th>Category</th><th>Status</th></tr>${(docs || []).map((d) => `
-      <tr><td>${esc(d.label)}</td><td>${esc(d.category || '')}</td><td>${d.uploaded ? 'On file' : 'Pending'}</td></tr>`).join('')}</table></div>` : emptyDoodle('No documents uploaded yet.')}</div>
+    <div>${(docs || []).length ? `<div class="admin-table-wrap"><table class="admin-table"><tr><th>Document</th><th>Category</th><th>Status</th><th></th></tr>${(docs || []).map((d) => `
+      <tr><td>${esc(d.label)}</td><td>${esc(d.category || '')}</td><td>${d.uploaded ? 'On file' : 'Pending'}</td><td>${d.uploaded ? `<a href="#" data-spdoc="${d.id}" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;min-height:0">Open</a>` : ''}</td></tr>`).join('')}</table></div>` : emptyDoodle('No documents uploaded yet.')}</div>
 
     <div class="label" style="margin-top:18px">Exit management</div>
     <div class="onb-grid">
@@ -2339,6 +2340,19 @@ async function openStaffProfileModal(staffId, staffName) {
   `;
 
   const g = (id) => document.getElementById(id);
+  body.querySelectorAll('[data-spdoc]').forEach((link) => { link.onclick = async (e) => { e.preventDefault(); try {
+    const { data: ss } = await sb.auth.getSession(); const r = await fetch(CFG.url + '/storage/sos-staff-doc-admin/' + link.dataset.spdoc, { headers: { Authorization: 'Bearer ' + ss.session.access_token } });
+    if (!r.ok) throw new Error('missing'); window.open(URL.createObjectURL(await r.blob()), '_blank', 'noopener'); } catch (e2) { alert('The document could not be loaded.'); } }; });
+  g('spPdf').onclick = async () => {
+    const btn = g('spPdf'), msg = g('spPdfMsg'); btn.disabled = true; msg.textContent = 'Preparing the PDF...';
+    try {
+      const sess = await sb.auth.getSession();
+      const r = await fetch(CFG.url + '/admin/sos-staff-pdf/' + staffId + '?name=' + encodeURIComponent(staffName), { headers: { Authorization: 'Bearer ' + sess.data.session.access_token } });
+      if (!r.ok) throw new Error((await r.text().catch(() => '')).slice(0, 120) || 'Could not make the PDF');
+      const blob = await r.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'staff-profile-' + String(staffName).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.pdf'; document.body.appendChild(a); a.click(); a.remove(); msg.textContent = 'Downloaded.';
+    } catch (e) { msg.textContent = e.message; } finally { btn.disabled = false; }
+  };
   document.getElementById('spSaveJob').onclick = async () => {
     const payload = { employeeCode: g('spEmployeeCode').value, department: g('spDepartment').value, designation: g('spDesignation').value,
       employmentType: g('spEmploymentType').value, workLocation: g('spWorkLocation').value, joiningDate: g('spJoiningDate').value, probationEndDate: g('spProbationEndDate').value,
