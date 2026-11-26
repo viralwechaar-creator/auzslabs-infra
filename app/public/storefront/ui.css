@@ -678,3 +678,9 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .cust-card .cust-reach,.shell .cust-card .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:var(--sp-2);margin:0}
 .shell .cust-card .btn,.shell .cust-card .btn.compact{min-height:40px;height:40px;padding:0 var(--sp-3);justify-content:center;font-size:14px;font-weight:550;white-space:nowrap}
 .shell .cust-card .btn.danger{background:var(--soft);color:#b3261e}
+
+/* 33. Customer card: contact shown as round icons (mail, phone, WhatsApp) */
+.shell .cust-card .cust-reach{display:flex;gap:var(--sp-3);grid-template-columns:none}
+.shell .cust-card .btn.ico-btn{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;flex:none}
+.shell .cust-card .btn.ico-btn.wa{color:#1f9d55}
+.shell .cust-card .btn.ico-btn svg{width:22px!important;height:22px!important}
