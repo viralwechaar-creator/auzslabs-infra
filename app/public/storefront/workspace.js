@@ -49,13 +49,14 @@ function home() {
 const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']];
 function orderBar() {
   const o = lb.orders;
-  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer or discount code" value="' + esc(o.q) + '">' +
+  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer, tag or discount code" value="' + esc(o.q) + '">' +
     '<select id="ol-pay" aria-label="Payment"><option value="">All payments</option>' + [['paid', 'Paid'], ['pending', 'Pending']].map(([v, t]) => '<option value="' + v + '"' + (o.pay === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
+    '<select id="ol-arch" aria-label="Archived orders">' + [['', 'Hide archived'], ['all', 'Show archived too'], ['only', 'Only archived']].map(([v, t]) => '<option value="' + v + '"' + (o.arch === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
     sortSel('ol-sort', [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Total, high to low'], ['low', 'Total, low to high']], o.sort) + '</div>';
 }
 function ordersList() {
   const o = lb.orders, q = o.q.trim().toLowerCase();
-  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q) || (x.discountCode || '').toLowerCase() === q) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
+  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q) || (x.discountCode || '').toLowerCase() === q || (x.tags || []).includes(q)) && (o.arch === 'only' ? x.archived : o.arch === 'all' ? true : !x.archived) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
   list = list.slice().sort(o.sort === 'old' ? (a, b) => cmp(a.date, b.date) : o.sort === 'high' ? (a, b) => b.total - a.total : o.sort === 'low' ? (a, b) => a.total - b.total : (a, b) => cmp(b.date, a.date));
   const rows = table(['Order', 'Date', 'Customer', 'Total', 'Payment', 'Fulfillment'], list.map((o) => [
     link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status),
@@ -105,10 +106,11 @@ function orderDetail(id) {
   const o = state.orders.find((x) => x.id === id);
   if (!o) return head('Order unavailable', 'This order could not be found.', wl('All orders', 'orders'));
   const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [(l.productId ? '<a href="' + pathFor('products/' + encodeURIComponent(l.productId)) + '">' + esc(l.name) + '</a>' : esc(l.name)) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
-  const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
+  const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + (e.kind === 'comment' ? esc(e.by || 'Staff') + ': ' : '') + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
   const left = (o.remaining || []).reduce((a, r) => a + r.qty, 0);
   const closed = ['Cancelled', 'Returned'].includes(o.status);
   const actions = canWrite() && !closed ? (left > 0 && o.status !== 'Fulfilled' ? button('Fulfil items', 'order-fulfill:' + o.id, 'primary') : '') + (o.fulfilment === 'unfulfilled' && o.status !== 'Fulfilled' ? button('Cancel order', 'order-cancel:' + o.id) : button('Start a return', 'return-new:' + o.id)) : '';
+  const archiveBtn = canWrite() && (closed || o.status === 'Fulfilled' || o.archived) ? button(o.archived ? 'Restore from archive' : 'Archive', 'order-archive:' + o.id + ':' + (o.archived ? 'off' : 'on')) : '';
   const dlabel = { none: 'Not shipped', in_transit: 'In transit', partly_delivered: 'Partly delivered', delivered: 'Delivered', failed: 'Delivery failed' }[o.delivery] || 'Not shipped';
   const ships = (o.shipments || []).filter((x) => x.status !== 'cancelled').map((x) => {
     const next = { shipped: [['in_transit', 'Mark in transit'], ['delivered', 'Mark delivered']], in_transit: [['delivered', 'Mark delivered'], ['failed', 'Delivery failed']], failed: [['in_transit', 'Retry delivery']] }[x.status] || [];
@@ -122,11 +124,11 @@ function orderDetail(id) {
   const refundPanel = panel('Refunds', body('<div class="stack">' + (refundRows || '<p class="empty">Nothing refunded.</p>') + (o.refunded > 0 ? '<p class="compact-copy">Refunded ' + money(o.refunded) + ' of ' + money(o.total) + '.</p>' : '') +
     (canRefund ? button('Record a refund', 'refund-new:' + o.id) : '') + (canWrite() ? button(o.isTest ? 'Unmark test order' : 'Mark as test order', 'order-test:' + o.id + ':' + (o.isTest ? 'off' : 'on')) : '') + '</div>'));
   const shipPanel = panel('Fulfilment', body('<div class="stack">' + (ships || '<p class="empty">Nothing shipped yet.</p>') + (left > 0 && (o.shipments || []).length ? '<p class="compact-copy">' + left + ' item(s) still to ship.</p>' : '') + '</div>'));
-  return head('Order #' + esc(o.number) + (o.isTest ? ' (test)' : ''), dateValue(o.date), actions, ['orders', 'Orders']) +
+  return head('Order #' + esc(o.number) + (o.isTest ? ' (test)' : '') + (o.archived ? ' (archived)' : ''), dateValue(o.date), actions + archiveBtn, ['orders', 'Orders']) +
     '<div class="record-layout"><div>' + panel('Items', lines) + shipPanel + refundPanel + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfilment</div>' + status(o.status) + '</div><div class="launch"><div class="info">Delivery</div><strong>' + dlabel + '</strong></div><div class="launch"><div class="info">Channel</div><strong>' + esc(o.channel) + (o.oversold ? ' · oversold, check stock' : '') + '</strong></div></div>')) +
     ((state.returns || []).filter((r) => r.orderId === o.id).length ? panel('Returns', body('<div class="stack">' + (state.returns || []).filter((r) => r.orderId === o.id).map((r) => '<div class="launch"><div class="info">' + (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', ') + '<small>' + esc(r.reason || '') + '</small></div>' + badge({ requested: 'Requested', approved: 'Approved', rejected: 'Rejected', received: 'Received', refunded: 'Refunded' }[r.status] || esc(r.status)) + '</div>').join('') + '<a href="' + pathFor('returns') + '">All returns</a></div>')) : '') +
-    panel('Timeline', body('<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
-    '</div><aside>' + panel('Customer', body('<div class="stack"><p>' + (o.customerId ? '<a href="#" data-action="customer-detail:' + esc(o.customerId) + '">' + esc(o.customer || '—') + '</a>' : esc(o.customer || '—')) + '</p>' + (o.contact.phone ? '<small>' + esc(o.contact.phone) + '</small>' : '') + (o.contact.email ? '<small>' + esc(o.contact.email) + '</small>' : '') + (o.contact.address ? '<small>' + esc([o.contact.address, o.contact.city, o.contact.state, o.contact.pin].filter(Boolean).join(', ')) + '</small>' : '') + (o.discountCode ? '<small>Discount: <a href="' + pathFor('discounts') + '">' + esc(o.discountCode) + '</a> (−' + money(o.discountAmount) + ')</small>' : '') + (o.attribution && (o.attribution.source || o.attribution.campaign) ? '<small>Came from: ' + esc([o.attribution.source, o.attribution.medium, o.attribution.campaign].filter(Boolean).join(' / ')) + '</small>' : '') + '</div>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
+    panel('Timeline', body((canWrite() ? editForm('order-comment', o.id, area('Leave a comment (only your team sees this)', 'text', '', 'maxlength="1000" required'), 'Post') : '') + '<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
+    '</div><aside>' + panel('Tags', body('<div class="stack">' + ((o.tags || []).length ? '<p>' + o.tags.map((t) => badge(esc(t), 'neutral')).join(' ') + '</p>' : '<p class="empty">No tags.</p>') + (canWrite() ? button('Edit tags', 'order-tags:' + o.id) : '') + '</div>')) + panel('Customer', body('<div class="stack"><p>' + (o.customerId ? '<a href="#" data-action="customer-detail:' + esc(o.customerId) + '">' + esc(o.customer || '—') + '</a>' : esc(o.customer || '—')) + '</p>' + (o.contact.phone ? '<small>' + esc(o.contact.phone) + '</small>' : '') + (o.contact.email ? '<small>' + esc(o.contact.email) + '</small>' : '') + (o.contact.address ? '<small>' + esc([o.contact.address, o.contact.city, o.contact.state, o.contact.pin].filter(Boolean).join(', ')) + '</small>' : '') + (o.discountCode ? '<small>Discount: <a href="' + pathFor('discounts') + '">' + esc(o.discountCode) + '</a> (−' + money(o.discountAmount) + ')</small>' : '') + (o.attribution && (o.attribution.source || o.attribution.campaign) ? '<small>Came from: ' + esc([o.attribution.source, o.attribution.medium, o.attribution.campaign].filter(Boolean).join(' / ')) + '</small>' : '') + '</div>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
 }
 
 // ---------- Products ----------
@@ -134,7 +136,7 @@ const productTabs = [['products', 'All products'], ['collections', 'Collections'
 const productLabel = (p) => '<div class="cell-product">' + image(p.image, '', 'thumb') + '<a href="' + pathFor('products/' + encodeURIComponent(p.id)) + '">' + esc(p.name) + '</a>' + '</div>';
 let pf = { status: '', category: '', tag: '', stock: '', sort: '' };
 // search / sort / filter bars shared by the list pages
-const lb = { orders: { q: '', sort: 'new', pay: '' }, customers: { q: '', sort: 'name' } };
+const lb = { orders: { q: '', sort: 'new', pay: '', arch: '' }, customers: { q: '', sort: 'name' } };
 const sortSel = (id, opts, val) => '<select id="' + id + '" aria-label="Sort">' + opts.map(([v, t]) => '<option value="' + v + '"' + (v === val ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>';
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 function productsList(query = '') {
@@ -1319,7 +1321,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
   if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'); if (target.name === 'description') { const rp = f.querySelector('[data-rich-preview]'); if (rp) rp.innerHTML = target.value ? richHtml(target.value) : '<p class="compact-copy">A preview of your formatting shows here.</p>'; } const el = f.querySelector('[data-seo-preview]'); if (!el) return; if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
-  if ((type === 'input' || type === 'change') && /^ol-(query|pay|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.orders[k === 'query' ? 'q' : k] = target.value; $('#orders-results').innerHTML = ordersList(); return; }
+  if ((type === 'input' || type === 'change') && /^ol-(query|pay|sort|arch)$/.test(target.id)) { const k = target.id.slice(3); lb.orders[k === 'query' ? 'q' : k] = target.value; $('#orders-results').innerHTML = ordersList(); return; }
   if ((type === 'input' || type === 'change') && /^cl-(query|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.customers[k === 'query' ? 'q' : k] = target.value; $('#customers-results').innerHTML = customersList(); return; }
   if ((type === 'input' || type === 'change') && /^pg-(query|status)$/.test(target.id)) { pgf[target.id === 'pg-query' ? 'q' : 'status'] = target.value; const el = $('#pages-results'); if (el) el.innerHTML = pagesList(); return; }
   if (type === 'change' && target.matches && target.matches('[data-linkpick]')) { const ta = target.closest('.rich')?.querySelector('textarea'); if (ta && target.value) { const st = ta.selectionStart, en = ta.selectionEnd, label = ta.value.slice(st, en) || target.options[target.selectedIndex].text, ins = '[' + label + '](' + target.value + ')'; ta.value = ta.value.slice(0, st) + ins + ta.value.slice(en); ta.dispatchEvent(new Event('input', { bubbles: true })); } target.value = ''; return; }
@@ -1410,6 +1412,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_order_cancel', { p_order: rid, p: { reason: data.reason, restock: data.restock !== 'no' } }); await refreshOrders(); save('Order cancelled.'); close(); rerender(true);
       } else if (key === 'refund-record') {
         await api('sfx_refund_record', { p_order: rid, p: { amount: Number(data.amount), method: data.method, reason: data.reason } }); await refreshOrders(); save('Refund recorded.'); close(); rerender(true);
+      } else if (key === 'order-comment') {
+        await api('sfx_order_comment', { p_order: rid, p_text: data.text }); await refreshOrders(); save('Comment posted.'); rerender();
+      } else if (key === 'order-tags') {
+        await api('sfx_order_tags_set', { p_order: rid, p_tags: String(data.tags || '').split(',').map((x) => x.trim()).filter(Boolean) }); await refreshOrders(); save('Tags saved.'); close(); rerender();
       } else if (key === 'order-note') {
         await api('sfx_order_note', { p_id: rid, p_note: data.note }); await refreshOrders(); save('Note saved.'); rerender();
       } else if (key === 'business') {
@@ -1583,6 +1589,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   });
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
   if (a === 'apikey-new') return dialog('Create an API key', editForm('apikey-record', '', input('Name (what will use it)', 'name', '', 'text', 'required maxlength="60" placeholder="Accounting export"'), 'Create key'));
+  if (a === 'order-tags') { const o = state.orders.find((x) => x.id === key); return dialog('Order tags', editForm('order-tags', key, input('Tags, separated by commas (up to 10)', 'tags', ((o && o.tags) || []).join(', '), 'text', 'maxlength="400" placeholder="gift, wholesale"'), 'Save tags')); }
+  if (a === 'order-archive') return withBusy(async () => { await api('sfx_order_archive', { p_order: key, p_on: detail === 'on' }); await refreshOrders(); save(detail === 'on' ? 'Order archived.' : 'Order restored.'); rerender(true); });
   if (a === 'layout-open') { layoutDraft = ((state.insights && state.insights.layout) || DEFAULT_LAYOUT).filter((k) => LAYOUT_NAMES[k]); return dialog('Choose the cards on Insights', layoutDialogBody()); }
   if (['layout-move', 'layout-hide', 'layout-show'].includes(a) && layoutDraft) {
     const i = layoutDraft.indexOf(key);

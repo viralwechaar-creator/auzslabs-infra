@@ -124,5 +124,37 @@ export default async function run({ browser, stack }) {
     assert(hrefs.length === 1 && hrefs[0].endsWith(o6), 'orders not filtered to the code: ' + JSON.stringify(hrefs));
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Order page: internal comment on the timeline, tags, archive and the archived filter', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    const o7 = await place();
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o7), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.fill('textarea[name=text]', 'Packed with a gift note');
+    await page.evaluate(() => document.querySelector('textarea[name=text]').form.querySelector('button.primary, button[type=submit]').click()); await page.waitForTimeout(1500);
+    let t = await page.locator('main, body').first().innerText();
+    assert(/Packed with a gift note/.test(t), 'comment not on the timeline');
+    const tl = (await q('select timeline from sfx_orders where id=$1', [o7]))[0].timeline; const c = tl.find((e) => e.kind === 'comment');
+    assert(c && c.by && c.label === 'Packed with a gift note', JSON.stringify(tl).slice(0, 300));
+    await page.evaluate(() => document.querySelector('[data-action^="order-tags:"]').click()); await page.waitForTimeout(500);
+    await page.fill('#dialog input[name=tags]', 'Gift, wholesale, gift');
+    await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1500);
+    assert(JSON.stringify((await q('select tags from sfx_orders where id=$1', [o7]))[0].tags) === JSON.stringify(['gift', 'wholesale']), 'tags wrong');
+    // only finished orders can be archived
+    const bad = JSON.stringify((await rpc(stack, 'sfx_order_archive', { p_order: o7, p_on: true }, await (async () => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token)())).data).toLowerCase();
+    assert(/only finished orders/.test(bad), 'archived an unfinished order: ' + bad);
+    await q("update sfx_orders set status='fulfilled' where id=$1", [o7]);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o7), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.evaluate(() => document.querySelector('[data-action^="order-archive:"]').click()); await page.waitForTimeout(1500);
+    assert((await q('select archived_at is not null a from sfx_orders where id=$1', [o7]))[0].a === true, 'not archived');
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    const hide = await page.locator('#orders-results a[href*="#/orders/' + o7 + '"]').count();
+    assert(hide === 0, 'archived order still in the default list');
+    await page.selectOption('#ol-arch', 'only'); await page.waitForTimeout(800);
+    assert(await page.locator('#orders-results a[href*="#/orders/' + o7 + '"]').count() >= 1, 'archived order missing from the archived view');
+    await page.fill('#ol-query', 'wholesale'); await page.waitForTimeout(500);
+    assert(await page.locator('#orders-results a[href*="#/orders/' + o7 + '"]').count() >= 1, 'tag search failed');
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }
