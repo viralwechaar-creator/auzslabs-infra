@@ -188,5 +188,52 @@ export default async function run({ browser, stack }) {
     assert(row.customer_id === null && row.customer.name === 'Corrected Name', 'customer not unlinked: ' + JSON.stringify(row));
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Edit items: change quantity, add a product and a custom item, stock follows, total moves, refused when shipped or empty', async () => {
+    const tok = await (async () => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token)();
+    const call2 = async (fn, args) => { const d = (await rpc(stack, fn, args, tok)).data; return d && d.data !== undefined && !d.error ? d.data : d; };
+    await q('update sfx_variants set stock = 50 where id = $1', [vs]);
+    const o9 = await place();
+    const before = (await q('select total::float t, lines from sfx_orders where id=$1', [o9]))[0]; const price = Number(before.lines[0].price);
+    const stock0 = (await q('select stock from sfx_variants where id=$1', [vs]))[0].stock;
+    const old0 = before.lines[0].qty;
+    // raise line 1 by two: takes 2 more from stock, total goes up by 2 x price
+    let r = await call2('sfx_order_edit', { p_order: o9, p: { lines: [{ index: 0, qty: old0 + 2 }], reason: 'Customer asked for more' } });
+    assert(r.difference === price * 2, 'difference ' + r.difference + ' price ' + price);
+    assert((await q('select stock from sfx_variants where id=$1', [vs]))[0].stock === stock0 - 2, 'stock not taken');
+    // a custom item
+    r = await call2('sfx_order_edit', { p_order: o9, p: { lines: [{ index: 0, qty: old0 + 2 }, { custom: { name: 'Gift wrap', price: 40 }, qty: 2 }] } });
+    assert(r.difference === 80, 'custom item difference ' + r.difference);
+    // reduce line 1 to one unit with restock
+    r = await call2('sfx_order_edit', { p_order: o9, p: { lines: [{ index: 0, qty: 1 }], restock: true } });
+    assert((await q('select stock from sfx_variants where id=$1', [vs]))[0].stock === stock0 + (old0 - 1), 'stock not restocked: ' + (await q('select stock from sfx_variants where id=$1', [vs]))[0].stock);
+    const t = (await q('select lines from sfx_orders where id=$1', [o9]))[0];
+    assert(t.lines.length === 3 && t.lines.some((l) => l.custom), JSON.stringify(t.lines.map((l) => l.name)));
+    // too many for the shelf, and removing everything, are refused
+    await q('update sfx_variants set stock = 1 where id=$1', [vs]);
+    assert(/in stock|does not have/.test(JSON.stringify(await call2('sfx_order_edit', { p_order: o9, p: { lines: [{ index: 0, qty: 9 }] } }))), 'oversold by editing');
+    assert(/at least one item/.test(JSON.stringify(await call2('sfx_order_edit', { p_order: o9, p: { lines: [{ index: 0, qty: 0 }, { index: 1, qty: 0 }, { index: 2, qty: 0 }] } }))), 'emptied the order');
+    // paid orders note the money owed
+    await q("update sfx_orders set payment_status='paid' where id=$1", [o9]);
+    r = await call2('sfx_order_edit', { p_order: o9, p: { lines: [{ index: 2, qty: 0 }] } });
+    const tl = (await q('select timeline from sfx_orders where id=$1', [o9]))[0].timeline; assert(tl.some((e) => /Refund due to the customer/.test(e.label)), 'refund due not noted');
+    // shipped orders cannot be edited
+    await q("update sfx_orders set fulfilment_status='partial' where id=$1", [o9]);
+    assert(/has not shipped/.test(JSON.stringify(await call2('sfx_order_edit', { p_order: o9, p: { lines: [{ index: 0, qty: 1 }] } }))), 'edited a shipped order');
+  });
+  await s.check('Edit items dialog: quantities and a custom item save, and the new total shows live', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    await q('update sfx_variants set stock = 50 where id = $1', [vs]);
+    const o10 = await place();
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o10), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.evaluate(() => document.querySelector('[data-action^="order-edit:"]').click()); await page.waitForTimeout(1500);
+    await page.fill('#dialog input[name=q_0]', '2'); await page.fill('#dialog input[name=cname]', 'Engraving'); await page.fill('#dialog input[name=cprice]', '25'); await page.fill('#dialog input[name=cq]', '1'); await page.waitForTimeout(300);
+    const pv = await page.locator('#edit-preview').innerText(); assert(/New total/.test(pv), pv);
+    await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1800);
+    const lines = (await q('select lines from sfx_orders where id=$1', [o10]))[0].lines;
+    assert(lines[0].qty === 2 && lines.some((l) => l.name === 'Engraving' && l.custom === true), JSON.stringify(lines).slice(0, 300));
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }
