@@ -141,6 +141,15 @@ export function rerender(skipRefresh) {
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
   $('#app').innerHTML = '<div class="shell' + (sideCollapsed() ? ' side-collapsed' : '') + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
   $('.work-area').scrollTop = scrollTop;
+  // Record pages: back button and "Parent / Record name" live in the top bar, like Shopify.
+  const trail = document.querySelector('.page-head .trail'), recTitle = document.querySelector('.page-head h1');
+  const bcBox = document.querySelector('.topbar .breadcrumb');
+  if (trail && recTitle && bcBox) {
+    const href = trail.getAttribute('href') || '#/';
+    bcBox.classList.add('is-record');
+    bcBox.innerHTML = '<a class="back-circle" href="' + esc(href) + '" aria-label="Back to ' + esc(trail.textContent) + '"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5"/></svg></a><a class="crumb-parent" href="' + esc(href) + '">' + esc(trail.textContent) + '</a><span>/</span><strong>' + esc(recTitle.textContent) + '</strong>';
+    document.querySelector('.work')?.classList.add('has-crumb');
+  }
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
   document.querySelectorAll('.page-head .actions').forEach((box) => {
     const items = [...box.children].filter((el) => el.matches('.btn, button, a'));

@@ -403,3 +403,35 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell.side-collapsed .workspace-id strong{display:none}
   .shell.side-collapsed .sidebar-store-row{grid-template-columns:1fr}
 }
+
+/* 19. record pages: the trail moves into the top bar */
+.shell .work.has-crumb .page-head .trail{display:none}
+.shell .breadcrumb.is-record{display:flex!important;align-items:center;gap:8px;min-width:0}
+.shell .breadcrumb.is-record strong{font-size:14px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell .breadcrumb.is-record .crumb-parent{color:var(--muted);font-size:14px;text-decoration:none}
+.shell .breadcrumb.is-record span{color:var(--muted)}
+.shell .back-circle{width:32px;height:32px;border-radius:50%;background:var(--pill);display:grid;place-items:center;color:var(--ink);flex:none}
+.shell .back-circle:hover{filter:brightness(.94)}
+@media (max-width:899px){.shell .topbar .breadcrumb.is-record .crumb-parent,.shell .topbar .breadcrumb.is-record span{display:none}.shell .topbar .mobile-page-name{display:none}.shell .back-circle{width:44px;height:44px}}
+@media (max-width:899px){
+  .shell .back-circle{width:36px;height:36px}
+  .shell .topbar:has(.is-record) .mobile-brand{display:none}
+  .shell .mobile-brand img{width:34px!important;height:34px!important;border-radius:9px}
+  .shell .work.has-crumb{padding-top:calc(var(--sp-4) + 8px)}
+}
+
+/* 20. phone Inventory rows: product + variant on top, three labelled counts below, actions last */
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Variant]){display:flex!important;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:var(--sp-3) 0}
+  .shell tbody tr:has(td[data-label=Variant]) td{display:inline-flex!important;width:auto!important;padding:0!important;border:0!important;min-height:0!important;height:auto!important;font-size:14px;color:var(--muted)}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Product]{flex:1 1 60%!important;font-size:17px;font-weight:650;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Variant]{order:1;font-weight:550;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Variant])::after{content:"";flex-basis:100%;order:2;height:0}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=SKU],.shell tbody tr:has(td[data-label=Variant]) td[data-label=Unavailable],.shell tbody tr:has(td[data-label=Variant]) td[data-label=Cost],.shell tbody tr:has(td[data-label=Variant]) td[data-label="Other locations"]{display:none!important}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Available],.shell tbody tr:has(td[data-label=Variant]) td[data-label=Committed],.shell tbody tr:has(td[data-label=Variant]) td[data-label="On hand"]{order:3}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label]::before{content:attr(data-label) "\00a0"!important;color:var(--muted);font-weight:450;display:inline!important}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Product]::before,.shell tbody tr:has(td[data-label=Variant]) td[data-label=Variant]::before{content:none!important}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Available]::after{content:none!important}
+  .shell tbody tr:has(td[data-label=Variant]) td:last-child{order:5;margin-left:auto}
+}
+.shell td[data-label=Product] a{color:var(--ink)!important}

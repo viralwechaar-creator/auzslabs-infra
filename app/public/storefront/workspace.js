@@ -1078,8 +1078,7 @@ function contentPage(id) {
   if (id === 'data') return head('Custom data', 'Define extra details you want to keep for products, customers or orders.', canWrite() ? button('Add field', 'field-new', 'primary') : '') + tabs(id, contentTabs) +
     panel('Field definitions', table(['Name', 'Applies to', 'Value type', ''], fields.map((f) => [esc(f.name), esc(f.appliesTo), esc(f.valueType), rowActions('field', f.id)])));
   return head('Content', 'Manage the pages, files and custom data that feed your site.') + tabs('content', contentTabs) +
-    '<div class="metrics">' + metric('Pages', pages.length, pages.filter((x) => x.status === 'Visible').length + ' visible') + metric('Files', files.length, 'Media library') + metric('Custom fields', fields.length, 'Definitions') + '</div>' +
-    panel('Website content', body('<div class="stack">' + wl('Pages and menus', 'pages') + wl('Files', 'files') + wl('Custom data', 'data') + '</div>'));
+    '<div class="metrics">' + metric('Pages', pages.length, pages.filter((x) => x.status === 'Visible').length + ' visible') + metric('Files', files.length, 'Media library') + metric('Custom fields', fields.length, 'Definitions') + '</div>';
 }
 function fileForm(f) { return editForm('file-record', f?.id, input('Name', 'name', f?.name || '', 'text', 'required maxlength="120"') + select('Type', 'type', ['Image', 'Document', 'Video', 'Other'], f?.type || 'Image') + input('Link (https://...)', 'url', f?.url || '', 'url', 'required')); }
 function fieldForm(f) { return editForm('field-record', f?.id, input('Field name', 'name', f?.name || '', 'text', 'required maxlength="80"') + select('Applies to', 'appliesTo', ['Products', 'Customers', 'Orders', 'Collections'], f?.appliesTo || 'Products') + select('Value type', 'valueType', ['Text', 'Number', 'Yes or no', 'Date', 'List'], f?.valueType || 'Text'), 'Save field'); }
