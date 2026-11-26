@@ -26,6 +26,14 @@ export default async function run({ browser, stack }) {
     assert(v.series.at(-1).visitors === 3, 'today bucket (Asia/Kolkata) should hold the visitors');
     assert(v.devices[0].device === 'phone' && v.pages[0].page === '/shop', JSON.stringify([v.devices, v.pages]));
   }, 'critical');
+  await s.check('Live view: a valid time zone is counted per place, a malformed one is dropped', async () => {
+    const ev = (sid, tz) => ({ k: 'view', sid, p: '/', dev: 'phone', tz });
+    await rpc(stack, 'public_sfx_track', { p_slug: 'testcafe', p: { events: [ev('geoVisitor01', 'Asia/Kolkata'), ev('geoVisitor02', 'Asia/Kolkata'), ev('geoVisitor03', 'Europe/London'), ev('geoVisitor04', 'x; drop table users;--')] } });
+    const live = (await rpc(stack, 'sfx_live_visitors', {}, owner)).data.data;
+    assert(live.zones['Asia/Kolkata'] === 2 && live.zones['Europe/London'] === 1, JSON.stringify(live.zones));
+    assert(Object.keys(live.zones).length === 2, 'the malformed zone must not be stored: ' + JSON.stringify(live.zones));
+    await q("delete from sfx_web_events where sid like 'geoVisitor%'");
+  });
   await s.check('Only this store: another business\'s events are not counted', async () => {
     const other = (await q("select id from tenants where slug <> 'testcafe' limit 1"))[0].id;
     await q("insert into sfx_web_events (tenant_id, sid, kind, page) values ($1,'other-sid-1','view','/x')", [other]);

@@ -1609,7 +1609,8 @@ const TR = (() => {
   const dev = innerWidth < 700 ? 'phone' : innerWidth < 1100 ? 'tablet' : 'desktop';
   let ref = ''; try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; if (ref === location.hostname) ref = ''; } catch {}
   const q = []; let page = '', t0 = 0, maxd = 0;
-  const push = (k, p, d) => { q.push({ sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret }); if (q.length >= 25) flush(); };
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  const push = (k, p, d) => { q.push({ sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret, tz }); if (q.length >= 25) flush(); };
   function flush() { if (!q.length) return; const ev = q.splice(0, 40); sb.rpc(`public_${PFX}_track`, { p_slug: SLUG, p: { events: ev } }).then(() => {}, () => {}); }
   function depth() { const h = document.documentElement.scrollHeight - innerHeight; return h > 0 ? Math.min(100, Math.round(scrollY / h * 100)) : 100; }
   addEventListener('scroll', () => { const d = depth(); if (d > maxd) maxd = d; }, { passive: true });

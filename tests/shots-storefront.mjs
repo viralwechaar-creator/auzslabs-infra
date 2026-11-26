@@ -31,6 +31,8 @@ await call('sfx_product_save', { p_id: null, p: { name: 'Canvas tote bag', price
 await call('sfx_discount_save', { p_id: null, p: { code: 'WELCOME10', kind: 'percent', value: 10 } }).catch(() => {});
 let firstOrder = null;
 for (let i = 0; i < 4; i++) {
+const zones = ['Asia/Kolkata','Asia/Kolkata','Asia/Dubai','Europe/London','America/New_York','Asia/Singapore','Australia/Sydney'];
+for (let z = 0; z < zones.length; z++) await rpc(stack, 'public_sfx_track', { p_slug: 'testcafe', p: { events: [{ sid: 'visitor-' + z + '-abcdefgh', k: 'view', p: '/', dev: z % 2 ? 'phone' : 'desktop', tz: zones[z] }] } });
   await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: ['Asha Rao', 'Dev Mehta', 'Meera Shah', 'Karan Joshi'][i], phone: '98765000' + (10 + i), email: 'c' + i + '@example.com', address: '12 Park Road', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', payment: 'cod', lines: [{ variantId: pr.variants[i % 2].id, qty: 1 + (i % 3) }] } });
 }
 firstOrder = (await q('select id from sfx_orders where tenant_id=$1 order by created_at desc limit 1', [tid]))[0].id;
@@ -65,6 +67,16 @@ for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
         const over = []; document.querySelectorAll('.shell main *').forEach((el) => { const r = el.getBoundingClientRect(); if (r.right > vw + 1 && r.width < vw * 3 && over.length < 4) over.push((el.className || el.tagName).toString().slice(0, 30)); });
         return { scrollW: de.scrollWidth, vw, hOverflow: de.scrollWidth > vw + 1, overEls: over, smallControls: small.length, smallSample: small.slice(0, 3), titlePx: fs, hasShell: !!document.querySelector('.shell'), bodyText: (document.querySelector('main') || document.body).innerText.length };
       });
+      if (process.env.INTERACT && route === 'live-view' && scheme === 'light') {
+        const c = await page.$('.gl-canvas'); const b = await c.boundingBox();
+        const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+        await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(cx - 220, cy + 40, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(600);
+        await page.mouse.wheel(0, -600); await page.waitForTimeout(500);
+        await page.screenshot({ path: path.join(out, 'globe_dragged_zoomed__' + sizeName + '.png') });
+        await page.click('[data-g=toggle]'); await page.waitForTimeout(500);
+        await page.screenshot({ path: path.join(out, 'globe_map__' + sizeName + '.png') });
+        await page.click('[data-g=toggle]'); await page.waitForTimeout(300);
+      }
       const file = route.replace(/[^a-z0-9]+/gi, '_').slice(0, 40) + '__' + sizeName + '__' + scheme + '.png';
       await page.screenshot({ path: path.join(out, file), fullPage: false });
       results.push({ route: route.replace(firstOrder, '<order>').replace(pr.id, '<product>'), size: sizeName, scheme, file, ...m });

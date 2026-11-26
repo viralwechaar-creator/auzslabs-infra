@@ -140,6 +140,8 @@ export function rerender(skipRefresh) {
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
   $('#app').innerHTML = '<div class="shell' + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
   $('.work-area').scrollTop = scrollTop;
+  const globeHost = document.querySelector('[data-globe]');
+  if (globeHost) { let zones = {}; try { zones = JSON.parse(globeHost.dataset.zones || '{}'); } catch {} import('/storefront/globe.js?v=2').then((m) => m.mountGlobe(globeHost, zones, { theme: accountTheme })).catch(() => { globeHost.innerHTML = '<p class="compact-copy">The globe could not load on this browser.</p>'; }); }
   const adminHost = document.querySelector('[data-admin-pane]');
   if (adminHost && window.auzAdminTab) {
     const only = adminHost.dataset.adminPane || undefined;
