@@ -673,3 +673,8 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell .work.has-crumb .record-layout>div>.panel:last-child{order:6}
 }
 @media (max-width:899px){.shell .work.has-crumb .record-layout .panel{width:100%;box-sizing:border-box;align-self:stretch}}
+
+/* 32. Customer card: every button the same size, in even columns */
+.shell .cust-card .cust-reach,.shell .cust-card .actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:var(--sp-2);margin:0}
+.shell .cust-card .btn,.shell .cust-card .btn.compact{min-height:40px;height:40px;padding:0 var(--sp-3);justify-content:center;font-size:14px;font-weight:550;white-space:nowrap}
+.shell .cust-card .btn.danger{background:var(--soft);color:#b3261e}
