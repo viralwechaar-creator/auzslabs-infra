@@ -62,7 +62,8 @@ export const appLinks = () => {
   apps.push(['Account and apps', 'Your profile, plan and all your apps', 'https://auzslab.in/account.html', 'accountCircle']);
   return apps;
 };
-const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
+const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img class="brand-icon" src="/storefront/logo-icon-96.png" srcset="/storefront/logo-icon-96.png 1x, /storefront/logo-icon-256.png 2x" alt="AUZslab" width="34" height="34"></a>';
+const sideCollapsed = () => { try { return localStorage.getItem('auzslab.side.collapsed') === '1'; } catch { return false; } };
 
 const allItems = menu.flatMap((m) => (m.id ? [[m.id, m.name], ...(m.children || [])] : []));
 export const settingsGroups = [
@@ -119,7 +120,7 @@ export function rerender(skipRefresh) {
   const settingsNav = settingsGroups.map((group) => '<section data-settings-group><div class="nav-label">' + group.label + '</div>' + group.items.map(([id, label, glyph]) => '<a href="' + pathFor(id + (settingsRoutes.has(id) ? '' : '?via=settings')) + '"' + (id === active ? ' aria-current="page"' : '') + '>' + icon(glyph) + '<span>' + label + '</span></a>').join('') + '</section>').join('') + '<section data-settings-group><div class="nav-label">Account</div><a href="#" data-action="sign-out">' + icon('logout') + '<span>Sign out</span></a></section>';
   const sidebar = inSettings ?
     '<aside class="sidebar settings-sidebar" id="workspace-sidebar"><div class="settings-rail">' + brand() + search + '<nav aria-label="Workspace">' + workspaceMenu.filter((item) => item.id).map((item) => '<a href="' + pathFor(item.id) + '" aria-label="' + item.name + '" title="' + item.name + '">' + icon(item.icon) + '</a>').join('') + '</nav></div><div class="settings-panel"><div class="settings-brand">' + brand() + '</div><a class="settings-back" href="' + esc(pathFor(returnToWorkspace)) + '"><span aria-hidden="true">‹</span> Back to workspace</a><button class="btn drawer-switch" type="button" data-action="switch-drawer" aria-pressed="false">Workspace menu</button><input class="settings-search" type="search" aria-label="Search settings" placeholder="Search settings" autocomplete="off"><nav class="side-nav settings-links" aria-label="Settings">' + settingsNav + '<p id="settings-empty" hidden>No matching settings</p></nav><nav class="side-nav drawer-workspace" aria-label="Workspace">' + nav + '</nav>' + sidebarBottom + '</div></aside>' :
-    '<aside class="sidebar" id="workspace-sidebar"><div class="sidebar-head">' + brand() + search + '</div><nav class="side-nav" aria-label="Workspace">' + nav + '</nav>' + sidebarBottom + '</aside>';
+    '<aside class="sidebar" id="workspace-sidebar"><div class="sidebar-head"><div class="brand-row">' + brand() + '<button type="button" class="side-toggle" data-action="toggle-side" aria-label="Collapse or expand the menu" title="Collapse or expand the menu"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><path d="M7.5 3.5v13"/></svg></button></div>' + search + '</div><nav class="side-nav" aria-label="Workspace">' + nav + '</nav>' + sidebarBottom + '</aside>';
   const c = state.counts || {};
   const unfulfilled = state.orders.filter((o) => o.status === 'Unfulfilled').length;
   const homeHero = '<div class="m-hero"><a class="m-avatar" href="' + pathFor('settings') + '" aria-label="Business profile">' + esc(initials) + '</a><strong class="m-store">' + esc(bizName) + '</strong><a class="m-bell" href="' + pathFor('notifications') + '" aria-label="Notifications' + (unread ? ', ' + unread + ' unread' : '') + '">' + icon('bell') + (unread ? '<span aria-hidden="true">' + Math.min(unread, 99) + '</span>' : '') + '</a></div>' +
@@ -138,7 +139,7 @@ export function rerender(skipRefresh) {
   const previousArea = $('.work-area');
   const route = location.hash && !/^#\/?$/.test(location.hash) ? location.hash : '#/home';
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
-  $('#app').innerHTML = '<div class="shell' + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
+  $('#app').innerHTML = '<div class="shell' + (sideCollapsed() ? ' side-collapsed' : '') + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
   $('.work-area').scrollTop = scrollTop;
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
   document.querySelectorAll('.page-head .actions').forEach((box) => {
@@ -201,6 +202,7 @@ document.addEventListener('click', (event) => {
   if (action === 'close-dialog') { if (dirty.on && !confirm('You have changes that are not saved. Close without saving?')) return; dirty.on = false; if ($('#dialog').open) return close(); target.closest('form')?.reset(); return; }
   if (action === 'sign-out') { event.preventDefault(); Promise.resolve(sb.auth.signOut()).catch(() => {}).then(() => { location.href = 'https://auzslab.in/signup.html?signout=1'; }); return; }
   if (action === 'global-search') return search();
+  if (action === 'toggle-side') { try { localStorage.setItem('auzslab.side.collapsed', sideCollapsed() ? '0' : '1'); } catch {} document.querySelector('.shell')?.classList.toggle('side-collapsed', sideCollapsed()); return; }
   if (action === 'account-theme') { const dark = localStorage.getItem('auzslab.preview.theme') === 'dark'; localStorage.setItem('auzslab.preview.theme', dark ? 'light' : 'dark'); return rerender(); }
   if (action === 'toggle-nav' || action === 'close-nav') { setNavOpen(action === 'toggle-nav' && !navOpen, true); return; }
   if (action === 'switch-drawer') {

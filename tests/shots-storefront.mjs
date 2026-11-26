@@ -67,6 +67,11 @@ for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
         const over = []; document.querySelectorAll('.shell main *').forEach((el) => { const r = el.getBoundingClientRect(); if (r.right > vw + 1 && r.width < vw * 3 && over.length < 4) over.push((el.className || el.tagName).toString().slice(0, 30)); });
         return { scrollW: de.scrollWidth, vw, hOverflow: de.scrollWidth > vw + 1, overEls: over, smallControls: small.length, smallSample: small.slice(0, 3), titlePx: fs, hasShell: !!document.querySelector('.shell'), bodyText: (document.querySelector('main') || document.body).innerText.length };
       });
+      if (process.env.COLLAPSE && route === 'home' && scheme === 'light' && sizeName === 'desktop') {
+        await page.click('[data-action=toggle-side]'); await page.waitForTimeout(400);
+        await page.screenshot({ path: path.join(out, 'sidebar_collapsed.png') });
+        await page.click('[data-action=toggle-side]'); await page.waitForTimeout(300);
+      }
       if (process.env.INTERACT && route === 'live-view' && scheme === 'light') {
         const c = await page.$('.gl-canvas'); const b = await c.boundingBox();
         const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
