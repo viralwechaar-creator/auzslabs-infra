@@ -64,5 +64,22 @@ export default async function run({ stack }) {
     const list = await call('sfx_order_list', {});
     assert(list.some((x) => x.channel === 'in_store') && list.some((x) => x.channel === 'online'), JSON.stringify(list.map((x) => x.channel)));
   }, 'critical');
+  await s.check('A cash return in AUZsStyle shows as a refund on the shared order; a credit note adds nothing', async () => {
+    await q('update sty_variants set active = true where id=$1', [vid]);
+    const cu = await call('sty_save_customer', { p: { name: 'Return Person', phone: '9877700002' } });
+    const a = await sell(2, { customerId: cu.id });
+    assert(!a.r.data?.error, JSON.stringify(a.r.data).slice(0, 200));
+    const line = (await q('select id from sty_sale_lines where sale_id=$1', [a.id]))[0].id;
+    const ret = await rpc(stack, 'sty_return', { p: { id: uid(), saleId: a.id, mode: 'cash', reason: 'Did not fit', lines: [{ saleLineId: line, qty: 1 }] } }, owner);
+    assert(!ret.data?.error, JSON.stringify(ret.data).slice(0, 200));
+    let o = (await orders()).find((x) => x.sty_sale_id === a.id);
+    const refunds = await q('select amount::float a, method from sfx_refunds where order_id=$1', [o.id]);
+    assert(refunds.length === 1 && refunds[0].method === 'in_store' && refunds[0].a === 500, JSON.stringify(refunds));
+    assert(Number(o.refunded_amount) === 500, 'refunded amount not updated: ' + o.refunded_amount);
+    const cn = await rpc(stack, 'sty_return', { p: { id: uid(), saleId: a.id, mode: 'credit_note', reason: 'x', lines: [{ saleLineId: line, qty: 1 }] } }, owner);
+    assert(!cn.data?.error, JSON.stringify(cn.data).slice(0, 200));
+    o = (await orders()).find((x) => x.sty_sale_id === a.id);
+    assert((await q('select count(*)::int n from sfx_refunds where order_id=$1', [o.id]))[0].n === 1, 'a credit note was copied as money back');
+  }, 'critical');
   s.done();
 }
