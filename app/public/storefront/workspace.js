@@ -320,7 +320,7 @@ function productDetail(id) {
   }
   const quick = p ? panel('Summary', body('<div class="stack">' + status(r.status) + '<strong>' + money(r.price) + '</strong><small>' + esc(r.stock) + ' available</small></div>')) : '';
   const viewLink = p && r.status === 'Active' && state.store.published && state.tenant?.slug ? link('View on storefront', 'https://' + esc(state.tenant.slug) + '.auzslab.in/store.html?view=p&p=' + encodeURIComponent(p.id)) : '';
-  return head(p ? esc(p.name) : 'Add product', p ? 'Manage its details, media, and variants.' : 'Create a listing for your storefront.', viewLink, ['products', 'Products']) + tabNav + '<div class="record-layout"><div>' + view + '</div><aside>' + quick + '</aside></div>';
+  return head(p ? esc(p.name) : 'Add product', p ? 'Manage its details, media, and variants.' : 'Create a listing for your storefront.', viewLink, ['products', 'Products']) + tabNav + (view.includes('class="product-record"') ? view.replace('</aside>', quick + '</aside>') : '<div class="record-layout"><div>' + view + '</div><aside>' + quick + '</aside></div>');
 }
 // a variant row added purely client-side (no id yet) before the form is submitted
 let pendingVariants = null;

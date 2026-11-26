@@ -53,7 +53,7 @@ for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
   const page = await ctx.newPage();
   const errs = []; page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 160)));
   for (const route of routes) {
-    if (only && !only.includes(route)) continue;
+    if (only && !only.some(o => route === o || route.startsWith(o + "/"))) continue;
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/' + route), { waitUntil: 'load' }); await page.waitForTimeout(2600);
     for (const scheme of ['light', 'dark']) {
       await page.evaluate((sc) => { const sh = document.querySelector('.shell'); if (sh) sh.dataset.theme = sc; }, scheme);

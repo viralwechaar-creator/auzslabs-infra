@@ -126,7 +126,7 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell[data-theme=dark]{--line:#2e2e2e;--table:#242424;--pill:#2b2b2b;--pill-ink:#f1f1f1;--black:#f1f1f1}
 @media (min-width:900px){
   .shell .work-layout{gap:0}
-  .shell .work-area{background:var(--paper);margin:5px 5px 5px 0;border-radius:14px;min-height:calc(100vh - 10px);overflow:clip}
+  .shell .work-area{background:var(--paper);margin:5px 5px 5px 0;border-radius:14px;min-height:calc(100vh - 10px)}
   .shell .sidebar{padding-right:6px}
 }
 .shell .topbar{height:50px;border-bottom:0;background:transparent;padding:0 var(--sp-4)}
@@ -207,3 +207,13 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .work-area{box-shadow:0 0 0 1px rgb(0 0 0 / .04)}
 .shell .page-head{margin-bottom:var(--sp-5)}
 @media (max-width:899px){.shell .metric{border-left:0;border-bottom:1px solid var(--line);padding-inline:0}.shell .metrics{border-top:0}}
+
+/* 9. record pages (product, order, customer): big record title, open right rail with hairlines, like Shopify */
+.shell .page-head:has(.trail) h1{font-size:26px;font-weight:600;letter-spacing:-.015em}
+.shell .page-head .trail{font-size:12px}
+.shell .record-layout>aside .panel{border:0;border-radius:0;padding:var(--sp-3) 0;margin:0;background:transparent;border-bottom:1px solid var(--line)}
+.shell .record-layout>aside .panel:last-child{border-bottom:0}
+.shell .record-layout>aside .panel-title h2{font-size:13px;font-weight:600}
+.shell .record-layout>aside label{font-size:13px;font-weight:550;display:grid;gap:4px;margin-bottom:var(--sp-3)}
+.shell .record-layout>aside :is(select,input:not([type=checkbox]):not([type=radio])){width:100%;border-radius:10px}
+.shell .record-layout .record-layout>aside .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain){border:0;border-radius:0;padding:var(--sp-3) 0;background:transparent;border-bottom:1px solid var(--line)}
