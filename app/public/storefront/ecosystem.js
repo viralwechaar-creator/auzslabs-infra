@@ -149,6 +149,13 @@ export function rerender(skipRefresh) {
     bcBox.classList.add('is-record');
     bcBox.innerHTML = '<a class="back-circle" href="' + esc(href) + '" aria-label="Back to ' + esc(trail.textContent) + '"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5"/></svg></a><a class="crumb-parent" href="' + esc(href) + '">' + esc(trail.textContent) + '</a><span>/</span><strong>' + esc(recTitle.textContent) + '</strong>';
     document.querySelector('.work')?.classList.add('has-crumb');
+    const shareLink = document.querySelector('.page-head .actions a[href*="store.html?view=p"]');
+    const topActions = document.querySelector('.topbar .topbar-actions');
+    if (shareLink && topActions && !topActions.querySelector('[data-action="copy-link"]')) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn top-action'; b.dataset.action = 'copy-link'; b.dataset.url = shareLink.href;
+      b.setAttribute('aria-label', 'Share this product link'); b.innerHTML = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 12.5V3.5M6.5 7L10 3.5 13.5 7M4.5 10.5v5a1 1 0 001 1h9a1 1 0 001-1v-5"/></svg><span class="top-action-label">Share</span>';
+      topActions.insertBefore(b, topActions.firstChild);
+    }
   }
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
   document.querySelectorAll('.page-head .actions').forEach((box) => {
@@ -211,6 +218,7 @@ document.addEventListener('click', (event) => {
   if (action === 'close-dialog') { if (dirty.on && !confirm('You have changes that are not saved. Close without saving?')) return; dirty.on = false; if ($('#dialog').open) return close(); target.closest('form')?.reset(); return; }
   if (action === 'sign-out') { event.preventDefault(); Promise.resolve(sb.auth.signOut()).catch(() => {}).then(() => { location.href = 'https://auzslab.in/signup.html?signout=1'; }); return; }
   if (action === 'global-search') return search();
+  if (action === 'copy-link') { const url = target.dataset.url || ''; if (navigator.share && matchMedia('(max-width:899px)').matches) { navigator.share({ url }).catch(() => {}); return; } (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => flash('Link copied.'), () => flash(url)); return; }
   if (action === 'toggle-side') { try { localStorage.setItem('auzslab.side.collapsed', sideCollapsed() ? '0' : '1'); } catch {} document.querySelector('.shell')?.classList.toggle('side-collapsed', sideCollapsed()); return; }
   if (action === 'account-theme') { const dark = localStorage.getItem('auzslab.preview.theme') === 'dark'; localStorage.setItem('auzslab.preview.theme', dark ? 'light' : 'dark'); return rerender(); }
   if (action === 'toggle-nav' || action === 'close-nav') { setNavOpen(action === 'toggle-nav' && !navOpen, true); return; }
