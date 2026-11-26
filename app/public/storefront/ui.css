@@ -70,6 +70,9 @@
 .shell .badge,.shell .pill{font-size:var(--fs-small);font-weight:560;border-radius:999px;padding:1px 8px;line-height:1.5}
 .shell td:last-child .btn+.btn,.shell td .btn+.btn{margin-left:var(--sp-1)}
 
+/* a record link inside a table (order number, product name) reads as a link, not a button */
+.shell td a.btn:not(.primary):not(.danger){border:0;background:transparent;min-height:0;padding:0;font-weight:620;justify-content:flex-start;text-decoration:none}
+.shell td a.btn:not(.primary):not(.danger):hover{background:transparent;text-decoration:underline}
 /* detail pages: wide workflow column, narrow supporting column */
 .shell .record-layout{grid-template-columns:minmax(0,1fr) minmax(260px,340px)}
 
