@@ -91,9 +91,9 @@ export async function refreshInsights() {
   state.insights = { funnel, profit, inventory, rfm, cohorts, sessions };
 }
 export async function refreshAccess() {
-  const [audit, staff, messages, bills, keys, route, settlements] = await Promise.all([api('sfx_audit_list', { p_limit: 100 }).catch(() => null), api('sfx_staff_security').catch(() => null), api('sfx_message_log', { p_limit: 100 }).catch(() => []), api('sfx_billing_history').catch(() => null),
-    api('sfx_api_key_list').catch(() => null), api('sfx_route_status').catch(() => null), api('sfx_settlement_list', { p_limit: 50 }).catch(() => null)]);
-  state.access = { audit, staff, messages, bills, keys, route, settlements };
+  const [audit, staff, messages, bills, keys, route, settlements, hooks] = await Promise.all([api('sfx_audit_list', { p_limit: 100 }).catch(() => null), api('sfx_staff_security').catch(() => null), api('sfx_message_log', { p_limit: 100 }).catch(() => []), api('sfx_billing_history').catch(() => null),
+    api('sfx_api_key_list').catch(() => null), api('sfx_route_status').catch(() => null), api('sfx_settlement_list', { p_limit: 50 }).catch(() => null), api('sfx_webhook_list').catch(() => null)]);
+  state.access = { audit, staff, messages, bills, keys, route, settlements, hooks };
 }
 export async function refreshBlog() { state.blog = await api('sfx_blog_list'); }
 export async function refreshRedirects() { state.redirects = await api('sfx_redirect_list'); }

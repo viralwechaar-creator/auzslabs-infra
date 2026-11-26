@@ -678,6 +678,13 @@ function apiPanels() {
     out.push(panel('API keys', body('<p class="compact-copy">Let another program read your orders, products and stock. Keys can only read, and only your own shop. Read the list at <code>/storefront-api/v1/orders</code>, <code>/products</code> and <code>/inventory</code> with the header <code>Authorization: Bearer your-key</code>.</p>' +
       table(['Name', 'Starts with', 'Created', 'Last used', ''], a.keys.map((k) => [esc(k.name), '<code>' + esc(k.prefix) + '…</code>', dateValue(k.createdAt), k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('en-IN') : 'Never', k.revoked ? badge('Revoked', 'warn') : (canWrite() ? button('Revoke', 'apikey-revoke:' + k.id, 'compact danger') : '')])) + (canWrite() ? button('Create a key', 'apikey-new', 'primary') : '')), ''));
   }
+  if (a.hooks) {
+    const st = (h) => !h.active ? badge('Off', 'neutral') : h.lastStatus === 'failing' ? badge('Failing', 'warn') : h.lastStatus === 'ok' ? badge('Working') : badge('Waiting for the first event', 'neutral');
+    out.push(panel('Webhooks', body('<p class="compact-copy">Tell another system the moment something happens in your store. We send a signed message to your https address. If it does not answer, we try again several times over about 15 hours.</p>' +
+      (canWrite() ? button('Add a webhook', 'webhook-new', 'primary') : '') +
+      table(['Address', 'Events', 'Status', 'Waiting', 'Failed (7 days)', ''], (a.hooks.hooks || []).map((h) => ['<code style="word-break:break-all">' + esc(h.url) + '</code>', esc((h.events || []).join(', ')), st(h), h.pending, h.failed,
+        button('Deliveries', 'webhook-log:' + h.id, 'compact') + (canWrite() ? button('Send a test', 'webhook-test:' + h.id, 'compact') + button(h.active ? 'Turn off' : 'Turn on', 'webhook-set:' + h.id + ':' + (h.active ? 'off' : 'on'), 'compact') + button('Remove', 'webhook-delete:' + h.id, 'compact danger') : '')])))));
+  }
   if (a.route) {
     const r = a.route; const label = { not_started: 'Not set up', pending: 'Waiting for details', needs_info: 'Needs more information', active: 'Active', suspended: 'Paused' }[r.status] || r.status;
     out.push(panel('Payouts through AUZslab', body('<p class="compact-copy">Status: ' + badge(label, r.status === 'active' ? '' : 'neutral') + (r.bankLast4 ? ' · Bank account ending ' + esc(r.bankLast4) : '') + '</p>' +
@@ -1082,12 +1089,16 @@ function returnDetail(id) {
 
 // ---------- Roles ----------
 const STORE_PERMS = [['sfx_view', 'View products, orders and customers'], ['sfx_manage', 'Edit products, orders, theme, payments and domains']];
+// Finer keys (db/427). They only narrow a role that can edit the store: a role with "edit" and nothing said about a key keeps it, except Staff and security.
+const FINE_PERMS = [['sfx_orders', 'Orders and shipments'], ['sfx_products', 'Products and stock'], ['sfx_customers', 'Customers and store credit'], ['sfx_marketing', 'Discounts and campaigns'],
+  ['sfx_content', 'Blog, pages and redirects'], ['sfx_settings', 'Store settings, tax and checkout'], ['sfx_refunds', 'Refunds'], ['sfx_staff', 'Staff, roles and security']];
+const fineAllowed = (perms, k) => perms && perms.sfx_manage ? (k in perms ? !!perms[k] : k !== 'sfx_staff') : false;
 function rolesPage() {
   const roles = state.roles || [], staff = (state.staffList || []).filter((p) => p.role !== 'owner');
-  const roleRows = roles.map((r) => [esc(r.name), STORE_PERMS.filter(([k]) => r.permissions && r.permissions[k]).map(([, l]) => esc(l)).join('<br>') || 'No store access', canWrite() ? button('Delete', 'role-delete:' + r.id, 'compact danger') : '']);
+  const roleRows = roles.map((r) => [esc(r.name), STORE_PERMS.filter(([k]) => r.permissions && r.permissions[k]).map(([, l]) => esc(l)).concat(r.permissions && r.permissions.sfx_manage ? FINE_PERMS.filter(([k]) => fineAllowed(r.permissions, k)).map(([, l]) => '&nbsp;&nbsp;· ' + esc(l)) : []).join('<br>') || 'No store access', canWrite() ? button('Delete', 'role-delete:' + r.id, 'compact danger') : '']);
   const opts = (p) => '<option value=""' + (!p.role_id && p.role !== 'manager' ? ' selected' : '') + '>Staff (view only)</option><option value="builtin:manager"' + (!p.role_id && p.role === 'manager' ? ' selected' : '') + '>Manager</option>' + roles.map((r) => '<option value="' + esc(r.id) + '"' + (p.role_id === r.id ? ' selected' : '') + '>' + esc(r.name) + '</option>').join('');
   const staffRows = staff.map((p) => [esc(p.email || p.username || 'Staff'), canWrite() ? '<select data-role-assign="' + esc(p.id) + '" aria-label="Role for ' + esc(p.email || p.username) + '">' + opts(p) + '</select>' : esc(p.role)]);
-  const form = canWrite() ? panel('New role', body(editForm('role-record', '', input('Role name', 'name', '', 'text', 'required maxlength="60"') + STORE_PERMS.map(([k, l]) => '<label class="inline wide"><input type="checkbox" name="' + k + '" value="1"' + (k === 'sfx_view' ? ' checked' : '') + '> ' + esc(l) + '</label>').join(''), 'Create role'))) : '';
+  const form = canWrite() ? panel('New role', body(editForm('role-record', '', input('Role name', 'name', '', 'text', 'required maxlength="60"') + STORE_PERMS.map(([k, l]) => '<label class="inline wide"><input type="checkbox" name="' + k + '" value="1"' + (k === 'sfx_view' ? ' checked' : '') + '> ' + esc(l) + '</label>').join('') + '<p class="compact-copy wide">When a role can edit the store, choose what it can touch:</p>' + FINE_PERMS.map(([k, l]) => '<label class="inline wide"><input type="checkbox" name="' + k + '" value="1"' + (k === 'sfx_staff' ? '' : ' checked') + '> ' + esc(l) + '</label>').join(''), 'Create role'))) : '';
   return head('Roles', 'Choose what each person on your team can do in the store. The owner always has full access.', '', ['team', 'Staff and access']) + tabs('roles', [['team', 'Staff'], ['roles', 'Roles'], ['locations', 'Locations']]) +
     panel('Roles', table(['Role', 'Store access', ''], roleRows)) + form + panel('Who has which role', table(['Person', 'Role'], staffRows));
 }
@@ -1095,6 +1106,7 @@ async function roleSubmit(key, data) {
   if (key !== 'role-record') return false;
   const name = (data.name || '').trim(); if (!name) throw new Error('Enter a role name.');
   const permissions = {}; STORE_PERMS.forEach(([k]) => { if (data[k]) permissions[k] = true; });
+  if (permissions.sfx_manage) FINE_PERMS.forEach(([k]) => { permissions[k] = !!data[k]; });
   const { error } = await sb.from('roles').insert({ name, permissions }); if (error) throw new Error(error.message);
   await refreshRoles(); save('Role created.'); rerender(true); return true;
 }
@@ -1360,6 +1372,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshOrders(); save('Tracking saved.'); close(); rerender();
       } else if (key === 'credit-adjust') {
         await api('sfx_credit_adjust', { p_customer: rid, p_delta: Number(data.delta), p_note: data.note }); await refreshCustomers(); save('Store credit updated.'); close(); rerender(true);
+      } else if (key === 'webhook-record') {
+        const evs = ((state.access.hooks || {}).events || []).filter((e) => data['ev_' + e.replace('.', '_')]);
+        const w = await api('sfx_webhook_create', { p_url: data.url, p_events: evs }); await refreshAccess(); save('Webhook added.');
+        dialog('Your signing secret', '<p class="compact-copy">' + esc(w.note) + ' Check each message by signing <code>timestamp.body</code> with this secret (HMAC-SHA256) and comparing it to the <code>X-Storefront-Signature</code> header.</p><p><code style="word-break:break-all;user-select:all">' + esc(w.secret) + '</code></p>' + button('Done', 'close-dialog', 'primary')); rerender(true);
       } else if (key === 'apikey-record') {
         const k = await api('sfx_api_key_create', { p_name: data.name }); await refreshAccess(); save('Key created.');
         dialog('Your new key', '<p class="compact-copy">' + esc(k.note) + '</p><p><code style="word-break:break-all;user-select:all">' + esc(k.key) + '</code></p>' + button('Done', 'close-dialog', 'primary')); rerender(true);
@@ -1553,6 +1569,13 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   });
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
   if (a === 'apikey-new') return dialog('Create an API key', editForm('apikey-record', '', input('Name (what will use it)', 'name', '', 'text', 'required maxlength="60" placeholder="Accounting export"'), 'Create key'));
+  if (a === 'webhook-new') return dialog('Add a webhook', editForm('webhook-record', '', input('Address (https only)', 'url', '', 'url', 'required placeholder="https://example.com/hooks/store"') +
+    '<p class="compact-copy wide">Send me:</p>' + (((state.access.hooks || {}).events) || []).map((e) => '<label class="inline wide"><input type="checkbox" name="ev_' + e.replace('.', '_') + '" value="1"' + (e.startsWith('order.') ? ' checked' : '') + '> ' + esc(e) + '</label>').join(''), 'Add webhook'));
+  if (a === 'webhook-test') return withBusy(async () => { await api('sfx_webhook_test', { p_id: key }); await refreshAccess(); save('Test message queued. It is sent within a few seconds.'); rerender(true); });
+  if (a === 'webhook-set') return withBusy(async () => { await api('sfx_webhook_set', { p_id: key, p_active: detail === 'on' }); await refreshAccess(); save(detail === 'on' ? 'Webhook turned on.' : 'Webhook turned off.'); rerender(true); });
+  if (a === 'webhook-delete') return withBusy(async () => { if (!confirm('Remove this webhook? Messages waiting for it are dropped.')) return; await api('sfx_webhook_delete', { p_id: key }); await refreshAccess(); save('Webhook removed.'); rerender(true); });
+  if (a === 'webhook-log') return withBusy(async () => { const rows = await api('sfx_webhook_deliveries', { p_id: key });
+    dialog('Recent deliveries', table(['When', 'Event', 'Result', 'Tries', 'Note'], (rows || []).map((r) => [new Date(r.at).toLocaleString('en-IN'), esc(r.event), r.status === 'sent' ? badge('Delivered') : r.status === 'failed' ? badge('Gave up', 'warn') : badge('Waiting', 'neutral'), r.attempts, esc(r.error || (r.httpStatus ? String(r.httpStatus) : ''))])) + button('Close', 'close-dialog', 'primary')); });
   if (a === 'apikey-revoke') return withBusy(async () => { if (!confirm('Revoke this key? Anything using it stops working.')) return; await api('sfx_api_key_revoke', { p_id: key }); await refreshAccess(); save('Key revoked.'); rerender(true); });
   if (a === 'clear-filters') { for (const k of Object.keys(pf)) pf[k] = ''; const q = $('#table-query'); if (q) q.value = ''; for (const el of document.querySelectorAll('[id^="pf-"]')) el.value = ''; const r = $('#table-results'); if (r) r.innerHTML = productsList(''); return; }
   if (a === 'bulk-all') { for (const el of document.querySelectorAll('input[data-bulk]')) el.checked = true; scopeLine(); return; }
