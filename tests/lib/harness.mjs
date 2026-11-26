@@ -51,7 +51,7 @@ export function watch(page) {
   });
   page.on('requestfailed', (r) => {
     const u = r.url();
-    if (IGNORE_HOSTS.test(u) || /^data:|^blob:/.test(u)) return;
+    if (IGNORE_HOSTS.test(u) || /^data:|^blob:/.test(u) || /\.auzslab\.in\/store\.html$/.test(u)) return; // Home's website-health ping
     errors.push('request failed: ' + u.slice(0, 120) + ' (' + (r.failure() && r.failure().errorText) + ')');
   });
   page.on('response', (r) => {

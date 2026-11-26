@@ -169,6 +169,7 @@ export function rerender(skipRefresh) {
     d.append(sm, menu); box.insertBefore(d, keep);
     d.addEventListener('click', (e) => { if (e.target.closest('.more-menu .btn, .more-menu a')) d.open = false; });
   });
+  const healthHost = document.querySelector('[data-health]'); if (healthHost) import('/storefront/health.js?v=1').then((m) => m.mountHealth(healthHost)).catch(() => {});
   const globeHost = document.querySelector('[data-globe]');
   if (globeHost) { let zones = {}; try { zones = JSON.parse(globeHost.dataset.zones || '{}'); } catch {} import('/storefront/globe.js?v=2').then((m) => m.mountGlobe(globeHost, zones, { theme: accountTheme })).catch(() => { globeHost.innerHTML = '<p class="compact-copy">The globe could not load on this browser.</p>'; }); }
   const adminHost = document.querySelector('[data-admin-pane]');

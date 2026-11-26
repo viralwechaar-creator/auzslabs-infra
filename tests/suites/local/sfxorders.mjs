@@ -148,9 +148,10 @@ export default async function run({ browser, stack }) {
     await page.evaluate(() => document.querySelector('[data-action^="order-archive:"]').click()); await page.waitForTimeout(1500);
     assert((await q('select archived_at is not null a from sfx_orders where id=$1', [o7]))[0].a === true, 'not archived');
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.locator('[data-action="ol-filter:open"]').click(); await page.waitForTimeout(500);
     const hide = await page.locator('#orders-results a[href*="#/orders/' + o7 + '"]').count();
-    assert(hide === 0, 'archived order still in the default list');
-    await page.selectOption('#ol-arch', 'only'); await page.waitForTimeout(800);
+    assert(hide === 0, 'archived order still in the Open list');
+    await page.locator('[data-action="ol-filter:archived"]').click(); await page.waitForTimeout(800);
     assert(await page.locator('#orders-results a[href*="#/orders/' + o7 + '"]').count() >= 1, 'archived order missing from the archived view');
     await page.fill('#ol-query', 'wholesale'); await page.waitForTimeout(500);
     assert(await page.locator('#orders-results a[href*="#/orders/' + o7 + '"]').count() >= 1, 'tag search failed');
@@ -253,6 +254,30 @@ export default async function run({ browser, stack }) {
     assert((await q('select stock from sfx_variants where id=$1', [vs]))[0].stock === stock0 - 2, 'stock: custom item must not take stock, catalogue line must');
     assert(o.timeline.some((e) => /Payment due later/.test(e.label)), 'pay later not noted');
     await q("update sfx_stores set config = config - 'shipping' where tenant_id=$1", [tid]);
+  });
+  await s.check('Create order page: add a product and a custom item, see live totals, create the order; Home shows the website card; Orders shows status pills and the + menu', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.waitForSelector('#ol-pills', { timeout: 15000 }).catch(async () => { throw new Error('no pills; errs=' + JSON.stringify(errs).slice(0, 400) + ' body=' + (await page.locator('body').innerText()).slice(0, 300)); });
+    assert(await page.locator('#ol-pills .pill-tab').count() === 5, 'status pills missing');
+    await page.evaluate(() => document.querySelector('.plus-menu summary').click());
+    assert(/Quick sale/.test(await page.locator('.plus-menu .more-menu').innerText()), '+ menu has no Quick sale');
+    await page.goto(stack.url('testcafe', '/storefront.html#/orders/new'), { waitUntil: 'load' }); await page.waitForTimeout(3000);
+    await page.fill('#co-form input[name=name]', 'Counter Buyer');
+    await page.selectOption('#co-pick', { index: 1 }); await page.waitForTimeout(300);
+    await page.evaluate(() => document.querySelector('[data-action="co-custom"]').click()); await page.waitForTimeout(300);
+    await page.fill('#co-form input[name=cn1]', 'Gift wrap'); await page.fill('#co-form input[name=cp1]', '40');
+    await page.fill('#co-form input[name=sfee]', '10'); await page.waitForTimeout(300);
+    const tot = await page.locator('#co-totals').innerText();
+    assert(/Total/.test(tot) && /150/.test(tot), 'live total wrong: ' + tot);
+    await page.evaluate(() => document.querySelector('[data-action="co-save:order"]').click()); await page.waitForTimeout(2500);
+    assert((await q("select count(*)::int n from sfx_orders where customer->>'name'='Counter Buyer'"))[0].n === 1, 'order not created from the page');
+    assert(/#\/orders\/[0-9a-f-]{36}/.test(page.url()), 'did not open the new order: ' + page.url());
+    await page.goto(stack.url('testcafe', '/storefront.html#/home'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    assert(await page.locator('[data-health]').count() === 1, 'website card missing on Home');
+    assert(await page.locator('a.hs-cell[href*="live-view"]').count() === 1, 'live visitors not linked to Live view');
+    const bad = errs.filter((e) => !/store\.html/.test(e)); assert(!bad.length, JSON.stringify(bad).slice(0, 200));
   });
   s.done();
 }
