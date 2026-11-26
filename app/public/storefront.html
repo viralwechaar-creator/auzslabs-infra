@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/storefront/ecosystem.css?v=33">
-<link rel="stylesheet" href="/storefront/ui.css?v=53">
+<link rel="stylesheet" href="/storefront/ui.css?v=57">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -26,12 +26,12 @@
 <script src="/config.js"></script>
 <script src="/tenant.js?v=4"></script>
 <script src="/storefront/sb-client.js?v=12"></script>
-<script type="importmap">{"imports":{"/storefront/ecosystem.js":"/storefront/ecosystem.js?v=56","/storefront/data.js":"/storefront/data.js?v=33","/storefront/workspace.js":"/storefront/workspace.js?v=84","/storefront/api.js":"/storefront/api.js?v=45","/storefront/analytics.js":"/storefront/analytics.js?v=33","/storefront/domains.js":"/storefront/domains.js?v=29"}}</script>
+<script type="importmap">{"imports":{"/storefront/ecosystem.js":"/storefront/ecosystem.js?v=57","/storefront/data.js":"/storefront/data.js?v=33","/storefront/workspace.js":"/storefront/workspace.js?v=85","/storefront/api.js":"/storefront/api.js?v=45","/storefront/analytics.js":"/storefront/analytics.js?v=33","/storefront/domains.js":"/storefront/domains.js?v=29"}}</script>
 <!-- The import map above gives every module ONE versioned address (bump v=20 on every edit of storefront/*.js): relative imports resolve to the same mapped URL, so there is never a second instance of a module (that duplicate-instance bug once double-fired every click). Old note: No cache-busting query string on this module: every internal `import './ecosystem.js'` elsewhere in
      this app resolves WITHOUT one, and a different URL for the "same" ES module is a different module
      instance (its own top-level state, its own document-level event listeners) -- that duplicate-instance
      bug is exactly what caused every click/submit here to silently double-fire until this was caught by
      the Playwright pass (see the PR description). -->
-<script src="/ds/mydata.js?v=1"></script><script src="/ds/admin-tab.js?v=13"></script><script type="module" src="/storefront/ecosystem.js?v=56"></script>
+<script src="/ds/mydata.js?v=1"></script><script src="/ds/admin-tab.js?v=13"></script><script type="module" src="/storefront/ecosystem.js?v=57"></script>
 </body>
 </html>
