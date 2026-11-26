@@ -13,7 +13,8 @@
 .shell[data-theme=dark]{--hover:rgb(255 255 255 / .06);--select:rgb(255 255 255 / .12);--focus:#7aa7ff;--backdrop:rgb(0 0 0 / .6);--good:#5fd18a;--warn:#e0b44a;--bad:#ff8a80}
 
 /* 1. page: padding, header, order */
-.shell .work{padding:var(--sp-5) var(--sp-5) 36px;width:min(100%,1400px)}
+.shell .work{width:min(100%,1400px)}
+@media (min-width:900px){.shell .work{padding:var(--sp-5) var(--sp-5) 36px}}
 .shell .page-head{margin:0 0 var(--sp-4);gap:var(--sp-3);align-items:flex-start}
 .shell .page-head .trail{display:block;font-size:var(--fs-small);margin:0 0 2px;color:var(--muted)}
 .shell .page-head h1,.shell .work h1{font-size:var(--fs-title);line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:0}
@@ -88,7 +89,7 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 
 /* 5. phone and touch */
 @media (max-width:899px){
-  .shell .work{padding:var(--sp-4) var(--sp-4) 28px}
+  .shell .work{padding-left:var(--sp-4);padding-right:var(--sp-4);padding-bottom:28px}
   .shell .page-head{flex-wrap:wrap}
   .shell .page-head .actions{justify-content:flex-start;width:100%}
   .shell .page-head h1,.shell .work h1{font-size:20px}
@@ -129,9 +130,10 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell .work-area{background:var(--paper);margin:5px 5px 5px 0;border-radius:14px;min-height:calc(100vh - 10px)}
   .shell .sidebar{padding-right:6px}
 }
-.shell .topbar{height:50px;border-bottom:0;background:transparent;padding:0 var(--sp-4)}
+@media (min-width:900px){.shell .topbar{height:50px;border-bottom:0;background:transparent;padding:0 var(--sp-4)}}
 .shell .page-head h1,.shell .work h1{font-size:var(--fs-title);font-weight:650}
-.shell .work{background:transparent;padding:var(--sp-3) var(--sp-4) 28px;width:100%;max-width:none}
+.shell .work{background:transparent;width:100%;max-width:none}
+@media (min-width:900px){.shell .work{padding:var(--sp-3) var(--sp-4) 28px}}
 /* buttons: white outlined pill, grey tonal pill, black primary pill */
 .shell .btn,.shell button.btn,.shell a.btn{border-radius:999px;font-size:13px;font-weight:550;min-height:32px;padding:0 14px;background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 0 rgb(0 0 0 / .03)}
 .shell .btn:hover{background:var(--pill)}
@@ -176,7 +178,8 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{color:var(--ink)!important}
 
 /* 7. Settings pages (Shopify Settings > Checkout reference): narrow centred column, big title, quiet section heads */
-.shell.settings-mode .work,.shell.settings-direct .work{max-width:980px;margin-inline:auto;padding:var(--sp-5) var(--sp-4) 48px}
+.shell.settings-mode .work,.shell.settings-direct .work{max-width:980px;margin-inline:auto}
+@media (min-width:900px){.shell.settings-mode .work,.shell.settings-direct .work{padding:var(--sp-5) var(--sp-4) 48px}}
 .shell.settings-mode .page-head h1,.shell.settings-direct .page-head h1,.shell.settings-mode .work>h1{font-size:28px;font-weight:550;letter-spacing:-.015em;margin-bottom:var(--sp-4)}
 .shell.settings-mode .work h2,.shell.settings-direct .work h2{font-size:15px;font-weight:600}
 .shell.settings-mode .page-head p,.shell.settings-direct .page-head p,.shell.settings-mode .work h2+p{font-size:13px;color:var(--ink);opacity:.8}
@@ -244,7 +247,7 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell{--fs-body:15px;--fs-small:13px;--fs-title:30px;--fs-h2:18px}
   .shell .page-head h1,.shell .work h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
   .shell .page-head p{font-size:14px}
-  .shell .work{padding:var(--sp-3) var(--sp-4) 110px}
+  .shell .work{padding-left:var(--sp-4);padding-right:var(--sp-4);padding-bottom:120px}
   .shell .tabs{border-bottom:0;gap:var(--sp-1);margin-bottom:var(--sp-3)}
   .shell .tabs a,.shell .tabs button{border:0!important;border-radius:999px;padding:0 16px;font-size:16px;min-height:44px}
   .shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{background:var(--pill);color:var(--ink)!important;font-weight:650}
@@ -412,12 +415,12 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .breadcrumb.is-record span{color:var(--muted)}
 .shell .back-circle{width:32px;height:32px;border-radius:50%;background:var(--pill);display:grid;place-items:center;color:var(--ink);flex:none}
 .shell .back-circle:hover{filter:brightness(.94)}
-@media (max-width:899px){.shell .topbar .breadcrumb.is-record .crumb-parent,.shell .topbar .breadcrumb.is-record span{display:none}.shell .topbar .mobile-page-name{display:none}.shell .back-circle{width:44px;height:44px}}
+@media (max-width:899px){.shell .topbar .breadcrumb.is-record .crumb-parent,.shell .topbar .breadcrumb.is-record span{display:none}.shell .topbar:has(.is-record) .mobile-page-name{display:none}.shell .back-circle{width:44px;height:44px}}
 @media (max-width:899px){
   .shell .back-circle{width:36px;height:36px}
   .shell .topbar:has(.is-record) .mobile-brand{display:none}
   .shell .mobile-brand img{width:34px!important;height:34px!important;border-radius:9px}
-  .shell .work.has-crumb{padding-top:calc(var(--sp-4) + 8px)}
+
 }
 
 /* 20. phone Inventory rows: product + variant on top, three labelled counts below, actions last */
@@ -435,3 +438,9 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell tbody tr:has(td[data-label=Variant]) td:last-child{order:5;margin-left:auto}
 }
 .shell td[data-label=Product] a{color:var(--ink)!important}
+
+/* 21. settings: a form is just the page, no grey box repeating the title */
+.shell.settings-mode .work .panel,.shell.settings-direct .work .panel{background:transparent;padding:0;border-radius:0}
+.shell.settings-mode .work .panel>.panel-title,.shell.settings-direct .work .panel>.panel-title{padding:0 0 var(--sp-2)}
+.shell.settings-mode .work .panel>.panel-title:first-child h2,.shell.settings-direct .work .panel:only-child>.panel-title h2{font-size:15px}
+.shell.settings-mode .work .panel>.panel-body,.shell.settings-direct .work .panel>.panel-body{padding:0}
