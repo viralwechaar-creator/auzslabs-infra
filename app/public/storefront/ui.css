@@ -182,8 +182,8 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell.settings-mode .page-head p,.shell.settings-direct .page-head p,.shell.settings-mode .work h2+p{font-size:13px;color:var(--ink);opacity:.8}
 .shell input[type=radio],.shell input[type=checkbox]{accent-color:#303030}
 .shell[data-theme=dark] input[type=radio],.shell[data-theme=dark] input[type=checkbox]{accent-color:#f1f1f1}
-.shell .notice,.shell .banner,.shell .info{background:#d9f4fb;color:#0b4b5a;border:0;border-radius:12px;padding:var(--sp-3) var(--sp-4)}
-.shell[data-theme=dark] :is(.notice,.banner,.info){background:#10343d;color:#bfeaf5}
+.shell .notice,.shell .banner{background:#d9f4fb;color:#0b4b5a;border:0;border-radius:12px;padding:var(--sp-3) var(--sp-4)}
+.shell[data-theme=dark] :is(.notice,.banner){background:#10343d;color:#bfeaf5}
 .shell .panel .row,.shell .panel label.check{padding-block:6px}
 
 /* 8. Minimal, less boxy: sections are open space with hairlines; only inputs and true cards keep an outline */
@@ -217,3 +217,16 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .record-layout>aside label{font-size:13px;font-weight:550;display:grid;gap:4px;margin-bottom:var(--sp-3)}
 .shell .record-layout>aside :is(select,input:not([type=checkbox]):not([type=radio])){width:100%;border-radius:10px}
 .shell .record-layout .record-layout>aside .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain){border:0;border-radius:0;padding:var(--sp-3) 0;background:transparent;border-bottom:1px solid var(--line)}
+.shell .metric:first-child{background:transparent;color:var(--ink);border-color:var(--line)}
+.shell .metric:first-child{border-left:0}
+
+/* 10. Analytics and KPI tiles: label, then big value, then quiet note (Shopify reference) */
+.shell .metric,.shell .analytics-kpi{display:block}
+.shell .metric>span{display:inline-block;background:transparent!important;padding:0!important;border-radius:0!important;font-size:13px;font-weight:500;color:var(--ink)}
+.shell .metric>span a{background:transparent!important;padding:0!important;border-radius:0!important;min-height:0!important;color:var(--ink)!important;text-decoration:none;border-bottom:1px dotted #9a9a9a}
+.shell .metric>strong{display:block;font-size:22px;font-weight:600;margin:6px 0 2px;text-align:left}
+.shell .metric>small{display:block;font-size:12px;color:var(--muted);line-height:1.35}
+.shell .analytics-kpi{border-left:0}
+.shell form.filters,.shell .analytics-filters{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:end;padding:0 0 var(--sp-3);border:0}
+.shell form.filters label,.shell .analytics-filters label{font-size:12px;color:var(--muted);display:grid;gap:2px}
+.shell form.filters select,.shell .analytics-filters select{border-radius:999px;background:var(--pill);border-color:transparent;min-height:32px}
