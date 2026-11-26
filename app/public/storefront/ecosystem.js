@@ -163,7 +163,7 @@ export function rerender(skipRefresh) {
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
   document.querySelectorAll('.page-head .actions').forEach((box) => {
     const items = [...box.children].filter((el) => el.matches('.btn, button, a'));
-    if (items.length < 4) return;
+    if (items.length < (matchMedia('(max-width:899px)').matches && box.closest('.work.has-crumb') ? 3 : 4)) return;
     const keep = items.find((el) => el.classList.contains('primary')) || items[items.length - 1];
     const extras = items.filter((el) => el !== keep);
     const d = document.createElement('details'); d.className = 'more-actions';
