@@ -84,6 +84,13 @@ for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
         await page.screenshot({ path: path.join(out, 'globe_map__' + sizeName + '.png') });
         await page.click('[data-g=toggle]'); await page.waitForTimeout(300);
       }
+      if (process.env.DIALOG && route === 'orders' && scheme === 'light') {
+        await page.evaluate(() => { const b = document.querySelector('.plus-menu .more-menu a'); b && b.closest('details').remove(); });
+        await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/drafts'), { waitUntil: 'load' }); await page.waitForTimeout(2200);
+        await page.evaluate(() => document.querySelector('[data-action="draft-new"]').click()); await page.waitForTimeout(900);
+        await page.screenshot({ path: path.join(out, 'dialog__' + sizeName + '.png') });
+        await page.keyboard.press('Escape'); await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
+      }
       if (process.env.DBG && sizeName === 'phone' && scheme === 'light') { const d = await page.evaluate(() => { const g = (sel) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); const c = getComputedStyle(e); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), display: c.display, color: c.color, fs: c.fontSize, vis: c.visibility, op: c.opacity, text: (e.textContent || '').slice(0, 30) }; }; return { chk: (() => { const c = document.querySelector('td input[data-bulk]'); if (!c) return null; const t = c.closest('td'); const r = t.getBoundingClientRect(); const cs = getComputedStyle(t); return { tdIdx: [...t.parentNode.children].indexOf(t), label: t.dataset.label, x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), pos: cs.position, order: cs.order, disp: cs.display, ml: cs.marginLeft }; })(), name: g('.mobile-page-name'), h1: g('.page-head h1'), top: g('.topbar'), brand: g('.mobile-brand'), crumb: g('.breadcrumb') }; }); console.log(route, JSON.stringify(d)); }
       const file = route.replace(/[^a-z0-9]+/gi, '_').slice(0, 40) + '__' + sizeName + '__' + scheme + '.png';
       await page.screenshot({ path: path.join(out, file), fullPage: false });

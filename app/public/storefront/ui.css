@@ -713,3 +713,20 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell tbody tr:has(td[data-label=Product]) td[data-label=Available]{display:none!important}
   .shell .work:has(#table-query) input[type=checkbox]{width:18px;height:18px}
 }
+
+/* 35. Pop-up cards (dialogs): neutral, one dark primary button, soft rounded fields */
+dialog#dialog{border:0;padding:0;background:#fff;color:#1f1f1f;border-radius:22px;box-shadow:0 18px 60px rgba(0,0,0,.22);width:min(560px,calc(100% - 32px))}
+dialog#dialog .dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 6px;border:0}
+dialog#dialog .dialog-head h2{font-size:18px;font-weight:650;margin:0}
+dialog#dialog .dialog-content{padding:8px 20px 20px}
+dialog#dialog .btn{border:0;border-radius:999px;background:#f1f1f1;color:#1f1f1f;font-weight:550;min-height:40px}
+dialog#dialog .btn:hover{background:#e7e7e7}
+dialog#dialog .btn.primary,dialog#dialog .dialog-content .btn.primary{background:#111;color:#fff}
+dialog#dialog .btn.primary:hover{background:#2a2a2a}
+dialog#dialog .btn.danger{color:#b3261e}
+dialog#dialog input:not([type=checkbox]):not([type=radio]),dialog#dialog select,dialog#dialog textarea{background:#f6f6f6;border:1px solid #e3e3e3;border-radius:12px}
+dialog#dialog input:focus,dialog#dialog select:focus,dialog#dialog textarea:focus{outline:2px solid #111;outline-offset:1px;background:#fff}
+dialog#dialog form .actions{justify-content:flex-end;gap:8px;margin-top:var(--sp-4,16px)}
+@media (max-width:899px){dialog#dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:22px 22px 0 0;max-height:92dvh}dialog#dialog form .actions .btn{flex:1}}
+dialog#dialog .dialog-head .btn{width:36px;min-height:36px;height:36px;padding:0;font-size:18px;line-height:1}
+dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visible{outline:0;box-shadow:none}
