@@ -185,3 +185,25 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .notice,.shell .banner,.shell .info{background:#d9f4fb;color:#0b4b5a;border:0;border-radius:12px;padding:var(--sp-3) var(--sp-4)}
 .shell[data-theme=dark] :is(.notice,.banner,.info){background:#10343d;color:#bfeaf5}
 .shell .panel .row,.shell .panel label.check{padding-block:6px}
+
+/* 8. Minimal, less boxy: sections are open space with hairlines; only inputs and true cards keep an outline */
+.shell .panel{border:0;box-shadow:none;background:transparent;border-radius:0;margin-bottom:var(--sp-5)}
+.shell .panel-title{padding:0 0 var(--sp-2);border-bottom:0}
+.shell .panel-body{padding:0}
+.shell .panel>.table-scroll,.shell .panel>table{padding:0}
+.shell .record-layout .panel:not(.plain){border:1px solid var(--line);border-radius:14px;padding:var(--sp-4);background:var(--paper)}
+.shell .record-layout .panel .panel-title{padding-top:0}
+.shell .metrics{gap:0;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.shell .metric{border:0;border-radius:0;box-shadow:none;background:transparent;padding:var(--sp-3) var(--sp-4);border-left:1px solid var(--line)}
+.shell .metric:first-child{border-left:0;padding-left:0}
+.shell .filters{border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none;padding:var(--sp-2) 0;margin:0 0 var(--sp-2);background:transparent}
+.shell .filters input{background:var(--pill);border-radius:999px;padding-inline:14px}
+.shell th{background:transparent;border-bottom:1px solid var(--line);color:var(--muted);font-weight:500;border-radius:0!important}
+.shell td{border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.shell .card{border:0;box-shadow:none;background:var(--field);border-radius:14px}
+.shell .tabs{border-bottom-color:transparent}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{border-bottom-color:var(--ink)}
+.shell .btn{box-shadow:none}
+.shell .work-area{box-shadow:0 0 0 1px rgb(0 0 0 / .04)}
+.shell .page-head{margin-bottom:var(--sp-5)}
+@media (max-width:899px){.shell .metric{border-left:0;border-bottom:1px solid var(--line);padding-inline:0}.shell .metrics{border-top:0}}
