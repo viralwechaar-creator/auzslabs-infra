@@ -147,7 +147,7 @@ export function rerender(skipRefresh) {
   if (trail && recTitle && bcBox) {
     const href = trail.getAttribute('href') || '#/';
     bcBox.classList.add('is-record');
-    bcBox.innerHTML = '<a class="back-circle" href="' + esc(href) + '" aria-label="Back to ' + esc(trail.textContent) + '"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5"/></svg></a><a class="crumb-parent" href="' + esc(href) + '">' + esc(trail.textContent) + '</a><span>/</span><strong>' + esc(recTitle.textContent) + '</strong>';
+    bcBox.innerHTML = '<a class="back-circle" href="' + esc(href) + '" aria-label="Back to ' + esc(trail.textContent) + '"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5"/></svg></a><a class="crumb-parent" href="' + esc(href) + '">' + esc(trail.textContent) + '</a>';
     document.querySelector('.work')?.classList.add('has-crumb');
     const shareLink = document.querySelector('.page-head .actions a[href*="store.html?view=p"]');
     const topActions = document.querySelector('.topbar .topbar-actions');
@@ -157,6 +157,9 @@ export function rerender(skipRefresh) {
       topActions.insertBefore(b, topActions.firstChild);
     }
   }
+  // Phone: the create menu lives in the top bar next to the bell, like Shopify.
+  const plus = document.querySelector('.page-head .plus-menu'), tb = document.querySelector('.topbar .topbar-actions');
+  if (plus && tb && matchMedia('(max-width:899px)').matches) { plus.classList.add('in-top'); plus.querySelector('summary').innerHTML = '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>'; tb.insertBefore(plus, tb.firstChild); }
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
   document.querySelectorAll('.page-head .actions').forEach((box) => {
     const items = [...box.children].filter((el) => el.matches('.btn, button, a'));

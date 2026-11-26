@@ -558,3 +558,28 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .hc-devs{margin:var(--sp-3) 0}
 .shell .hc-devs div{display:flex;gap:var(--sp-3);flex-wrap:wrap;font-size:var(--fs-small)}
 .shell .hc-devs small{color:var(--muted)}
+
+/* 27. Phone: record pages show the title once; Orders list is a flat, quiet list */
+@media (max-width:899px){
+  .shell .work.has-crumb .page-head h1{display:block!important;font-size:30px;font-weight:700;letter-spacing:-.02em;margin:var(--sp-3) 0 var(--sp-1)}
+  .shell .work.has-crumb .page-head p{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+  .shell .work.has-crumb .panel,.shell .work.has-crumb .metrics .metric{background:var(--paper);border:1px solid var(--line);border-radius:22px;box-shadow:0 1px 8px rgba(0,0,0,.04)}
+  .shell .topbar details.plus-menu.in-top>summary{width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;display:grid;place-items:center}
+  .shell .topbar details.plus-menu .more-menu{right:0;left:auto;min-width:200px}
+  .shell .work:has(#orders-results) .page-head,.shell .work:has(#orders-results) .summary-bar{display:none}
+  .shell .work:has(#orders-results) .panel{background:transparent;border:0;box-shadow:none;padding:0}
+  .shell .work:has(#orders-results) .filters{background:var(--paper);border:1px solid var(--line);border-radius:999px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:4px 14px;margin:0 0 var(--sp-3);flex-wrap:nowrap}
+  .shell .work:has(#orders-results) .filters input{border:0;background:transparent;min-height:40px}
+  .shell .work:has(#orders-results) .filters select{border:0;background:transparent;min-width:0;width:auto;max-width:130px}
+  .shell .work:has(#orders-results) .pills{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 0 var(--sp-3)}
+  .shell .work:has(#orders-results) .pill-tab{white-space:nowrap;font-size:16px}
+  .shell .oc-day{font-size:15px;font-weight:600;color:var(--muted);margin:var(--sp-4) 0 var(--sp-1)}
+  .shell .order-card{border-top:0!important;padding:14px 0!important;border-bottom:1px solid var(--line)}
+  .shell .oc-top strong{font-size:18px}
+  .shell .oc-top span{font-size:16px}
+}
+@media (max-width:899px){
+  .shell .topbar details.plus-menu.in-top>summary{background:transparent!important;color:var(--ink)!important}
+  .shell .work:has(#orders-results) .filters select{appearance:none;-webkit-appearance:none;width:34px;min-width:34px;font-size:0;color:transparent;padding:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23444' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 16V4M3 7l3-3 3 3M14 4v12M11 13l3 3 3-3'/%3E%3C/svg%3E") center/20px no-repeat}
+  .shell .work:has(#orders-results) .filters input{min-width:0}
+}

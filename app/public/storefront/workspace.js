@@ -120,7 +120,8 @@ function ordersList() {
     link('#' + o.number, pathFor('orders/' + o.id)) + (o.isTest ? ' ' + badge('Test', 'neutral') : ''), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.archived ? 'Archived' : o.status),
   ]));
   // phone: one tappable card per order (number and total, then customer, items, date, status chips)
-  const cards = '<div class="order-cards">' + list.map((o) => '<a class="order-card" href="' + pathFor('orders/' + o.id) + '"><div class="oc-top"><strong>#' + esc(o.number) + '</strong><span>' + money(o.total) + '</span></div><div class="oc-sub">' + esc(o.customer || '—') + ' <i>|</i> ' + (o.quantity ?? 0) + ' item' + (o.quantity === 1 ? '' : 's') + ' <i>|</i> ' + dateValue(o.date) + '</div><div class="oc-chips">' + status(o.payment) + status(o.archived ? 'Archived' : o.status) + '</div></a>').join('') + '</div>';
+  let lastDay = '';
+  const cards = '<div class="order-cards">' + list.map((o) => { const d = String(o.date || '').slice(0, 10), h = d !== lastDay ? '<h3 class="oc-day">' + (d === dayFmt.format(new Date()) ? 'Today' : d === dayFmt.format(new Date(Date.now() - 86400000)) ? 'Yesterday' : new Date(d + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })) + '</h3>' : ''; lastDay = d; return h + '<a class="order-card" href="' + pathFor('orders/' + o.id) + '"><div class="oc-top"><strong>#' + esc(o.number) + '</strong><span>' + money(o.total) + '</span></div><div class="oc-sub">' + esc(o.customer || '—') + ' <i>|</i> ' + (o.quantity ?? 0) + ' item' + (o.quantity === 1 ? '' : 's') + ' <i>|</i> ' + dateValue(o.date) + '</div><div class="oc-chips">' + status(o.payment) + status(o.archived ? 'Archived' : o.status) + '</div></a>'; }).join('') + '</div>';
   return '<div class="orders-table">' + rows + '</div>' + cards;
 }
 
