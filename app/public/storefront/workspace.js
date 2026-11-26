@@ -104,7 +104,7 @@ function ordersPage(id) {
 function orderDetail(id) {
   const o = state.orders.find((x) => x.id === id);
   if (!o) return head('Order unavailable', 'This order could not be found.', wl('All orders', 'orders'));
-  const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
+  const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [(l.productId ? '<a href="' + pathFor('products/' + encodeURIComponent(l.productId)) + '">' + esc(l.name) + '</a>' : esc(l.name)) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
   const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
   const left = (o.remaining || []).reduce((a, r) => a + r.qty, 0);
   const closed = ['Cancelled', 'Returned'].includes(o.status);
@@ -124,8 +124,9 @@ function orderDetail(id) {
   const shipPanel = panel('Fulfilment', body('<div class="stack">' + (ships || '<p class="empty">Nothing shipped yet.</p>') + (left > 0 && (o.shipments || []).length ? '<p class="compact-copy">' + left + ' item(s) still to ship.</p>' : '') + '</div>'));
   return head('Order #' + esc(o.number) + (o.isTest ? ' (test)' : ''), dateValue(o.date), actions, ['orders', 'Orders']) +
     '<div class="record-layout"><div>' + panel('Items', lines) + shipPanel + refundPanel + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfilment</div>' + status(o.status) + '</div><div class="launch"><div class="info">Delivery</div><strong>' + dlabel + '</strong></div><div class="launch"><div class="info">Channel</div><strong>' + esc(o.channel) + (o.oversold ? ' · oversold, check stock' : '') + '</strong></div></div>')) +
+    ((state.returns || []).filter((r) => r.orderId === o.id).length ? panel('Returns', body('<div class="stack">' + (state.returns || []).filter((r) => r.orderId === o.id).map((r) => '<div class="launch"><div class="info">' + (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', ') + '<small>' + esc(r.reason || '') + '</small></div>' + badge({ requested: 'Requested', approved: 'Approved', rejected: 'Rejected', received: 'Received', refunded: 'Refunded' }[r.status] || esc(r.status)) + '</div>').join('') + '<a href="' + pathFor('returns') + '">All returns</a></div>')) : '') +
     panel('Timeline', body('<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
-    '</div><aside>' + panel('Customer', body('<p>' + esc(o.customer || '—') + '</p>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
+    '</div><aside>' + panel('Customer', body('<div class="stack"><p>' + (o.customerId ? '<a href="#" data-action="customer-detail:' + esc(o.customerId) + '">' + esc(o.customer || '—') + '</a>' : esc(o.customer || '—')) + '</p>' + (o.contact.phone ? '<small>' + esc(o.contact.phone) + '</small>' : '') + (o.contact.email ? '<small>' + esc(o.contact.email) + '</small>' : '') + (o.contact.address ? '<small>' + esc([o.contact.address, o.contact.city, o.contact.state, o.contact.pin].filter(Boolean).join(', ')) + '</small>' : '') + (o.discountCode ? '<small>Discount: <a href="' + pathFor('discounts') + '">' + esc(o.discountCode) + '</a> (−' + money(o.discountAmount) + ')</small>' : '') + (o.attribution && (o.attribution.source || o.attribution.campaign) ? '<small>Came from: ' + esc([o.attribution.source, o.attribution.medium, o.attribution.campaign].filter(Boolean).join(' / ')) + '</small>' : '') + '</div>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
 }
 
 // ---------- Products ----------
@@ -797,7 +798,7 @@ const moveLabel = (m) => m.reason === 'transfer' ? 'Moved ' + m.qty + ' from ' +
 const movesTable = (moves) => table(['When', 'Product', 'What happened', 'Note'], moves.slice(0, 25).map((m) => [dateValue(m.at), esc(m.product + (m.variant && m.variant !== 'Default' ? ' · ' + m.variant : '')), moveLabel(m), esc(m.note || '')]));
 function inventoryPage() {
   const rows = (state.inventory || []).map((v) => [
-    esc(v.product), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>',
+    (v.productId ? '<a href="' + pathFor('products/' + encodeURIComponent(v.productId)) + '">' + esc(v.product) + '</a>' : esc(v.product)), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>',
     v.unavailable || 0, v.committed || 0, v.onHand ?? v.online, v.cost == null ? '<span class="muted">Not set</span>' : money(v.cost), v.elsewhere,
     canWrite() ? button('Adjust', 'stock-adjust:' + v.variantId, 'compact') + button('Details', 'stock-details:' + v.variantId, 'compact') : '',
   ]);
@@ -855,7 +856,7 @@ function draftForm() {
 }
 const RETURN_NEXT = { requested: [['approved', 'Approve', 'primary'], ['rejected', 'Reject', '']], approved: [['received', 'Mark received', 'primary']], received: [['refunded', 'Refund', 'primary']] };
 function returnsPage() {
-  const rows = (state.returns || []).map((r) => [link('#' + esc(r.orderNumber), pathFor('returns/' + r.id), 'compact'), (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), esc(r.reason || '—'), money(r.value),
+  const rows = (state.returns || []).map((r) => [link('#' + esc(r.orderNumber), pathFor('orders/' + r.orderId), 'compact'), (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), esc(r.reason || '—'), money(r.value),
     badge({ requested: 'Requested', approved: 'Approved', rejected: 'Rejected', received: 'Received', refunded: 'Refunded' }[r.status], ['rejected'].includes(r.status) ? 'neutral' : ''),
     canWrite() ? (RETURN_NEXT[r.status] || []).map(([s, label, kind]) => button(label, 'return-set:' + r.id + ':' + s, 'compact ' + kind)).join('') : '']);
   return head('Returns', 'Return requests for fulfilled orders. Units go back in stock when you mark them received.', '') + tabs('returns', orderTabs) + panel('All returns', table(['Order', 'Items', 'Reason', 'Value', 'Status', ''], rows));
@@ -1489,7 +1490,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       '<p><strong>Marketing messages:</strong> ' + (d.acceptsMarketing ? 'Agreed' : 'Not agreed') + (d.consentAt ? ' <small>(' + new Date(d.consentAt).toLocaleDateString('en-IN') + ' · ' + esc(d.consentSource || '') + ')</small>' : '') + '</p>' +
       (canWrite() ? button(d.acceptsMarketing ? 'Record withdrawal' : 'Record agreement', 'consent-set:' + d.id + ':' + (d.acceptsMarketing ? 'off' : 'on')) : '') +
       '<p><strong>Store credit:</strong> ' + money(d.creditBalance) + '</p><ul>' + moves + '</ul>' + (canWrite() ? button('Add or remove credit', 'credit-adjust:' + d.id) : '') +
-      '<p><strong>Addresses</strong></p><ul>' + addr + '</ul></div>');
+      '<p><strong>Addresses</strong></p><ul>' + addr + '</ul><p><strong>Orders</strong></p><ul>' + ((d.orders || []).map((x) => '<li><a href="' + pathFor('orders/' + x.id) + '">#' + esc(x.number) + '</a> · ' + money(x.total) + ' · ' + esc(x.status) + '</li>').join('') || '<li>No orders yet.</li>') + '</ul></div>');
   });
   if (a === 'credit-adjust') return dialog('Store credit', editForm('credit-adjust', key, input('Amount (use a minus to remove)', 'delta', '', 'number', 'required step="0.01"') + input('Note', 'note', '', 'text', 'maxlength="200"'), 'Save'));
   if (a === 'blog-new') return dialog('Write a post', blogForm(null));

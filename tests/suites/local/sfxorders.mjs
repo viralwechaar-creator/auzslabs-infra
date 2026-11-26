@@ -96,5 +96,18 @@ export default async function run({ browser, stack }) {
     await s.shot(page, 'sfx-order-shipment');
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   }, 'critical');
+  await s.check('Order page links to the customer (with their orders) and to the product', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    const o5 = await place();
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o5), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    assert(await page.locator('aside a[data-action^="customer-detail:"]').count() === 1, 'no customer link');
+    assert(await page.locator('main a[href*="#/products/"]').count() >= 1, 'no product link');
+    await page.evaluate(() => document.querySelector('aside a[data-action^="customer-detail:"]').click()); await page.waitForTimeout(1500);
+    const d = await page.locator('#dialog').innerText();
+    assert(/Orders/.test(d) && /#\d+|#[A-Z0-9-]+/.test(d), d.slice(0, 300));
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }
