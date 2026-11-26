@@ -478,9 +478,8 @@ function themeCard(t) {
   const buy = t.installed ? badge('Installed') :
     t.priceCents > 0 ? (canWrite() ? button('Buy for ' + price, 'theme-buy:' + t.id, 'primary') : '<p class="compact-copy">Premium theme. Ask an owner or manager to buy it.</p>') :
     canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
-  return '<article class="card"><div class="tile-img">' + themePreviewHtml(t) +
-    '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
-    '<p>' + esc(t.description || (t.isBuiltin ? 'AUZslab first-party theme.' : 'By ' + (t.developerName || 'a theme developer') + '.')) + '</p>' + buy + '</div></article>';
+  return '<article class="card theme-card"><div class="tile-img">' + themePreviewHtml(t) + '</div><div class="tc-body"><div class="tc-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
+    '<p class="tc-desc">' + esc(t.description || (t.isBuiltin ? 'AUZslab first-party theme.' : 'By ' + (t.developerName || 'a theme developer') + '.')) + '</p>' + (buy ? '<div class="tc-foot">' + buy + '</div>' : '') + '</div></article>';
 }
 function installRow(i) {
   const actions = (canWrite() ? button('Customize', 'theme-customize:' + i.id) : '') +
