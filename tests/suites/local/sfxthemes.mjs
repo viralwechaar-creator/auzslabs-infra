@@ -99,4 +99,17 @@ export default async function run({ browser, stack }) {
     assert(/premium theme/i.test(inst || ''), 'premium install message: ' + inst);
     await q("update sfx_themes set price_cents=0 where id=$1", [th]);
   }, 'major');
+  await s.check('Themes page: one Themes entry in the menu, and every theme card has a preview picture', async () => {
+    const ctx2 = await newCtx(browser, stack, { w: 1280, h: 900 }); const pg = await ctx2.newPage(); const errs2 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await pg.waitForTimeout(800);
+    await pg.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    await pg.goto('about:blank'); await pg.goto(stack.url('testcafe', '/storefront.html#/builder'), { waitUntil: 'load' }); await pg.waitForTimeout(4000);
+    const entries = await pg.locator('.sidebar a, nav a').evaluateAll((a) => a.filter((x) => /^(Theme|Themes)$/i.test(x.textContent.trim())).map((x) => x.textContent.trim() + '|' + x.getAttribute('href')));
+    const uniq = [...new Set(entries)];
+    assert(uniq.length === 1, 'theme menu entries: ' + JSON.stringify(entries));
+    const cards = await pg.locator('.tile-img').evaluateAll((els) => els.map((e) => { const im = e.querySelector('img'); return im ? (im.getAttribute('src') || '') : e.querySelector('svg') ? 'inline-svg-preview' : ''; }));
+    assert(cards.length >= 2 && cards.every((src) => src.length > 10), 'a theme card has no picture: ' + JSON.stringify(cards.map((c) => c.slice(0, 40))));
+    assert(!errs2.length, JSON.stringify(errs2).slice(0, 200));
+  });
+  s.done();
 }

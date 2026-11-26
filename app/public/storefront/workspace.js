@@ -335,19 +335,35 @@ function collectVariants(formEl) {
 }
 
 // ---------- Online store: overview / theme / domains / payments ----------
-const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']];
+const websiteTabs = [['website', 'Store overview'], ['builder', 'Themes'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']];
 // ---------- Theme marketplace (phase 2, db/375) ----------
 // Real marketplace: built-in Minimal/Classic are now plain rows in sfx_themes (migrated in, not
 // hardcoded), alongside any developer theme an admin has approved. "Install" copies the approved
 // listing's content into this store's OWN install row (sfx_theme_installs) -- editing it later can
 // never touch another store's copy of the same theme, or the developer's original listing.
 const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar', booking: 'Appointment booking' };
+// A theme with no uploaded preview still gets a picture: our two stock images, or a small drawn storefront in the theme's own colour.
+function themePreview(t) {
+  if (t.previewImageUrl) return t.previewImageUrl;
+  const slug = String(t.slug || t.themeSlug || t.name || '').toLowerCase();
+  if (slug === 'minimal') return '/storefront/assets/theme-minimal.svg';
+  if (slug === 'classic') return '/storefront/assets/theme-classic.svg';
+  let h = 0; for (const ch of slug) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  const dark = /stud|noir|black|kiln/.test(slug), bg = dark ? '#161616' : '#f6f4f1', ink = dark ? '#ffffff' : '#171717', acc = 'hsl(' + h + ' 45% ' + (dark ? '55%' : '42%') + ')', tile = dark ? '#2a2a2a' : '#e4dfd8';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="' + bg + '"/><rect x="0" y="0" width="320" height="22" fill="' + ink + '" opacity=".08"/><rect x="12" y="8" width="46" height="6" rx="3" fill="' + ink + '"/>' +
+    '<rect x="236" y="8" width="20" height="6" rx="3" fill="' + ink + '" opacity=".5"/><rect x="262" y="8" width="20" height="6" rx="3" fill="' + ink + '" opacity=".5"/><rect x="12" y="32" width="296" height="64" rx="6" fill="' + acc + '"/>' +
+    '<rect x="24" y="52" width="110" height="10" rx="5" fill="#fff" opacity=".9"/><rect x="24" y="70" width="70" height="7" rx="3.500" fill="#fff" opacity=".6"/>' +
+    [0, 1, 2, 3].map((i) => '<rect x="' + (12 + i * 75) + '" y="108" width="68" height="62" rx="5" fill="' + tile + '"/><rect x="' + (12 + i * 75) + '" y="176" width="40" height="5" rx="2.500" fill="' + ink + '" opacity=".7"/>').join('') + '</svg>';
+  return { svg };
+}
+// the picture markup: an uploaded or stock picture, or the small drawn storefront (built only from fixed shapes and a hue number, never from user text)
+const themePreviewHtml = (t) => { const p = themePreview(t); return typeof p === 'string' ? image(p, t.name) : p.svg.replace('<svg ', '<svg role="img" aria-label="' + esc(t.name || 'Theme') + ' preview" style="width:100%;height:100%;display:block" '); };
 function themeCard(t) {
   const price = t.priceCents > 0 ? money(t.priceCents / 100) : 'Free';
   const buy = t.installed ? badge('Installed') :
     t.priceCents > 0 ? (canWrite() ? button('Buy for ' + price, 'theme-buy:' + t.id, 'primary') : '<p class="compact-copy">Premium theme. Ask an owner or manager to buy it.</p>') :
     canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
-  return '<article class="card"><div class="tile-img">' + (image(t.previewImageUrl, t.name) || '<div class="tile-img placeholder"></div>') +
+  return '<article class="card"><div class="tile-img">' + themePreviewHtml(t) +
     '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
     '<p>' + esc(t.description || (t.isBuiltin ? 'AUZslab first-party theme.' : 'By ' + (t.developerName || 'a theme developer') + '.')) + '</p>' + buy + '</div></article>';
 }
@@ -355,13 +371,13 @@ function installRow(i) {
   const actions = (canWrite() ? button('Customize', 'theme-customize:' + i.id) : '') +
     (canWrite() && !i.active ? button('Make active', 'theme-activate:' + i.id, 'primary') : i.active ? badge('Active on your storefront') : '') +
     (canWrite() ? button('Rename', 'theme-rename:' + i.id, 'compact') + button('Duplicate', 'theme-duplicate:' + i.id, 'compact') + (i.custom && !i.active ? button('Delete', 'theme-delete:' + i.id, 'compact danger') : '') : '');
-  return '<article class="card"><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
+  return '<article class="card"><div class="tile-img">' + themePreviewHtml({ slug: i.themeName, name: i.themeName }) + '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
     '<p class="compact-copy">' + (i.custom ? 'Your own theme.' : i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' ' + (i.custom ? 'Created' : 'Installed') + ' ' + dateValue(i.installedAt) + '.</p>' + actions + '</div></article>';
 }
 function themePage() {
   const owned = new Set(state.installs.filter((i) => !i.custom).map((i) => i.themeId));
   const market = state.marketplace.map((t) => ({ ...t, installed: owned.has(t.id) }));
-  return head('Theme', 'Browse the theme marketplace, install a theme, and customize what you install.', canWrite() ? button('Import ZIP', 'theme-import') + button('New theme', 'theme-new', 'primary') : '') + tabs('builder', websiteTabs) +
+  return head('Themes', 'Browse the theme marketplace, install a theme, and customize what you install.', canWrite() ? button('Import ZIP', 'theme-import') + button('New theme', 'theme-new', 'primary') : '') + tabs('builder', websiteTabs) +
     panel('Your installed themes', state.installs.length ? '<div class="cards">' + state.installs.map(installRow).join('') + '</div>' : body('<p class="compact-copy">You haven’t installed a theme yet. Install one from the marketplace below.</p>')) +
     panel('Theme marketplace', body('<p class="compact-copy">Prices on this page are always current and are set by AUZslab. Free themes install instantly; premium themes are bought once with a secure payment and install straight away.</p>') + '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
     panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));

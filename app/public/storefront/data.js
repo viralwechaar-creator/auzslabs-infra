@@ -24,7 +24,7 @@ export const menu = [
   { id: 'analytics', name: 'Analytics', icon: 'chart', children: [['reports', 'Reports'], ['insights', 'Insights'], ['live-view', 'Live view']] },
   { label: 'Sales channels' },
   { id: 'channels', name: 'All channels', icon: 'swap' },
-  { id: 'website', name: 'Online store', icon: 'store', children: [['builder', 'Theme'], ['templates', 'Themes'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']] },
+  { id: 'website', name: 'Online store', icon: 'store', children: [['builder', 'Themes'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']] },
   { id: 'apps', name: 'Apps and plans', icon: 'grid' },
   { label: 'Business' },
   { id: 'team', name: 'Staff and access', icon: 'team', children: [['roles', 'Roles'], ['locations', 'Locations']] },
