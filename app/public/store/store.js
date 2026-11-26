@@ -1042,12 +1042,23 @@ V.wishlist = (v) => {
 };
 
 V.p = (v, id) => {
-  const s = BYID[id];
+  let s = BYID[id];
+  // storefront stores: an address with a product handle works, and an old handle follows the owner's redirect to the new one
+  if (!s && PFX === 'sfx') {
+    const byHandle = STY.find((x) => x.handle && String(x.handle).toLowerCase() === String(id).toLowerCase());
+    if (byHandle) { location.replace(link('p/' + byHandle.id)); return; }
+    rpc('public_sfx_redirect', { p_slug: SLUG, p_path: '/products/' + id }).then((r) => {
+      if (!r || !r.to) return;
+      const m = String(r.to).match(/^\/products\/([^/?#]+)/); const t = m && STY.find((x) => x.handle === m[1] || x.id === m[1]);
+      if (t) location.replace(link('p/' + t.id)); else if (/^https:\/\//.test(r.to)) location.href = r.to;
+    }).catch(() => {});
+  }
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
   const minimal = isMin();
   const modelOptions = minimal && /phone case/i.test(s.category || '');
   const hasSizeGuide = !minimal || sizesOf(s).some((size) => /^(?:X{0,3}[SL]|M|[2-5]XL)$/i.test(size));
   let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
+  if (PFX === 'sfx' && s.handle) rpc('public_sfx_seo', { p_slug: SLUG, p_kind: 'product', p_handle: s.handle }).then((r) => { if (r && r.title && location.hash.includes(s.id)) setMeta(r.title + ' · ' + (r.siteName || D.shop.name), r.description || '', photos(s)[0] || '', location.origin + location.pathname + '#/p/' + s.id); }).catch(() => {});
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
   const pinnedPhoto = minimal ? E('div', { class: 'minimal-pinned-photo' }) : null;
   let cur = 0;
@@ -1475,8 +1486,27 @@ V.blog = (v, which) => {
   }
   v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Journal')), list.length ? blogGrid(list) : E('div', { class: 'card mut' }, 'Nothing published yet. Check back soon.')));
 };
+// Storefront stores keep their posts in the dashboard's Blog (db/425). Show those; fall back to the old built-in journal when there are none.
+const baseBlog = V.blog;
+V.blog = async (v, which) => {
+  if (PFX !== 'sfx') return baseBlog(v, which);
+  D.config = D.config || {};
+  let rows = []; try { rows = (await rpc('public_sfx_blog_list', { p_slug: SLUG })) || []; } catch (e) { rows = []; }
+  if (!rows.length) return baseBlog(v, which);
+  const shape = (b) => ({ title: b.title, excerpt: b.excerpt, image: b.image, date: b.publishedAt, body: b.body || '', handle: b.handle });
+  if (!which) { cfg().blogs = rows.map(shape); return baseBlog(v, which); }
+  const pick = rows.find((r) => r.handle === which || slugOf(r.title) === which);
+  let post = null; if (pick) { try { post = await rpc('public_sfx_blog_post', { p_slug: SLUG, p_handle: pick.handle }); } catch (e) { post = null; } }
+  if (!post) {
+    try { const r = await rpc('public_sfx_redirect', { p_slug: SLUG, p_path: '/blogs/' + which }); const m = r && String(r.to).match(/^\/blogs\/([^/?#]+)/); if (m) { location.replace(link('blog/' + m[1])); return; } } catch (e) { /* none */ }
+    cfg().blogs = []; return baseBlog(v, which);
+  }
+  cfg().blogs = [shape(post)].concat(rows.filter((r) => r.handle !== post.handle).slice(0, 2).map(shape));
+  baseBlog(v, slugOf(post.title));
+  if (post.seoTitle) setMeta(post.seoTitle + ' · ' + D.shop.name, post.seoDescription || post.excerpt || '', post.image, location.origin + location.pathname + '#/blog/' + post.handle);
+};
 function blogGrid(list) {
-  return E('div', { class: 'bgrid' }, list.map((b) => E('a', { class: 'bcard', href: link('blog/' + slugOf(b.title)) },
+  return E('div', { class: 'bgrid' }, list.map((b) => E('a', { class: 'bcard', href: link('blog/' + (b.handle || slugOf(b.title))) },
     E('div', { class: 'im' }, b.image ? E('img', { src: b.image, alt: '', loading: 'lazy' }) : placeholder(b.title)),
     E('div', { class: 'tx' }, E('h3', null, b.title), E('p', null, b.excerpt || String(b.body || '').slice(0, 130))))));
 }
