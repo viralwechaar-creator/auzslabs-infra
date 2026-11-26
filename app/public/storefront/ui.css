@@ -238,3 +238,26 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .product-photo:first-child{grid-column:span 2;grid-row:span 2}
 .shell .product-photo .photo-move{display:flex;gap:4px;padding:6px}
 .shell .option-row .chip,.shell .chip{border-radius:8px;background:var(--pill);color:var(--pill-ink);padding:2px 10px;font-weight:500;font-size:12px}
+
+/* 12. Phone (Shopify mobile reference): big title, pill search, pill tabs, big rounded section cards, blue text links */
+@media (max-width:899px){
+  .shell{--fs-body:15px;--fs-small:13px;--fs-title:30px;--fs-h2:18px}
+  .shell .page-head h1,.shell .work h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+  .shell .page-head p{font-size:14px}
+  .shell .work{padding:var(--sp-3) var(--sp-4) 110px}
+  .shell .tabs{border-bottom:0;gap:var(--sp-1);margin-bottom:var(--sp-3)}
+  .shell .tabs a,.shell .tabs button{border:0!important;border-radius:999px;padding:0 16px;font-size:16px;min-height:44px}
+  .shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{background:var(--pill);color:var(--ink)!important;font-weight:650}
+  .shell .filters{border:1px solid var(--line);border-radius:20px;padding:4px 14px;box-shadow:0 1px 6px rgb(0 0 0 / .06);margin-bottom:var(--sp-3)}
+  .shell .filters input{background:transparent;min-height:44px;font-size:16px}
+  .shell .panel-title h2,.shell .work h2{font-size:18px;font-weight:650}
+  .shell .panel-title .btn,.shell .panel-title a.btn{background:transparent;border:0;color:#2a5bd7;min-height:36px;padding:0;font-weight:550;font-size:16px}
+  .shell .record-layout .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain){border:1px solid var(--line);border-radius:24px;padding:var(--sp-4);box-shadow:0 1px 6px rgb(0 0 0 / .05)}
+  .shell .btn{min-height:44px;font-size:16px}
+  .shell .badge,.shell .pill{font-size:14px;padding:3px 12px;border-radius:999px}
+  .shell tbody tr{padding:var(--sp-3) 0}
+  .shell td:first-child{font-size:17px;font-weight:650}
+  .shell .media-grid{display:flex;overflow-x:auto;gap:var(--sp-2);scroll-snap-type:x mandatory}
+  .shell .media-grid .product-photo{flex:0 0 78%;grid-column:auto;scroll-snap-align:start;border-radius:20px}
+  .shell .media-grid .product-photo:first-child{grid-column:auto}
+}
