@@ -34,15 +34,55 @@ const comingSoon = (title, note, parent) => {
 };
 
 // ---------- Home ----------
+// Home: one thin stats strip, a greeting, and a setup guide that ticks itself from real data (hidden when everything is done).
+function setupSteps() {
+  const b = state.business || {}, cfg = state.store?.config || {}, sh = state.checkout?.shipping || {};
+  const pol = cfg.policies || {}, real = state.orders.filter((o) => !o.isTest);
+  const shipped = Number(sh.fee) > 0 || (sh.tiers || []).length > 0 || (sh.zones || []).length > 0;
+  return [
+    ['Set up your store', [
+      ['Add your store name and contact details', !!(b.name && (b.email || b.phone)), 'settings'],
+      ['Add your first product', state.products.length > 0, 'products/new'],
+      ['Choose and customize a theme', state.installs.length > 0, 'builder'],
+    ]],
+    ['Get ready to take orders', [
+      ['Set up payments', !!state.store?.razorpayConnected, 'checkout'],
+      ['Set up shipping rates', shipped, 'shipping'],
+      ['Add store policies', Object.values(pol).some((v) => String(v || '').trim()), 'policies'],
+      ['Connect a domain', (state.domains || []).some((d) => d.status === 'verified'), 'domains'],
+    ]],
+    ['Go live', [
+      ['Publish your store', !!state.store?.published, 'website'],
+      ['Place a test order', state.orders.some((o) => o.isTest), 'orders'],
+      ['Get your first order', real.length > 0, 'orders'],
+    ]],
+  ];
+}
+function setupGuide() {
+  const groups = setupSteps(); const all = groups.flatMap(([, steps]) => steps); const done = all.filter((x) => x[1]).length;
+  if (done === all.length) return '';
+  return '<section class="setup"><h2>Get ready to sell</h2><p class="muted">Use this guide to get your store up and running.</p><span class="pill setup-count">' + done + ' / ' + all.length + ' completed</span>' +
+    groups.map(([title, steps]) => '<h3>' + esc(title) + '</h3><ul class="steps">' + steps.map(([label, ok, to]) => '<li><a href="' + pathFor(to) + '" class="step' + (ok ? ' done' : '') + '"><span class="mark" aria-hidden="true">' + (ok ? '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3.2 3.2L15 6.8"/></svg>' : '') + '</span><span class="label">' + esc(label) + '</span><span class="chev" aria-hidden="true">›</span><span class="sr-only">' + (ok ? 'Done' : 'To do') + '</span></a></li>').join('') + '</ul>').join('') + '</section>';
+}
+function homeStrip() {
+  const c = state.counts, v = state.visitors && !state.visitors.error ? state.visitors : null, lv = state.liveVisitors && !state.liveVisitors.error ? state.liveVisitors : null;
+  const real = state.orders.filter((o) => !o.isTest).length;
+  const conv = v && v.visitors ? (v.ordered / v.visitors * 100).toFixed(1) + '%' : '—';
+  const cell = (label, value) => '<div class="hs-cell"><span>' + label + '</span><strong>' + value + '</strong></div>';
+  return '<div class="home-strip" role="group" aria-label="Store activity">' + cell('Live visitors', lv ? lv.now : '—') + cell('Visitors, 14 days', v ? v.visitors : '—') + cell('Total sales', money(c.salesTotal)) + cell('Orders', real) + cell('Conversion', conv) + '</div>';
+}
 function home() {
-  const c = state.counts;
-  const pending = state.orders.filter((o) => o.status === 'Unfulfilled').length;
+  const hour = new Date().getHours(), greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const recentOrders = table(['Order', 'Date', 'Customer', 'Total', 'Payment', 'Fulfillment'], state.orders.slice(0, 6).map((o) => [link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status)]));
-  return head(esc(state.business.name || 'Your store'), 'Manage your catalog, orders, and online store.', wl('Choose a theme', 'builder') + wl('Add product', 'products/new', 'primary')) +
-    '<div class="metrics">' + metric('Products', c.activeProducts + ' active', c.products + ' total') + metric('To fulfil', pending, 'Unfulfilled orders') + metric('Sales', money(c.salesTotal), 'Paid orders, all time') + metric('Stock alerts', c.lowStock, 'Fewer than five available') + '</div>' +
+  const f = state.features || {}, apps = [];
+  if (f.style) apps.push(['AUZsStyle', 'Billing, stock and shop analytics', 'https://auzsstyle.auzslab.in/style.html']);
+  if (f.accounting) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html']);
+  if (f.salon && state.tenant?.slug) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
+  const appsList = apps.length ? panel('Your apps', body('<div class="stack">' + apps.map(([n, d, u]) => '<a class="btn" href="' + esc(u) + '" data-handoff="1"><strong>' + esc(n) + '</strong> · ' + esc(d) + '</a>').join('') + '</div>')) : '';
+  return head(greet + '! <span class="muted">Here\'s your activity</span>', esc(state.business.name || 'Your store'), '') + homeStrip() +
     (state.plan?.blocked ? panel('Your trial has ended', body('<p class="compact-copy">Your store and data are safe, but editing and selling are paused. <a href="' + pathFor('billing') + '">Reactivate your plan</a> to switch it back on.</p>')) : '') +
-    (state.store.published ? '' : panel('Your store is not live yet', body('<p class="compact-copy">Turn your store on from <a href="' + pathFor('website') + '">Online store</a> once you have added a product.</p>'))) +
-    panel('Recent orders', recentOrders, wl('All orders', 'orders', 'compact')) + homeExtras();
+    setupGuide() +
+    (state.orders.length ? panel('Recent orders', recentOrders, wl('All orders', 'orders', 'compact')) : '') + appsList;
 }
 
 // ---------- Orders ----------
@@ -1210,16 +1250,6 @@ async function settingsSubmit(key, data) {
 async function saveObj(patch) { const ctx = await api('sfx_store_save', { p: patch }); applyContext(ctx); }
 
 // ---------- Home extras: acquisition, app shortcuts ----------
-function homeExtras() {
-  const camps = (state.campaigns || []);
-  const acq = camps.length ? table(['Campaign', 'Channel', 'Orders', 'Revenue'], camps.slice(0, 5).map((c) => [esc(c.name), esc(c.channel), c.orders, money(c.revenue)])) : '<p class="compact-copy">No campaigns yet. Add one under Growth to see which source brings orders.</p>';
-  const f = state.features || {}, apps = [];
-  if (f.style) apps.push(['AUZsStyle', 'Billing, stock and shop analytics', 'https://auzsstyle.auzslab.in/style.html']);
-  if (f.accounting) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html']);
-  if (f.salon && state.tenant?.slug) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
-  const shortcuts = apps.length ? '<div class="stack">' + apps.map(([n, d, u]) => '<a class="btn" href="' + esc(u) + '" data-handoff="1"><strong>' + esc(n) + '</strong> · ' + esc(d) + '</a>').join('') + '</div>' : '<p class="compact-copy">Your other AUZslab apps appear here when your plan includes them.</p>';
-  return '<div class="cols">' + panel('Acquisition by campaign', body(campaignBars() + acq), wl('Growth', 'growth', 'compact')) + visitorPanel(true) + '</div>' + panel('Your apps', body(shortcuts));
-}
 
 // ---------- Theme library actions: new from a starter, import a ZIP package, rename, duplicate, delete (db/395) ----------
 const ZIP_LIMIT = 2 * 1024 * 1024, MANIFEST_LIMIT = 256 * 1024, MANIFEST_NAME = 'auzslab-theme.json';

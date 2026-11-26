@@ -44,12 +44,28 @@ export default async function run({ browser, stack }) {
   const signIn = async () => { await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
     await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]); };
   await signIn();
-  await s.check('Home shows the visitor summary and chart (not the old "not recorded" message) and no "Local preview" label', async () => {
+  await s.check('Home shows the visitor numbers in the stats strip (not the old "not recorded" message) and no "Local preview" label', async () => {
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/home'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
     const t = await page.locator('body').innerText();
-    assert(/Website visitors/.test(t) && !/not recorded for online stores yet/.test(t), 'visitor panel missing: ' + t.slice(0, 300));
-    assert(await page.locator('svg[aria-label="Visitors per day"]').count() === 1, 'traffic chart missing');
+    assert(/Visitors, 14 days/.test(t) && /Live visitors/.test(t) && !/not recorded for online stores yet/.test(t), 'visitor strip missing: ' + t.slice(0, 300));
+    assert(await page.locator('.home-strip .hs-cell').count() === 5, 'the stats strip should have five numbers');
     await s.shot(page, 'sfx-home-visitors');
+  }, 'critical');
+  await s.check('Home setup guide: ten steps in three groups, each opens its page, and Connect a domain ticks once a domain is verified', async () => {
+    const tid2 = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("delete from sfx_domains where tenant_id=$1", [tid2]);
+    const open = async () => { await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/home'), { waitUntil: 'load' }); await page.waitForTimeout(3200); };
+    await open();
+    const g = await page.evaluate(() => ({ count: document.querySelector('.setup-count')?.textContent, steps: document.querySelectorAll('.setup .step').length, groups: document.querySelectorAll('.setup h3').length, dom: [...document.querySelectorAll('.setup .step')].find((a) => /Connect a domain/.test(a.textContent)) }));
+    assert(/\d+ \/ 10 completed/.test(g.count || '') && g.steps === 10 && g.groups === 3, JSON.stringify({ c: g.count, s: g.steps, g: g.groups }));
+    const href = await page.evaluate(() => [...document.querySelectorAll('.setup .step')].find((a) => /Connect a domain/.test(a.textContent)).getAttribute('href'));
+    assert(/\/domains$/.test(href), 'the domain step should open the Domains page: ' + href);
+    assert(await page.evaluate(() => !([...document.querySelectorAll('.setup .step')].find((a) => /Connect a domain/.test(a.textContent)).classList.contains('done'))), 'no domain yet, so the step must not be ticked');
+    await q("insert into sfx_domains (tenant_id, hostname, token, status, verified_at) values ($1,'shop.example-test.in','tok','verified',now())", [tid2]);
+    await open();
+    assert(await page.evaluate(() => [...document.querySelectorAll('.setup .step')].find((a) => /Connect a domain/.test(a.textContent)).classList.contains('done')), 'a verified domain should tick the step');
+    await q("delete from sfx_domains where tenant_id=$1", [tid2]);
+    await s.shot(page, 'sfx-home-setup');
   }, 'critical');
   await s.check('Analytics shows visitors, funnel counters and the live label', async () => {
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/analytics'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
