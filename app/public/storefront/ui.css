@@ -526,11 +526,16 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .co-row.co-total{border-top:1px solid var(--line);padding-top:var(--sp-2);font-size:15px}
 .shell .co-actions{justify-content:flex-end;margin-top:var(--sp-4)}
 @media (min-width:900px){
-  .shell .home-cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--sp-6);align-items:start}
+  .shell .home-cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;column-gap:40px;align-items:start}
   .shell .home-cols .setup{max-width:none}
-  .shell .home-side{display:grid;gap:var(--sp-4);position:sticky;top:var(--sp-4)}
+  .shell .home-side{display:grid;gap:var(--sp-4);align-content:start;position:sticky;top:var(--sp-4)}
 }
-.shell .home-side .panel{padding:var(--sp-4)}
+.shell .home-side .panel{padding:var(--sp-4);margin:0}
+.shell .home-side .hc-seg{margin:var(--sp-4) 0 var(--sp-3)}
+.shell .home-side .hc-seg .pill-tab{padding:5px 12px}
+.shell .home-side .hc-frame{margin:0 auto var(--sp-4)}
+.shell .home-side .hc-list{margin:var(--sp-3) 0 var(--sp-4);gap:8px}
+.shell .home-side .btn.compact{margin-top:var(--sp-1)}
 .shell .lc-top{display:flex;align-items:center;gap:8px}
 .shell .lc-top a,.shell .lc-top .pill{margin-left:auto}
 .shell .lc-top a{font-size:var(--fs-small);color:var(--muted)!important;text-decoration:none}
