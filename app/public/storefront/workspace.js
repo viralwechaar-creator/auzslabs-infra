@@ -986,6 +986,15 @@ function storePagesPage(bare) {
   return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
     panel('Store pages', '<div class="filters"><input id="pg-query" type="search" aria-label="Search pages" placeholder="Search pages" value="' + esc(pgf.q) + '"><select id="pg-status" aria-label="Filter by visibility">' + ['', 'Visible', 'Hidden', 'Scheduled'].map((o) => '<option value="' + o + '"' + (o === pgf.status ? ' selected' : '') + '>' + (o || 'All visibility') + '</option>').join('') + '</select></div>' + bulk + '<div id="pages-results">' + pagesList() + '</div>');
 }
+const DEFAULT_LAYOUT = ['sales', 'orders', 'funnel', 'profit', 'inventory', 'customers', 'cohorts'];
+const LAYOUT_NAMES = { sales: 'Sales', orders: 'Orders right now', funnel: 'Visitor funnel', inventory: 'Inventory', customers: 'Customers by recency and spend', profit: 'Sales and profit', cohorts: 'Customers who came back' };
+let layoutDraft = null;
+function layoutDialogBody() {
+  const on = layoutDraft, off = Object.keys(LAYOUT_NAMES).filter((k) => !on.includes(k));
+  return '<div class="stack">' + on.map((k, i) => '<div class="launch"><div class="info"><strong>' + esc(LAYOUT_NAMES[k]) + '</strong></div>' + button('Up', 'layout-move:' + k + ':up', 'compact') + button('Down', 'layout-move:' + k + ':down', 'compact') + button('Hide', 'layout-hide:' + k, 'compact danger') + '</div>').join('') +
+    (off.length ? '<p class="compact-copy">Hidden cards</p>' + off.map((k) => '<div class="launch"><div class="info">' + esc(LAYOUT_NAMES[k]) + '</div>' + button('Show', 'layout-show:' + k, 'compact') + '</div>').join('') : '') +
+    '<div>' + button('Save', 'layout-save', 'primary') + button('Cancel', 'close-dialog') + '</div></div>';
+}
 function insightsPage() {
   const r = state.insights; if (!r) return head('Insights', 'Loading your reports...', '');
   const pct = (v) => v == null ? '—' : Number(v) + '%';
@@ -1000,7 +1009,12 @@ function insightsPage() {
     '<p class="compact-copy">Stock value at cost: ' + money(r.inventory.stockValueAtCost) + (r.inventory.stockWithoutCost ? ' · ' + r.inventory.stockWithoutCost + ' item(s) in stock have no cost entered.' : '') + '</p>');
   const cust = panel('Customers by recency, frequency and spend', table(['Group', 'Customers', 'Spent'], (r.rfm.segments || []).map((x) => [esc(x.segment), x.customers, money(x.money)])));
   const coh = panel('Customers who came back', table(['First order month', 'Customers', 'Came back later'], (r.cohorts || []).map((c) => [dateValue(c.month), c.customers, (c.retention || []).slice(1).map((k) => '+' + k.monthsLater + 'm: ' + k.returned).join(' · ') || '—'])));
-  return head('Insights', 'Funnel, sales, profit, stock and customer reports. Cancelled and test orders are never counted.', '') + funnel + profit + inv + cust + coh;
+  const live = state.orders.filter((x) => x.status !== 'Cancelled' && !x.isTest);
+  const sales = panel('Sales (last ' + pf.days + ' days)', '<div class="metrics">' + metric('Orders', pf.orders, 'Counted orders') + metric('Gross sales', money(pf.grossSales), 'Before refunds') + metric('Average order', pf.orders ? money(pf.grossSales / pf.orders) : '—', 'Per order') + '</div>');
+  const ord = panel('Orders right now', '<div class="metrics">' + metric('To fulfil', live.filter((x) => x.status === 'Unfulfilled' || x.status === 'Partially fulfilled').length, 'Waiting to ship') + metric('Fulfilled', live.filter((x) => x.status === 'Fulfilled').length, 'Shipped') + metric('Cancelled', state.orders.filter((x) => x.status === 'Cancelled').length, 'Not counted in reports') + '</div>');
+  const cards = { sales, orders: ord, funnel, inventory: inv, customers: cust, profit, cohorts: coh };
+  const layout = (r.layout && r.layout.length ? r.layout : DEFAULT_LAYOUT).filter((k) => cards[k]);
+  return head('Insights', 'Funnel, sales, profit, stock and customer reports. Cancelled and test orders are never counted.', canWrite() ? button('Choose cards', 'layout-open') : '') + layout.map((k) => cards[k]).join('');
 }
 function blogPage() {
   const rows = (state.blog || []).map((b) => [esc(b.title), '<code>/blog/' + esc(b.handle) + '</code>', badge(b.status === 'published' ? 'Published' : 'Draft', b.status === 'published' ? '' : 'neutral'), dateValue(b.updatedAt),
@@ -1569,6 +1583,15 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   });
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
   if (a === 'apikey-new') return dialog('Create an API key', editForm('apikey-record', '', input('Name (what will use it)', 'name', '', 'text', 'required maxlength="60" placeholder="Accounting export"'), 'Create key'));
+  if (a === 'layout-open') { layoutDraft = ((state.insights && state.insights.layout) || DEFAULT_LAYOUT).filter((k) => LAYOUT_NAMES[k]); return dialog('Choose the cards on Insights', layoutDialogBody()); }
+  if (['layout-move', 'layout-hide', 'layout-show'].includes(a) && layoutDraft) {
+    const i = layoutDraft.indexOf(key);
+    if (a === 'layout-hide' && layoutDraft.length > 1) layoutDraft.splice(i, 1);
+    if (a === 'layout-show' && i < 0) layoutDraft.push(key);
+    if (a === 'layout-move' && i >= 0) { const j = detail === 'up' ? i - 1 : i + 1; if (j >= 0 && j < layoutDraft.length) { [layoutDraft[i], layoutDraft[j]] = [layoutDraft[j], layoutDraft[i]]; } }
+    return dialog('Choose the cards on Insights', layoutDialogBody());
+  }
+  if (a === 'layout-save') return withBusy(async () => { const out = await api('sfx_dashboard_layout_save', { p_cards: layoutDraft }); state.insights.layout = out; save('Cards saved.'); close(); rerender(true); });
   if (a === 'webhook-new') return dialog('Add a webhook', editForm('webhook-record', '', input('Address (https only)', 'url', '', 'url', 'required placeholder="https://example.com/hooks/store"') +
     '<p class="compact-copy wide">Send me:</p>' + (((state.access.hooks || {}).events) || []).map((e) => '<label class="inline wide"><input type="checkbox" name="ev_' + e.replace('.', '_') + '" value="1"' + (e.startsWith('order.') ? ' checked' : '') + '> ' + esc(e) + '</label>').join(''), 'Add webhook'));
   if (a === 'webhook-test') return withBusy(async () => { await api('sfx_webhook_test', { p_id: key }); await refreshAccess(); save('Test message queued. It is sent within a few seconds.'); rerender(true); });

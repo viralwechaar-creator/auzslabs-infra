@@ -88,7 +88,8 @@ export async function refreshVisitors(days = 14) { try { state.visitors = await 
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
 export async function refreshInsights() {
   const [funnel, profit, inventory, rfm, cohorts, sessions] = await Promise.all([api('sfx_report_funnel', { p_days: 30 }), api('sfx_report_profit', { p_days: 30 }), api('sfx_report_inventory', { p_days: 30 }), api('sfx_report_rfm'), api('sfx_report_cohorts', { p_months: 6 }), api('sfx_report_sessions', { p_days: 30 })]);
-  state.insights = { funnel, profit, inventory, rfm, cohorts, sessions };
+  let layout = null; try { layout = await api('sfx_dashboard_layout_get'); } catch (e) { layout = null; }
+  state.insights = { funnel, profit, inventory, rfm, cohorts, sessions, layout };
 }
 export async function refreshAccess() {
   const [audit, staff, messages, bills, keys, route, settlements, hooks] = await Promise.all([api('sfx_audit_list', { p_limit: 100 }).catch(() => null), api('sfx_staff_security').catch(() => null), api('sfx_message_log', { p_limit: 100 }).catch(() => []), api('sfx_billing_history').catch(() => null),
