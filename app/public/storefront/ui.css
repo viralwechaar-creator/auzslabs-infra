@@ -1,0 +1,118 @@
+/* AUZslab storefront dashboard: one compact UI system for every page, tab, detail screen and dialog (light and dark).
+   Loaded after ecosystem.css. Scoped to .shell. Reference for hierarchy and density: Shopify Admin. Branding, colours and components stay AUZslab's.
+   Change a number here and it changes everywhere. */
+.shell{
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;
+  --r-ctl:7px;--r-panel:10px;
+  --ctl-h:34px;--ctl-touch:44px;
+  --fs-title:22px;--fs-h2:15px;--fs-body:13.5px;--fs-small:12px;
+  --hover:rgb(0 0 0 / .045);--select:rgb(0 0 0 / .08);--focus:#2563eb;--backdrop:rgb(0 0 0 / .45);
+  --good:#127a3d;--warn:#946200;--bad:#b3261e;
+  font-size:var(--fs-body);
+}
+.shell[data-theme=dark]{--hover:rgb(255 255 255 / .06);--select:rgb(255 255 255 / .12);--focus:#7aa7ff;--backdrop:rgb(0 0 0 / .6);--good:#5fd18a;--warn:#e0b44a;--bad:#ff8a80}
+
+/* 1. page: padding, header, order */
+.shell .work{padding:var(--sp-5) var(--sp-5) 36px;width:min(100%,1400px)}
+.shell .page-head{margin:0 0 var(--sp-4);gap:var(--sp-3);align-items:flex-start}
+.shell .page-head .trail{display:block;font-size:var(--fs-small);margin:0 0 2px;color:var(--muted)}
+.shell .page-head h1,.shell .work h1{font-size:var(--fs-title);line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:0}
+.shell .page-head p{font-size:var(--fs-small);margin:2px 0 0;color:var(--muted)}
+.shell .page-head .actions{display:flex;flex-wrap:wrap;gap:var(--sp-2);justify-content:flex-end;align-items:center}
+.shell .work h2,.shell .panel-title h2{font-size:var(--fs-h2);font-weight:620;line-height:1.3;margin:0}
+.shell .work h3{font-size:var(--fs-body);font-weight:620}
+.shell .work p,.shell .work li,.shell .work td,.shell .work th,.shell .work label{font-size:var(--fs-body)}
+.shell .work small,.shell .compact-copy,.shell .muted,.shell .work th{font-size:var(--fs-small)}
+
+/* 2. surfaces: quiet canvas, flat sections, cards only where they earn it */
+.shell .panel{border-radius:var(--r-panel);box-shadow:none;margin-bottom:var(--sp-4);background:var(--paper)}
+.shell .panel-title{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line);align-items:center;margin:0}
+.shell .panel-body{padding:var(--sp-4)}
+.shell .panel>.table-scroll,.shell .panel>table{margin:0;border-radius:0}
+.shell .metrics{gap:var(--sp-3);margin-bottom:var(--sp-4)}
+.shell .metric{border-radius:var(--r-panel);padding:var(--sp-3) var(--sp-4);background:var(--paper);box-shadow:none}
+.shell .metric strong{font-size:20px;font-weight:650;letter-spacing:-.01em;margin:2px 0;font-variant-numeric:tabular-nums}
+.shell .metric span{font-size:var(--fs-small)}
+.shell .record-layout{gap:var(--sp-4)}
+.shell .record-layout .panel{margin-bottom:var(--sp-4)}
+.shell .cards{gap:var(--sp-3)}
+.shell .card{border-radius:var(--r-panel);box-shadow:none}
+.shell .card-body{padding:var(--sp-3) var(--sp-4)}
+.shell .channel-row,.shell .launch{padding:var(--sp-3) 0;border-bottom:1px solid var(--line);margin:0;background:transparent;border-radius:0}
+.shell .channel-row:last-child,.shell .launch:last-child{border-bottom:0}
+.shell .stack{gap:var(--sp-2)}
+.shell .field-grid{gap:var(--sp-3)}
+
+/* 3. controls: 34 px high on desktop, 44 px tap targets on touch, one radius */
+.shell .btn,.shell button.btn,.shell a.btn{min-height:var(--ctl-h);padding:0 var(--sp-3);font-size:var(--fs-body);font-weight:560;border-radius:var(--r-ctl);display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1.2}
+.shell .btn.compact{min-height:28px;padding:0 var(--sp-2);font-size:var(--fs-small)}
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select,.shell textarea{min-height:var(--ctl-h);border-radius:var(--r-ctl);font-size:var(--fs-body);padding:0 var(--sp-3);border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.shell textarea{padding:var(--sp-2) var(--sp-3);min-height:72px}
+.shell .ico,.shell .btn svg{width:16px;height:16px}
+.shell td:is(.num,[data-num]),.shell td.right,.shell th.right{text-align:right}
+.shell .metric strong,.shell td,.shell .money{font-variant-numeric:tabular-nums}
+
+/* 4. lists: toolbar and table are one surface, compact rows, hover tint, visible focus */
+.shell .tabs{margin:0 0 var(--sp-3);border-radius:var(--r-panel);background:transparent;padding:0;gap:var(--sp-1);border:0;border-bottom:1px solid var(--line);border-radius:0;width:100%;max-width:100%}
+.shell .tabs a,.shell .tabs button{min-height:34px;display:inline-flex;align-items:center;border-radius:var(--r-ctl) var(--r-ctl) 0 0;border:0;border-bottom:2px solid transparent;padding:0 var(--sp-3);font-size:var(--fs-body);color:var(--muted);background:transparent}
+.shell .tabs a:hover,.shell .tabs button:hover{background:var(--hover);color:var(--ink)}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{background:transparent;color:var(--ink);font-weight:650;border-bottom-color:var(--ink)}
+.shell .filters{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line);margin:0}
+.shell .filters input[type=search],.shell .filters input:not([type]){flex:1 1 220px;min-width:0}
+.shell table{font-size:var(--fs-body);border-collapse:collapse}
+.shell th{font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;padding:var(--sp-2) var(--sp-3);background:var(--table);border-bottom:1px solid var(--line);white-space:nowrap}
+.shell td{padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--line);vertical-align:middle;height:40px}
+.shell tbody tr:hover td{background:var(--hover)}
+.shell tbody tr[aria-selected=true] td,.shell tbody tr.selected td{background:var(--select)}
+.shell td a,.shell .work a:not(.btn):not(.tab):not([class]){text-decoration-color:transparent}
+.shell td a:hover,.shell .work a:not(.btn):hover{text-decoration:underline}
+.shell :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--r-ctl)}
+.shell .badge,.shell .pill{font-size:var(--fs-small);font-weight:560;border-radius:999px;padding:1px 8px;line-height:1.5}
+.shell td:last-child .btn+.btn,.shell td .btn+.btn{margin-left:var(--sp-1)}
+
+/* detail pages: wide workflow column, narrow supporting column */
+.shell .record-layout{grid-template-columns:minmax(0,1fr) minmax(260px,340px)}
+
+/* dialogs: neutral backdrop in light and dark, same radii and padding */
+.shell dialog,dialog#dialog{border-radius:var(--r-panel);box-shadow:0 12px 40px rgb(0 0 0 / .25)}
+dialog::backdrop{background:var(--backdrop,rgb(0 0 0 / .45))}
+.shell .dialog-head,dialog .dialog-head{padding:var(--sp-3) var(--sp-4)}
+.shell .dialog-head h2,dialog .dialog-head h2{font-size:var(--fs-h2)}
+.shell .dialog-content,dialog .dialog-content{padding:var(--sp-4)}
+dialog .btn{min-height:var(--ctl-h);border-radius:var(--r-ctl)}
+dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var(--ctl-h);border-radius:var(--r-ctl)}
+.shell .actions{gap:var(--sp-2)}
+
+/* 5. phone and touch */
+@media (max-width:899px){
+  .shell .work{padding:var(--sp-4) var(--sp-4) 28px}
+  .shell .page-head{flex-wrap:wrap}
+  .shell .page-head .actions{justify-content:flex-start;width:100%}
+  .shell .page-head h1,.shell .work h1{font-size:20px}
+  .shell .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shell .record-layout{grid-template-columns:1fr}
+  .shell .tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;margin-inline:calc(var(--sp-4) * -1);padding-inline:var(--sp-4);width:auto;max-width:none}
+  .shell .tabs::-webkit-scrollbar{display:none}
+  .shell .filters{padding:var(--sp-3)}
+  .shell .filters>*{flex:1 1 100%;min-width:0}
+  .shell .filters select{flex:1 1 calc(50% - var(--sp-1))}
+  /* dense tables become compact rows: record name first, the rest as a quiet second line */
+  .shell .table-scroll{overflow:visible;max-height:none}
+  .shell table,.shell tbody,.shell tr,.shell td{display:block;width:100%}
+  .shell thead{display:none}
+  .shell tbody tr{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:2px var(--sp-3)}
+  .shell tbody tr:last-child{border-bottom:0}
+  .shell td{border:0;padding:0;height:auto;width:auto;min-width:0}
+  .shell td:first-child{grid-column:1;font-weight:600}
+  .shell td:not(:first-child){grid-column:1/-1;color:var(--muted);font-size:var(--fs-small)}
+  .shell td:nth-child(2){grid-column:1/-1}
+  .shell td:last-child{grid-column:1/-1;margin-top:var(--sp-2);display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+  .shell td:empty{display:none}
+}
+@media (pointer:coarse),(max-width:899px){
+  .shell .btn,.shell button.btn,.shell a.btn,.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select{min-height:var(--ctl-touch)}
+  .shell .btn.compact{min-height:36px}
+  .shell .tabs a,.shell .tabs button{min-height:var(--ctl-touch)}
+  dialog{max-width:100%;width:100%;max-height:92dvh;border-radius:var(--r-panel) var(--r-panel) 0 0;margin:auto 0 0}
+}
+@media (prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
