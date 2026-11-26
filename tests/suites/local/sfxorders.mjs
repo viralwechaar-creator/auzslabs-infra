@@ -156,5 +156,37 @@ export default async function run({ browser, stack }) {
     assert(await page.locator('#orders-results a[href*="#/orders/' + o7 + '"]').count() >= 1, 'tag search failed');
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Order page: edit contact and address, optional profile update, shipped orders keep their address, remove customer', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    const o8 = await place();
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o8), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.evaluate(() => document.querySelector('[data-action^="order-contact:"]').click()); await page.waitForTimeout(500);
+    await page.fill('#dialog input[name=name]', 'Corrected Name'); await page.fill('#dialog input[name=email]', 'fixed@example.com');
+    await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1500);
+    let row = (await q('select customer, customer_id from sfx_orders where id=$1', [o8]))[0];
+    assert(row.customer.name === 'Corrected Name' && row.customer.email === 'fixed@example.com', JSON.stringify(row.customer));
+    const prof = (await q('select name from sfx_customers where id=$1', [row.customer_id]))[0].name;
+    assert(prof !== 'Corrected Name', 'profile changed without being asked');
+    await page.evaluate(() => document.querySelector('[data-action^="order-address:"]').click()); await page.waitForTimeout(500);
+    await page.fill('#dialog textarea[name=address]', '99 New Street'); await page.fill('#dialog input[name=pin]', '342099');
+    await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1500);
+    row = (await q('select customer from sfx_orders where id=$1', [o8]))[0];
+    assert(row.customer.address === '99 New Street' && row.customer.pin === '342099', JSON.stringify(row.customer));
+    const tl = (await q('select timeline from sfx_orders where id=$1', [o8]))[0].timeline; assert(tl.some((e) => /Customer details changed/.test(e.label)), 'not on the timeline');
+    // a bad email is refused, and shipped orders keep their address
+    const tok = await (async () => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token)();
+    assert(/valid email/.test(JSON.stringify((await rpc(stack, 'sfx_order_contact_set', { p_order: o8, p: { email: 'nope' } }, tok)).data).toLowerCase()), 'bad email accepted');
+    await q("update sfx_orders set fulfilment_status='partial' where id=$1", [o8]);
+    assert(/cannot change once items have shipped/.test(JSON.stringify((await rpc(stack, 'sfx_order_contact_set', { p_order: o8, p: { address: 'x' } }, tok)).data)), 'address changed after shipping');
+    await q("update sfx_orders set fulfilment_status='unfulfilled' where id=$1", [o8]);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders/' + o8), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    page.once('dialog', (d) => d.accept());
+    await page.evaluate(() => document.querySelector('[data-action^="order-unlink:"]').click()); await page.waitForTimeout(1500);
+    row = (await q('select customer_id, customer from sfx_orders where id=$1', [o8]))[0];
+    assert(row.customer_id === null && row.customer.name === 'Corrected Name', 'customer not unlinked: ' + JSON.stringify(row));
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }

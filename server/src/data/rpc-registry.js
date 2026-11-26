@@ -866,6 +866,8 @@ export const RPC = {
   sfx_order_comment: { params: ['p_order', 'p_text'], auth: true },
   sfx_order_tags_set: { params: ['p_order', 'p_tags'], auth: true },
   sfx_order_archive: { params: ['p_order', 'p_on'], auth: true },
+  sfx_order_contact_set: { params: ['p_order', 'p'], jsonb: ['p'], auth: true },
+  sfx_order_unlink_customer: { params: ['p_order'], auth: true },
   sfx_shipment_create: { params: ['p_order', 'p'], jsonb: ['p'], auth: true },
   sfx_shipment_update: { params: ['p_id', 'p'], jsonb: ['p'], auth: true },
   sfx_domain_list: { params: [], auth: true },
