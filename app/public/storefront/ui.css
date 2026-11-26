@@ -459,3 +459,15 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell .metric>small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .shell form.filters label,.shell .analytics-filters label{font-size:13px}
 }
+
+/* 23. phone order lines: item and price on one row, quantity quiet below */
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Qty]){display:flex!important;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding:var(--sp-3) 0}
+  .shell tbody tr:has(td[data-label=Qty]) td{display:inline-flex!important;width:auto!important;padding:0!important;border:0!important;min-height:0!important;height:auto!important;font-size:14px;color:var(--muted);order:3}
+  .shell tbody tr:has(td[data-label=Qty]) td::before{display:none!important;content:none!important}
+  .shell tbody tr:has(td[data-label=Qty]) td:first-child{order:1;flex:1 1 0;min-width:0;font-size:16px!important;font-weight:650;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Qty]) td[data-label=Price],.shell tbody tr:has(td[data-label=Qty]) td[data-label=Total]{order:2;color:var(--ink);font-weight:600;font-size:16px}
+  .shell tbody tr:has(td[data-label=Qty])::after{content:"";flex-basis:100%;order:2;height:0}
+  .shell tbody tr:has(td[data-label=Qty]) td[data-label=Qty]::before{display:inline!important;content:"Qty\00a0"!important}
+  .shell tbody tr:has(td[data-label=Qty]) td a{color:var(--ink)!important}
+}
