@@ -460,8 +460,9 @@ const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', 
 function themePreview(t) {
   if (t.previewImageUrl) return t.previewImageUrl;
   const slug = String(t.slug || t.themeSlug || t.name || '').toLowerCase();
-  if (slug === 'minimal') return '/storefront/assets/theme-minimal.svg';
-  if (slug === 'classic') return '/storefront/assets/theme-classic.svg';
+  // every built-in theme has a real screenshot of its storefront (site/theme-previews)
+  const shot = { minimal: 'minimal', classic: 'classic', salon: 'salon', kiln: 'kiln', 'kiln-salon': 'kiln', studs: 'studs' }[slug];
+  if (shot) return '/theme-previews/' + shot + '.jpg';
   let h = 0; for (const ch of slug) h = (h * 31 + ch.charCodeAt(0)) % 360;
   const dark = /stud|noir|black|kiln/.test(slug), bg = dark ? '#161616' : '#f6f4f1', ink = dark ? '#ffffff' : '#171717', acc = 'hsl(' + h + ' 45% ' + (dark ? '55%' : '42%') + ')', tile = dark ? '#2a2a2a' : '#e4dfd8';
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="' + bg + '"/><rect x="0" y="0" width="320" height="22" fill="' + ink + '" opacity=".08"/><rect x="12" y="8" width="46" height="6" rx="3" fill="' + ink + '"/>' +

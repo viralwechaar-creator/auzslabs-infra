@@ -564,6 +564,19 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .hc-devs div{display:flex;gap:var(--sp-3);flex-wrap:wrap;font-size:var(--fs-small)}
 .shell .hc-devs small{color:var(--muted)}
 
+/* 28. Phone: Home shows each figure once (the black header swipes), cards breathe */
+@media (max-width:899px){
+  .shell .topbar.is-home .m-stats{display:flex;gap:var(--sp-5);overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;padding-bottom:2px}
+  .shell .topbar.is-home .m-stats::-webkit-scrollbar{display:none}
+  .shell .topbar.is-home .m-stats>div{flex:none;min-width:104px;scroll-snap-align:start}
+  .shell .work:has(.home-cols) .page-head,.shell .work:has(.home-cols) .home-strip{display:none}
+  .shell .work .panel,.shell .work .card{margin:0 0 var(--sp-4)}
+  .shell .work .cards{display:grid;grid-template-columns:1fr;gap:var(--sp-4)}
+  .shell .work .panel+.panel{margin-top:0}
+  .shell .home-side{display:grid;gap:var(--sp-4);margin-top:var(--sp-2)}
+  .shell .work .page-head{margin-bottom:var(--sp-4)}
+}
+@media (max-width:899px){.shell .topbar.is-home .m-hero{margin-bottom:12px}}
 /* 27. Phone: record pages show the title once; Orders list is a flat, quiet list */
 @media (max-width:899px){
   .shell .work.has-crumb .page-head h1{display:block!important;font-size:30px;font-weight:700;letter-spacing:-.02em;margin:var(--sp-3) 0 var(--sp-1)}
