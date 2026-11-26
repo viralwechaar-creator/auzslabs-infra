@@ -444,3 +444,18 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell.settings-mode .work .panel>.panel-title,.shell.settings-direct .work .panel>.panel-title{padding:0 0 var(--sp-2)}
 .shell.settings-mode .work .panel>.panel-title:first-child h2,.shell.settings-direct .work .panel:only-child>.panel-title h2{font-size:15px}
 .shell.settings-mode .work .panel>.panel-body,.shell.settings-direct .work .panel>.panel-body{padding:0}
+
+/* 22. phone: Customers, Discounts and Growth rows are compact like Orders and Products */
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Name]),.shell tbody tr:has(td[data-label=Code]),.shell tbody tr:has(td[data-label=Campaign]){display:flex!important;flex-wrap:wrap;gap:2px 12px;align-items:baseline;padding:var(--sp-3) 0}
+  .shell tbody tr:has(td[data-label=Name]) td,.shell tbody tr:has(td[data-label=Code]) td,.shell tbody tr:has(td[data-label=Campaign]) td{display:inline-flex!important;width:auto!important;padding:0!important;border:0!important;min-height:0!important;height:auto!important;font-size:14px;color:var(--muted);order:4}
+  .shell tbody tr:has(td[data-label=Name]) td::before,.shell tbody tr:has(td[data-label=Code]) td::before,.shell tbody tr:has(td[data-label=Campaign]) td::before{display:none!important;content:none!important}
+  .shell tbody tr:has(td[data-label=Name]) td[data-label=Name],.shell tbody tr:has(td[data-label=Code]) td[data-label=Code],.shell tbody tr:has(td[data-label=Campaign]) td[data-label=Campaign]{order:1;flex:1 1 0;min-width:0;font-size:17px!important;font-weight:650;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Name]) td[data-label="Total spent"],.shell tbody tr:has(td[data-label=Code]) td[data-label=Status]{order:2;color:var(--ink);font-weight:600}
+  .shell tbody tr:has(td[data-label=Name])::after,.shell tbody tr:has(td[data-label=Code])::after{content:"";flex-basis:100%;order:3;height:0}
+  .shell tbody tr:has(td[data-label=Name]) td:last-child,.shell tbody tr:has(td[data-label=Code]) td:last-child{order:6;margin-left:auto}
+  .shell tbody tr:has(td[data-label=Name]) td[data-label=Orders]::after{content:"\00a0orders"}
+  /* analytics tiles: short notes, smaller filter labels */
+  .shell .metric>small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .shell form.filters label,.shell .analytics-filters label{font-size:13px}
+}
