@@ -684,3 +684,32 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .cust-card .btn.ico-btn{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;flex:none}
 .shell .cust-card .btn.ico-btn.wa{color:#1f9d55}
 .shell .cust-card .btn.ico-btn svg{width:22px!important;height:22px!important}
+
+/* 34. Products list (phone): quiet header, one search pill with a filter button, flat rows */
+.shell .phone-only{display:none}
+.shell .pf-filters>summary{list-style:none;cursor:pointer;display:none}
+.shell .pf-filters>summary::-webkit-details-marker{display:none}
+.shell .pf-fields{display:contents}
+@media (max-width:899px){
+  .shell .desk-only{display:none}
+  .shell .phone-only{display:contents}
+  .shell .work:has(#table-query) .page-head,.shell .work:has(#table-query) .summary-bar{display:none}
+  .shell .work:has(#table-query)>.panel{background:transparent;border:0;box-shadow:none;padding:0}
+  .shell .work:has(#table-query) .filters{display:flex;flex-wrap:wrap;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:4px 8px 4px 16px;margin:0 0 var(--sp-3);gap:var(--sp-2)}
+  .shell .work:has(#table-query) .filters input{flex:1;min-width:0;border:0;background:transparent;min-height:40px}
+  .shell .pf-filters{display:contents}
+  .shell .pf-filters>summary{display:grid;place-items:center;width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;background:transparent}
+  .shell .pf-filters[open]>summary{background:var(--soft)}
+  .shell .pf-filters[open] .pf-fields{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);flex:0 0 100%;padding:var(--sp-2) 0 var(--sp-3)}
+  .shell .pf-filters:not([open]) .pf-fields{display:none}
+  .shell .work:has(#table-query) #table-count,.shell .work:has(#table-query)>.panel>.panel-title{display:none}
+  .shell tbody tr:has(td[data-label=Product]){display:grid!important;grid-template-columns:minmax(0,1fr) auto;column-gap:var(--sp-3);row-gap:2px;align-items:center;padding:var(--sp-3) 0!important;border-bottom:1px solid var(--line)}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=""]{display:none!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]{grid-column:1;grid-row:1;flex:none;min-width:0}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status]{grid-column:2;grid-row:1;margin:0;justify-self:end}
+  .shell tbody tr:has(td[data-label=Product])::after{display:none}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Category]{grid-column:1;grid-row:2;display:block!important;padding-left:calc(var(--thumb-w,0px))}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Price]{grid-column:2;grid-row:2;display:block!important;justify-self:end;color:var(--ink);font-weight:600}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Available]{display:none!important}
+  .shell .work:has(#table-query) input[type=checkbox]{width:18px;height:18px}
+}
