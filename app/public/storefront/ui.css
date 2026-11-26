@@ -306,3 +306,76 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .gl-tip{position:absolute;background:#111;color:#fff;font-size:12px;padding:5px 10px;border-radius:8px;pointer-events:none;white-space:nowrap}
 .gl-note{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;color:var(--muted);padding:0 16px;pointer-events:none}
 @media (max-width:899px){.gl-btn{width:44px;height:44px}}
+
+/* 15. Calm pass: fewer lines, borders and buttons. Soft fills carry the structure instead of outlines. */
+.shell{--soft:#f6f6f6}
+.shell[data-theme=dark]{--soft:#202020}
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select,.shell textarea{background:var(--pill);border-color:transparent;box-shadow:none}
+.shell input:focus-visible,.shell select:focus-visible,.shell textarea:focus-visible{background:var(--paper);outline:2px solid var(--focus);outline-offset:0}
+.shell .btn,.shell button.btn,.shell a.btn{background:var(--pill);border-color:transparent;color:var(--pill-ink);box-shadow:none}
+.shell .btn:hover{background:color-mix(in srgb,var(--pill) 85%,var(--ink))}
+.shell .btn.primary,.shell button.btn.primary{background:var(--black);color:var(--paper)}
+.shell .btn.danger{background:transparent;color:var(--bad)}
+.shell td{border-bottom:0}
+.shell th{border-bottom:0;background:transparent;font-size:12px;font-weight:500;color:var(--muted)}
+.shell tbody tr:hover td{background:var(--soft)}
+.shell tbody tr td:first-child{border-radius:10px 0 0 10px}.shell tbody tr td:last-child{border-radius:0 10px 10px 0}
+.shell .metrics,.shell .metric{border:0!important}
+.shell .metrics{padding:0;margin-bottom:var(--sp-5)}
+.shell .metric,.shell .metric:first-child{padding:var(--sp-2) var(--sp-4) var(--sp-2) 0}
+.shell .filters{border-bottom:0;padding-left:0;padding-right:0}
+.shell .launch,.shell .channel-row{border-bottom:0}
+.shell .panel,.shell .record-layout .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain),.shell .record-layout .record-layout>aside .panel:not(.plain){border:0!important;border-radius:16px;background:var(--soft);padding:var(--sp-4);box-shadow:none}
+.shell .record-layout>aside .panel:not(.plain){background:transparent;padding:var(--sp-3) 0}
+.shell .card{background:var(--soft)}
+.shell .work-area{box-shadow:none}
+.shell .page-head .actions{gap:var(--sp-2)}
+.shell .tabs a,.shell .tabs button{border-bottom:0!important}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{background:var(--pill);border-radius:999px}
+.shell .tabs a,.shell .tabs button{padding:0 14px;border-radius:999px}
+@media (max-width:899px){.shell .record-layout .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain){border:0!important;border-radius:20px;background:var(--soft);padding:var(--sp-4)}.shell .filters{border:0;box-shadow:none;background:var(--pill)}.shell .filters input{background:transparent}}
+
+/* one primary action stays visible; the rest live in a single quiet menu */
+.shell details.more-actions{position:relative}
+.shell details.more-actions>summary{list-style:none;cursor:pointer}
+.shell details.more-actions>summary::-webkit-details-marker{display:none}
+.shell details.more-actions[open]>summary{background:var(--black);color:var(--paper)}
+.shell .more-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:200px;display:grid;gap:2px;padding:6px;background:var(--paper);border-radius:14px;box-shadow:0 10px 30px rgb(0 0 0 / .16)}
+.shell .more-menu .btn{justify-content:flex-start;background:transparent;border-radius:10px;width:100%}
+.shell .more-menu .btn:hover{background:var(--pill)}
+.shell .summary-bar,.shell .summary-bar>*{border:0!important;border-radius:0;box-shadow:none!important;background:transparent!important}
+.shell .summary-bar{margin-bottom:var(--sp-4);gap:var(--sp-2)}
+.shell .summary-bar>*{padding-left:0}
+.shell .badge,.shell .pill,.shell .chip,.shell .status{border:0!important}
+.shell .metric>span a,.shell .summary-bar a,.shell .metric>span{border-bottom:0!important;text-decoration:none!important}
+.shell .metric>span{color:var(--muted)}
+.shell .summary-bar span,.shell .summary-bar label{color:var(--muted);font-weight:500}
+@media (max-width:899px){.shell tbody tr{border-bottom:0!important}.shell tbody tr:not(:last-child){margin-bottom:var(--sp-1)}}
+
+/* 16. Typography: one family (Inter), one scale, same hierarchy as Shopify. Desktop is compact, phone is larger for touch. */
+.shell,.shell button,.shell input,.shell select,.shell textarea{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-synthesis:none;letter-spacing:-.003em}
+.shell{font-size:13px;line-height:1.5;font-weight:450;color:var(--ink)}
+.shell .work p,.shell .work li,.shell .work td,.shell .work label,.shell .work input,.shell .work select,.shell .work textarea{font-size:13px;line-height:1.5;font-weight:450}
+.shell .work small,.shell .muted,.shell .compact-copy,.shell th,.shell .metric>small{font-size:12px;line-height:1.4;font-weight:450;color:var(--muted)}
+.shell .topbar .breadcrumb strong{font-size:14px;font-weight:650}
+.shell .page-head h1,.shell .work h1{font-size:20px;font-weight:650;line-height:1.25;letter-spacing:-.015em}
+.shell .page-head:has(.trail) h1{font-size:24px}
+.shell .work h2,.shell .panel-title h2{font-size:14px;font-weight:650;line-height:1.35}
+.shell .work h3{font-size:13px;font-weight:650}
+.shell .btn,.shell button.btn,.shell a.btn{font-size:13px;font-weight:550}
+.shell .badge,.shell .pill{font-size:12px;font-weight:550}
+.shell .metric>strong{font-size:20px;font-weight:650;letter-spacing:-.01em}
+.shell .side-nav a{font-size:13px;font-weight:550}
+.shell.settings-mode .page-head h1,.shell.settings-direct .page-head h1{font-size:28px;font-weight:600}
+@media (max-width:899px){
+  .shell,.shell .work p,.shell .work li,.shell .work td,.shell .work label,.shell .work input,.shell .work select,.shell .work textarea{font-size:16px;line-height:1.45}
+  .shell .work small,.shell .muted,.shell .compact-copy,.shell th,.shell .metric>small{font-size:14px}
+  .shell .page-head h1,.shell .work h1{font-size:30px;font-weight:700;letter-spacing:-.02em}
+  .shell .page-head:has(.trail) h1{font-size:28px}
+  .shell .work h2,.shell .panel-title h2{font-size:18px;font-weight:650}
+  .shell .work h3{font-size:16px}
+  .shell .btn,.shell button.btn,.shell a.btn{font-size:16px}
+  .shell .badge,.shell .pill{font-size:14px}
+  .shell .metric>strong{font-size:22px}
+  .shell td:first-child{font-size:17px}
+}

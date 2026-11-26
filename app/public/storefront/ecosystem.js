@@ -140,6 +140,18 @@ export function rerender(skipRefresh) {
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
   $('#app').innerHTML = '<div class="shell' + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
   $('.work-area').scrollTop = scrollTop;
+  // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
+  document.querySelectorAll('.page-head .actions').forEach((box) => {
+    const items = [...box.children].filter((el) => el.matches('.btn, button, a'));
+    if (items.length < 4) return;
+    const keep = items.find((el) => el.classList.contains('primary')) || items[items.length - 1];
+    const extras = items.filter((el) => el !== keep);
+    const d = document.createElement('details'); d.className = 'more-actions';
+    const sm = document.createElement('summary'); sm.className = 'btn'; sm.textContent = 'More actions';
+    const menu = document.createElement('div'); menu.className = 'more-menu'; extras.forEach((el) => menu.appendChild(el));
+    d.append(sm, menu); box.insertBefore(d, keep);
+    d.addEventListener('click', (e) => { if (e.target.closest('.more-menu .btn, .more-menu a')) d.open = false; });
+  });
   const globeHost = document.querySelector('[data-globe]');
   if (globeHost) { let zones = {}; try { zones = JSON.parse(globeHost.dataset.zones || '{}'); } catch {} import('/storefront/globe.js?v=2').then((m) => m.mountGlobe(globeHost, zones, { theme: accountTheme })).catch(() => { globeHost.innerHTML = '<p class="compact-copy">The globe could not load on this browser.</p>'; }); }
   const adminHost = document.querySelector('[data-admin-pane]');
