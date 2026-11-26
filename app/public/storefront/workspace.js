@@ -320,7 +320,8 @@ function productDetail(id) {
   }
   const quick = p ? panel('Summary', body('<div class="stack">' + status(r.status) + '<strong>' + money(r.price) + '</strong><small>' + esc(r.stock) + ' available</small></div>')) : '';
   const viewLink = p && r.status === 'Active' && state.store.published && state.tenant?.slug ? link('View on storefront', 'https://' + esc(state.tenant.slug) + '.auzslab.in/store.html?view=p&p=' + encodeURIComponent(p.id)) : '';
-  return head(p ? esc(p.name) : 'Add product', p ? 'Manage its details, media, and variants.' : 'Create a listing for your storefront.', viewLink, ['products', 'Products']) + tabNav + (view.includes('class="product-record"') ? view.replace('</aside>', quick + '</aside>') : '<div class="record-layout"><div>' + view + '</div><aside>' + quick + '</aside></div>');
+  const moreLinks = p && canWrite() ? button('Duplicate', 'product-duplicate:' + p.id, 'in-more') + (r.status !== 'Archived' ? button('Archive', 'product-archive:' + p.id, 'in-more') : '') : '';
+  return head(p ? esc(p.name) : 'Add product', p ? 'Manage its details, media, and variants.' : 'Create a listing for your storefront.', viewLink + moreLinks, ['products', 'Products']) + tabNav + (view.includes('class="product-record"') ? view.replace('</aside>', quick + '</aside>') : '<div class="record-layout"><div>' + view + '</div><aside>' + quick + '</aside></div>');
 }
 // a variant row added purely client-side (no id yet) before the form is submitted
 let pendingVariants = null;
@@ -1269,6 +1270,8 @@ async function themeAction(a, key) {
     return true;
   }
   if (a === 'theme-rename') { const i = state.installs.find((x) => x.id === key); dialog('Rename theme', editForm('theme-rename', key, input('Name', 'name', i?.themeName || '', 'text', 'required maxlength="80"'), 'Rename')); return true; }
+  if (a === 'product-duplicate') { const src = state.products.find((x) => x.id === key); if (!src) return; try { const copy = await api('sfx_product_save', { p_id: null, p: { name: 'Copy of ' + src.name, description: src.description, price: src.price, compareAt: src.compare, category: src.category, status: 'draft' } }); await refreshProducts(); save('Copied as a draft. Add its photos and variants next.'); location.hash = '/products/' + copy.id; } catch (e) { flash(e.message || 'Could not duplicate this product.'); } return; }
+  if (a === 'product-archive') { const src = state.products.find((x) => x.id === key); if (!src) return; if (!confirm('Archive "' + src.name + '"? It leaves your store but is kept here.')) return; try { await api('sfx_product_save', { p_id: key, p: { name: src.name, description: src.description, price: src.price, compareAt: src.compare, category: src.category, handle: src.handle || undefined, status: 'archived' } }); await refreshProducts(); save('Product archived.'); rerender(true); } catch (e) { flash(e.message || 'Could not archive this product.'); } return; }
   if (a === 'theme-duplicate') { try { await api('sfx_theme_install_duplicate', { p_install_id: key }); await refreshInstalls(); save('Theme duplicated.'); rerender(true); } catch (e) { flash(e.message); } return true; }
   if (a === 'theme-delete') { if (!confirm('Delete this theme? Its draft is lost. Your live store is not affected.')) return true; try { await api('sfx_theme_install_delete', { p_install_id: key }); await refreshInstalls(); save('Theme deleted.'); rerender(true); } catch (e) { flash(e.message); } return true; }
   return false;

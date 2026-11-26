@@ -482,3 +482,14 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell tbody tr:has(td[data-label=Order])::after{content:"";flex-basis:100%;order:3;height:0}
   .shell tbody tr:has(td[data-label=Order]) td[data-label=Payment],.shell tbody tr:has(td[data-label=Order]) td[data-label=Fulfillment]{order:5}
 }
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]) input{position:static!important;margin:0}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status]{flex:none}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product] .cell-product{display:flex;align-items:center;gap:12px;min-width:0}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]){order:0!important;flex:none!important;margin:0 2px 0 0!important;align-self:center}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]){position:static!important;inset:auto!important}
+}

@@ -221,6 +221,22 @@ export default async function run({ browser, stack }) {
     const pub = (await q("select jsonb_path_query_array(public_sfx_store('testcafe')->'styles', '$[*] ? (@.name == \"Opt Ring\").variants[*].size') as v"))[0].v; assert(pub.includes('Silver / Matte'), JSON.stringify(pub));
     for (const bad of [[{ name: 'A', values: [] }], [{ name: '', values: ['x'] }], [{ name: 'A', values: ['x'] }, { name: 'B', values: ['y'] }, { name: 'C', values: ['z'] }, { name: 'D', values: ['w'] }], [{ name: 'A', values: ['x'.repeat(41)] }]]) assert(!(await call('sfx_product_extra_save', { p_id: pid, p: { options: bad } })).ok, 'bad options accepted ' + JSON.stringify(bad));
   }, 'major');
+  await s.check('Product page More actions: Duplicate makes a draft copy, Archive hides the product', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("delete from sfx_products where tenant_id=$1 and name in ('Menu Tee','Copy of Menu Tee')", [tid]);
+    const pid = (await q("insert into sfx_products (tenant_id, name, handle, status, price, category) values ($1,'Menu Tee','menu-tee','active',320,'Tops') returning id", [tid]))[0].id;
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/products/' + pid), { waitUntil: 'load' }); await page.waitForTimeout(2500);
+    assert(await page.locator('details.more-actions').count() === 1, 'the More actions menu is missing');
+    await page.evaluate(() => document.querySelector('details.more-actions').open = true);
+    await page.evaluate(() => document.querySelector('[data-action^="product-duplicate:"]').click()); await page.waitForTimeout(2200);
+    const copy = (await q("select status, price::int p from sfx_products where tenant_id=$1 and name='Copy of Menu Tee'", [tid]));
+    assert(copy.length === 1 && copy[0].status === 'draft' && copy[0].p === 320, JSON.stringify(copy));
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/products/' + pid), { waitUntil: 'load' }); await page.waitForTimeout(2200);
+    page.once('dialog', (d) => d.accept());
+    await page.evaluate(() => { document.querySelector('details.more-actions').open = true; document.querySelector('[data-action^="product-archive:"]').click(); }); await page.waitForTimeout(2000);
+    assert((await q("select status from sfx_products where id=$1", [pid]))[0].status === 'archived', 'product was not archived');
+    await q("delete from sfx_products where tenant_id=$1 and name in ('Menu Tee','Copy of Menu Tee')", [tid]);
+  }, 'major');
   await s.check('Product editor extras: tags, collections, custom field, SEO preview, photo upload and list filters (db/397)', async () => {
     const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
     await q("update sfx_stores set config = jsonb_set(coalesce(config,'{}'::jsonb), '{customFields}', '[{\"id\":\"cf1\",\"name\":\"Material\",\"appliesTo\":\"Products\",\"valueType\":\"Text\"}]'::jsonb) where tenant_id=$1", [tid]);

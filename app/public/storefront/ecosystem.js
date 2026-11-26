@@ -160,13 +160,14 @@ export function rerender(skipRefresh) {
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
   document.querySelectorAll('.page-head .actions').forEach((box) => {
     const items = [...box.children].filter((el) => el.matches('.btn, button, a'));
-    if (items.length < 4) return;
-    const keep = items.find((el) => el.classList.contains('primary')) || items[items.length - 1];
-    const extras = items.filter((el) => el !== keep);
+    const pinned = items.filter((el) => el.classList.contains('in-more'));
+    if (items.length < 4 && !pinned.length) return;
+    const keep = pinned.length ? null : items.find((el) => el.classList.contains('primary')) || items[items.length - 1];
+    const extras = pinned.length ? pinned : items.filter((el) => el !== keep);
     const d = document.createElement('details'); d.className = 'more-actions';
     const sm = document.createElement('summary'); sm.className = 'btn'; sm.textContent = 'More actions';
     const menu = document.createElement('div'); menu.className = 'more-menu'; extras.forEach((el) => menu.appendChild(el));
-    d.append(sm, menu); box.insertBefore(d, keep);
+    d.append(sm, menu); keep ? box.insertBefore(d, keep) : box.appendChild(d);
     d.addEventListener('click', (e) => { if (e.target.closest('.more-menu .btn, .more-menu a')) d.open = false; });
   });
   const globeHost = document.querySelector('[data-globe]');
