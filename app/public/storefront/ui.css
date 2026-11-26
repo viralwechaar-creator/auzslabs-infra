@@ -174,3 +174,14 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 }
 .shell .tabs a,.shell .tabs button{color:var(--muted)!important}
 .shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{color:var(--ink)!important}
+
+/* 7. Settings pages (Shopify Settings > Checkout reference): narrow centred column, big title, quiet section heads */
+.shell.settings-mode .work,.shell.settings-direct .work{max-width:980px;margin-inline:auto;padding:var(--sp-5) var(--sp-4) 48px}
+.shell.settings-mode .page-head h1,.shell.settings-direct .page-head h1,.shell.settings-mode .work>h1{font-size:28px;font-weight:550;letter-spacing:-.015em;margin-bottom:var(--sp-4)}
+.shell.settings-mode .work h2,.shell.settings-direct .work h2{font-size:15px;font-weight:600}
+.shell.settings-mode .page-head p,.shell.settings-direct .page-head p,.shell.settings-mode .work h2+p{font-size:13px;color:var(--ink);opacity:.8}
+.shell input[type=radio],.shell input[type=checkbox]{accent-color:#303030}
+.shell[data-theme=dark] input[type=radio],.shell[data-theme=dark] input[type=checkbox]{accent-color:#f1f1f1}
+.shell .notice,.shell .banner,.shell .info{background:#d9f4fb;color:#0b4b5a;border:0;border-radius:12px;padding:var(--sp-3) var(--sp-4)}
+.shell[data-theme=dark] :is(.notice,.banner,.info){background:#10343d;color:#bfeaf5}
+.shell .panel .row,.shell .panel label.check{padding-block:6px}
