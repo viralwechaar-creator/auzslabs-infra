@@ -261,3 +261,31 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   .shell .media-grid .product-photo{flex:0 0 78%;grid-column:auto;scroll-snap-align:start;border-radius:20px}
   .shell .media-grid .product-photo:first-child{grid-column:auto}
 }
+
+/* 13. phone lists as compact rows: name + status on the first line, quiet details inline below (Shopify mobile) */
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]){display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;padding:var(--sp-3) 0}
+  .shell tbody tr:has(td[data-label=Product]) td{display:inline-flex;width:auto;grid-column:auto;margin:0;font-size:14px;color:var(--muted);margin-top:0}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]{flex:1 1 0;min-width:0;font-size:17px;font-weight:650;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status]{order:2;margin-left:auto}
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]){order:-1}
+  .shell tbody tr:has(td[data-label=Product])::after{content:"";flex-basis:100%;order:3;height:0}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Category],.shell tbody tr:has(td[data-label=Product]) td[data-label=Price],.shell tbody tr:has(td[data-label=Product]) td[data-label=Available]{order:4}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Available]::after{content:" available"}
+  .shell tbody tr:has(td[data-label=Order]){display:flex;flex-wrap:wrap;gap:2px 10px;padding:var(--sp-3) 0;align-items:center}
+  .shell tbody tr:has(td[data-label=Order]) td{display:inline-flex;width:auto;font-size:14px;color:var(--muted);margin:0}
+  .shell tbody tr:has(td[data-label=Order]) td[data-label=Order]{font-size:17px;font-weight:650;color:var(--ink);flex:1 1 0}
+  .shell tbody tr:has(td[data-label=Order]) td[data-label=Total]{order:2;color:var(--ink);font-weight:600}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td::before{display:none!important;content:none!important}
+  .shell tbody tr:has(td[data-label=Product]){display:flex!important;flex-wrap:wrap;gap:2px 10px;align-items:center}
+  .shell tbody tr:has(td[data-label=Product]) td{display:inline-flex!important;width:auto!important;padding:0!important;border:0!important;min-height:0!important;height:auto!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]{flex:1 1 0!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product] .thumb{width:56px;height:56px;border-radius:14px;object-fit:cover;margin-right:12px}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]){order:5;margin-left:auto;flex:none}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status]{margin-left:0;order:2}
+  .shell tbody tr:has(td[data-label=Product]) .cell-product a,.shell td[data-label=Order] a{color:var(--ink)!important}
+}
