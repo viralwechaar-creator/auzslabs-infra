@@ -7,7 +7,7 @@ import { writeReport, verdict, printFailures } from './lib/report.mjs';
 import { summary } from './lib/harness.mjs';
 
 const only = process.argv[2];
-const suites = ['addresses', 'marketing', 'responsive', 'journeys', 'salon', 'salongeneric', 'cafe', 'accounts', 'finance', 'drawer', 'mobile', 'salesos', 'style', 'styleoffline', 'licence', 'desktop', 'accoffline', 'orders', 'razorpay', 'notify', 'easy', 'alerts', 'whatsapp', 'docread', 'dpdp', 'signup', 'mcp', 'catalogue', 'waaccount', 'sfxthemes', 'studs', 'sfxcommerce', 'sfxvisitors', 'sfxproducts', 'sfxorders', 'sfxinventory', 'sfxreturns', 'sfxcustomers', 'sfxdiscounts', 'sfxcheckout', 'sfxcontent', 'sfxreports', 'sfxaccess', 'sfxinstore', 'sfxapi', 'stylelink', 'sfxonboarding', 'design', 'security', 'idor', 'load', 'loadmob'];
+const suites = ['addresses', 'marketing', 'responsive', 'journeys', 'salon', 'salongeneric', 'cafe', 'accounts', 'finance', 'drawer', 'mobile', 'salesos', 'style', 'styleoffline', 'licence', 'desktop', 'accoffline', 'orders', 'razorpay', 'notify', 'easy', 'alerts', 'whatsapp', 'docread', 'dpdp', 'signup', 'mcp', 'catalogue', 'waaccount', 'sfxthemes', 'studs', 'sfxcommerce', 'sfxvisitors', 'sfxproducts', 'sfxorders', 'sfxinventory', 'sfxreturns', 'sfxcustomers', 'sfxdiscounts', 'sfxcheckout', 'sfxcontent', 'sfxreports', 'sfxaccess', 'sfxinstore', 'sfxapi', 'sfxwebhooks', 'stylelink', 'sfxonboarding', 'design', 'security', 'idor', 'load', 'loadmob'];
 reset('local test copy');
 console.log('Building test database...'); await build(console.log);
 const stack = await startStack({ log: console.log });

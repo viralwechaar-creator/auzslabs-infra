@@ -62,7 +62,8 @@ export const appLinks = () => {
   apps.push(['Account and apps', 'Your profile, plan and all your apps', 'https://auzslab.in/account.html', 'accountCircle']);
   return apps;
 };
-const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img src="/logo.png" alt="AUZslab" width="94" height="29" onerror="this.remove()"></a>';
+const brand = (href = '#/') => '<a class="brand" href="' + href + '" aria-label="AUZslab storefront"><img class="brand-icon" src="/storefront/logo-icon-96.png" srcset="/storefront/logo-icon-96.png 1x, /storefront/logo-icon-256.png 2x" alt="AUZslab" width="34" height="34"></a>';
+const sideCollapsed = () => { try { return localStorage.getItem('auzslab.side.collapsed') === '1'; } catch { return false; } };
 
 const allItems = menu.flatMap((m) => (m.id ? [[m.id, m.name], ...(m.children || [])] : []));
 export const settingsGroups = [
@@ -119,13 +120,13 @@ export function rerender(skipRefresh) {
   const settingsNav = settingsGroups.map((group) => '<section data-settings-group><div class="nav-label">' + group.label + '</div>' + group.items.map(([id, label, glyph]) => '<a href="' + pathFor(id + (settingsRoutes.has(id) ? '' : '?via=settings')) + '"' + (id === active ? ' aria-current="page"' : '') + '>' + icon(glyph) + '<span>' + label + '</span></a>').join('') + '</section>').join('') + '<section data-settings-group><div class="nav-label">Account</div><a href="#" data-action="sign-out">' + icon('logout') + '<span>Sign out</span></a></section>';
   const sidebar = inSettings ?
     '<aside class="sidebar settings-sidebar" id="workspace-sidebar"><div class="settings-rail">' + brand() + search + '<nav aria-label="Workspace">' + workspaceMenu.filter((item) => item.id).map((item) => '<a href="' + pathFor(item.id) + '" aria-label="' + item.name + '" title="' + item.name + '">' + icon(item.icon) + '</a>').join('') + '</nav></div><div class="settings-panel"><div class="settings-brand">' + brand() + '</div><a class="settings-back" href="' + esc(pathFor(returnToWorkspace)) + '"><span aria-hidden="true">‹</span> Back to workspace</a><button class="btn drawer-switch" type="button" data-action="switch-drawer" aria-pressed="false">Workspace menu</button><input class="settings-search" type="search" aria-label="Search settings" placeholder="Search settings" autocomplete="off"><nav class="side-nav settings-links" aria-label="Settings">' + settingsNav + '<p id="settings-empty" hidden>No matching settings</p></nav><nav class="side-nav drawer-workspace" aria-label="Workspace">' + nav + '</nav>' + sidebarBottom + '</div></aside>' :
-    '<aside class="sidebar" id="workspace-sidebar"><div class="sidebar-head">' + brand() + search + '</div><nav class="side-nav" aria-label="Workspace">' + nav + '</nav>' + sidebarBottom + '</aside>';
+    '<aside class="sidebar" id="workspace-sidebar"><div class="sidebar-head"><div class="brand-row">' + brand() + '<button type="button" class="side-toggle" data-action="toggle-side" aria-label="Collapse or expand the menu" title="Collapse or expand the menu"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><path d="M7.5 3.5v13"/></svg></button></div>' + search + '</div><nav class="side-nav" aria-label="Workspace">' + nav + '</nav>' + sidebarBottom + '</aside>';
   const c = state.counts || {};
   const unfulfilled = state.orders.filter((o) => o.status === 'Unfulfilled').length;
   const homeHero = '<div class="m-hero"><a class="m-avatar" href="' + pathFor('settings') + '" aria-label="Business profile">' + esc(initials) + '</a><strong class="m-store">' + esc(bizName) + '</strong><a class="m-bell" href="' + pathFor('notifications') + '" aria-label="Notifications' + (unread ? ', ' + unread + ' unread' : '') + '">' + icon('bell') + (unread ? '<span aria-hidden="true">' + Math.min(unread, 99) + '</span>' : '') + '</a></div>' +
     '<div class="m-stats"><div><span>Products</span><b>' + (c.activeProducts ?? 0) + '</b></div><div><span>To fulfil</span><b>' + unfulfilled + '</b></div><div><span>Sales</span><b>' + money(c.salesTotal || 0) + '</b></div><div><span>Stock alerts</span><b>' + (c.lowStock ?? 0) + '</b></div></div>';
   const mSearch = '<button type="button" class="m-search" data-action="global-search" aria-label="Search workspace">' + icon('search') + '<span>Search</span></button>';
-  const header = '<header class="topbar' + (active === 'home' ? ' is-home' : '') + '"><div class="mobile-brand">' + brand() + '</div><div class="breadcrumb">Workspace <span>›</span> <strong>' + esc(activeName) + '</strong></div><strong class="mobile-page-name">' + esc(activeName) + '</strong>' + headerActions + (active === 'home' ? homeHero : mSearch) + '</header>';
+  const header = '<header class="topbar' + (active === 'home' ? ' is-home' : '') + '"><div class="mobile-brand">' + brand() + '</div><div class="breadcrumb"><strong>' + esc(activeName) + '</strong></div><strong class="mobile-page-name">' + esc(activeName) + '</strong>' + headerActions + (active === 'home' ? homeHero : mSearch) + '</header>';
   const quickLinks = ['home', 'orders', 'products'].map((id) => {
     const item = workspaceMenu.find((item) => item.id === id);
     const current = id === active || item.children?.some(([child]) => child === active);
@@ -138,8 +139,31 @@ export function rerender(skipRefresh) {
   const previousArea = $('.work-area');
   const route = location.hash && !/^#\/?$/.test(location.hash) ? location.hash : '#/home';
   const scrollTop = previousArea?.dataset.route === route ? previousArea.scrollTop : 0;
-  $('#app').innerHTML = '<div class="shell' + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
+  $('#app').innerHTML = '<div class="shell' + (sideCollapsed() ? ' side-collapsed' : '') + (navOpen ? ' nav-open' : '') + (inSettings ? ' settings-mode' : '') + (settingsRoutes.has(active) ? ' settings-direct' : '') + '" data-theme="' + esc(accountTheme) + '"><div class="work-layout">' + sidebar + '<div class="work-area" data-route="' + esc(route) + '">' + header + '<main id="main" class="work" tabindex="-1">' + html + '</main></div></div><button type="button" class="mobile-nav-backdrop" data-action="close-nav" aria-label="Close navigation"></button>' + mobileNav + '</div>';
   $('.work-area').scrollTop = scrollTop;
+  // Record pages: back button and "Parent / Record name" live in the top bar, like Shopify.
+  const trail = document.querySelector('.page-head .trail'), recTitle = document.querySelector('.page-head h1');
+  const bcBox = document.querySelector('.topbar .breadcrumb');
+  if (trail && recTitle && bcBox) {
+    const href = trail.getAttribute('href') || '#/';
+    bcBox.classList.add('is-record');
+    bcBox.innerHTML = '<a class="back-circle" href="' + esc(href) + '" aria-label="Back to ' + esc(trail.textContent) + '"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5L7 10l5.5 5.5"/></svg></a><a class="crumb-parent" href="' + esc(href) + '">' + esc(trail.textContent) + '</a><span>/</span><strong>' + esc(recTitle.textContent) + '</strong>';
+    document.querySelector('.work')?.classList.add('has-crumb');
+  }
+  // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
+  document.querySelectorAll('.page-head .actions').forEach((box) => {
+    const items = [...box.children].filter((el) => el.matches('.btn, button, a'));
+    if (items.length < 4) return;
+    const keep = items.find((el) => el.classList.contains('primary')) || items[items.length - 1];
+    const extras = items.filter((el) => el !== keep);
+    const d = document.createElement('details'); d.className = 'more-actions';
+    const sm = document.createElement('summary'); sm.className = 'btn'; sm.textContent = 'More actions';
+    const menu = document.createElement('div'); menu.className = 'more-menu'; extras.forEach((el) => menu.appendChild(el));
+    d.append(sm, menu); box.insertBefore(d, keep);
+    d.addEventListener('click', (e) => { if (e.target.closest('.more-menu .btn, .more-menu a')) d.open = false; });
+  });
+  const globeHost = document.querySelector('[data-globe]');
+  if (globeHost) { let zones = {}; try { zones = JSON.parse(globeHost.dataset.zones || '{}'); } catch {} import('/storefront/globe.js?v=2').then((m) => m.mountGlobe(globeHost, zones, { theme: accountTheme })).catch(() => { globeHost.innerHTML = '<p class="compact-copy">The globe could not load on this browser.</p>'; }); }
   const adminHost = document.querySelector('[data-admin-pane]');
   if (adminHost && window.auzAdminTab) {
     const only = adminHost.dataset.adminPane || undefined;
@@ -187,6 +211,7 @@ document.addEventListener('click', (event) => {
   if (action === 'close-dialog') { if (dirty.on && !confirm('You have changes that are not saved. Close without saving?')) return; dirty.on = false; if ($('#dialog').open) return close(); target.closest('form')?.reset(); return; }
   if (action === 'sign-out') { event.preventDefault(); Promise.resolve(sb.auth.signOut()).catch(() => {}).then(() => { location.href = 'https://auzslab.in/signup.html?signout=1'; }); return; }
   if (action === 'global-search') return search();
+  if (action === 'toggle-side') { try { localStorage.setItem('auzslab.side.collapsed', sideCollapsed() ? '0' : '1'); } catch {} document.querySelector('.shell')?.classList.toggle('side-collapsed', sideCollapsed()); return; }
   if (action === 'account-theme') { const dark = localStorage.getItem('auzslab.preview.theme') === 'dark'; localStorage.setItem('auzslab.preview.theme', dark ? 'light' : 'dark'); return rerender(); }
   if (action === 'toggle-nav' || action === 'close-nav') { setNavOpen(action === 'toggle-nav' && !navOpen, true); return; }
   if (action === 'switch-drawer') {

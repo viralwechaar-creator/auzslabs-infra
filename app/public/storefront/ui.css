@@ -1,0 +1,437 @@
+/* AUZslab storefront dashboard: one compact UI system for every page, tab, detail screen and dialog (light and dark).
+   Loaded after ecosystem.css. Scoped to .shell. Reference for hierarchy and density: Shopify Admin. Branding, colours and components stay AUZslab's.
+   Change a number here and it changes everywhere. */
+.shell{
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;
+  --r-ctl:7px;--r-panel:10px;
+  --ctl-h:34px;--ctl-touch:44px;
+  --fs-title:22px;--fs-h2:15px;--fs-body:13.5px;--fs-small:12px;
+  --hover:rgb(0 0 0 / .045);--select:rgb(0 0 0 / .08);--focus:#2563eb;--backdrop:rgb(0 0 0 / .45);
+  --good:#127a3d;--warn:#946200;--bad:#b3261e;
+  font-size:var(--fs-body);
+}
+.shell[data-theme=dark]{--hover:rgb(255 255 255 / .06);--select:rgb(255 255 255 / .12);--focus:#7aa7ff;--backdrop:rgb(0 0 0 / .6);--good:#5fd18a;--warn:#e0b44a;--bad:#ff8a80}
+
+/* 1. page: padding, header, order */
+.shell .work{padding:var(--sp-5) var(--sp-5) 36px;width:min(100%,1400px)}
+.shell .page-head{margin:0 0 var(--sp-4);gap:var(--sp-3);align-items:flex-start}
+.shell .page-head .trail{display:block;font-size:var(--fs-small);margin:0 0 2px;color:var(--muted)}
+.shell .page-head h1,.shell .work h1{font-size:var(--fs-title);line-height:1.25;font-weight:650;letter-spacing:-.01em;margin:0}
+.shell .page-head p{font-size:var(--fs-small);margin:2px 0 0;color:var(--muted)}
+.shell .page-head .actions{display:flex;flex-wrap:wrap;gap:var(--sp-2);justify-content:flex-end;align-items:center}
+.shell .work h2,.shell .panel-title h2{font-size:var(--fs-h2);font-weight:620;line-height:1.3;margin:0}
+.shell .work h3{font-size:var(--fs-body);font-weight:620}
+.shell .work p,.shell .work li,.shell .work td,.shell .work th,.shell .work label{font-size:var(--fs-body)}
+.shell .work small,.shell .compact-copy,.shell .muted,.shell .work th{font-size:var(--fs-small)}
+
+/* 2. surfaces: quiet canvas, flat sections, cards only where they earn it */
+.shell .panel{border-radius:var(--r-panel);box-shadow:none;margin-bottom:var(--sp-4);background:var(--paper)}
+.shell .panel-title{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line);align-items:center;margin:0}
+.shell .panel-body{padding:var(--sp-4)}
+.shell .panel>.table-scroll,.shell .panel>table{margin:0;border-radius:0}
+.shell .metrics{gap:var(--sp-3);margin-bottom:var(--sp-4)}
+.shell .metric{border-radius:var(--r-panel);padding:var(--sp-3) var(--sp-4);background:var(--paper);box-shadow:none}
+.shell .metric strong{font-size:20px;font-weight:650;letter-spacing:-.01em;margin:2px 0;font-variant-numeric:tabular-nums}
+.shell .metric span{font-size:var(--fs-small)}
+.shell .record-layout{gap:var(--sp-4)}
+.shell .record-layout .panel{margin-bottom:var(--sp-4)}
+.shell .cards{gap:var(--sp-3)}
+.shell .card{border-radius:var(--r-panel);box-shadow:none}
+.shell .card-body{padding:var(--sp-3) var(--sp-4)}
+.shell .channel-row,.shell .launch{padding:var(--sp-3) 0;border-bottom:1px solid var(--line);margin:0;background:transparent;border-radius:0}
+.shell .channel-row:last-child,.shell .launch:last-child{border-bottom:0}
+.shell .stack{gap:var(--sp-2)}
+.shell .field-grid{gap:var(--sp-3)}
+
+/* 3. controls: 34 px high on desktop, 44 px tap targets on touch, one radius */
+.shell .btn,.shell button.btn,.shell a.btn{min-height:var(--ctl-h);padding:0 var(--sp-3);font-size:var(--fs-body);font-weight:560;border-radius:var(--r-ctl);display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1.2}
+.shell .btn.compact{min-height:28px;padding:0 var(--sp-2);font-size:var(--fs-small)}
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select,.shell textarea{min-height:var(--ctl-h);border-radius:var(--r-ctl);font-size:var(--fs-body);padding:0 var(--sp-3);border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.shell textarea{padding:var(--sp-2) var(--sp-3);min-height:72px}
+.shell .ico,.shell .btn svg{width:16px;height:16px}
+.shell td:is(.num,[data-num]),.shell td.right,.shell th.right{text-align:right}
+.shell .metric strong,.shell td,.shell .money{font-variant-numeric:tabular-nums}
+
+/* 4. lists: toolbar and table are one surface, compact rows, hover tint, visible focus */
+.shell .tabs{margin:0 0 var(--sp-3);border-radius:var(--r-panel);background:transparent;padding:0;gap:var(--sp-1);border:0;border-bottom:1px solid var(--line);border-radius:0;width:100%;max-width:100%}
+.shell .tabs a,.shell .tabs button{min-height:34px;display:inline-flex;align-items:center;border-radius:var(--r-ctl) var(--r-ctl) 0 0;border:0;border-bottom:2px solid transparent;padding:0 var(--sp-3);font-size:var(--fs-body);color:var(--muted);background:transparent}
+.shell .tabs a:hover,.shell .tabs button:hover{background:var(--hover);color:var(--ink)}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{background:transparent;color:var(--ink);font-weight:650;border-bottom-color:var(--ink)}
+.shell .filters{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:center;padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line);margin:0}
+.shell .filters input[type=search],.shell .filters input:not([type]){flex:1 1 220px;min-width:0}
+.shell table{font-size:var(--fs-body);border-collapse:collapse}
+.shell th{font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;padding:var(--sp-2) var(--sp-3);background:var(--table);border-bottom:1px solid var(--line);white-space:nowrap}
+.shell td{padding:var(--sp-2) var(--sp-3);border-bottom:1px solid var(--line);vertical-align:middle;height:40px}
+.shell tbody tr:hover td{background:var(--hover)}
+.shell tbody tr[aria-selected=true] td,.shell tbody tr.selected td{background:var(--select)}
+.shell td a,.shell .work a:not(.btn):not(.tab):not([class]){text-decoration-color:transparent}
+.shell td a:hover,.shell .work a:not(.btn):hover{text-decoration:underline}
+.shell :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--r-ctl)}
+.shell .badge,.shell .pill{font-size:var(--fs-small);font-weight:560;border-radius:999px;padding:1px 8px;line-height:1.5}
+.shell td:last-child .btn+.btn,.shell td .btn+.btn{margin-left:var(--sp-1)}
+
+/* a record link inside a table (order number, product name) reads as a link, not a button */
+.shell td a.btn:not(.primary):not(.danger){border:0;background:transparent;min-height:0;padding:0;font-weight:620;justify-content:flex-start;text-decoration:none}
+.shell td a.btn:not(.primary):not(.danger):hover{background:transparent;text-decoration:underline}
+/* detail pages: wide workflow column, narrow supporting column */
+.shell .record-layout{grid-template-columns:minmax(0,1fr) minmax(260px,340px)}
+
+/* dialogs: neutral backdrop in light and dark, same radii and padding */
+.shell dialog,dialog#dialog{border-radius:var(--r-panel);box-shadow:0 12px 40px rgb(0 0 0 / .25)}
+dialog::backdrop{background:var(--backdrop,rgb(0 0 0 / .45))}
+.shell .dialog-head,dialog .dialog-head{padding:var(--sp-3) var(--sp-4)}
+.shell .dialog-head h2,dialog .dialog-head h2{font-size:var(--fs-h2)}
+.shell .dialog-content,dialog .dialog-content{padding:var(--sp-4)}
+dialog .btn{min-height:var(--ctl-h);border-radius:var(--r-ctl)}
+dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var(--ctl-h);border-radius:var(--r-ctl)}
+.shell .actions{gap:var(--sp-2)}
+
+/* 5. phone and touch */
+@media (max-width:899px){
+  .shell .work{padding:var(--sp-4) var(--sp-4) 28px}
+  .shell .page-head{flex-wrap:wrap}
+  .shell .page-head .actions{justify-content:flex-start;width:100%}
+  .shell .page-head h1,.shell .work h1{font-size:20px}
+  .shell .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shell .record-layout{grid-template-columns:1fr}
+  .shell .tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;margin-inline:calc(var(--sp-4) * -1);padding-inline:var(--sp-4);width:auto;max-width:none}
+  .shell .tabs::-webkit-scrollbar{display:none}
+  .shell .filters{padding:var(--sp-3)}
+  .shell .filters>*{flex:1 1 100%;min-width:0}
+  .shell .filters select{flex:1 1 calc(50% - var(--sp-1))}
+  /* dense tables become compact rows: record name first, the rest as a quiet second line */
+  .shell .table-scroll{overflow:visible;max-height:none}
+  .shell table,.shell tbody,.shell tr,.shell td{display:block;width:100%}
+  .shell thead{display:none}
+  .shell tbody tr{padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:2px var(--sp-3)}
+  .shell tbody tr:last-child{border-bottom:0}
+  .shell td{border:0;padding:0;height:auto;width:auto;min-width:0}
+  .shell td:first-child{grid-column:1;font-weight:600}
+  .shell td:not(:first-child){grid-column:1/-1;color:var(--muted);font-size:var(--fs-small)}
+  .shell td:nth-child(2){grid-column:1/-1}
+  .shell td:last-child{grid-column:1/-1;margin-top:var(--sp-2);display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+  .shell td:empty{display:none}
+}
+@media (pointer:coarse),(max-width:899px){
+  .shell .btn,.shell button.btn,.shell a.btn,.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select{min-height:var(--ctl-touch)}
+  .shell .btn.compact{min-height:36px}
+  .shell .tabs a,.shell .tabs button{min-height:var(--ctl-touch)}
+  dialog{max-width:100%;width:100%;max-height:92dvh;border-radius:var(--r-panel) var(--r-panel) 0 0;margin:auto 0 0}
+}
+@media (prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* 6. Shopify-admin look (owner reference screenshots): dark frame, one white rounded work panel, pill buttons, flat grey table header, 13px type */
+.shell{--r-ctl:999px;--r-field:10px;--r-panel:14px;--fs-title:17px;--fs-h2:14px;--fs-body:13px;--fs-small:12px;--ctl-h:32px;--line:#e5e5e5;--table:#f7f7f7;--pill:#f1f1f1;--pill-ink:#303030;--black:#303030;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13px;line-height:1.35;-webkit-font-smoothing:antialiased}
+.shell[data-theme=dark]{--line:#2e2e2e;--table:#242424;--pill:#2b2b2b;--pill-ink:#f1f1f1;--black:#f1f1f1}
+@media (min-width:900px){
+  .shell .work-layout{gap:0}
+  .shell .work-area{background:var(--paper);margin:5px 5px 5px 0;border-radius:14px;min-height:calc(100vh - 10px)}
+  .shell .sidebar{padding-right:6px}
+}
+.shell .topbar{height:50px;border-bottom:0;background:transparent;padding:0 var(--sp-4)}
+.shell .page-head h1,.shell .work h1{font-size:var(--fs-title);font-weight:650}
+.shell .work{background:transparent;padding:var(--sp-3) var(--sp-4) 28px;width:100%;max-width:none}
+/* buttons: white outlined pill, grey tonal pill, black primary pill */
+.shell .btn,.shell button.btn,.shell a.btn{border-radius:999px;font-size:13px;font-weight:550;min-height:32px;padding:0 14px;background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 0 rgb(0 0 0 / .03)}
+.shell .btn:hover{background:var(--pill)}
+.shell .btn.primary,.shell button.btn.primary{background:var(--black);border-color:var(--black);color:var(--paper)}
+.shell .btn.primary:hover{background:var(--black);filter:brightness(1.25)}
+.shell .btn.ghost,.shell .btn.compact:not(.primary):not(.danger){background:var(--pill);border-color:transparent;color:var(--pill-ink)}
+.shell .btn.compact{min-height:28px;padding:0 12px}
+/* fields */
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select,.shell textarea{border-radius:var(--r-field);border-color:#d4d4d4;font-size:13px;min-height:32px}
+.shell[data-theme=dark] input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell[data-theme=dark] select,.shell[data-theme=dark] textarea{border-color:#3a3a3a}
+.shell input[type=checkbox]{width:16px;height:16px;border-radius:4px}
+/* sections: soft rounded outline, no heavy cards */
+.shell .panel,.shell .metric,.shell .card{border-radius:14px;border:1px solid var(--line);box-shadow:0 1px 2px rgb(0 0 0 / .05);background:var(--paper)}
+.shell .panel-title{border-bottom:0;padding:var(--sp-3) var(--sp-4) 0}
+.shell .panel-title h2,.shell .work h2{font-size:13px;font-weight:650}
+.shell .metrics{gap:var(--sp-3)}
+.shell .metric{padding:var(--sp-3) var(--sp-4)}
+.shell .metric span{color:var(--ink);border-bottom:1px dotted #9a9a9a;display:inline-block;width:fit-content;font-weight:500}
+.shell .metric strong{font-size:15px;font-weight:600}
+/* search and filter bar and tables */
+.shell .filters{border:1px solid var(--line);border-radius:12px;padding:6px 10px;margin:0 var(--sp-3) var(--sp-2);box-shadow:0 1px 2px rgb(0 0 0 / .04);background:var(--paper)}
+.shell .filters input,.shell .filters select{border:0;background:transparent;min-height:30px;box-shadow:none}
+.shell table{font-size:13px}
+.shell th{background:var(--table);border-bottom:0;color:var(--ink);font-weight:500;font-size:13px;padding:8px 12px;height:34px}
+.shell thead th:first-child{border-radius:8px 0 0 8px}.shell thead th:last-child{border-radius:0 8px 8px 0}
+.shell td{font-size:13px;height:42px;padding:6px 12px}
+.shell .panel>.table-scroll,.shell .panel>table{padding:0 var(--sp-2)}
+.shell .badge,.shell .pill{border-radius:8px;background:var(--pill);color:var(--pill-ink);font-weight:500;padding:2px 8px;font-size:12px}
+/* tabs keep their underline; links are blue like Shopify */
+.shell .work a:not(.btn):not(.tab):not([class]){color:#005bd3}
+/* sidebar: 13px, active item is a dark rounded row */
+.shell .side-nav a{font:500 13px/1.25 Inter,system-ui,sans-serif;min-height:32px;border-radius:10px;color:#e8e8e8;padding:6px 10px}
+.shell .side-nav a.sub{font-size:13px;color:#b5b5b5;padding-left:36px;min-height:30px}
+.shell .side-nav a[aria-current]{background:#303030;box-shadow:none;color:#fff;font-weight:650}
+.shell .side-nav a:hover{background:#1f1f1f}
+.shell .side-search,.shell .sidebar-head .side-search{background:#2b2b2b;border-color:#3a3a3a;border-radius:10px;min-height:34px;font-size:13px}
+@media (max-width:899px){
+  .shell .work-area{border-radius:0;margin:0}
+  .shell .filters{margin:0 0 var(--sp-2)}
+}
+.shell .tabs a,.shell .tabs button{color:var(--muted)!important}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{color:var(--ink)!important}
+
+/* 7. Settings pages (Shopify Settings > Checkout reference): narrow centred column, big title, quiet section heads */
+.shell.settings-mode .work,.shell.settings-direct .work{max-width:980px;margin-inline:auto;padding:var(--sp-5) var(--sp-4) 48px}
+.shell.settings-mode .page-head h1,.shell.settings-direct .page-head h1,.shell.settings-mode .work>h1{font-size:28px;font-weight:550;letter-spacing:-.015em;margin-bottom:var(--sp-4)}
+.shell.settings-mode .work h2,.shell.settings-direct .work h2{font-size:15px;font-weight:600}
+.shell.settings-mode .page-head p,.shell.settings-direct .page-head p,.shell.settings-mode .work h2+p{font-size:13px;color:var(--ink);opacity:.8}
+.shell input[type=radio],.shell input[type=checkbox]{accent-color:#303030}
+.shell[data-theme=dark] input[type=radio],.shell[data-theme=dark] input[type=checkbox]{accent-color:#f1f1f1}
+.shell .notice,.shell .banner{background:#d9f4fb;color:#0b4b5a;border:0;border-radius:12px;padding:var(--sp-3) var(--sp-4)}
+.shell[data-theme=dark] :is(.notice,.banner){background:#10343d;color:#bfeaf5}
+.shell .panel .row,.shell .panel label.check{padding-block:6px}
+
+/* 8. Minimal, less boxy: sections are open space with hairlines; only inputs and true cards keep an outline */
+.shell .panel{border:0;box-shadow:none;background:transparent;border-radius:0;margin-bottom:var(--sp-5)}
+.shell .panel-title{padding:0 0 var(--sp-2);border-bottom:0}
+.shell .panel-body{padding:0}
+.shell .panel>.table-scroll,.shell .panel>table{padding:0}
+.shell .record-layout .panel:not(.plain){border:1px solid var(--line);border-radius:14px;padding:var(--sp-4);background:var(--paper)}
+.shell .record-layout .panel .panel-title{padding-top:0}
+.shell .metrics{gap:0;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.shell .metric{border:0;border-radius:0;box-shadow:none;background:transparent;padding:var(--sp-3) var(--sp-4);border-left:1px solid var(--line)}
+.shell .metric:first-child{border-left:0;padding-left:0}
+.shell .filters{border:0;border-bottom:1px solid var(--line);border-radius:0;box-shadow:none;padding:var(--sp-2) 0;margin:0 0 var(--sp-2);background:transparent}
+.shell .filters input{background:var(--pill);border-radius:999px;padding-inline:14px}
+.shell th{background:transparent;border-bottom:1px solid var(--line);color:var(--muted);font-weight:500;border-radius:0!important}
+.shell td{border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.shell .card{border:0;box-shadow:none;background:var(--field);border-radius:14px}
+.shell .tabs{border-bottom-color:transparent}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{border-bottom-color:var(--ink)}
+.shell .btn{box-shadow:none}
+.shell .work-area{box-shadow:0 0 0 1px rgb(0 0 0 / .04)}
+.shell .page-head{margin-bottom:var(--sp-5)}
+@media (max-width:899px){.shell .metric{border-left:0;border-bottom:1px solid var(--line);padding-inline:0}.shell .metrics{border-top:0}}
+
+/* 9. record pages (product, order, customer): big record title, open right rail with hairlines, like Shopify */
+.shell .page-head:has(.trail) h1{font-size:26px;font-weight:600;letter-spacing:-.015em}
+.shell .page-head .trail{font-size:12px}
+.shell .record-layout>aside .panel{border:0;border-radius:0;padding:var(--sp-3) 0;margin:0;background:transparent;border-bottom:1px solid var(--line)}
+.shell .record-layout>aside .panel:last-child{border-bottom:0}
+.shell .record-layout>aside .panel-title h2{font-size:13px;font-weight:600}
+.shell .record-layout>aside label{font-size:13px;font-weight:550;display:grid;gap:4px;margin-bottom:var(--sp-3)}
+.shell .record-layout>aside :is(select,input:not([type=checkbox]):not([type=radio])){width:100%;border-radius:10px}
+.shell .record-layout .record-layout>aside .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain){border:0;border-radius:0;padding:var(--sp-3) 0;background:transparent;border-bottom:1px solid var(--line)}
+.shell .metric:first-child{background:transparent;color:var(--ink);border-color:var(--line)}
+.shell .metric:first-child{border-left:0}
+
+/* 10. Analytics and KPI tiles: label, then big value, then quiet note (Shopify reference) */
+.shell .metric,.shell .analytics-kpi{display:block}
+.shell .metric>span{display:inline-block;background:transparent!important;padding:0!important;border-radius:0!important;font-size:13px;font-weight:500;color:var(--ink)}
+.shell .metric>span a{background:transparent!important;padding:0!important;border-radius:0!important;min-height:0!important;color:var(--ink)!important;text-decoration:none;border-bottom:1px dotted #9a9a9a}
+.shell .metric>strong{display:block;font-size:22px;font-weight:600;margin:6px 0 2px;text-align:left}
+.shell .metric>small{display:block;font-size:12px;color:var(--muted);line-height:1.35}
+.shell .analytics-kpi{border-left:0}
+.shell form.filters,.shell .analytics-filters{display:flex;flex-wrap:wrap;gap:var(--sp-2);align-items:end;padding:0 0 var(--sp-3);border:0}
+.shell form.filters label,.shell .analytics-filters label{font-size:12px;color:var(--muted);display:grid;gap:2px}
+.shell form.filters select,.shell .analytics-filters select{border-radius:999px;background:var(--pill);border-color:transparent;min-height:32px}
+
+/* 11. product media tiles and option chips (Shopify reference) */
+.shell .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--sp-2)}
+.shell .product-photo{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--field);padding:0}
+.shell .product-photo img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.shell .product-photo:first-child{grid-column:span 2;grid-row:span 2}
+.shell .product-photo .photo-move{display:flex;gap:4px;padding:6px}
+.shell .option-row .chip,.shell .chip{border-radius:8px;background:var(--pill);color:var(--pill-ink);padding:2px 10px;font-weight:500;font-size:12px}
+
+/* 12. Phone (Shopify mobile reference): big title, pill search, pill tabs, big rounded section cards, blue text links */
+@media (max-width:899px){
+  .shell{--fs-body:15px;--fs-small:13px;--fs-title:30px;--fs-h2:18px}
+  .shell .page-head h1,.shell .work h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+  .shell .page-head p{font-size:14px}
+  .shell .work{padding:var(--sp-3) var(--sp-4) 110px}
+  .shell .tabs{border-bottom:0;gap:var(--sp-1);margin-bottom:var(--sp-3)}
+  .shell .tabs a,.shell .tabs button{border:0!important;border-radius:999px;padding:0 16px;font-size:16px;min-height:44px}
+  .shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{background:var(--pill);color:var(--ink)!important;font-weight:650}
+  .shell .filters{border:1px solid var(--line);border-radius:20px;padding:4px 14px;box-shadow:0 1px 6px rgb(0 0 0 / .06);margin-bottom:var(--sp-3)}
+  .shell .filters input{background:transparent;min-height:44px;font-size:16px}
+  .shell .panel-title h2,.shell .work h2{font-size:18px;font-weight:650}
+  .shell .panel-title .btn,.shell .panel-title a.btn{background:transparent;border:0;color:#2a5bd7;min-height:36px;padding:0;font-weight:550;font-size:16px}
+  .shell .record-layout .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain){border:1px solid var(--line);border-radius:24px;padding:var(--sp-4);box-shadow:0 1px 6px rgb(0 0 0 / .05)}
+  .shell .btn{min-height:44px;font-size:16px}
+  .shell .badge,.shell .pill{font-size:14px;padding:3px 12px;border-radius:999px}
+  .shell tbody tr{padding:var(--sp-3) 0}
+  .shell td:first-child{font-size:17px;font-weight:650}
+  .shell .media-grid{display:flex;overflow-x:auto;gap:var(--sp-2);scroll-snap-type:x mandatory}
+  .shell .media-grid .product-photo{flex:0 0 78%;grid-column:auto;scroll-snap-align:start;border-radius:20px}
+  .shell .media-grid .product-photo:first-child{grid-column:auto}
+}
+
+/* 13. phone lists as compact rows: name + status on the first line, quiet details inline below (Shopify mobile) */
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]){display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;padding:var(--sp-3) 0}
+  .shell tbody tr:has(td[data-label=Product]) td{display:inline-flex;width:auto;grid-column:auto;margin:0;font-size:14px;color:var(--muted);margin-top:0}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]{flex:1 1 0;min-width:0;font-size:17px;font-weight:650;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status]{order:2;margin-left:auto}
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]){order:-1}
+  .shell tbody tr:has(td[data-label=Product])::after{content:"";flex-basis:100%;order:3;height:0}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Category],.shell tbody tr:has(td[data-label=Product]) td[data-label=Price],.shell tbody tr:has(td[data-label=Product]) td[data-label=Available]{order:4}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Available]::after{content:" available"}
+  .shell tbody tr:has(td[data-label=Order]){display:flex;flex-wrap:wrap;gap:2px 10px;padding:var(--sp-3) 0;align-items:center}
+  .shell tbody tr:has(td[data-label=Order]) td{display:inline-flex;width:auto;font-size:14px;color:var(--muted);margin:0}
+  .shell tbody tr:has(td[data-label=Order]) td[data-label=Order]{font-size:17px;font-weight:650;color:var(--ink);flex:1 1 0}
+  .shell tbody tr:has(td[data-label=Order]) td[data-label=Total]{order:2;color:var(--ink);font-weight:600}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td::before{display:none!important;content:none!important}
+  .shell tbody tr:has(td[data-label=Product]){display:flex!important;flex-wrap:wrap;gap:2px 10px;align-items:center}
+  .shell tbody tr:has(td[data-label=Product]) td{display:inline-flex!important;width:auto!important;padding:0!important;border:0!important;min-height:0!important;height:auto!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]{flex:1 1 0!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product] .thumb{width:56px;height:56px;border-radius:14px;object-fit:cover;margin-right:12px}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]){order:5;margin-left:auto;flex:none}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status]{margin-left:0;order:2}
+  .shell tbody tr:has(td[data-label=Product]) .cell-product a,.shell td[data-label=Order] a{color:var(--ink)!important}
+}
+
+/* 14. Live View globe / map */
+.gl-host{margin:0 0 var(--sp-4)}
+.gl-wrap{position:relative;border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#f6f9fd,#eaf1fa);min-height:300px}
+.shell[data-theme=dark] .gl-wrap{background:linear-gradient(180deg,#14203a,#0d1526)}
+.gl-canvas{display:block;width:100%;touch-action:none;cursor:grab;outline-offset:-3px}
+.gl-canvas:active{cursor:grabbing}
+.gl-legend{position:absolute;left:14px;top:12px;display:flex;gap:14px;font-size:13px;background:rgb(255 255 255 / .75);padding:6px 12px;border-radius:999px}
+.shell[data-theme=dark] .gl-legend{background:rgb(0 0 0 / .4);color:#eee}
+.gl-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:#2596eb}
+.gl-tools{position:absolute;right:12px;top:12px;display:grid;gap:8px}
+.gl-btn{width:40px;height:40px;border-radius:50%;border:0;background:rgb(255 255 255 / .9);color:#222;display:grid;place-items:center;font-size:20px;line-height:1;cursor:pointer;box-shadow:0 1px 4px rgb(0 0 0 / .15);padding:0;min-height:40px}
+.shell[data-theme=dark] .gl-btn{background:rgb(40 48 66 / .9);color:#eee}
+.gl-btn:hover{filter:brightness(.96)}
+.gl-tip{position:absolute;background:#111;color:#fff;font-size:12px;padding:5px 10px;border-radius:8px;pointer-events:none;white-space:nowrap}
+.gl-note{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:13px;color:var(--muted);padding:0 16px;pointer-events:none}
+@media (max-width:899px){.gl-btn{width:44px;height:44px}}
+
+/* 15. Calm pass: fewer lines, borders and buttons. Soft fills carry the structure instead of outlines. */
+.shell{--soft:#f6f6f6}
+.shell[data-theme=dark]{--soft:#202020}
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select,.shell textarea{background:var(--pill);border-color:transparent;box-shadow:none}
+.shell input:focus-visible,.shell select:focus-visible,.shell textarea:focus-visible{background:var(--paper);outline:2px solid var(--focus);outline-offset:0}
+.shell .btn,.shell button.btn,.shell a.btn{background:var(--pill);border-color:transparent;color:var(--pill-ink);box-shadow:none}
+.shell .btn:hover{background:color-mix(in srgb,var(--pill) 85%,var(--ink))}
+.shell .btn.primary,.shell button.btn.primary{background:var(--black);color:var(--paper)}
+.shell .btn.danger{background:transparent;color:var(--bad)}
+.shell td{border-bottom:0}
+.shell th{border-bottom:0;background:transparent;font-size:12px;font-weight:500;color:var(--muted)}
+.shell tbody tr:hover td{background:var(--soft)}
+.shell tbody tr td:first-child{border-radius:10px 0 0 10px}.shell tbody tr td:last-child{border-radius:0 10px 10px 0}
+.shell .metrics,.shell .metric{border:0!important}
+.shell .metrics{padding:0;margin-bottom:var(--sp-5)}
+.shell .metric,.shell .metric:first-child{padding:var(--sp-2) var(--sp-4) var(--sp-2) 0}
+.shell .filters{border-bottom:0;padding-left:0;padding-right:0}
+.shell .launch,.shell .channel-row{border-bottom:0}
+.shell .panel,.shell .record-layout .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain),.shell .record-layout .record-layout>aside .panel:not(.plain){border:0!important;border-radius:16px;background:var(--soft);padding:var(--sp-4);box-shadow:none}
+.shell .record-layout>aside .panel:not(.plain){background:transparent;padding:var(--sp-3) 0}
+.shell .card{background:var(--soft)}
+.shell .work-area{box-shadow:none}
+.shell .page-head .actions{gap:var(--sp-2)}
+.shell .tabs a,.shell .tabs button{border-bottom:0!important}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{background:var(--pill);border-radius:999px}
+.shell .tabs a,.shell .tabs button{padding:0 14px;border-radius:999px}
+@media (max-width:899px){.shell .record-layout .panel:not(.plain),.shell .record-layout>aside .panel:not(.plain){border:0!important;border-radius:20px;background:var(--soft);padding:var(--sp-4)}.shell .filters{border:0;box-shadow:none;background:var(--pill)}.shell .filters input{background:transparent}}
+
+/* one primary action stays visible; the rest live in a single quiet menu */
+.shell details.more-actions{position:relative}
+.shell details.more-actions>summary{list-style:none;cursor:pointer}
+.shell details.more-actions>summary::-webkit-details-marker{display:none}
+.shell details.more-actions[open]>summary{background:var(--black);color:var(--paper)}
+.shell .more-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:200px;display:grid;gap:2px;padding:6px;background:var(--paper);border-radius:14px;box-shadow:0 10px 30px rgb(0 0 0 / .16)}
+.shell .more-menu .btn{justify-content:flex-start;background:transparent;border-radius:10px;width:100%}
+.shell .more-menu .btn:hover{background:var(--pill)}
+.shell .summary-bar,.shell .summary-bar>*{border:0!important;border-radius:0;box-shadow:none!important;background:transparent!important}
+.shell .summary-bar{margin-bottom:var(--sp-4);gap:var(--sp-2)}
+.shell .summary-bar>*{padding-left:0}
+.shell .badge,.shell .pill,.shell .chip,.shell .status{border:0!important}
+.shell .metric>span a,.shell .summary-bar a,.shell .metric>span{border-bottom:0!important;text-decoration:none!important}
+.shell .metric>span{color:var(--muted)}
+.shell .summary-bar span,.shell .summary-bar label{color:var(--muted);font-weight:500}
+@media (max-width:899px){.shell tbody tr{border-bottom:0!important}.shell tbody tr:not(:last-child){margin-bottom:var(--sp-1)}}
+
+/* 16. Typography: one family (Inter), one scale, same hierarchy as Shopify. Desktop is compact, phone is larger for touch. */
+.shell,.shell button,.shell input,.shell select,.shell textarea{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-synthesis:none;letter-spacing:-.003em}
+.shell{font-size:13px;line-height:1.5;font-weight:450;color:var(--ink)}
+.shell .work p,.shell .work li,.shell .work td,.shell .work label,.shell .work input,.shell .work select,.shell .work textarea{font-size:13px;line-height:1.5;font-weight:450}
+.shell .work small,.shell .muted,.shell .compact-copy,.shell th,.shell .metric>small{font-size:12px;line-height:1.4;font-weight:450;color:var(--muted)}
+.shell .topbar .breadcrumb strong{font-size:14px;font-weight:650}
+.shell .page-head h1,.shell .work h1{font-size:20px;font-weight:650;line-height:1.25;letter-spacing:-.015em}
+.shell .page-head:has(.trail) h1{font-size:24px}
+.shell .work h2,.shell .panel-title h2{font-size:14px;font-weight:650;line-height:1.35}
+.shell .work h3{font-size:13px;font-weight:650}
+.shell .btn,.shell button.btn,.shell a.btn{font-size:13px;font-weight:550}
+.shell .badge,.shell .pill{font-size:12px;font-weight:550}
+.shell .metric>strong{font-size:20px;font-weight:650;letter-spacing:-.01em}
+.shell .side-nav a{font-size:13px;font-weight:550}
+.shell.settings-mode .page-head h1,.shell.settings-direct .page-head h1{font-size:28px;font-weight:600}
+@media (max-width:899px){
+  .shell,.shell .work p,.shell .work li,.shell .work td,.shell .work label,.shell .work input,.shell .work select,.shell .work textarea{font-size:16px;line-height:1.45}
+  .shell .work small,.shell .muted,.shell .compact-copy,.shell th,.shell .metric>small{font-size:14px}
+  .shell .page-head h1,.shell .work h1{font-size:30px;font-weight:700;letter-spacing:-.02em}
+  .shell .page-head:has(.trail) h1{font-size:28px}
+  .shell .work h2,.shell .panel-title h2{font-size:18px;font-weight:650}
+  .shell .work h3{font-size:16px}
+  .shell .btn,.shell button.btn,.shell a.btn{font-size:16px}
+  .shell .badge,.shell .pill{font-size:14px}
+  .shell .metric>strong{font-size:22px}
+  .shell td:first-child{font-size:17px}
+}
+
+/* 17. quiet row actions and one label style for every stat */
+.shell td .btn:not(.primary),.shell td a.btn:not(.primary){background:transparent;color:var(--muted);padding:0 8px;min-height:28px;font-weight:550}
+.shell td .btn:not(.primary):hover{background:var(--pill);color:var(--ink)}
+.shell td .btn.danger{color:var(--bad)}
+.shell .metric>span:first-child,.shell .metric>span:first-child a{font-size:13px!important;font-weight:500!important;color:var(--muted)!important;line-height:1.3}
+.shell .metric>strong{font-size:22px}
+@media (max-width:899px){.shell td .btn:not(.primary){font-size:15px;min-height:36px}.shell .metric>span:first-child{font-size:14px!important}}
+
+/* 18. Logo row like Shopify: app icon at the left, collapse button at the right; collapsed = icon rail */
+.shell .sidebar-head .brand-row{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 0}
+.shell .brand img.brand-icon{width:34px;height:34px;border-radius:9px;display:block;filter:none!important;box-shadow:0 1px 3px rgb(0 0 0 / .4)}
+.shell .sidebar-head .brand img{width:34px!important;height:34px!important}
+.shell .side-toggle{width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:#bdbdbd;cursor:pointer;padding:0}
+.shell .side-toggle:hover{background:rgb(255 255 255 / .1);color:#fff}
+@media (min-width:900px){
+  .shell.side-collapsed .work-layout{grid-template-columns:64px minmax(0,1fr)}
+  .shell.side-collapsed .sidebar{padding-inline:8px;overflow:hidden}
+  .shell.side-collapsed .sidebar-head .brand-row{flex-direction:column;gap:10px;padding:0}
+  .shell.side-collapsed .side-search,.shell.side-collapsed .side-nav .nav-label,.shell.side-collapsed .side-nav a.sub,.shell.side-collapsed .sidebar-bottom .sidebar-alerts span{display:none}
+  .shell.side-collapsed .side-nav a,.shell.side-collapsed .sidebar-settings,.shell.side-collapsed .workspace-id{font-size:0;justify-content:center;padding-inline:0}
+  .shell.side-collapsed .workspace-id strong{display:none}
+  .shell.side-collapsed .sidebar-store-row{grid-template-columns:1fr}
+}
+
+/* 19. record pages: the trail moves into the top bar */
+.shell .work.has-crumb .page-head .trail{display:none}
+.shell .breadcrumb.is-record{display:flex!important;align-items:center;gap:8px;min-width:0}
+.shell .breadcrumb.is-record strong{font-size:14px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell .breadcrumb.is-record .crumb-parent{color:var(--muted);font-size:14px;text-decoration:none}
+.shell .breadcrumb.is-record span{color:var(--muted)}
+.shell .back-circle{width:32px;height:32px;border-radius:50%;background:var(--pill);display:grid;place-items:center;color:var(--ink);flex:none}
+.shell .back-circle:hover{filter:brightness(.94)}
+@media (max-width:899px){.shell .topbar .breadcrumb.is-record .crumb-parent,.shell .topbar .breadcrumb.is-record span{display:none}.shell .topbar .mobile-page-name{display:none}.shell .back-circle{width:44px;height:44px}}
+@media (max-width:899px){
+  .shell .back-circle{width:36px;height:36px}
+  .shell .topbar:has(.is-record) .mobile-brand{display:none}
+  .shell .mobile-brand img{width:34px!important;height:34px!important;border-radius:9px}
+  .shell .work.has-crumb{padding-top:calc(var(--sp-4) + 8px)}
+}
+
+/* 20. phone Inventory rows: product + variant on top, three labelled counts below, actions last */
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Variant]){display:flex!important;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:var(--sp-3) 0}
+  .shell tbody tr:has(td[data-label=Variant]) td{display:inline-flex!important;width:auto!important;padding:0!important;border:0!important;min-height:0!important;height:auto!important;font-size:14px;color:var(--muted)}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Product]{flex:1 1 60%!important;font-size:17px;font-weight:650;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Variant]{order:1;font-weight:550;color:var(--ink)}
+  .shell tbody tr:has(td[data-label=Variant])::after{content:"";flex-basis:100%;order:2;height:0}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=SKU],.shell tbody tr:has(td[data-label=Variant]) td[data-label=Unavailable],.shell tbody tr:has(td[data-label=Variant]) td[data-label=Cost],.shell tbody tr:has(td[data-label=Variant]) td[data-label="Other locations"]{display:none!important}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Available],.shell tbody tr:has(td[data-label=Variant]) td[data-label=Committed],.shell tbody tr:has(td[data-label=Variant]) td[data-label="On hand"]{order:3}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label]::before{content:attr(data-label) "\00a0"!important;color:var(--muted);font-weight:450;display:inline!important}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Product]::before,.shell tbody tr:has(td[data-label=Variant]) td[data-label=Variant]::before{content:none!important}
+  .shell tbody tr:has(td[data-label=Variant]) td[data-label=Available]::after{content:none!important}
+  .shell tbody tr:has(td[data-label=Variant]) td:last-child{order:5;margin-left:auto}
+}
+.shell td[data-label=Product] a{color:var(--ink)!important}

@@ -63,7 +63,7 @@ export function toOrder(o) {
     payment: o.paymentStatus === 'paid' ? 'Paid' : o.paymentStatus === 'failed' ? 'Failed' : 'Pending',
     status: o.fulfilmentStatus === 'partial' && o.status !== 'cancelled' && o.status !== 'returned' ? 'Partially fulfilled' : o.status === 'fulfilled' ? 'Fulfilled' : o.status === 'cancelled' ? 'Cancelled' : o.status === 'returned' ? 'Returned' : 'Unfulfilled',
     channel: o.channel === 'in_store' ? 'In-store' : 'Online store', fulfilment: o.fulfilmentStatus || 'unfulfilled', delivery: o.deliveryStatus || 'none', oversold: !!o.oversold, shipments: o.shipments || [], remaining: o.remaining || [], quantity: (o.lines || []).reduce((s, l) => s + (l.qty || 1), 0), date: String(o.createdAt || '').slice(0, 10),
-    customerId: o.customerId || '', contact: o.customer || {}, paymentMethod: o.paymentMethod || '', subtotal: Number(o.subtotal || 0), shippingFee: Number(o.shipping || 0), taxAmount: Number(o.tax || 0), discountCode: o.discountCode || '', discountAmount: Number(o.discountAmount || 0), attribution: o.attribution || {}, isTest: !!o.isTest, refunded: Number(o.refundedAmount || 0), refundState: o.refundState || 'none', refunds: o.refunds || [], cancelReason: o.cancelReason || '', item: (o.lines || [])[0]?.name || '', note: o.note || '', tracking: o.tracking || '', lines: o.lines || [], timeline: o.timeline || [],
+    tags: o.tags || [], archived: !!o.archived, customerId: o.customerId || '', contact: o.customer || {}, paymentMethod: o.paymentMethod || '', subtotal: Number(o.subtotal || 0), shippingFee: Number(o.shipping || 0), taxAmount: Number(o.tax || 0), discountCode: o.discountCode || '', discountAmount: Number(o.discountAmount || 0), attribution: o.attribution || {}, isTest: !!o.isTest, refunded: Number(o.refundedAmount || 0), refundState: o.refundState || 'none', refunds: o.refunds || [], cancelReason: o.cancelReason || '', item: (o.lines || [])[0]?.name || '', note: o.note || '', tracking: o.tracking || '', lines: o.lines || [], timeline: o.timeline || [],
   };
 }
 
@@ -88,12 +88,13 @@ export async function refreshVisitors(days = 14) { try { state.visitors = await 
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
 export async function refreshInsights() {
   const [funnel, profit, inventory, rfm, cohorts, sessions] = await Promise.all([api('sfx_report_funnel', { p_days: 30 }), api('sfx_report_profit', { p_days: 30 }), api('sfx_report_inventory', { p_days: 30 }), api('sfx_report_rfm'), api('sfx_report_cohorts', { p_months: 6 }), api('sfx_report_sessions', { p_days: 30 })]);
-  state.insights = { funnel, profit, inventory, rfm, cohorts, sessions };
+  let layout = null; try { layout = await api('sfx_dashboard_layout_get'); } catch (e) { layout = null; }
+  state.insights = { funnel, profit, inventory, rfm, cohorts, sessions, layout };
 }
 export async function refreshAccess() {
-  const [audit, staff, messages, bills, keys, route, settlements] = await Promise.all([api('sfx_audit_list', { p_limit: 100 }).catch(() => null), api('sfx_staff_security').catch(() => null), api('sfx_message_log', { p_limit: 100 }).catch(() => []), api('sfx_billing_history').catch(() => null),
-    api('sfx_api_key_list').catch(() => null), api('sfx_route_status').catch(() => null), api('sfx_settlement_list', { p_limit: 50 }).catch(() => null)]);
-  state.access = { audit, staff, messages, bills, keys, route, settlements };
+  const [audit, staff, messages, bills, keys, route, settlements, hooks] = await Promise.all([api('sfx_audit_list', { p_limit: 100 }).catch(() => null), api('sfx_staff_security').catch(() => null), api('sfx_message_log', { p_limit: 100 }).catch(() => []), api('sfx_billing_history').catch(() => null),
+    api('sfx_api_key_list').catch(() => null), api('sfx_route_status').catch(() => null), api('sfx_settlement_list', { p_limit: 50 }).catch(() => null), api('sfx_webhook_list').catch(() => null)]);
+  state.access = { audit, staff, messages, bills, keys, route, settlements, hooks };
 }
 export async function refreshBlog() { state.blog = await api('sfx_blog_list'); }
 export async function refreshRedirects() { state.redirects = await api('sfx_redirect_list'); }

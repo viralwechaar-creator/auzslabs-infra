@@ -118,5 +118,24 @@ export default async function run({ browser, stack }) {
     assert((await q("select count(*)::int n from sfx_redirects where tenant_id=$1 and from_path='/screen-old'", [tid]))[0].n === 1, 'redirect not saved from screen');
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Public store: blog posts from the dashboard show, an old product address redirects, a handle address works', async () => {
+    const ctx = await newCtx(browser, stack, { w: 420, h: 900 }); const pg = await ctx.newPage(); const errs = watch(pg);
+    const post = unwrap(await call('sfx_blog_save', { p_id: null, p: { title: 'Journal Visible Post', body: 'These are the words of the post.', status: 'published' } }));
+    const h = (await q('select handle from sfx_products where id=$1', [pr.id]))[0].handle;
+    await q("delete from sfx_redirects where tenant_id=$1 and from_path='/products/legacy-tee'", [tid]);
+    await q("insert into sfx_redirects (tenant_id, from_path, to_path) values ($1, '/products/legacy-tee', $2)", [tid, '/products/' + h]);
+    await pg.goto(stack.url('testcafe', '/store.html#/blog'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    let t = await pg.locator('#view').innerText();
+    assert(/journal visible post/i.test(t), t.slice(0, 300));
+    await pg.goto(stack.url('testcafe', '/store.html#/blog/' + post.handle), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    t = await pg.locator('#view').innerText();
+    assert(/words of the post/i.test(t), t.slice(0, 300));
+    await pg.goto(stack.url('testcafe', '/store.html#/p/legacy-tee'), { waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    assert(pg.url().includes('#/p/' + pr.id), pg.url());
+    assert(/content tee/i.test(await pg.locator('#view').innerText()), 'product page not shown after redirect');
+    await pg.goto(stack.url('testcafe', '/store.html#/p/' + h), { waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    assert(pg.url().includes('#/p/' + pr.id), 'handle address did not open the product: ' + pg.url());
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }

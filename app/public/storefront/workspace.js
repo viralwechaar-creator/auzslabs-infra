@@ -49,13 +49,14 @@ function home() {
 const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']];
 function orderBar() {
   const o = lb.orders;
-  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer or discount code" value="' + esc(o.q) + '">' +
+  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer, tag or discount code" value="' + esc(o.q) + '">' +
     '<select id="ol-pay" aria-label="Payment"><option value="">All payments</option>' + [['paid', 'Paid'], ['pending', 'Pending']].map(([v, t]) => '<option value="' + v + '"' + (o.pay === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
+    '<select id="ol-arch" aria-label="Archived orders">' + [['', 'Hide archived'], ['all', 'Show archived too'], ['only', 'Only archived']].map(([v, t]) => '<option value="' + v + '"' + (o.arch === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
     sortSel('ol-sort', [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Total, high to low'], ['low', 'Total, low to high']], o.sort) + '</div>';
 }
 function ordersList() {
   const o = lb.orders, q = o.q.trim().toLowerCase();
-  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q) || (x.discountCode || '').toLowerCase() === q) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
+  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q) || (x.discountCode || '').toLowerCase() === q || (x.tags || []).includes(q)) && (o.arch === 'only' ? x.archived : o.arch === 'all' ? true : !x.archived) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
   list = list.slice().sort(o.sort === 'old' ? (a, b) => cmp(a.date, b.date) : o.sort === 'high' ? (a, b) => b.total - a.total : o.sort === 'low' ? (a, b) => a.total - b.total : (a, b) => cmp(b.date, a.date));
   const rows = table(['Order', 'Date', 'Customer', 'Total', 'Payment', 'Fulfillment'], list.map((o) => [
     link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status),
@@ -105,10 +106,12 @@ function orderDetail(id) {
   const o = state.orders.find((x) => x.id === id);
   if (!o) return head('Order unavailable', 'This order could not be found.', wl('All orders', 'orders'));
   const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [(l.productId ? '<a href="' + pathFor('products/' + encodeURIComponent(l.productId)) + '">' + esc(l.name) + '</a>' : esc(l.name)) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
-  const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
+  const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + (e.kind === 'comment' ? esc(e.by || 'Staff') + ': ' : '') + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
   const left = (o.remaining || []).reduce((a, r) => a + r.qty, 0);
   const closed = ['Cancelled', 'Returned'].includes(o.status);
   const actions = canWrite() && !closed ? (left > 0 && o.status !== 'Fulfilled' ? button('Fulfil items', 'order-fulfill:' + o.id, 'primary') : '') + (o.fulfilment === 'unfulfilled' && o.status !== 'Fulfilled' ? button('Cancel order', 'order-cancel:' + o.id) : button('Start a return', 'return-new:' + o.id)) : '';
+  const editBtn = canWrite() && !closed && o.fulfilment === 'unfulfilled' && !(o.shipments || []).some((x) => x.status !== 'cancelled') ? button('Edit items', 'order-edit:' + o.id) : '';
+  const archiveBtn = canWrite() && (closed || o.status === 'Fulfilled' || o.archived) ? button(o.archived ? 'Restore from archive' : 'Archive', 'order-archive:' + o.id + ':' + (o.archived ? 'off' : 'on')) : '';
   const dlabel = { none: 'Not shipped', in_transit: 'In transit', partly_delivered: 'Partly delivered', delivered: 'Delivered', failed: 'Delivery failed' }[o.delivery] || 'Not shipped';
   const ships = (o.shipments || []).filter((x) => x.status !== 'cancelled').map((x) => {
     const next = { shipped: [['in_transit', 'Mark in transit'], ['delivered', 'Mark delivered']], in_transit: [['delivered', 'Mark delivered'], ['failed', 'Delivery failed']], failed: [['in_transit', 'Retry delivery']] }[x.status] || [];
@@ -122,11 +125,11 @@ function orderDetail(id) {
   const refundPanel = panel('Refunds', body('<div class="stack">' + (refundRows || '<p class="empty">Nothing refunded.</p>') + (o.refunded > 0 ? '<p class="compact-copy">Refunded ' + money(o.refunded) + ' of ' + money(o.total) + '.</p>' : '') +
     (canRefund ? button('Record a refund', 'refund-new:' + o.id) : '') + (canWrite() ? button(o.isTest ? 'Unmark test order' : 'Mark as test order', 'order-test:' + o.id + ':' + (o.isTest ? 'off' : 'on')) : '') + '</div>'));
   const shipPanel = panel('Fulfilment', body('<div class="stack">' + (ships || '<p class="empty">Nothing shipped yet.</p>') + (left > 0 && (o.shipments || []).length ? '<p class="compact-copy">' + left + ' item(s) still to ship.</p>' : '') + '</div>'));
-  return head('Order #' + esc(o.number) + (o.isTest ? ' (test)' : ''), dateValue(o.date), actions, ['orders', 'Orders']) +
+  return head('Order #' + esc(o.number) + (o.isTest ? ' (test)' : '') + (o.archived ? ' (archived)' : ''), dateValue(o.date), actions + editBtn + archiveBtn, ['orders', 'Orders']) +
     '<div class="record-layout"><div>' + panel('Items', lines) + shipPanel + refundPanel + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfilment</div>' + status(o.status) + '</div><div class="launch"><div class="info">Delivery</div><strong>' + dlabel + '</strong></div><div class="launch"><div class="info">Channel</div><strong>' + esc(o.channel) + (o.oversold ? ' · oversold, check stock' : '') + '</strong></div></div>')) +
     ((state.returns || []).filter((r) => r.orderId === o.id).length ? panel('Returns', body('<div class="stack">' + (state.returns || []).filter((r) => r.orderId === o.id).map((r) => '<div class="launch"><div class="info">' + (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', ') + '<small>' + esc(r.reason || '') + '</small></div>' + badge({ requested: 'Requested', approved: 'Approved', rejected: 'Rejected', received: 'Received', refunded: 'Refunded' }[r.status] || esc(r.status)) + '</div>').join('') + '<a href="' + pathFor('returns') + '">All returns</a></div>')) : '') +
-    panel('Timeline', body('<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
-    '</div><aside>' + panel('Customer', body('<div class="stack"><p>' + (o.customerId ? '<a href="#" data-action="customer-detail:' + esc(o.customerId) + '">' + esc(o.customer || '—') + '</a>' : esc(o.customer || '—')) + '</p>' + (o.contact.phone ? '<small>' + esc(o.contact.phone) + '</small>' : '') + (o.contact.email ? '<small>' + esc(o.contact.email) + '</small>' : '') + (o.contact.address ? '<small>' + esc([o.contact.address, o.contact.city, o.contact.state, o.contact.pin].filter(Boolean).join(', ')) + '</small>' : '') + (o.discountCode ? '<small>Discount: <a href="' + pathFor('discounts') + '">' + esc(o.discountCode) + '</a> (−' + money(o.discountAmount) + ')</small>' : '') + (o.attribution && (o.attribution.source || o.attribution.campaign) ? '<small>Came from: ' + esc([o.attribution.source, o.attribution.medium, o.attribution.campaign].filter(Boolean).join(' / ')) + '</small>' : '') + '</div>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
+    panel('Timeline', body((canWrite() ? editForm('order-comment', o.id, area('Leave a comment (only your team sees this)', 'text', '', 'maxlength="1000" required'), 'Post') : '') + '<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
+    '</div><aside>' + panel('Tags', body('<div class="stack">' + ((o.tags || []).length ? '<p>' + o.tags.map((t) => badge(esc(t), 'neutral')).join(' ') + '</p>' : '<p class="empty">No tags.</p>') + (canWrite() ? button('Edit tags', 'order-tags:' + o.id) : '') + '</div>')) + panel('Customer', body('<div class="stack"><p>' + (o.customerId ? '<a href="#" data-action="customer-detail:' + esc(o.customerId) + '">' + esc(o.customer || '—') + '</a>' : esc(o.customer || '—')) + '</p>' + (o.contact.phone ? '<small>' + esc(o.contact.phone) + ' · <a href="https://wa.me/' + esc(String(o.contact.phone).replace(/\D/g, '').replace(/^(\d{10})$/, '91$1')) + '?text=' + encodeURIComponent('Hi ' + (o.customer || '') + ', about your order #' + o.number + ': ') + '" target="_blank" rel="noopener">Message on WhatsApp</a></small>' : '') + (o.contact.email ? '<small>' + esc(o.contact.email) + '</small>' : '') + (o.contact.address ? '<small>' + esc([o.contact.address, o.contact.city, o.contact.state, o.contact.pin].filter(Boolean).join(', ')) + '</small>' : '') + (o.discountCode ? '<small>Discount: <a href="' + pathFor('discounts') + '">' + esc(o.discountCode) + '</a> (−' + money(o.discountAmount) + ')</small>' : '') + (o.attribution && (o.attribution.source || o.attribution.campaign) ? '<small>Came from: ' + esc([o.attribution.source, o.attribution.medium, o.attribution.campaign].filter(Boolean).join(' / ')) + '</small>' : '') + (canWrite() && o.status !== 'Cancelled' ? '<div class="actions">' + button('Edit contact', 'order-contact:' + o.id, 'compact') + (o.fulfilment === 'unfulfilled' ? button('Edit address', 'order-address:' + o.id, 'compact') : '') + (o.customerId ? button('Remove customer', 'order-unlink:' + o.id, 'compact danger') : '') + '</div>' : '') + '</div>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
 }
 
 // ---------- Products ----------
@@ -134,7 +137,7 @@ const productTabs = [['products', 'All products'], ['collections', 'Collections'
 const productLabel = (p) => '<div class="cell-product">' + image(p.image, '', 'thumb') + '<a href="' + pathFor('products/' + encodeURIComponent(p.id)) + '">' + esc(p.name) + '</a>' + '</div>';
 let pf = { status: '', category: '', tag: '', stock: '', sort: '' };
 // search / sort / filter bars shared by the list pages
-const lb = { orders: { q: '', sort: 'new', pay: '' }, customers: { q: '', sort: 'name' } };
+const lb = { orders: { q: '', sort: 'new', pay: '', arch: '' }, customers: { q: '', sort: 'name' } };
 const sortSel = (id, opts, val) => '<select id="' + id + '" aria-label="Sort">' + opts.map(([v, t]) => '<option value="' + v + '"' + (v === val ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>';
 const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 function productsList(query = '') {
@@ -317,7 +320,7 @@ function productDetail(id) {
   }
   const quick = p ? panel('Summary', body('<div class="stack">' + status(r.status) + '<strong>' + money(r.price) + '</strong><small>' + esc(r.stock) + ' available</small></div>')) : '';
   const viewLink = p && r.status === 'Active' && state.store.published && state.tenant?.slug ? link('View on storefront', 'https://' + esc(state.tenant.slug) + '.auzslab.in/store.html?view=p&p=' + encodeURIComponent(p.id)) : '';
-  return head(p ? esc(p.name) : 'Add product', p ? 'Manage its details, media, and variants.' : 'Create a listing for your storefront.', viewLink, ['products', 'Products']) + tabNav + '<div class="record-layout"><div>' + view + '</div><aside>' + quick + '</aside></div>';
+  return head(p ? esc(p.name) : 'Add product', p ? 'Manage its details, media, and variants.' : 'Create a listing for your storefront.', viewLink, ['products', 'Products']) + tabNav + (view.includes('class="product-record"') ? view.replace('</aside>', quick + '</aside>') : '<div class="record-layout"><div>' + view + '</div><aside>' + quick + '</aside></div>');
 }
 // a variant row added purely client-side (no id yet) before the form is submitted
 let pendingVariants = null;
@@ -333,19 +336,35 @@ function collectVariants(formEl) {
 }
 
 // ---------- Online store: overview / theme / domains / payments ----------
-const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']];
+const websiteTabs = [['website', 'Store overview'], ['builder', 'Themes'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']];
 // ---------- Theme marketplace (phase 2, db/375) ----------
 // Real marketplace: built-in Minimal/Classic are now plain rows in sfx_themes (migrated in, not
 // hardcoded), alongside any developer theme an admin has approved. "Install" copies the approved
 // listing's content into this store's OWN install row (sfx_theme_installs) -- editing it later can
 // never touch another store's copy of the same theme, or the developer's original listing.
 const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar', booking: 'Appointment booking' };
+// A theme with no uploaded preview still gets a picture: our two stock images, or a small drawn storefront in the theme's own colour.
+function themePreview(t) {
+  if (t.previewImageUrl) return t.previewImageUrl;
+  const slug = String(t.slug || t.themeSlug || t.name || '').toLowerCase();
+  if (slug === 'minimal') return '/storefront/assets/theme-minimal.svg';
+  if (slug === 'classic') return '/storefront/assets/theme-classic.svg';
+  let h = 0; for (const ch of slug) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  const dark = /stud|noir|black|kiln/.test(slug), bg = dark ? '#161616' : '#f6f4f1', ink = dark ? '#ffffff' : '#171717', acc = 'hsl(' + h + ' 45% ' + (dark ? '55%' : '42%') + ')', tile = dark ? '#2a2a2a' : '#e4dfd8';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="' + bg + '"/><rect x="0" y="0" width="320" height="22" fill="' + ink + '" opacity=".08"/><rect x="12" y="8" width="46" height="6" rx="3" fill="' + ink + '"/>' +
+    '<rect x="236" y="8" width="20" height="6" rx="3" fill="' + ink + '" opacity=".5"/><rect x="262" y="8" width="20" height="6" rx="3" fill="' + ink + '" opacity=".5"/><rect x="12" y="32" width="296" height="64" rx="6" fill="' + acc + '"/>' +
+    '<rect x="24" y="52" width="110" height="10" rx="5" fill="#fff" opacity=".9"/><rect x="24" y="70" width="70" height="7" rx="3.500" fill="#fff" opacity=".6"/>' +
+    [0, 1, 2, 3].map((i) => '<rect x="' + (12 + i * 75) + '" y="108" width="68" height="62" rx="5" fill="' + tile + '"/><rect x="' + (12 + i * 75) + '" y="176" width="40" height="5" rx="2.500" fill="' + ink + '" opacity=".7"/>').join('') + '</svg>';
+  return { svg };
+}
+// the picture markup: an uploaded or stock picture, or the small drawn storefront (built only from fixed shapes and a hue number, never from user text)
+const themePreviewHtml = (t) => { const p = themePreview(t); return typeof p === 'string' ? image(p, t.name) : p.svg.replace('<svg ', '<svg role="img" aria-label="' + esc(t.name || 'Theme') + ' preview" style="width:100%;height:100%;display:block" '); };
 function themeCard(t) {
   const price = t.priceCents > 0 ? money(t.priceCents / 100) : 'Free';
   const buy = t.installed ? badge('Installed') :
     t.priceCents > 0 ? (canWrite() ? button('Buy for ' + price, 'theme-buy:' + t.id, 'primary') : '<p class="compact-copy">Premium theme. Ask an owner or manager to buy it.</p>') :
     canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
-  return '<article class="card"><div class="tile-img">' + (image(t.previewImageUrl, t.name) || '<div class="tile-img placeholder"></div>') +
+  return '<article class="card"><div class="tile-img">' + themePreviewHtml(t) +
     '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
     '<p>' + esc(t.description || (t.isBuiltin ? 'AUZslab first-party theme.' : 'By ' + (t.developerName || 'a theme developer') + '.')) + '</p>' + buy + '</div></article>';
 }
@@ -353,13 +372,13 @@ function installRow(i) {
   const actions = (canWrite() ? button('Customize', 'theme-customize:' + i.id) : '') +
     (canWrite() && !i.active ? button('Make active', 'theme-activate:' + i.id, 'primary') : i.active ? badge('Active on your storefront') : '') +
     (canWrite() ? button('Rename', 'theme-rename:' + i.id, 'compact') + button('Duplicate', 'theme-duplicate:' + i.id, 'compact') + (i.custom && !i.active ? button('Delete', 'theme-delete:' + i.id, 'compact danger') : '') : '');
-  return '<article class="card"><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
+  return '<article class="card"><div class="tile-img">' + themePreviewHtml({ slug: i.themeName, name: i.themeName }) + '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
     '<p class="compact-copy">' + (i.custom ? 'Your own theme.' : i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' ' + (i.custom ? 'Created' : 'Installed') + ' ' + dateValue(i.installedAt) + '.</p>' + actions + '</div></article>';
 }
 function themePage() {
   const owned = new Set(state.installs.filter((i) => !i.custom).map((i) => i.themeId));
   const market = state.marketplace.map((t) => ({ ...t, installed: owned.has(t.id) }));
-  return head('Theme', 'Browse the theme marketplace, install a theme, and customize what you install.', canWrite() ? button('Import ZIP', 'theme-import') + button('New theme', 'theme-new', 'primary') : '') + tabs('builder', websiteTabs) +
+  return head('Themes', 'Browse the theme marketplace, install a theme, and customize what you install.', canWrite() ? button('Import ZIP', 'theme-import') + button('New theme', 'theme-new', 'primary') : '') + tabs('builder', websiteTabs) +
     panel('Your installed themes', state.installs.length ? '<div class="cards">' + state.installs.map(installRow).join('') + '</div>' : body('<p class="compact-copy">You haven’t installed a theme yet. Install one from the marketplace below.</p>')) +
     panel('Theme marketplace', body('<p class="compact-copy">Prices on this page are always current and are set by AUZslab. Free themes install instantly; premium themes are bought once with a secure payment and install straight away.</p>') + '<div class="cards">' + market.map(themeCard).join('') + '</div>') +
     panel('Sell your own theme', body('<p class="compact-copy">Building and selling themes to other AUZslab stores happens in the <a href="/theme-dev.html" target="_blank" rel="noopener">theme developer portal</a>, a separate login area for developers.</p>'));
@@ -678,6 +697,13 @@ function apiPanels() {
     out.push(panel('API keys', body('<p class="compact-copy">Let another program read your orders, products and stock. Keys can only read, and only your own shop. Read the list at <code>/storefront-api/v1/orders</code>, <code>/products</code> and <code>/inventory</code> with the header <code>Authorization: Bearer your-key</code>.</p>' +
       table(['Name', 'Starts with', 'Created', 'Last used', ''], a.keys.map((k) => [esc(k.name), '<code>' + esc(k.prefix) + '…</code>', dateValue(k.createdAt), k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('en-IN') : 'Never', k.revoked ? badge('Revoked', 'warn') : (canWrite() ? button('Revoke', 'apikey-revoke:' + k.id, 'compact danger') : '')])) + (canWrite() ? button('Create a key', 'apikey-new', 'primary') : '')), ''));
   }
+  if (a.hooks) {
+    const st = (h) => !h.active ? badge('Off', 'neutral') : h.lastStatus === 'failing' ? badge('Failing', 'warn') : h.lastStatus === 'ok' ? badge('Working') : badge('Waiting for the first event', 'neutral');
+    out.push(panel('Webhooks', body('<p class="compact-copy">Tell another system the moment something happens in your store. We send a signed message to your https address. If it does not answer, we try again several times over about 15 hours.</p>' +
+      (canWrite() ? button('Add a webhook', 'webhook-new', 'primary') : '') +
+      table(['Address', 'Events', 'Status', 'Waiting', 'Failed (7 days)', ''], (a.hooks.hooks || []).map((h) => ['<code style="word-break:break-all">' + esc(h.url) + '</code>', esc((h.events || []).join(', ')), st(h), h.pending, h.failed,
+        button('Deliveries', 'webhook-log:' + h.id, 'compact') + (canWrite() ? button('Send a test', 'webhook-test:' + h.id, 'compact') + button(h.active ? 'Turn off' : 'Turn on', 'webhook-set:' + h.id + ':' + (h.active ? 'off' : 'on'), 'compact') + button('Remove', 'webhook-delete:' + h.id, 'compact danger') : '')])))));
+  }
   if (a.route) {
     const r = a.route; const label = { not_started: 'Not set up', pending: 'Waiting for details', needs_info: 'Needs more information', active: 'Active', suspended: 'Paused' }[r.status] || r.status;
     out.push(panel('Payouts through AUZslab', body('<p class="compact-copy">Status: ' + badge(label, r.status === 'active' ? '' : 'neutral') + (r.bankLast4 ? ' · Bank account ending ' + esc(r.bankLast4) : '') + '</p>' +
@@ -844,15 +870,20 @@ function categoriesPage() {
 // ---------- Orders: Drafts, Returns, Shipping, Abandoned checkouts ----------
 const variantOptions = () => (state.inventory || []).map((v) => [v.variantId, v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '') + ' (' + v.online + ' left)']);
 function draftsPage() {
-  const rows = (state.drafts || []).map((d) => [esc(d.customer.name || '—'), (d.lines || []).reduce((s, l) => s + l.qty, 0) + ' items', money(d.total), d.status === 'open' ? badge('Open', 'neutral') : (d.orderId ? '<a href="' + pathFor('orders/' + d.orderId) + '">' + badge('Converted') + '</a>' : badge('Converted')),
+  const rows = (state.drafts || []).map((d) => [esc(d.customer.name || '—'), (d.lines || []).reduce((s, l) => s + l.qty, 0) + ' items', money(d.total) + (d.discount > 0 || d.shipping > 0 ? '<small> (' + [d.discount > 0 ? 'discount ' + money(d.discount) : '', d.shipping > 0 ? 'shipping ' + money(d.shipping) : ''].filter(Boolean).join(', ') + ')</small>' : '') + (d.payLater ? ' ' + badge('Pay later', 'warn') : ''), d.status === 'open' ? badge('Open', 'neutral') : (d.orderId ? '<a href="' + pathFor('orders/' + d.orderId) + '">' + badge('Converted') + '</a>' : badge('Converted')),
     d.status === 'open' && canWrite() ? button('Create order', 'draft-convert:' + d.id, 'compact primary') + button('Delete', 'draft-delete:' + d.id, 'compact danger') : '']);
   return head('Draft orders', 'Create an order by hand for a phone or in-person sale.', canWrite() ? button('Create draft', 'draft-new', 'primary') : '') + tabs('drafts', orderTabs) + panel('All drafts', table(['Customer', 'Items', 'Total', 'Status', ''], rows));
 }
 function draftForm() {
   const opts = [['', 'Choose a product']].concat(variantOptions());
-  const slot = (i) => '<div class="field-grid wide">' + select('Product ' + (i + 1), 'v' + i, opts, '') + input('Quantity', 'q' + i, i === 0 ? '1' : '', 'number', 'min="1" step="1"') + '</div>';
+  const slot = (i) => '<div class="field-grid wide">' + select('Product ' + (i + 1), 'v' + i, opts, '') + input('Quantity', 'q' + i, i === 0 ? '1' : '', 'number', 'min="1" step="1"') + input('Price (optional)', 'p' + i, '', 'number', 'min="0" step="0.01"') + '</div>';
   return editForm('draft-record', '', input('Customer name', 'name', '', 'text', 'required maxlength="120"') + input('Phone', 'phone', '', 'tel') + input('Address', 'address') + input('City', 'city') + input('PIN code', 'pin') +
-    slot(0) + slot(1) + slot(2) + area('Note', 'note', '', 'maxlength="1000"'), 'Save draft');
+    slot(0) + slot(1) + slot(2) +
+    '<p class="compact-copy wide">Leave the price empty to use the catalogue price. A custom item has no stock.</p>' +
+    '<div class="field-grid wide">' + input('Custom item name', 'cname', '', 'text', 'maxlength="120"') + input('Custom item price (Rs)', 'cprice', '', 'number', 'min="0" step="0.01"') + input('Custom item quantity', 'cq', '', 'number', 'min="0" step="1"') + '</div>' +
+    '<div class="field-grid wide">' + select('Discount', 'dkind', [['', 'No discount'], ['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)']], '') + input('Discount value', 'dval', '', 'number', 'min="0" step="0.01"') + input('Discount reason', 'dnote', '', 'text', 'maxlength="120"') + '</div>' +
+    '<div class="field-grid wide">' + input('Shipping name', 'slabel', '', 'text', 'maxlength="60" placeholder="Local delivery"') + input('Shipping charge (Rs, 0 = free)', 'sfee', '0', 'number', 'min="0" step="0.01"') + select('Payment', 'payterms', [['now', 'Collect when the order is created'], ['later', 'Payment due later']], 'now') + '</div>' +
+    area('Note', 'note', '', 'maxlength="1000"'), 'Save draft');
 }
 const RETURN_NEXT = { requested: [['approved', 'Approve', 'primary'], ['rejected', 'Reject', '']], approved: [['received', 'Mark received', 'primary']], received: [['refunded', 'Refund', 'primary']] };
 function returnsPage() {
@@ -979,6 +1010,15 @@ function storePagesPage(bare) {
   return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
     panel('Store pages', '<div class="filters"><input id="pg-query" type="search" aria-label="Search pages" placeholder="Search pages" value="' + esc(pgf.q) + '"><select id="pg-status" aria-label="Filter by visibility">' + ['', 'Visible', 'Hidden', 'Scheduled'].map((o) => '<option value="' + o + '"' + (o === pgf.status ? ' selected' : '') + '>' + (o || 'All visibility') + '</option>').join('') + '</select></div>' + bulk + '<div id="pages-results">' + pagesList() + '</div>');
 }
+const DEFAULT_LAYOUT = ['sales', 'orders', 'funnel', 'profit', 'inventory', 'customers', 'cohorts'];
+const LAYOUT_NAMES = { sales: 'Sales', orders: 'Orders right now', funnel: 'Visitor funnel', inventory: 'Inventory', customers: 'Customers by recency and spend', profit: 'Sales and profit', cohorts: 'Customers who came back' };
+let layoutDraft = null;
+function layoutDialogBody() {
+  const on = layoutDraft, off = Object.keys(LAYOUT_NAMES).filter((k) => !on.includes(k));
+  return '<div class="stack">' + on.map((k, i) => '<div class="launch"><div class="info"><strong>' + esc(LAYOUT_NAMES[k]) + '</strong></div>' + button('Up', 'layout-move:' + k + ':up', 'compact') + button('Down', 'layout-move:' + k + ':down', 'compact') + button('Hide', 'layout-hide:' + k, 'compact danger') + '</div>').join('') +
+    (off.length ? '<p class="compact-copy">Hidden cards</p>' + off.map((k) => '<div class="launch"><div class="info">' + esc(LAYOUT_NAMES[k]) + '</div>' + button('Show', 'layout-show:' + k, 'compact') + '</div>').join('') : '') +
+    '<div>' + button('Save', 'layout-save', 'primary') + button('Cancel', 'close-dialog') + '</div></div>';
+}
 function insightsPage() {
   const r = state.insights; if (!r) return head('Insights', 'Loading your reports...', '');
   const pct = (v) => v == null ? '—' : Number(v) + '%';
@@ -993,7 +1033,12 @@ function insightsPage() {
     '<p class="compact-copy">Stock value at cost: ' + money(r.inventory.stockValueAtCost) + (r.inventory.stockWithoutCost ? ' · ' + r.inventory.stockWithoutCost + ' item(s) in stock have no cost entered.' : '') + '</p>');
   const cust = panel('Customers by recency, frequency and spend', table(['Group', 'Customers', 'Spent'], (r.rfm.segments || []).map((x) => [esc(x.segment), x.customers, money(x.money)])));
   const coh = panel('Customers who came back', table(['First order month', 'Customers', 'Came back later'], (r.cohorts || []).map((c) => [dateValue(c.month), c.customers, (c.retention || []).slice(1).map((k) => '+' + k.monthsLater + 'm: ' + k.returned).join(' · ') || '—'])));
-  return head('Insights', 'Funnel, sales, profit, stock and customer reports. Cancelled and test orders are never counted.', '') + funnel + profit + inv + cust + coh;
+  const live = state.orders.filter((x) => x.status !== 'Cancelled' && !x.isTest);
+  const sales = panel('Sales (last ' + pf.days + ' days)', '<div class="metrics">' + metric('Orders', pf.orders, 'Counted orders') + metric('Gross sales', money(pf.grossSales), 'Before refunds') + metric('Average order', pf.orders ? money(pf.grossSales / pf.orders) : '—', 'Per order') + '</div>');
+  const ord = panel('Orders right now', '<div class="metrics">' + metric('To fulfil', live.filter((x) => x.status === 'Unfulfilled' || x.status === 'Partially fulfilled').length, 'Waiting to ship') + metric('Fulfilled', live.filter((x) => x.status === 'Fulfilled').length, 'Shipped') + metric('Cancelled', state.orders.filter((x) => x.status === 'Cancelled').length, 'Not counted in reports') + '</div>');
+  const cards = { sales, orders: ord, funnel, inventory: inv, customers: cust, profit, cohorts: coh };
+  const layout = (r.layout && r.layout.length ? r.layout : DEFAULT_LAYOUT).filter((k) => cards[k]);
+  return head('Insights', 'Funnel, sales, profit, stock and customer reports. Cancelled and test orders are never counted.', canWrite() ? button('Choose cards', 'layout-open') : '') + layout.map((k) => cards[k]).join('');
 }
 function blogPage() {
   const rows = (state.blog || []).map((b) => [esc(b.title), '<code>/blog/' + esc(b.handle) + '</code>', badge(b.status === 'published' ? 'Published' : 'Draft', b.status === 'published' ? '' : 'neutral'), dateValue(b.updatedAt),
@@ -1033,8 +1078,7 @@ function contentPage(id) {
   if (id === 'data') return head('Custom data', 'Define extra details you want to keep for products, customers or orders.', canWrite() ? button('Add field', 'field-new', 'primary') : '') + tabs(id, contentTabs) +
     panel('Field definitions', table(['Name', 'Applies to', 'Value type', ''], fields.map((f) => [esc(f.name), esc(f.appliesTo), esc(f.valueType), rowActions('field', f.id)])));
   return head('Content', 'Manage the pages, files and custom data that feed your site.') + tabs('content', contentTabs) +
-    '<div class="metrics">' + metric('Pages', pages.length, pages.filter((x) => x.status === 'Visible').length + ' visible') + metric('Files', files.length, 'Media library') + metric('Custom fields', fields.length, 'Definitions') + '</div>' +
-    panel('Website content', body('<div class="stack">' + wl('Pages and menus', 'pages') + wl('Files', 'files') + wl('Custom data', 'data') + '</div>'));
+    '<div class="metrics">' + metric('Pages', pages.length, pages.filter((x) => x.status === 'Visible').length + ' visible') + metric('Files', files.length, 'Media library') + metric('Custom fields', fields.length, 'Definitions') + '</div>';
 }
 function fileForm(f) { return editForm('file-record', f?.id, input('Name', 'name', f?.name || '', 'text', 'required maxlength="120"') + select('Type', 'type', ['Image', 'Document', 'Video', 'Other'], f?.type || 'Image') + input('Link (https://...)', 'url', f?.url || '', 'url', 'required')); }
 function fieldForm(f) { return editForm('field-record', f?.id, input('Field name', 'name', f?.name || '', 'text', 'required maxlength="80"') + select('Applies to', 'appliesTo', ['Products', 'Customers', 'Orders', 'Collections'], f?.appliesTo || 'Products') + select('Value type', 'valueType', ['Text', 'Number', 'Yes or no', 'Date', 'List'], f?.valueType || 'Text'), 'Save field'); }
@@ -1082,12 +1126,16 @@ function returnDetail(id) {
 
 // ---------- Roles ----------
 const STORE_PERMS = [['sfx_view', 'View products, orders and customers'], ['sfx_manage', 'Edit products, orders, theme, payments and domains']];
+// Finer keys (db/427). They only narrow a role that can edit the store: a role with "edit" and nothing said about a key keeps it, except Staff and security.
+const FINE_PERMS = [['sfx_orders', 'Orders and shipments'], ['sfx_products', 'Products and stock'], ['sfx_customers', 'Customers and store credit'], ['sfx_marketing', 'Discounts and campaigns'],
+  ['sfx_content', 'Blog, pages and redirects'], ['sfx_settings', 'Store settings, tax and checkout'], ['sfx_refunds', 'Refunds'], ['sfx_staff', 'Staff, roles and security']];
+const fineAllowed = (perms, k) => perms && perms.sfx_manage ? (k in perms ? !!perms[k] : k !== 'sfx_staff') : false;
 function rolesPage() {
   const roles = state.roles || [], staff = (state.staffList || []).filter((p) => p.role !== 'owner');
-  const roleRows = roles.map((r) => [esc(r.name), STORE_PERMS.filter(([k]) => r.permissions && r.permissions[k]).map(([, l]) => esc(l)).join('<br>') || 'No store access', canWrite() ? button('Delete', 'role-delete:' + r.id, 'compact danger') : '']);
+  const roleRows = roles.map((r) => [esc(r.name), STORE_PERMS.filter(([k]) => r.permissions && r.permissions[k]).map(([, l]) => esc(l)).concat(r.permissions && r.permissions.sfx_manage ? FINE_PERMS.filter(([k]) => fineAllowed(r.permissions, k)).map(([, l]) => '&nbsp;&nbsp;· ' + esc(l)) : []).join('<br>') || 'No store access', canWrite() ? button('Delete', 'role-delete:' + r.id, 'compact danger') : '']);
   const opts = (p) => '<option value=""' + (!p.role_id && p.role !== 'manager' ? ' selected' : '') + '>Staff (view only)</option><option value="builtin:manager"' + (!p.role_id && p.role === 'manager' ? ' selected' : '') + '>Manager</option>' + roles.map((r) => '<option value="' + esc(r.id) + '"' + (p.role_id === r.id ? ' selected' : '') + '>' + esc(r.name) + '</option>').join('');
   const staffRows = staff.map((p) => [esc(p.email || p.username || 'Staff'), canWrite() ? '<select data-role-assign="' + esc(p.id) + '" aria-label="Role for ' + esc(p.email || p.username) + '">' + opts(p) + '</select>' : esc(p.role)]);
-  const form = canWrite() ? panel('New role', body(editForm('role-record', '', input('Role name', 'name', '', 'text', 'required maxlength="60"') + STORE_PERMS.map(([k, l]) => '<label class="inline wide"><input type="checkbox" name="' + k + '" value="1"' + (k === 'sfx_view' ? ' checked' : '') + '> ' + esc(l) + '</label>').join(''), 'Create role'))) : '';
+  const form = canWrite() ? panel('New role', body(editForm('role-record', '', input('Role name', 'name', '', 'text', 'required maxlength="60"') + STORE_PERMS.map(([k, l]) => '<label class="inline wide"><input type="checkbox" name="' + k + '" value="1"' + (k === 'sfx_view' ? ' checked' : '') + '> ' + esc(l) + '</label>').join('') + '<p class="compact-copy wide">When a role can edit the store, choose what it can touch:</p>' + FINE_PERMS.map(([k, l]) => '<label class="inline wide"><input type="checkbox" name="' + k + '" value="1"' + (k === 'sfx_staff' ? '' : ' checked') + '> ' + esc(l) + '</label>').join(''), 'Create role'))) : '';
   return head('Roles', 'Choose what each person on your team can do in the store. The owner always has full access.', '', ['team', 'Staff and access']) + tabs('roles', [['team', 'Staff'], ['roles', 'Roles'], ['locations', 'Locations']]) +
     panel('Roles', table(['Role', 'Store access', ''], roleRows)) + form + panel('Who has which role', table(['Person', 'Role'], staffRows));
 }
@@ -1095,6 +1143,7 @@ async function roleSubmit(key, data) {
   if (key !== 'role-record') return false;
   const name = (data.name || '').trim(); if (!name) throw new Error('Enter a role name.');
   const permissions = {}; STORE_PERMS.forEach(([k]) => { if (data[k]) permissions[k] = true; });
+  if (permissions.sfx_manage) FINE_PERMS.forEach(([k]) => { permissions[k] = !!data[k]; });
   const { error } = await sb.from('roles').insert({ name, permissions }); if (error) throw new Error(error.message);
   await refreshRoles(); save('Role created.'); rerender(true); return true;
 }
@@ -1293,7 +1342,19 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
   if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'); if (target.name === 'description') { const rp = f.querySelector('[data-rich-preview]'); if (rp) rp.innerHTML = target.value ? richHtml(target.value) : '<p class="compact-copy">A preview of your formatting shows here.</p>'; } const el = f.querySelector('[data-seo-preview]'); if (!el) return; if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
-  if ((type === 'input' || type === 'change') && /^ol-(query|pay|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.orders[k === 'query' ? 'q' : k] = target.value; $('#orders-results').innerHTML = ordersList(); return; }
+  if ((type === 'input' || type === 'change') && target.closest && target.closest('form[data-key="refund-record"]') && /^(rq_\d+|rship)$/.test(target.name || '')) {
+    const f = target.closest('form'); let sum = 0;
+    f.querySelectorAll('input[data-price]').forEach((el) => { if (el.type === 'checkbox') { if (el.checked) sum += Number(el.dataset.price); } else sum += (Number(el.value) || 0) * Number(el.dataset.price); });
+    f.elements.amount.value = sum > 0 ? sum.toFixed(2) : '';
+  }
+  if ((type === 'input' || type === 'change') && target.closest && target.closest('form[data-key="order-edit"]')) {
+    const f = target.closest('form'), pv = f.querySelector('#edit-preview'); let sub = 0;
+    f.querySelectorAll('input[data-price]').forEach((el) => { sub += (Number(el.value) || 0) * Number(el.dataset.price); });
+    const add = (f.elements.addv.value || '').split('|'); sub += (Number(f.elements.addq.value) || 0) * (Number(add[1]) || 0);
+    sub += (Number(f.elements.cq.value) || 0) * (Number(f.elements.cprice.value) || 0);
+    pv.textContent = 'New total: ' + money(Math.max(Number(pv.dataset.total) + sub - Number(pv.dataset.oldsub), 0));
+  }
+  if ((type === 'input' || type === 'change') && /^ol-(query|pay|sort|arch)$/.test(target.id)) { const k = target.id.slice(3); lb.orders[k === 'query' ? 'q' : k] = target.value; $('#orders-results').innerHTML = ordersList(); return; }
   if ((type === 'input' || type === 'change') && /^cl-(query|sort)$/.test(target.id)) { const k = target.id.slice(3); lb.customers[k === 'query' ? 'q' : k] = target.value; $('#customers-results').innerHTML = customersList(); return; }
   if ((type === 'input' || type === 'change') && /^pg-(query|status)$/.test(target.id)) { pgf[target.id === 'pg-query' ? 'q' : 'status'] = target.value; const el = $('#pages-results'); if (el) el.innerHTML = pagesList(); return; }
   if (type === 'change' && target.matches && target.matches('[data-linkpick]')) { const ta = target.closest('.rich')?.querySelector('textarea'); if (ta && target.value) { const st = ta.selectionStart, en = ta.selectionEnd, label = ta.value.slice(st, en) || target.options[target.selectedIndex].text, ins = '[' + label + '](' + target.value + ')'; ta.value = ta.value.slice(0, st) + ins + ta.value.slice(en); ta.dispatchEvent(new Event('input', { bubbles: true })); } target.value = ''; return; }
@@ -1360,6 +1421,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshOrders(); save('Tracking saved.'); close(); rerender();
       } else if (key === 'credit-adjust') {
         await api('sfx_credit_adjust', { p_customer: rid, p_delta: Number(data.delta), p_note: data.note }); await refreshCustomers(); save('Store credit updated.'); close(); rerender(true);
+      } else if (key === 'webhook-record') {
+        const evs = ((state.access.hooks || {}).events || []).filter((e) => data['ev_' + e.replace('.', '_')]);
+        const w = await api('sfx_webhook_create', { p_url: data.url, p_events: evs }); await refreshAccess(); save('Webhook added.');
+        dialog('Your signing secret', '<p class="compact-copy">' + esc(w.note) + ' Check each message by signing <code>timestamp.body</code> with this secret (HMAC-SHA256) and comparing it to the <code>X-Storefront-Signature</code> header.</p><p><code style="word-break:break-all;user-select:all">' + esc(w.secret) + '</code></p>' + button('Done', 'close-dialog', 'primary')); rerender(true);
       } else if (key === 'apikey-record') {
         const k = await api('sfx_api_key_create', { p_name: data.name }); await refreshAccess(); save('Key created.');
         dialog('Your new key', '<p class="compact-copy">' + esc(k.note) + '</p><p><code style="word-break:break-all;user-select:all">' + esc(k.key) + '</code></p>' + button('Done', 'close-dialog', 'primary')); rerender(true);
@@ -1380,6 +1445,19 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_order_cancel', { p_order: rid, p: { reason: data.reason, restock: data.restock !== 'no' } }); await refreshOrders(); save('Order cancelled.'); close(); rerender(true);
       } else if (key === 'refund-record') {
         await api('sfx_refund_record', { p_order: rid, p: { amount: Number(data.amount), method: data.method, reason: data.reason } }); await refreshOrders(); save('Refund recorded.'); close(); rerender(true);
+      } else if (key === 'order-edit') {
+        const o = state.orders.find((x) => x.id === rid); const lines = (o.lines || []).map((l, i) => ({ index: i, qty: Number(data['q_' + i]) }));
+        if (data.addv && Number(data.addq) > 0) lines.push({ variantId: data.addv.split('|')[0], qty: Number(data.addq) });
+        if (data.cname && Number(data.cq) > 0) lines.push({ custom: { name: data.cname, price: Number(data.cprice) }, qty: Number(data.cq) });
+        const r = await api('sfx_order_edit', { p_order: rid, p: { lines, restock: data.restock === '1' || data.restock === 'on' || data.restock === true, reason: data.reason } });
+        await refreshOrders(); await refreshInventory().catch(() => {}); save(r.difference ? 'Order updated. Total changed by ' + money(r.difference) + '.' : 'Order updated.'); close(); rerender();
+      } else if (key === 'order-contact' || key === 'order-address') {
+        const p = key === 'order-contact' ? { name: data.name, phone: data.phone, email: data.email, updateProfile: data.updateProfile === 'yes' } : { address: data.address, city: data.city, state: data.state, pin: data.pin };
+        await api('sfx_order_contact_set', { p_order: rid, p }); await refreshOrders(); save('Order updated.'); close(); rerender();
+      } else if (key === 'order-comment') {
+        await api('sfx_order_comment', { p_order: rid, p_text: data.text }); await refreshOrders(); save('Comment posted.'); rerender();
+      } else if (key === 'order-tags') {
+        await api('sfx_order_tags_set', { p_order: rid, p_tags: String(data.tags || '').split(',').map((x) => x.trim()).filter(Boolean) }); await refreshOrders(); save('Tags saved.'); close(); rerender();
       } else if (key === 'order-note') {
         await api('sfx_order_note', { p_id: rid, p_note: data.note }); await refreshOrders(); save('Note saved.'); rerender();
       } else if (key === 'business') {
@@ -1419,8 +1497,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'tags-record') {
         await api('sfx_product_set_tags', { p_id: rid, p_tags: data.tags }); await refreshCategories(); save('Tags saved.'); close(); rerender(true);
       } else if (key === 'draft-record') {
-        const lines = [0, 1, 2].filter((i) => data['v' + i] && Number(data['q' + i]) > 0).map((i) => ({ variantId: data['v' + i], qty: Number(data['q' + i]) }));
-        await api('sfx_draft_save', { p_id: rid, p: { name: data.name, phone: data.phone, address: data.address, city: data.city, pin: data.pin, note: data.note, lines } });
+        const lines = [0, 1, 2].filter((i) => data['v' + i] && Number(data['q' + i]) > 0).map((i) => ({ variantId: data['v' + i], qty: Number(data['q' + i]), price: data['p' + i] === '' || data['p' + i] == null ? undefined : Number(data['p' + i]) }));
+        if (data.cname && Number(data.cq) > 0) lines.push({ custom: { name: data.cname, price: Number(data.cprice) }, qty: Number(data.cq) });
+        await api('sfx_draft_save', { p_id: rid, p: { name: data.name, phone: data.phone, address: data.address, city: data.city, pin: data.pin, note: data.note, lines,
+          discount: data.dkind ? { kind: data.dkind, value: Number(data.dval) || 0, note: data.dnote } : undefined, shipping: { label: data.slabel, amount: Number(data.sfee) || 0 }, payLater: data.payterms === 'later' } });
         await refreshDrafts(); save('Draft saved.'); close(); rerender(true);
       } else if (key === 'return-record') {
         const order = state.orders.find((o) => o.id === rid); const lines = (order?.lines || []).map((l, i) => ({ variantId: data['vid' + i], qty: Number(data['rq' + i] || 0) })).filter((l) => l.qty > 0);
@@ -1553,6 +1633,42 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   });
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
   if (a === 'apikey-new') return dialog('Create an API key', editForm('apikey-record', '', input('Name (what will use it)', 'name', '', 'text', 'required maxlength="60" placeholder="Accounting export"'), 'Create key'));
+  if (a === 'order-tags') { const o = state.orders.find((x) => x.id === key); return dialog('Order tags', editForm('order-tags', key, input('Tags, separated by commas (up to 10)', 'tags', ((o && o.tags) || []).join(', '), 'text', 'maxlength="400" placeholder="gift, wholesale"'), 'Save tags')); }
+  if (a === 'order-edit') return withBusy(async () => {
+    if (!(state.products || []).length) await refreshProducts();
+    const o = state.orders.find((x) => x.id === key); const oldSub = (o.lines || []).reduce((t, l) => t + Number(l.price) * l.qty, 0);
+    const opts = [['', 'Add a product…']].concat((state.products || []).flatMap((p) => (p.variants && p.variants.length ? p.variants : [{ id: '', label: '' }]).filter((v) => v.id).map((v) => [v.id + '|' + (v.price != null ? v.price : p.price), p.name + (v.label && v.label !== 'Default' ? ' · ' + v.label : '') + ' (' + money(v.price != null ? v.price : p.price) + ')'])));
+    dialog('Edit items on order #' + o.number, editForm('order-edit', key,
+      '<p class="compact-copy wide">Set a quantity to 0 to remove an item. Shipping, discount and tax are not recalculated. Nothing is refunded or charged here; the new total is noted on the order.</p>' +
+      (o.lines || []).map((l, i) => input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' at ' + money(l.price), 'q_' + i, l.qty, 'number', 'min="0" max="999" step="1" data-price="' + Number(l.price) + '"')).join('') +
+      select('Add a product', 'addv', opts, '') + input('How many', 'addq', '', 'number', 'min="0" max="999" step="1"') +
+      input('Or a custom item: name', 'cname', '', 'text', 'maxlength="120"') + input('Custom item price (Rs)', 'cprice', '', 'number', 'min="0" step="0.01"') + input('Custom item quantity', 'cq', '', 'number', 'min="0" max="999" step="1"') +
+      '<label class="inline wide"><input type="checkbox" name="restock" value="1" checked> Put removed units back in stock</label>' + input('Reason (only your team sees this)', 'reason', '', 'text', 'maxlength="200"') +
+      '<p class="compact-copy wide" id="edit-preview" data-total="' + Number(o.total) + '" data-oldsub="' + oldSub + '">New total: ' + money(o.total) + '</p>', 'Save changes'));
+  });
+  if (a === 'order-contact') { const o = state.orders.find((x) => x.id === key); const c = o.contact || {};
+    return dialog('Edit contact', editForm('order-contact', key, input('Name', 'name', o.customer || '', 'text', 'required maxlength="120"') + input('Phone', 'phone', c.phone || '', 'tel', 'maxlength="20"') + input('Email', 'email', c.email || '', 'email', 'maxlength="120"') +
+      (o.customerId ? select('Also update the customer record?', 'updateProfile', [['no', 'No, only this order'], ['yes', 'Yes, change their profile too']], 'no') : ''), 'Save')); }
+  if (a === 'order-address') { const o = state.orders.find((x) => x.id === key); const c = o.contact || {};
+    return dialog('Edit shipping address', editForm('order-address', key, '<p class="compact-copy wide">Shipping and tax on this order are not recalculated when the address changes.</p>' + area('Address', 'address', c.address || '', 'maxlength="300"') + input('City', 'city', c.city || '', 'text', 'maxlength="80"') + input('State', 'state', c.state || '', 'text', 'maxlength="80"') + input('PIN code', 'pin', c.pin || '', 'text', 'maxlength="12"'), 'Save address')); }
+  if (a === 'order-unlink') return withBusy(async () => { if (!confirm('Remove the customer from this order? The customer record is kept and the order keeps their contact details.')) return; await api('sfx_order_unlink_customer', { p_order: key }); await refreshOrders(); save('Customer removed from the order.'); rerender(true); });
+  if (a === 'order-archive') return withBusy(async () => { await api('sfx_order_archive', { p_order: key, p_on: detail === 'on' }); await refreshOrders(); save(detail === 'on' ? 'Order archived.' : 'Order restored.'); rerender(true); });
+  if (a === 'layout-open') { layoutDraft = ((state.insights && state.insights.layout) || DEFAULT_LAYOUT).filter((k) => LAYOUT_NAMES[k]); return dialog('Choose the cards on Insights', layoutDialogBody()); }
+  if (['layout-move', 'layout-hide', 'layout-show'].includes(a) && layoutDraft) {
+    const i = layoutDraft.indexOf(key);
+    if (a === 'layout-hide' && layoutDraft.length > 1) layoutDraft.splice(i, 1);
+    if (a === 'layout-show' && i < 0) layoutDraft.push(key);
+    if (a === 'layout-move' && i >= 0) { const j = detail === 'up' ? i - 1 : i + 1; if (j >= 0 && j < layoutDraft.length) { [layoutDraft[i], layoutDraft[j]] = [layoutDraft[j], layoutDraft[i]]; } }
+    return dialog('Choose the cards on Insights', layoutDialogBody());
+  }
+  if (a === 'layout-save') return withBusy(async () => { const out = await api('sfx_dashboard_layout_save', { p_cards: layoutDraft }); state.insights.layout = out; save('Cards saved.'); close(); rerender(true); });
+  if (a === 'webhook-new') return dialog('Add a webhook', editForm('webhook-record', '', input('Address (https only)', 'url', '', 'url', 'required placeholder="https://example.com/hooks/store"') +
+    '<p class="compact-copy wide">Send me:</p>' + (((state.access.hooks || {}).events) || []).map((e) => '<label class="inline wide"><input type="checkbox" name="ev_' + e.replace('.', '_') + '" value="1"' + (e.startsWith('order.') ? ' checked' : '') + '> ' + esc(e) + '</label>').join(''), 'Add webhook'));
+  if (a === 'webhook-test') return withBusy(async () => { await api('sfx_webhook_test', { p_id: key }); await refreshAccess(); save('Test message queued. It is sent within a few seconds.'); rerender(true); });
+  if (a === 'webhook-set') return withBusy(async () => { await api('sfx_webhook_set', { p_id: key, p_active: detail === 'on' }); await refreshAccess(); save(detail === 'on' ? 'Webhook turned on.' : 'Webhook turned off.'); rerender(true); });
+  if (a === 'webhook-delete') return withBusy(async () => { if (!confirm('Remove this webhook? Messages waiting for it are dropped.')) return; await api('sfx_webhook_delete', { p_id: key }); await refreshAccess(); save('Webhook removed.'); rerender(true); });
+  if (a === 'webhook-log') return withBusy(async () => { const rows = await api('sfx_webhook_deliveries', { p_id: key });
+    dialog('Recent deliveries', table(['When', 'Event', 'Result', 'Tries', 'Note'], (rows || []).map((r) => [new Date(r.at).toLocaleString('en-IN'), esc(r.event), r.status === 'sent' ? badge('Delivered') : r.status === 'failed' ? badge('Gave up', 'warn') : badge('Waiting', 'neutral'), r.attempts, esc(r.error || (r.httpStatus ? String(r.httpStatus) : ''))])) + button('Close', 'close-dialog', 'primary')); });
   if (a === 'apikey-revoke') return withBusy(async () => { if (!confirm('Revoke this key? Anything using it stops working.')) return; await api('sfx_api_key_revoke', { p_id: key }); await refreshAccess(); save('Key revoked.'); rerender(true); });
   if (a === 'clear-filters') { for (const k of Object.keys(pf)) pf[k] = ''; const q = $('#table-query'); if (q) q.value = ''; for (const el of document.querySelectorAll('[id^="pf-"]')) el.value = ''; const r = $('#table-results'); if (r) r.innerHTML = productsList(''); return; }
   if (a === 'bulk-all') { for (const el of document.querySelectorAll('input[data-bulk]')) el.checked = true; scopeLine(); return; }
@@ -1617,6 +1733,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     select('Reason', 'reason', [['Customer changed mind', 'Customer changed mind'], ['Out of stock', 'Out of stock'], ['Wrong details', 'Wrong details'], ['Fraud risk', 'Fraud risk'], ['Other', 'Other']], 'Customer changed mind') +
     select('Items', 'restock', [['yes', 'Put the items back on sale'], ['no', 'Do not restock (damaged or lost)']], 'yes'), 'Cancel order'));
   if (a === 'refund-new') { const o = state.orders.find((x) => x.id === key); return dialog('Record a refund', editForm('refund-record', key, '<p class="compact-copy wide">Pay the customer back yourself (cash, UPI, bank), then record it here. You can refund up to ' + money(o.total - o.refunded) + ' more.</p>' +
+    '<p class="compact-copy wide">Pick the items being refunded and the amount fills in. You can still change it.</p>' +
+    (o.lines || []).map((l, i) => input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (' + l.qty + ' ordered at ' + money(l.price) + ')', 'rq_' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1" data-price="' + Number(l.price) + '"')).join('') +
+    (o.shippingFee > 0 ? '<label class="inline wide"><input type="checkbox" name="rship" value="1" data-price="' + Number(o.shippingFee) + '"> Refund the shipping fee (' + money(o.shippingFee) + ')</label>' : '') +
     input('Amount (Rs)', 'amount', '', 'number', 'required min="0.01" step="0.01"') + select('How it was paid back', 'method', [['manual', 'Cash, UPI or bank'], ['store_credit', 'Store credit']], 'manual') + input('Reason', 'reason', '', 'text', 'maxlength="200"'), 'Record refund')); }
   if (a === 'order-test') return withBusy(async () => { await api('sfx_order_mark_test', { p_order: key, p_test: detail === 'on' }); await refreshOrders(); save(detail === 'on' ? 'Marked as a test order.' : 'Unmarked.'); rerender(true); });
   if (a === 'theme-install') return withBusy(async () => {

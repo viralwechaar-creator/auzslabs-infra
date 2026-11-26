@@ -128,5 +128,20 @@ export default async function run({ browser, stack }) {
     assert(/selected|Select all/.test(await page.locator('#bulk-scope').innerText()), 'no selection line');
     assert(!errs.filter((e) => !/sfx_redirect_save/.test(e)).length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Roles screen: finer store permissions are saved, a refund-less role is listed correctly', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    await q("delete from roles where tenant_id=$1 and name='Packer'", [tid]);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/roles'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.fill('input[name=name]', 'Packer');
+    await page.evaluate(() => { const f = document.querySelector('input[name=name]').form; f.elements.sfx_manage.checked = true; f.elements.sfx_refunds.checked = false; f.elements.sfx_marketing.checked = false; });
+    await page.evaluate(() => document.querySelector('input[name=name]').form.querySelector('button.primary, button[type=submit]').click()); await page.waitForTimeout(2000);
+    const r = (await q("select permissions from roles where tenant_id=$1 and name='Packer'", [tid]))[0];
+    assert(r && r.permissions.sfx_manage === true && r.permissions.sfx_refunds === false && r.permissions.sfx_marketing === false && r.permissions.sfx_orders === true && r.permissions.sfx_staff === false, JSON.stringify(r));
+    const t = await page.locator('main, body').first().innerText();
+    assert(/Packer/.test(t) && /Orders and shipments/.test(t), t.slice(0, 400));
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }

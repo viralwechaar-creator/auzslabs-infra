@@ -1042,12 +1042,23 @@ V.wishlist = (v) => {
 };
 
 V.p = (v, id) => {
-  const s = BYID[id];
+  let s = BYID[id];
+  // storefront stores: an address with a product handle works, and an old handle follows the owner's redirect to the new one
+  if (!s && PFX === 'sfx') {
+    const byHandle = STY.find((x) => x.handle && String(x.handle).toLowerCase() === String(id).toLowerCase());
+    if (byHandle) { location.replace(link('p/' + byHandle.id)); return; }
+    rpc('public_sfx_redirect', { p_slug: SLUG, p_path: '/products/' + id }).then((r) => {
+      if (!r || !r.to) return;
+      const m = String(r.to).match(/^\/products\/([^/?#]+)/); const t = m && STY.find((x) => x.handle === m[1] || x.id === m[1]);
+      if (t) location.replace(link('p/' + t.id)); else if (/^https:\/\//.test(r.to)) location.href = r.to;
+    }).catch(() => {});
+  }
   if (!s) { v.append(E('div', { class: 'empty' }, E('h2', null, 'Piece not found'), E('a', { class: 'btn', href: link('shop') }, 'Shop all'))); return; }
   const minimal = isMin();
   const modelOptions = minimal && /phone case/i.test(s.category || '');
   const hasSizeGuide = !minimal || sizesOf(s).some((size) => /^(?:X{0,3}[SL]|M|[2-5]XL)$/i.test(size));
   let colour = colours(s)[0] || '', size = '', qty = 1; let tab = 'd'; let folded = false, pinned = false; seen(s.id);
+  if (PFX === 'sfx' && s.handle) rpc('public_sfx_seo', { p_slug: SLUG, p_kind: 'product', p_handle: s.handle }).then((r) => { if (r && r.title && location.hash.includes(s.id)) setMeta(r.title + ' · ' + (r.siteName || D.shop.name), r.description || '', photos(s)[0] || '', location.origin + location.pathname + '#/p/' + s.id); }).catch(() => {});
   const gal = E('div', { class: 'gal' }), info = E('div', { class: 'info' });
   const pinnedPhoto = minimal ? E('div', { class: 'minimal-pinned-photo' }) : null;
   let cur = 0;
@@ -1242,6 +1253,14 @@ V.checkout = (v) => {
   const capply = async () => { cmsg.style.color = '#c0392b'; if (coupon) { coupon = null; cin.disabled = false; cin.value = ''; cmsg.textContent = ''; capplyBtn.textContent = 'Apply'; paintSum(); return; } if (!cin.value.trim()) return; capplyBtn.disabled = true;
     try { const r = await rpc(`public_${PFX}_coupon_check`, { p_slug: SLUG, p: { code: cin.value, subtotal: t, phone: (F.phone.value || '').trim() } }); if (r && r.ok) { coupon = { code: r.code, discount: +r.discount }; cmsg.style.color = '#1a7f3c'; cin.disabled = true; capplyBtn.textContent = 'Remove'; paintSum(); } cmsg.textContent = (r && r.msg) || ''; } catch (e) { cmsg.textContent = e.message; } capplyBtn.disabled = false; };
   const capplyBtn = E('button', { class: 'btn out sm', type: 'button', onclick: capply }, 'Apply');
+  // Store credit: only for a signed-in customer on a storefront (sfx) store. The server checks the sign-in again and caps it at their balance.
+  let useCredit = false; const credBox = E('div', { class: 'tiny', style: { marginTop: '6px' } });
+  const acctTok = () => { try { return localStorage.getItem('acct.' + SLUG) || ''; } catch (e) { return ''; } };
+  if (PFX === 'sfx' && acctTok()) rpc('public_sfx_customer_account', { p_token: acctTok() }).then((a) => {
+    if (!a || !(+a.creditBalance > 0) || !document.body.contains(credBox)) return;
+    const cb = E('input', { type: 'checkbox', onchange: () => { useCredit = cb.checked; } });
+    credBox.append(E('label', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, cb, 'Use my store credit (' + inr(a.creditBalance) + ' available)'));
+  }).catch(() => {});
   const err = E('div', { class: 'tiny', role: 'alert', style: { color: '#c0392b', minHeight: '14px' } });
   const btn = E('button', { class: 'btn wide' }, 'Place order');
   const done = (r, g) => {
@@ -1257,7 +1276,7 @@ V.checkout = (v) => {
     if (!pay) { err.textContent = 'Choose how you want to pay.'; return; }
     btn.disabled = true; btn.textContent = 'Placing…';
     try {
-      const r = await rpc(`public_${PFX}_place_order`, { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, coupon: coupon ? coupon.code : '', lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
+      const r = await rpc(`public_${PFX}_place_order`, { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, coupon: coupon ? coupon.code : '', customerToken: useCredit ? acctTok() : undefined, useCredit: useCredit || undefined, lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
       if (pay === 'online') { await rzpPay(r.token, () => done(r, g), () => { done(r, g); }); return; }
       done(r, g);
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Place order'; }
@@ -1273,7 +1292,7 @@ V.checkout = (v) => {
       E('label', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, save, 'Save this information for next time'),
       E('h2', null, 'Shipping method'), shipNote, E('h2', null, 'Payment'), E('div', { class: 'mut tiny' }, 'All transactions are secure.'), payBox),
     E('div', { class: 'card stick sum' }, E('h2', { style: { marginBottom: '6px' } }, 'Order summary'), ls.map((l) => E('div', { class: 't checkout-line' }, isMin() ? E('div', { class: 'checkout-line-thumb' }, pickPic(l.s) ? E('img', { src: pickPic(l.s), alt: '' }) : placeholder(l.s.name)) : null, E('span', null, l.s.name + ' × ' + l.q + (l.vr.size ? ' · ' + l.vr.size : '')), E('span', null, inr(l.vr.price * l.q)))),
-      E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, E('label', { class: 'fld', style: { flex: 1 } }, cin), capplyBtn), cmsg, sumBox, err, btn,
+      E('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' } }, E('label', { class: 'fld', style: { flex: 1 } }, cin), capplyBtn), cmsg, credBox, sumBox, err, btn,
       E('div', { class: 'mut tiny' }, 'By placing the order you agree to the ', E('a', { href: link('policy/terms'), style: { textDecoration: 'underline' } }, 'terms'), ' and the ', E('a', { href: link('policy/returns'), style: { textDecoration: 'underline' } }, 'returns policy'), '.'))));
   const reship = () => { const stv = F.state && F.state.value; sh = shipFee(t, stv); shipNote.textContent = shipLine(t, stv); paintSum(); }; if (F.state) F.state.addEventListener('change', reship); reship();
   F.pin.addEventListener('input', pinAuto); F.pin.addEventListener('change', pinAuto); F.phone.addEventListener('blur', saveCart); F.phone.addEventListener('change', saveCart);
@@ -1337,7 +1356,8 @@ V.order = async (v, tok) => {
       o.paymentStatus === 'submitted' ? E('div', { class: 'note', style: { marginTop: '10px' } }, 'Thank you. We have your reference and will confirm the payment shortly.') : E('div', { class: 'frm', style: { marginTop: '10px' } }, E('label', { class: 'fld' }, utr), msg, E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc(`public_${PFX}_order_paid`, { p_token: tok, p_utr: utr.value }); route(); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'I have paid'))));
   }
   v.append(E('div', { class: 'pg' }, E('div', { class: 'card' }, E('div', { class: 'lbl' }, 'Order ' + o.number), E('h1', { style: { margin: '4px 0' } }, o.status === 'cancelled' ? 'Order cancelled' : 'Thank you, ' + (o.customer.name || '').split(' ')[0]),
-    E('div', { class: 'mut' }, o.payment === 'cod' ? 'Pay ' + inr(o.total) + ' in cash when it arrives.' : o.paymentStatus === 'paid' ? 'Payment received.' : 'We will confirm your order once the payment is checked.'),
+    o.creditApplied > 0 ? E('div', { class: 'mut' }, 'Store credit used: ' + inr(o.creditApplied)) : null,
+    E('div', { class: 'mut' }, o.payment === 'cod' ? (o.amountDue > 0 ? 'Pay ' + inr(o.amountDue) + ' in cash when it arrives.' : 'Paid with your store credit.') : o.paymentStatus === 'paid' ? 'Payment received.' : 'We will confirm your order once the payment is checked.'),
     o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), o.status === 'cancelled' ? null : E('div', { class: 'live' }, o.status === 'cancelled' ? null : E('i'), E('b', null, cap(o.status)), E('span', null, ' · ' + (LIVE_MSG[o.status] || '')), E('div', { class: 'tiny mut' }, 'Updates by itself · checked ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }))),
     E('div', { style: { marginTop: '12px' } }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty))))),
     E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), taxRow(+o.tax), +o.discount ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon' + (o.coupon ? ' ' + o.coupon : '')), E('span', null, '– ' + inr(o.discount))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
@@ -1466,8 +1486,27 @@ V.blog = (v, which) => {
   }
   v.append(E('div', { class: 'pg wide' }, E('div', { class: 'shophd' }, E('h1', null, 'Journal')), list.length ? blogGrid(list) : E('div', { class: 'card mut' }, 'Nothing published yet. Check back soon.')));
 };
+// Storefront stores keep their posts in the dashboard's Blog (db/425). Show those; fall back to the old built-in journal when there are none.
+const baseBlog = V.blog;
+V.blog = async (v, which) => {
+  if (PFX !== 'sfx') return baseBlog(v, which);
+  D.config = D.config || {};
+  let rows = []; try { rows = (await rpc('public_sfx_blog_list', { p_slug: SLUG })) || []; } catch (e) { rows = []; }
+  if (!rows.length) return baseBlog(v, which);
+  const shape = (b) => ({ title: b.title, excerpt: b.excerpt, image: b.image, date: b.publishedAt, body: b.body || '', handle: b.handle });
+  if (!which) { cfg().blogs = rows.map(shape); return baseBlog(v, which); }
+  const pick = rows.find((r) => r.handle === which || slugOf(r.title) === which);
+  let post = null; if (pick) { try { post = await rpc('public_sfx_blog_post', { p_slug: SLUG, p_handle: pick.handle }); } catch (e) { post = null; } }
+  if (!post) {
+    try { const r = await rpc('public_sfx_redirect', { p_slug: SLUG, p_path: '/blogs/' + which }); const m = r && String(r.to).match(/^\/blogs\/([^/?#]+)/); if (m) { location.replace(link('blog/' + m[1])); return; } } catch (e) { /* none */ }
+    cfg().blogs = []; return baseBlog(v, which);
+  }
+  cfg().blogs = [shape(post)].concat(rows.filter((r) => r.handle !== post.handle).slice(0, 2).map(shape));
+  baseBlog(v, slugOf(post.title));
+  if (post.seoTitle) setMeta(post.seoTitle + ' · ' + D.shop.name, post.seoDescription || post.excerpt || '', post.image, location.origin + location.pathname + '#/blog/' + post.handle);
+};
 function blogGrid(list) {
-  return E('div', { class: 'bgrid' }, list.map((b) => E('a', { class: 'bcard', href: link('blog/' + slugOf(b.title)) },
+  return E('div', { class: 'bgrid' }, list.map((b) => E('a', { class: 'bcard', href: link('blog/' + (b.handle || slugOf(b.title))) },
     E('div', { class: 'im' }, b.image ? E('img', { src: b.image, alt: '', loading: 'lazy' }) : placeholder(b.title)),
     E('div', { class: 'tx' }, E('h3', null, b.title), E('p', null, b.excerpt || String(b.body || '').slice(0, 130))))));
 }
@@ -1570,7 +1609,8 @@ const TR = (() => {
   const dev = innerWidth < 700 ? 'phone' : innerWidth < 1100 ? 'tablet' : 'desktop';
   let ref = ''; try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; if (ref === location.hostname) ref = ''; } catch {}
   const q = []; let page = '', t0 = 0, maxd = 0;
-  const push = (k, p, d) => { q.push({ sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret }); if (q.length >= 25) flush(); };
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  const push = (k, p, d) => { q.push({ sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret, tz }); if (q.length >= 25) flush(); };
   function flush() { if (!q.length) return; const ev = q.splice(0, 40); sb.rpc(`public_${PFX}_track`, { p_slug: SLUG, p: { events: ev } }).then(() => {}, () => {}); }
   function depth() { const h = document.documentElement.scrollHeight - innerHeight; return h > 0 ? Math.min(100, Math.round(scrollY / h * 100)) : 100; }
   addEventListener('scroll', () => { const d = depth(); if (d > maxd) maxd = d; }, { passive: true });

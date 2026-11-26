@@ -112,5 +112,40 @@ export default async function run({ browser, stack }) {
     assert(/send me a code/i.test(t), 'not signed out');
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Store credit at checkout: needs sign-in, capped at balance, covers the order, comes back on cancel', async () => {
+    await q('update sfx_variants set stock = 50 where id = any($1)', [[vs, vm]]);
+    await q('delete from sfx_customer_codes where tenant_id=$1', [tid]);
+    const cr = (await q("select sfx_customer_code_issue('testcafe', $1) r", [phone]))[0].r;
+    const v = unwrap((await rpc(stack, 'public_sfx_customer_verify', { p_slug: 'testcafe', p_contact: phone, p_code: cr.code })).data);
+    const cid = (await q('select id from sfx_customers where tenant_id=$1 and phone=$2', [tid, phone]))[0].id;
+    await q('update sfx_customers set credit_balance = 500 where id=$1', [cid]);
+    const mk = async (extra) => { const r = unwrap((await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: 'Asha Rao', phone: '9000000' + Math.floor(100 + Math.random() * 899), address: '7 Lake Road', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', payment: 'cod', lines: [{ variantId: vs, qty: 1 }], ...extra } })).data); return r; };
+    // without a sign-in nothing is spent
+    let r = await mk({ useCredit: true });
+    assert((await q('select credit_balance::float b from sfx_customers where id=$1', [cid]))[0].b === 500, 'credit spent without sign-in');
+    // wrong token: nothing
+    r = await mk({ useCredit: true, customerToken: 'deadbeef' });
+    assert((await q('select credit_balance::float b from sfx_customers where id=$1', [cid]))[0].b === 500, 'credit spent with a bad token');
+    // credit smaller than the order: pays part
+    await q('update sfx_customers set credit_balance = 30 where id=$1', [cid]);
+    r = await mk({ useCredit: true, customerToken: v.token });
+    let o = (await q("select id, total::float t, credit_applied::float c, payment_status ps from sfx_orders where token=$1", [r.token]))[0];
+    assert(o.c === 30 && o.ps === 'pending', JSON.stringify(o));
+    assert((await q('select credit_balance::float b from sfx_customers where id=$1', [cid]))[0].b === 0, 'balance not reduced');
+    // credit bigger than the order: covers it, order is paid, only the total is taken
+    await q('update sfx_customers set credit_balance = 500 where id=$1', [cid]);
+    r = await mk({ useCredit: true, customerToken: v.token });
+    o = (await q("select id, total::float t, credit_applied::float c, payment_status ps from sfx_orders where token=$1", [r.token]))[0];
+    assert(o.c === o.t && o.ps === 'paid', JSON.stringify(o));
+    assert((await q('select credit_balance::float b from sfx_customers where id=$1', [cid]))[0].b === 500 - o.t, 'wrong balance');
+    const pub = unwrap((await rpc(stack, 'public_sfx_order', { p_token: r.token })).data);
+    assert(pub.creditApplied === o.t && pub.amountDue === 0, JSON.stringify(pub));
+    // cancelling gives it back once
+    const owner = await login(USERS.cafeOwner);
+    await rpc(stack, 'sfx_order_cancel', { p_order: o.id, p: { reason: 'test', restock: true } }, owner);
+    assert((await q('select credit_balance::float b from sfx_customers where id=$1', [cid]))[0].b === 500, 'credit not returned');
+    await q("update sfx_orders set status='cancelled' where id=$1", [o.id]);
+    assert((await q('select credit_balance::float b from sfx_customers where id=$1', [cid]))[0].b === 500, 'credit returned twice');
+  });
   s.done();
 }
