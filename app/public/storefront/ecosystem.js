@@ -6,7 +6,7 @@
 // preview also routed through this file is a separate, unrelated project and is not part of this build.
 import { menu, icons, emptyState } from './data.js';
 import { workspace } from './workspace.js';
-import { sb, api, boot, refreshRoles, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshLive, refreshVisitors, refreshStyleLink, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { sb, api, boot, refreshRoles, refreshCollections, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshLanguages, refreshStoreDir, refreshCompanies, refreshCustomers, refreshLive, refreshVisitors, refreshStyleLink, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, refreshInstalls, refreshMarketplace, refreshPlan, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInsights, refreshAccess } from './api.js';
 
 export const $ = (selector) => document.querySelector(selector);
 export const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -32,7 +32,9 @@ try {
   const saved = JSON.parse(localStorage.getItem(PREF_KEY) || 'null');
   if (saved) { state.analyticsPins = saved.analyticsPins || []; state.analyticsTarget = saved.analyticsTarget; state.analyticsReports = saved.analyticsReports || []; }
 } catch { /* ignore */ }
+export const dirty = { on: false };
 export function save(message) {
+  dirty.on = false;
   try { localStorage.setItem(PREF_KEY, JSON.stringify({ analyticsPins: state.analyticsPins, analyticsTarget: state.analyticsTarget, analyticsReports: state.analyticsReports })); } catch { /* storage full: the preference just won't survive a reload */ }
   if (message) flash(message);
 }
@@ -45,6 +47,7 @@ export const imageUrl = (src) => /^data:image\/(?:webp|png|jpe?g);base64,[a-z0-9
 export const image = (src, alt = '', className = '') => src ? '<img src="' + esc(imageUrl(src)) + '" alt="' + esc(alt) + '" class="' + esc(className) + '" loading="lazy">' : '';
 export function flash(text) { $('#toast').textContent = text; clearTimeout(io.toast); io.toast = setTimeout(() => { $('#toast').textContent = ''; }, 4200); }
 export function dialog(title, body, opts = {}) {
+  dirty.on = false;
   const root = $('#dialog'); root.classList.toggle('preview-dialog', !!opts.wide);
   $('#dialog-body').innerHTML = '<div class="dialog-head"><h2>' + esc(title) + '</h2><button type="button" class="btn icon" data-action="close-dialog" aria-label="Close dialog">×</button></div><div class="dialog-content">' + body + '</div>';
   if (!root.open) root.showModal();
@@ -76,7 +79,7 @@ export const pathFor = (id) => dashboardPath + '#/' + id;
 // is mid-typing) refetches its own data every time it's opened, the same "show it, then make sure it's
 // current" shape as AUZsStyle's store.js caching -- catches an order placed, or a status changed, from
 // another tab or by a teammate since this page last loaded.
-const LIST_REFRESH = { home: refreshVisitors, analytics: refreshVisitors, 'live-view': refreshLive, orders: refreshOrders, products: () => Promise.all([refreshProducts(), refreshStyleLink()]), collections: refreshCollections, domains: refreshDomains, customers: refreshCustomers, discounts: refreshDiscounts, inventory: refreshInventory, transfers: refreshLocations, categories: refreshCategories, drafts: refreshDrafts, channels: () => Promise.all([refreshDrafts(), refreshStyleLink()]), returns: refreshReturns, 'abandoned-checkouts': refreshAbandoned, shipping: refreshCheckout, companies: refreshCompanies, segments: refreshSegments, growth: refreshCampaigns, builder: () => Promise.all([refreshMarketplace(), refreshInstalls()]), billing: refreshPlan, roles: refreshRoles };
+const LIST_REFRESH = { markets: refreshLanguages, 'store-directory': refreshStoreDir, home: refreshVisitors, analytics: refreshVisitors, 'live-view': refreshLive, orders: () => Promise.all([refreshOrders(), refreshReturns()]), products: () => Promise.all([refreshProducts(), refreshStyleLink()]), collections: refreshCollections, domains: refreshDomains, customers: refreshCustomers, discounts: refreshDiscounts, inventory: refreshInventory, transfers: refreshLocations, categories: refreshCategories, drafts: refreshDrafts, channels: () => Promise.all([refreshDrafts(), refreshStyleLink()]), returns: refreshReturns, 'abandoned-checkouts': refreshAbandoned, shipping: refreshCheckout, companies: refreshCompanies, segments: refreshSegments, growth: refreshCampaigns, builder: () => Promise.all([refreshMarketplace(), refreshInstalls()]),  roles: refreshRoles, blog: refreshBlog, redirects: refreshRedirects, versions: refreshRevisions, 'custom-fields': refreshCustomFields, insights: () => Promise.all([refreshInsights(), refreshInventory()]), activity: refreshAccess, 'staff-security': refreshAccess, messages: refreshAccess, billing: () => Promise.all([refreshPlan(), refreshAccess()]), apps: refreshAccess };
 let lastRefreshedRoute = '';
 
 export function rerender(skipRefresh) {
@@ -179,8 +182,9 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('[data-search-target]')) close();
   if (navOpen && event.target.closest('.sidebar a[href], .mobile-quick-nav a[href]')) setNavOpen(false);
   const target = event.target.closest('[data-action]'); if (!target) return;
+  if (target.tagName === 'A' && target.getAttribute('href') === '#') event.preventDefault();
   const [action, key, detail] = target.dataset.action.split(':');
-  if (action === 'close-dialog') { if ($('#dialog').open) return close(); target.closest('form')?.reset(); return; }
+  if (action === 'close-dialog') { if (dirty.on && !confirm('You have changes that are not saved. Close without saving?')) return; dirty.on = false; if ($('#dialog').open) return close(); target.closest('form')?.reset(); return; }
   if (action === 'sign-out') { event.preventDefault(); Promise.resolve(sb.auth.signOut()).catch(() => {}).then(() => { location.href = 'https://auzslab.in/signup.html?signout=1'; }); return; }
   if (action === 'global-search') return search();
   if (action === 'account-theme') { const dark = localStorage.getItem('auzslab.preview.theme') === 'dark'; localStorage.setItem('auzslab.preview.theme', dark ? 'light' : 'dark'); return rerender(); }
@@ -198,7 +202,12 @@ document.addEventListener('submit', (event) => {
   event.preventDefault();
   handlePage?.('submit', form, event);
 });
-for (const type of ['input', 'change']) document.addEventListener(type, (event) => handlePage?.(type, event.target, event));
+for (const type of ['input', 'change']) document.addEventListener(type, (event) => {
+  if (event.target.closest && event.target.closest('#dialog-body form[data-form="edit"]')) dirty.on = true;
+  handlePage?.(type, event.target, event);
+});
+$('#dialog')?.addEventListener('cancel', (event) => { if (dirty.on && !confirm('You have changes that are not saved. Close without saving?')) event.preventDefault(); else dirty.on = false; });
+addEventListener('beforeunload', (event) => { if (dirty.on) { event.preventDefault(); event.returnValue = ''; } });
 document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); search(); }
   else if (event.key === 'Escape' && navOpen) setNavOpen(false, true);

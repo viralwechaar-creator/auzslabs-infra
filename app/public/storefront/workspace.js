@@ -10,10 +10,11 @@
 import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
 import { templates } from './data.js';
-import { appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
-import { sb, api, apiPost, applyContext, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
+import { dirty, appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
+import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInsights, refreshAccess, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
 
-const table = (heading, rows) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '"><p class="empty">No records yet.</p></td></tr>') + '</tbody></table></div>';
+const table = (heading, rows, emptyNote) => '<div class="table-scroll"><table><thead><tr>' + heading.map((x) => '<th scope="col">' + x + '</th>').join('') + '</tr></thead><tbody>' + (rows.length ? rows.map((x) => '<tr>' + x.map((y, i) => '<td data-label="' + esc(String(heading[i] || '')) + '">' + y + '</td>').join('') + '</tr>').join('') : '<tr><td colspan="' + heading.length + '">' + (emptyNote || '<p class="empty">No records yet.</p>') + '</td></tr>') + '</tbody></table></div>';
+const filteredEmpty = (total, shown) => total > 0 && shown === 0 ? '<p class="empty">No results match your filters.</p><p><button type="button" class="btn compact" data-action="clear-filters">Clear filters</button></p>' : undefined;
 const panel = (title, body, actions = '') => '<section class="panel">' + (title ? '<div class="panel-title"><h2>' + title + '</h2>' + actions + '</div>' : '') + body + '</section>';
 const body = (value) => '<div class="panel-body">' + value + '</div>';
 const head = (title, description, actions = '', parent = '') => '<div class="page-head"><div>' + (parent ? '<a class="trail" href="' + pathFor(parent[0]) + '">' + parent[1] + '</a>' : '') + '<h1>' + title + '</h1><p>' + description + '</p></div><div class="actions">' + actions + '</div></div>';
@@ -45,16 +46,16 @@ function home() {
 }
 
 // ---------- Orders ----------
-const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping']];
+const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']];
 function orderBar() {
   const o = lb.orders;
-  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order or customer" value="' + esc(o.q) + '">' +
+  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer or discount code" value="' + esc(o.q) + '">' +
     '<select id="ol-pay" aria-label="Payment"><option value="">All payments</option>' + [['paid', 'Paid'], ['pending', 'Pending']].map(([v, t]) => '<option value="' + v + '"' + (o.pay === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
     sortSel('ol-sort', [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Total, high to low'], ['low', 'Total, low to high']], o.sort) + '</div>';
 }
 function ordersList() {
   const o = lb.orders, q = o.q.trim().toLowerCase();
-  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q)) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
+  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q) || (x.discountCode || '').toLowerCase() === q) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
   list = list.slice().sort(o.sort === 'old' ? (a, b) => cmp(a.date, b.date) : o.sort === 'high' ? (a, b) => b.total - a.total : o.sort === 'low' ? (a, b) => a.total - b.total : (a, b) => cmp(b.date, a.date));
   const rows = table(['Order', 'Date', 'Customer', 'Total', 'Payment', 'Fulfillment'], list.map((o) => [
     link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status),
@@ -94,6 +95,7 @@ function ordersPage(id) {
   if (id === 'drafts') return draftsPage();
   if (id === 'returns') return returnsPage();
   if (id === 'shipping') return shippingPage();
+  if (id === 'taxes') return taxesPage();
   if (id === 'abandoned-checkouts') return abandonedPage();
   return head('Orders', 'Orders placed on your storefront.', '') + tabs(id, orderTabs) +
     orderMetrics() +
@@ -102,13 +104,29 @@ function ordersPage(id) {
 function orderDetail(id) {
   const o = state.orders.find((x) => x.id === id);
   if (!o) return head('Order unavailable', 'This order could not be found.', wl('All orders', 'orders'));
-  const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
+  const lines = table(['Item', 'Qty', 'Price'], (o.lines || []).map((l) => [(l.productId ? '<a href="' + pathFor('products/' + encodeURIComponent(l.productId)) + '">' + esc(l.name) + '</a>' : esc(l.name)) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : ''), l.qty, money(l.price)]));
   const timeline = (o.timeline || []).slice().reverse().map((e) => '<div class="launch"><div class="info"><strong>' + esc(e.label) + '</strong><small>' + new Date(e.at).toLocaleString('en-IN') + '</small></div></div>').join('');
-  const actions = canWrite() && !['Fulfilled', 'Cancelled', 'Returned'].includes(o.status) ? button('Fulfil order', 'order-fulfill:' + o.id, 'primary') + button('Cancel order', 'order-cancel:' + o.id) : (canWrite() && o.status === 'Fulfilled' ? button('Start a return', 'return-new:' + o.id) : '');
-  return head('Order #' + esc(o.number), dateValue(o.date), actions, ['orders', 'Orders']) +
-    '<div class="record-layout"><div>' + panel('Items', lines) + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfillment</div>' + status(o.status) + (o.tracking ? ' · ' + esc(o.tracking) : '') + '</div></div>')) +
+  const left = (o.remaining || []).reduce((a, r) => a + r.qty, 0);
+  const closed = ['Cancelled', 'Returned'].includes(o.status);
+  const actions = canWrite() && !closed ? (left > 0 && o.status !== 'Fulfilled' ? button('Fulfil items', 'order-fulfill:' + o.id, 'primary') : '') + (o.fulfilment === 'unfulfilled' && o.status !== 'Fulfilled' ? button('Cancel order', 'order-cancel:' + o.id) : button('Start a return', 'return-new:' + o.id)) : '';
+  const dlabel = { none: 'Not shipped', in_transit: 'In transit', partly_delivered: 'Partly delivered', delivered: 'Delivered', failed: 'Delivery failed' }[o.delivery] || 'Not shipped';
+  const ships = (o.shipments || []).filter((x) => x.status !== 'cancelled').map((x) => {
+    const next = { shipped: [['in_transit', 'Mark in transit'], ['delivered', 'Mark delivered']], in_transit: [['delivered', 'Mark delivered'], ['failed', 'Delivery failed']], failed: [['in_transit', 'Retry delivery']] }[x.status] || [];
+    const acts = canWrite() ? next.map(([st, lb]) => button(lb, 'shipment-set:' + x.id + ':' + st)).join('') + (['shipped', 'in_transit'].includes(x.status) ? button('Edit tracking', 'shipment-edit:' + x.id) : '') : '';
+    return '<div class="launch"><div class="info"><strong>Shipment ' + x.seq + '</strong> · ' + status(x.status === 'in_transit' ? 'In transit' : x.status === 'delivered' ? 'Delivered' : x.status === 'failed' ? 'Failed' : 'Shipped') +
+      '<small>' + (x.items || []).map((i) => esc(i.name) + (i.label && i.label !== 'Default' ? ' · ' + esc(i.label) : '') + ' × ' + i.qty).join(', ') + '</small>' +
+      '<small>' + (x.carrier ? esc(x.carrier) + ' ' : '') + (x.tracking ? (x.trackingUrl ? '<a href="' + esc(x.trackingUrl) + '" target="_blank" rel="noopener">' + esc(x.tracking) + '</a>' : esc(x.tracking)) : 'No tracking added') + '</small></div><div>' + acts + '</div></div>';
+  }).join('');
+  const refundRows = (o.refunds || []).map((r) => '<div class="launch"><div class="info"><strong>' + money(r.amount) + '</strong> · ' + esc({ manual: 'Paid back by you', razorpay: 'Razorpay', store_credit: 'Store credit' }[r.method] || r.method) + '<small>' + esc(r.reason || '') + ' ' + new Date(r.createdAt).toLocaleDateString('en-IN') + '</small></div></div>').join('');
+  const canRefund = canWrite() && o.refunded < o.total && o.status !== 'Cancelled' && (o.payment === 'Paid' || o.refunded > 0 || o.status === 'Fulfilled');
+  const refundPanel = panel('Refunds', body('<div class="stack">' + (refundRows || '<p class="empty">Nothing refunded.</p>') + (o.refunded > 0 ? '<p class="compact-copy">Refunded ' + money(o.refunded) + ' of ' + money(o.total) + '.</p>' : '') +
+    (canRefund ? button('Record a refund', 'refund-new:' + o.id) : '') + (canWrite() ? button(o.isTest ? 'Unmark test order' : 'Mark as test order', 'order-test:' + o.id + ':' + (o.isTest ? 'off' : 'on')) : '') + '</div>'));
+  const shipPanel = panel('Fulfilment', body('<div class="stack">' + (ships || '<p class="empty">Nothing shipped yet.</p>') + (left > 0 && (o.shipments || []).length ? '<p class="compact-copy">' + left + ' item(s) still to ship.</p>' : '') + '</div>'));
+  return head('Order #' + esc(o.number) + (o.isTest ? ' (test)' : ''), dateValue(o.date), actions, ['orders', 'Orders']) +
+    '<div class="record-layout"><div>' + panel('Items', lines) + shipPanel + refundPanel + panel('Totals', body('<div class="stack"><div class="launch"><div class="info">Total</div><strong>' + money(o.total) + '</strong></div><div class="launch"><div class="info">Payment</div>' + status(o.payment) + '</div><div class="launch"><div class="info">Fulfilment</div>' + status(o.status) + '</div><div class="launch"><div class="info">Delivery</div><strong>' + dlabel + '</strong></div><div class="launch"><div class="info">Channel</div><strong>' + esc(o.channel) + (o.oversold ? ' · oversold, check stock' : '') + '</strong></div></div>')) +
+    ((state.returns || []).filter((r) => r.orderId === o.id).length ? panel('Returns', body('<div class="stack">' + (state.returns || []).filter((r) => r.orderId === o.id).map((r) => '<div class="launch"><div class="info">' + (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', ') + '<small>' + esc(r.reason || '') + '</small></div>' + badge({ requested: 'Requested', approved: 'Approved', rejected: 'Rejected', received: 'Received', refunded: 'Refunded' }[r.status] || esc(r.status)) + '</div>').join('') + '<a href="' + pathFor('returns') + '">All returns</a></div>')) : '') +
     panel('Timeline', body('<div class="stack">' + (timeline || '<p class="empty">No activity yet.</p>') + '</div>')) +
-    '</div><aside>' + panel('Customer', body('<p>' + esc(o.customer || '—') + '</p>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
+    '</div><aside>' + panel('Customer', body('<div class="stack"><p>' + (o.customerId ? '<a href="#" data-action="customer-detail:' + esc(o.customerId) + '">' + esc(o.customer || '—') + '</a>' : esc(o.customer || '—')) + '</p>' + (o.contact.phone ? '<small>' + esc(o.contact.phone) + '</small>' : '') + (o.contact.email ? '<small>' + esc(o.contact.email) + '</small>' : '') + (o.contact.address ? '<small>' + esc([o.contact.address, o.contact.city, o.contact.state, o.contact.pin].filter(Boolean).join(', ')) + '</small>' : '') + (o.discountCode ? '<small>Discount: <a href="' + pathFor('discounts') + '">' + esc(o.discountCode) + '</a> (−' + money(o.discountAmount) + ')</small>' : '') + (o.attribution && (o.attribution.source || o.attribution.campaign) ? '<small>Came from: ' + esc([o.attribution.source, o.attribution.medium, o.attribution.campaign].filter(Boolean).join(' / ')) + '</small>' : '') + '</div>')) + panel('Internal note', body(canWrite() ? editForm('order-note', o.id, area('Note', 'note', o.note), 'Save note') : '<p class="compact-copy">' + esc(o.note || 'No note.') + '</p>')) + '</aside></div>';
 }
 
 // ---------- Products ----------
@@ -125,7 +143,8 @@ function productsList(query = '') {
     && (!pf.stock || (pf.stock === 'out' ? Number(p.stock) <= 0 : pf.stock === 'low' ? Number(p.stock) > 0 && Number(p.stock) < 5 : Number(p.stock) >= 5)));
   const sorters = { name: (a, b) => cmp((a.name || '').toLowerCase(), (b.name || '').toLowerCase()), 'price-asc': (a, b) => a.price - b.price, 'price-desc': (a, b) => b.price - a.price, 'stock-asc': (a, b) => a.stock - b.stock, 'stock-desc': (a, b) => b.stock - a.stock };
   if (sorters[pf.sort]) items.sort(sorters[pf.sort]);
-  return table(canWrite() ? ['', 'Product', 'Category', 'Status', 'Price', 'Available'] : ['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => (canWrite() ? ['<input type="checkbox" data-bulk="' + esc(p.id) + '" aria-label="Select ' + esc(p.name) + '">'] : []).concat([productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock])));
+  return table(canWrite() ? ['', 'Product', 'Category', 'Status', 'Price', 'Available'] : ['Product', 'Category', 'Status', 'Price', 'Available'], items.map((p) => (canWrite() ? ['<input type="checkbox" data-bulk="' + esc(p.id) + '" aria-label="Select ' + esc(p.name) + '">'] : []).concat([productLabel(p), esc(p.category || 'Uncategorized'), status(p.status), money(p.price), p.stock])), filteredEmpty(state.products.length, items.length)) +
+    (canWrite() && items.length ? '<p class="compact-copy" id="bulk-scope" data-total="' + items.length + '" aria-live="polite"></p>' : '');
 }
 function productFilters() {
   const cats = [...new Set(state.products.map((p) => p.category).filter(Boolean))].sort(); const tagSet = [...new Set(Object.values(state.productTags || {}).flat())].sort();
@@ -314,7 +333,7 @@ function collectVariants(formEl) {
 }
 
 // ---------- Online store: overview / theme / domains / payments ----------
-const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['domains', 'Domains'], ['checkout', 'Payments']];
+const websiteTabs = [['website', 'Store overview'], ['builder', 'Theme'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']];
 // ---------- Theme marketplace (phase 2, db/375) ----------
 // Real marketplace: built-in Minimal/Classic are now plain rows in sfx_themes (migrated in, not
 // hardcoded), alongside any developer theme an admin has approved. "Install" copies the approved
@@ -385,8 +404,12 @@ const PAGE_TEMPLATES = {
   lookbook: ['Lookbook', [{ type: 'hero', props: { heading: 'The lookbook', sub: 'Pieces styled the way we wear them.' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'button', props: { text: 'Shop the looks', href: '/shop' } }]],
   blank: ['New page', [{ type: 'text', props: { heading: 'New page', body: 'Write something here.' } }]],
 };
-const linesOf = (links) => (links || []).map((l) => l.label + ' | ' + l.href).join('\n');
-const parseLinks = (txt, max) => String(txt || '').split('\n').map((x) => x.trim()).filter(Boolean).slice(0, max).map((x) => { const [label, ...r] = x.split('|'); return { label: (label || '').trim(), href: r.join('|').trim() }; }).filter((l) => l.label && l.href);
+const linesOf = (links) => (links || []).map((l) => l.label + ' | ' + l.href + ((l.children || []).map((c) => '\n- ' + c.label + ' | ' + c.href).join(''))).join('\n');
+// one link per line "Label | href"; a line starting with "- " is a sub-link of the line above it (header menus only use them)
+const parseLinks = (txt, max) => { const out = []; for (const raw of String(txt || '').split('\n')) { const x = raw.trim(); if (!x) continue; const child = /^-\s+/.test(x); const [label, ...r] = x.replace(/^-\s+/, '').split('|'); const l = { label: (label || '').trim(), href: r.join('|').trim() }; if (!l.label || !l.href) continue;
+  if (child && out.length) { const p = out[out.length - 1]; p.children = [...(p.children || []), l].slice(0, 8); } else if (!child && out.length < max) out.push(l); } return out; };
+const columnsText = (cols) => (cols || []).map((c) => '## ' + c.title + '\n' + (c.links || []).map((l) => l.label + ' | ' + l.href).join('\n')).join('\n\n');
+const parseColumns = (txt) => { const cols = []; for (const raw of String(txt || '').split('\n')) { const x = raw.trim(); if (!x) continue; if (/^##\s*/.test(x)) { if (cols.length < 3) cols.push({ title: x.replace(/^##\s*/, '').slice(0, 40), links: [] }); continue; } const c = cols[cols.length - 1]; if (!c) continue; const [label, ...r] = x.split('|'); const l = { label: (label || '').trim(), href: r.join('|').trim() }; if (l.label && l.href && c.links.length < 8) c.links.push(l); } return cols.filter((c) => c.title && c.links.length); };
 const pageSlug = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page';
 const edCurPage = () => (ed.cur.startsWith('p:') ? ed.pages[Number(ed.cur.slice(2))] : null);
 function edBind() { const p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : p ? p.sections : ed.home; if (ed.cur !== 'home' && !p && ed.cur !== 'header' && ed.cur !== 'footer') ed.cur = 'home'; }
@@ -414,10 +437,10 @@ function edChromeHtml(kind) {
   const w = canWrite(); const dis = w ? '' : ' disabled';
   if (kind === 'header') return '<div class="panel-title"><h2>Header</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="header"><div class="field-grid te-fields">' +
     input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + input('Announcement link (optional)', 'announceHref', ed.header.announceHref, 'text', 'placeholder="/shop or https://..."' + dis) +
-    area('Extra menu links (one per line: Label | /path or https://link, up to 8)', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
+    area('Extra menu links. One per line: Label | /path or https://link (up to 8). A line starting with - is a sub-link of the line above.', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
   return '<div class="panel-title"><h2>Footer</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="footer"><div class="field-grid te-fields">' +
     area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
-    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + '</div></form></div>';
+    area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + area('Footer columns (up to 3). Start each with ## Title, then one link per line.', 'columns', columnsText(ed.footer.columns), 'rows="7"' + dis + ' placeholder="## Help\nShipping | /store.html#/policy/shipping"') + '</div></form></div>';
 }
 function edRightHtml() {
   if (ed.cur === 'header' || ed.cur === 'footer') return edChromeHtml(ed.cur);
@@ -536,7 +559,7 @@ function edChromeInput(target) {
   const d = Object.fromEntries(new FormData(form));
   if (form.dataset.form === 'te-page') { const p = edCurPage(); if (!p) return true; p.title = String(d.title || '').slice(0, 60); p.slug = pageSlug(d.slug || d.title); const o = $('#te-page-wrap'); if (o) o.innerHTML = edPageSelect(); }
   else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
-  else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12) };
+  else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12), columns: parseColumns(d.columns) };
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
   edPost(); return true;
 }
@@ -568,6 +591,10 @@ function checkoutPage() {
     panel('Razorpay', body(connected ?
       '<p class="compact-copy">Online payments are connected. Customers can also always pay cash on delivery.</p>' + (canWrite() ? button('Disconnect', 'razorpay-clear') : '') :
       '<p class="compact-copy">Not connected yet. Customers can still check out and pay cash on delivery.</p>' + (canWrite() ? editForm('razorpay', null, input('Key ID', 'keyId', '', 'text', 'required placeholder="rzp_live_..."') + input('Key Secret', 'secret', '', 'password', 'required'), 'Connect Razorpay') : ''))) +
+    panel('Checkout rules', body(canWrite() ? editForm('checkout-rules', '', (() => { const r = state.checkout.rules || { fields: {}, payments: {}, limits: {} };
+      return select('Email at checkout', 'email', [['optional', 'Optional'], ['required', 'Required']], r.fields.email || 'optional') + select('Second address line', 'address2', [['optional', 'Show'], ['hidden', 'Hide']], r.fields.address2 || 'optional') + select('Order note', 'note', [['optional', 'Show'], ['hidden', 'Hide']], r.fields.note || 'optional') +
+        select('Cash on delivery', 'cod', [['yes', 'Allowed'], ['no', 'Not allowed']], r.payments.cod === false ? 'no' : 'yes') + select('Online payment', 'online', [['yes', 'Allowed'], ['no', 'Not allowed']], r.payments.online === false ? 'no' : 'yes') +
+        input('Cash on delivery only up to (Rs, 0 = no limit)', 'codMax', r.payments.codMax || 0, 'number', 'min="0" step="1"') + input('Minimum order (Rs, 0 = none)', 'minOrder', r.limits.minOrder || 0, 'number', 'min="0" step="1"') + input('Most items in one order (0 = no limit)', 'maxItems', r.limits.maxItems || 0, 'number', 'min="0" max="200" step="1"'); })(), 'Save rules') : '<p class="compact-copy">Only an owner or manager can edit this.</p>')) +
     panel('Checkout appearance', body('<p class="compact-copy">Customizing checkout’s colours and confirmation text is coming in a later release. Checkout always uses your store’s own theme today.</p>'), badge('Coming soon', 'neutral'));
 }
 function websiteOverview() {
@@ -583,6 +610,7 @@ function websitePage(id) {
   if (id === 'website') return websiteOverview();
   if (id === 'builder' || id === 'templates') return themePage();
   if (id === 'domains') return domainPage();
+  if (id === 'store-directory') return storeDirPage();
   if (id === 'checkout') return checkoutPage();
   return storePagesPage();
 }
@@ -604,7 +632,8 @@ function billingPage() {
   const actions = !canWrite() ? '<p class="compact-copy">Only an owner can change the plan.</p>' : p.plan_status === 'active' ? '' :
     '<div class="actions">' + button('Pay now and ' + (p.plan_status === 'trial' ? 'keep my store going' : 'reactivate'), 'plan-pay', 'primary') + button('Ask AUZslab to reactivate me', 'plan-request') + '</div><output id="plan-feedback" role="status"></output>';
   return head('Billing and renewals', 'Your storefront plan.', badge(label, p.plan_status === 'active' ? '' : 'warn'), ['settings', 'Settings']) +
-    panel('Plan', body('<p class="compact-copy">' + esc(msg) + '</p>' + actions));
+    panel('Plan', body('<p class="compact-copy">' + esc(msg) + '</p>' + actions)) +
+    (state.access && state.access.bills ? panel('Payments for your plan', table(['Date', 'Amount', 'Status', 'Reference'], state.access.bills.map((b) => [dateValue(b.at), money(b.amount), esc(b.status), esc(b.reference || '—')]))) : '');
 }
 function loadRzp() { return new Promise((ok, no) => { if (window.Razorpay) return ok(); const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = ok; s.onerror = () => no(new Error('Could not load the payment window. Check your connection.')); document.head.append(s); }); }
 async function payPlan(out) {
@@ -643,7 +672,59 @@ function channelsPage() {
     '</div>') +
     panel('Add a channel', body('<p class="compact-copy">More ways to sell, such as WhatsApp ordering and marketplaces, are not available yet. We will list them here when they are ready.</p>'));
 }
+function apiPanels() {
+  const a = state.access || {}; const out = [];
+  if (a.keys) {
+    out.push(panel('API keys', body('<p class="compact-copy">Let another program read your orders, products and stock. Keys can only read, and only your own shop. Read the list at <code>/storefront-api/v1/orders</code>, <code>/products</code> and <code>/inventory</code> with the header <code>Authorization: Bearer your-key</code>.</p>' +
+      table(['Name', 'Starts with', 'Created', 'Last used', ''], a.keys.map((k) => [esc(k.name), '<code>' + esc(k.prefix) + '…</code>', dateValue(k.createdAt), k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('en-IN') : 'Never', k.revoked ? badge('Revoked', 'warn') : (canWrite() ? button('Revoke', 'apikey-revoke:' + k.id, 'compact danger') : '')])) + (canWrite() ? button('Create a key', 'apikey-new', 'primary') : '')), ''));
+  }
+  if (a.route) {
+    const r = a.route; const label = { not_started: 'Not set up', pending: 'Waiting for details', needs_info: 'Needs more information', active: 'Active', suspended: 'Paused' }[r.status] || r.status;
+    out.push(panel('Payouts through AUZslab', body('<p class="compact-copy">Status: ' + badge(label, r.status === 'active' ? '' : 'neutral') + (r.bankLast4 ? ' · Bank account ending ' + esc(r.bankLast4) : '') + '</p>' +
+      '<p class="compact-copy">Paid so far ' + money(r.settled) + ' · On the way ' + money(r.pending) + '. Payouts through AUZslab start when AUZslab switches them on for your store. Until then, connect your own Razorpay under Payments.</p>' +
+      table(['Order', 'Amount', 'Fee', 'You receive', 'Status'], (a.settlements || []).map((x) => [esc(x.order || '—'), money(x.gross), money(x.fee), money(x.net), esc(x.status)])), '')));
+  }
+  return out.join('');
+}
+function appsPage() {
+  const pl = state.plan || {}; const planLabel = { trial: 'Free trial', active: 'Active', paused: 'Paused', cancelled: 'Cancelled' }[pl.plan_status] || pl.plan_status || 'Active';
+  const f = state.features || {}; const doms = (state.domains || []);
+  const row = (name, note, chip, href, cta) => '<div class="channel-row"><div class="ch-main"><strong>' + name + '</strong>' + chip + '<small>' + note + '</small></div>' + (href ? '<a class="btn compact" href="' + href + '">' + cta + '</a>' : '') + '</div>';
+  const connected = [
+    row('Online payments (Razorpay)', 'Card, UPI and net banking go straight to your own Razorpay account. Cash on delivery always works.', state.store.razorpayConnected ? badge('Connected') : badge('Not connected', 'neutral'), pathFor('checkout'), 'Manage'),
+    row('Domain', 'Your store address and any domain you already own.', doms.length ? badge(doms.length + ' connected') : badge('Using your AUZslab address', 'neutral'), pathFor('domains'), 'Manage'),
+    row('AUZsStyle shop', 'In-store billing, stock and tags sharing one catalogue with this store.', !f.style ? badge('Not on your plan', 'neutral') : styleLinkOn() ? badge('Linked') : badge('Not linked', 'warn'), pathFor('channels'), 'Manage'),
+    row('Visitor analytics', 'Anonymous visits, bag and checkout steps recorded by your store. No third-party tracker.', badge('On'), pathFor('analytics'), 'View'),
+  ].join('');
+  return head('Apps and plans', 'Your plan, and the services connected to your store.', '', ['settings', 'Settings']) +
+    panel('Your plan', body('<div class="stack">' + badge(planLabel, pl.plan_status === 'active' || !pl.plan_status ? '' : 'warn') + '<p class="compact-copy">' + (pl.trial_ends_at && pl.plan_status === 'trial' ? 'Your free trial ends on ' + esc(dateValue(pl.trial_ends_at)) + '. ' : '') + 'Pay, renew or ask for help under Billing and renewals.</p>' + wl('Billing and renewals', 'billing') + '</div>')) +
+    panel('Connected services', '<div class="channel-list">' + connected + '</div>') +
+    (appLinks().length ? panel('Other AUZslab apps for this business', '<div class="switch-apps">' + appLinks().map(([n, d, u, ic]) => '<a class="switch-app" href="' + esc(u) + '" data-handoff="1">' + icon(ic) + '<span><strong>' + esc(n) + '</strong><small>' + esc(d) + '</small></span></a>').join('') + '</div>') : '') +
+    apiPanels() +
+    panel('Third-party apps', body('<p class="compact-copy">An app marketplace is not available. Every service above is built in and works without installing anything.</p>'));
+}
+const noAccess = (t) => head(t, 'Your role does not include this.', '', ['settings', 'Settings']) + panel('Not available', body('<p class="compact-copy">Ask the store owner for the settings permission to see this page.</p>'));
+function accessPage(id) {
+  const a = state.access; if (!a) return head('Loading', '', '');
+  if (id === 'activity') {
+    if (!a.audit) return noAccess('Activity log');
+    return head('Activity log', 'Refunds, store credit, tax, checkout, shipping, discounts and restored versions, with who did them.', '', ['settings', 'Settings']) +
+      panel('Recent activity', table(['When', 'Who', 'What', 'Details'], a.audit.map((x) => [new Date(x.at).toLocaleString('en-IN'), esc(x.who), esc(x.action), esc(Object.entries(x.detail || {}).map(([k, v]) => k + ': ' + v).join(' · '))])));
+  }
+  if (id === 'staff-security') {
+    if (!a.staff) return noAccess('Staff security');
+    const weak = a.staff.filter((x) => !x.twoFactor && x.role !== 'cashier');
+    return head('Staff security', 'Who can open your store admin, and how well their sign-in is protected.', '', ['settings', 'Settings']) +
+      (weak.length ? panel('Needs attention', body('<p class="compact-copy">' + weak.length + ' owner or manager account(s) do not use two-step sign-in. Ask them to turn it on in their AUZslab account.</p>')) : '') +
+      panel('People with access', table(['Name', 'Role', 'Two-step sign-in', 'Last seen', 'Active sessions', 'Login'], a.staff.map((x) => [esc(x.name || '—'), esc(x.roleName || x.role), x.twoFactor ? badge('On') : badge('Off', 'warn'), x.lastSeen ? new Date(x.lastSeen).toLocaleString('en-IN') : '—', x.sessions, x.loginOff ? badge('Turned off', 'warn') : badge('Allowed')])));
+  }
+  if (id === 'messages') return head('Customer messages', 'WhatsApp messages sent to your customers from your store and apps. Phone numbers are hidden except the last four digits.', '', ['settings', 'Settings']) +
+    panel('Recent messages', table(['When', 'To', 'Message', 'Status', 'Problem'], (a.messages || []).map((m) => [new Date(m.at).toLocaleString('en-IN'), esc(m.to), esc(m.template), esc(m.status), esc(m.error || '')])));
+  return '';
+}
 function management(id) {
+  if (['activity', 'staff-security', 'messages'].includes(id)) return accessPage(id);
+  if (id === 'apps') return appsPage();
   if (id === 'policies') return policiesPage();
   if (id === 'privacy-settings') return privacySettingsPage();
   if (id === 'roles') return rolesPage();
@@ -671,7 +752,7 @@ function customersList() {
   list.sort(o.sort === 'orders' ? (a, b) => b.orderCount - a.orderCount : o.sort === 'spend' ? (a, b) => b.lifetimeSpend - a.lifetimeSpend : o.sort === 'recent' ? (a, b) => cmp(b.lastOrderAt || '', a.lastOrderAt || '') : (a, b) => cmp((a.name || '').toLowerCase(), (b.name || '').toLowerCase()));
   const rows = list.map((c) => [
     esc(c.name), esc(c.phone || '—'), esc(c.email || '—'), c.orderCount, money(c.lifetimeSpend), dateValue(c.lastOrderAt),
-    c.manual && canWrite() ? button('Edit', 'customer-edit:' + c.id, 'compact') + button('Delete', 'customer-delete:' + c.id, 'compact danger') : (canWrite() ? button('Save as customer', 'customer-adopt:' + encodeURIComponent(c.phone || ''), 'compact') : ''),
+    (String(c.id).startsWith('order:') ? '' : button('Details', 'customer-detail:' + c.id, 'compact')) + (c.manual && canWrite() ? button('Edit', 'customer-edit:' + c.id, 'compact') + button('Delete', 'customer-delete:' + c.id, 'compact danger') : (canWrite() ? button('Save as customer', 'customer-adopt:' + encodeURIComponent(c.phone || ''), 'compact') : '')),
   ]);
   return table(['Name', 'Phone', 'Email', 'Orders', 'Total spent', 'Last order', ''], rows);
 }
@@ -686,23 +767,30 @@ function customerForm(c) {
 }
 
 // ---------- Discounts ----------
-const discountValueLabel = (d) => d.kind === 'percent' ? Number(d.value) + '% off' : 'Rs ' + Number(d.value) + ' off';
+const discountValueLabel = (d) => (d.automatic ? 'Automatic · ' : '') + (d.kind === 'percent' ? Number(d.value) + '% off' : d.kind === 'free_shipping' ? 'Free shipping' : d.kind === 'buy_x_get_y' ? 'Buy ' + d.buyQty + ' get ' + d.getQty + (Number(d.getPercent) < 100 ? ' at ' + Number(d.getPercent) + '% off' : ' free') : 'Rs ' + Number(d.value) + ' off') + (d.productIds && d.productIds.length ? ' (chosen product)' : '');
 function discountsPage() {
   const rows = (state.discounts || []).map((d) => [
     '<strong>' + esc(d.code) + '</strong>', discountValueLabel(d), d.minOrder != null ? money(d.minOrder) : '—', d.expiresAt ? dateValue(d.expiresAt) : 'No expiry',
-    d.usedCount + (d.usageLimit ? ' / ' + d.usageLimit : ''), badge(d.status === 'active' ? 'Active' : 'Archived', d.status === 'active' ? '' : 'neutral'),
+    (d.usedCount ? '<a href="#" data-action="discount-orders:' + esc(d.code) + '">' + d.usedCount + '</a>' : '0') + (d.usageLimit ? ' / ' + d.usageLimit : ''), badge(d.status === 'active' ? 'Active' : 'Archived', d.status === 'active' ? '' : 'neutral'),
     canWrite() ? button('Edit', 'discount-edit:' + d.id, 'compact') + button(d.status === 'active' ? 'Archive' : 'Activate', 'discount-toggle:' + d.id, 'compact') : '',
   ]);
   return head('Discounts', 'Codes your customers type at checkout.', canWrite() ? button('Create discount', 'discount-new', 'primary') : '') +
     panel('All discounts', table(['Code', 'Offer', 'Minimum order', 'Expires', 'Used', 'Status', ''], rows));
 }
 function discountForm(d) {
-  const exp = d?.expiresAt ? String(d.expiresAt).slice(0, 10) : '';
-  return editForm('discount-record', d?.id, input('Code', 'code', d?.code || '', 'text', 'required maxlength="30" pattern="[A-Za-z0-9_\\-]{2,30}" style="text-transform:uppercase"') +
-    select('Type', 'kind', [['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)']], d?.kind || 'percent') +
-    input('Value', 'value', d?.value ?? '', 'number', 'required min="0.01" step="0.01"') +
+  const exp = d?.expiresAt ? String(d.expiresAt).slice(0, 10) : ''; const st = d?.startsAt ? String(d.startsAt).slice(0, 10) : '';
+  const prods = [['', 'All products']].concat((state.products || []).map((p) => [p.id, p.name]));
+  return editForm('discount-record', d?.id, input('Code or name', 'code', d?.code || '', 'text', 'required maxlength="30"') +
+    select('Type', 'kind', [['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)'], ['free_shipping', 'Free shipping'], ['buy_x_get_y', 'Buy X get Y']], d?.kind || 'percent') +
+    input('Value (percent or Rs, not needed for free shipping or Buy X get Y)', 'value', d?.value ?? '', 'number', 'min="0" step="0.01"') +
+    input('Buy this many (Buy X get Y)', 'buyQty', d?.buyQty ?? '', 'number', 'min="1" step="1"') + input('Get this many (Buy X get Y)', 'getQty', d?.getQty ?? '', 'number', 'min="1" step="1"') +
+    input('Gift discount percent (100 = free)', 'getPercent', d?.getPercent ?? 100, 'number', 'min="1" max="100" step="1"') +
+    select('Applies to', 'productId', prods, (d?.productIds || [])[0] || '') +
+    select('How customers get it', 'automatic', [['no', 'They type the code'], ['yes', 'Applied automatically (no code needed)']], d?.automatic ? 'yes' : 'no') +
     input('Minimum order (Rs, optional)', 'minOrder', d?.minOrder ?? '', 'number', 'min="0" step="0.01"') +
-    input('Expires on (optional)', 'expiresAt', exp, 'date') + input('Usage limit (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"'));
+    input('Starts on (optional)', 'startsAt', st, 'date') + input('Expires on (optional)', 'expiresAt', exp, 'date') +
+    input('Total uses allowed (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"') + input('Uses per customer (optional)', 'perCustomerLimit', d?.perCustomerLimit ?? '', 'number', 'min="1" step="1"') +
+    select('First order only', 'firstOrderOnly', [['no', 'Any customer'], ['yes', 'Only a customer\'s first order']], d?.firstOrderOnly ? 'yes' : 'no'));
 }
 
 // ---------- Inventory, Transfers, Categories ----------
@@ -710,12 +798,22 @@ const moveLabel = (m) => m.reason === 'transfer' ? 'Moved ' + m.qty + ' from ' +
 const movesTable = (moves) => table(['When', 'Product', 'What happened', 'Note'], moves.slice(0, 25).map((m) => [dateValue(m.at), esc(m.product + (m.variant && m.variant !== 'Default' ? ' · ' + m.variant : '')), moveLabel(m), esc(m.note || '')]));
 function inventoryPage() {
   const rows = (state.inventory || []).map((v) => [
-    esc(v.product), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>', v.elsewhere,
-    canWrite() ? button('Adjust', 'stock-adjust:' + v.variantId, 'compact') : '',
+    (v.productId ? '<a href="' + pathFor('products/' + encodeURIComponent(v.productId)) + '">' + esc(v.product) + '</a>' : esc(v.product)), esc(v.variant), esc(v.sku || '—'), '<span class="' + (v.online <= 0 ? 'text-danger' : v.online < 5 ? 'text-warn' : '') + '">' + v.online + '</span>',
+    v.unavailable || 0, v.committed || 0, v.onHand ?? v.online, v.cost == null ? '<span class="muted">Not set</span>' : money(v.cost), v.elsewhere,
+    canWrite() ? button('Adjust', 'stock-adjust:' + v.variantId, 'compact') + button('Details', 'stock-details:' + v.variantId, 'compact') : '',
   ]);
-  return head('Inventory', 'Stock your storefront can sell right now, and stock held elsewhere.', '') + tabs('inventory', productTabs) +
-    panel('Stock levels', table(['Product', 'Variant', 'SKU', 'Available online', 'Other locations', ''], rows)) +
+  const buf = (state.checkout && state.checkout.stockBuffer) || 0;
+  return head('Inventory', 'Available stock can be sold now. Committed is held for orders not shipped yet; unavailable is set aside.', canWrite() ? button('Stock buffer: ' + buf, 'stock-buffer') : '') + tabs('inventory', productTabs) +
+    panel('Stock levels', table(['Product', 'Variant', 'SKU', 'Available', 'Unavailable', 'Committed', 'On hand', 'Cost', 'Other locations', ''], rows)) +
     panel('Recent stock changes', movesTable(state.stockMoves || []));
+}
+function stockDetailsForm(v) {
+  return editForm('stock-details', v.variantId, '<p class="compact-copy wide">' + esc(v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '')) + ': ' + v.online + ' available, ' + (v.unavailable || 0) + ' unavailable, ' + (v.committed || 0) + ' committed.</p>' +
+    input('Cost per unit (leave empty if unknown)', 'cost', v.cost == null ? '' : v.cost, 'number', 'min="0" step="0.01"') +
+    select('Needs shipping', 'needsShipping', [['yes', 'Yes, it is a physical product'], ['no', 'No, nothing to ship']], v.needsShipping === false ? 'no' : 'yes') +
+    select('Set units aside', 'move', [['none', 'No change'], ['set', 'Move to unavailable'], ['release', 'Release back to available']], 'none') +
+    input('How many units', 'units', '', 'number', 'min="0" step="1"') +
+    select('Reason', 'reason', [['damaged', 'Damaged'], ['quality_hold', 'Quality hold'], ['safety_stock', 'Safety stock'], ['other', 'Other']], 'damaged'), 'Save');
 }
 function adjustForm(v) {
   return editForm('stock-adjust', v.variantId, '<p class="compact-copy wide">' + esc(v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '')) + ' has <strong>' + v.online + '</strong> available online.</p>' +
@@ -746,7 +844,7 @@ function categoriesPage() {
 // ---------- Orders: Drafts, Returns, Shipping, Abandoned checkouts ----------
 const variantOptions = () => (state.inventory || []).map((v) => [v.variantId, v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '') + ' (' + v.online + ' left)']);
 function draftsPage() {
-  const rows = (state.drafts || []).map((d) => [esc(d.customer.name || '—'), (d.lines || []).reduce((s, l) => s + l.qty, 0) + ' items', money(d.total), d.status === 'open' ? badge('Open', 'neutral') : badge('Converted'),
+  const rows = (state.drafts || []).map((d) => [esc(d.customer.name || '—'), (d.lines || []).reduce((s, l) => s + l.qty, 0) + ' items', money(d.total), d.status === 'open' ? badge('Open', 'neutral') : (d.orderId ? '<a href="' + pathFor('orders/' + d.orderId) + '">' + badge('Converted') + '</a>' : badge('Converted')),
     d.status === 'open' && canWrite() ? button('Create order', 'draft-convert:' + d.id, 'compact primary') + button('Delete', 'draft-delete:' + d.id, 'compact danger') : '']);
   return head('Draft orders', 'Create an order by hand for a phone or in-person sale.', canWrite() ? button('Create draft', 'draft-new', 'primary') : '') + tabs('drafts', orderTabs) + panel('All drafts', table(['Customer', 'Items', 'Total', 'Status', ''], rows));
 }
@@ -758,7 +856,7 @@ function draftForm() {
 }
 const RETURN_NEXT = { requested: [['approved', 'Approve', 'primary'], ['rejected', 'Reject', '']], approved: [['received', 'Mark received', 'primary']], received: [['refunded', 'Refund', 'primary']] };
 function returnsPage() {
-  const rows = (state.returns || []).map((r) => [link('#' + esc(r.orderNumber), pathFor('returns/' + r.id), 'compact'), (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), esc(r.reason || '—'), money(r.value),
+  const rows = (state.returns || []).map((r) => [link('#' + esc(r.orderNumber), pathFor('orders/' + r.orderId), 'compact'), (r.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), esc(r.reason || '—'), money(r.value),
     badge({ requested: 'Requested', approved: 'Approved', rejected: 'Rejected', received: 'Received', refunded: 'Refunded' }[r.status], ['rejected'].includes(r.status) ? 'neutral' : ''),
     canWrite() ? (RETURN_NEXT[r.status] || []).map(([s, label, kind]) => button(label, 'return-set:' + r.id + ':' + s, 'compact ' + kind)).join('') : '']);
   return head('Returns', 'Return requests for fulfilled orders. Units go back in stock when you mark them received.', '') + tabs('returns', orderTabs) + panel('All returns', table(['Order', 'Items', 'Reason', 'Value', 'Status', ''], rows));
@@ -766,6 +864,29 @@ function returnsPage() {
 function returnForm(order) {
   const rows = (order.lines || []).map((l, i) => '<input type="hidden" name="vid' + i + '" value="' + esc(l.variantId) + '">' + input(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' (ordered ' + l.qty + ')', 'rq' + i, '', 'number', 'min="0" max="' + l.qty + '" step="1"')).join('');
   return editForm('return-record', order.id, rows + area('Reason', 'reason', '', 'maxlength="500"'), 'Create return');
+}
+function storeDirPage() {
+  const list = state.storeDir || [];
+  const cards = list.map((x) => '<div class="channel-row"><div class="ch-main"><strong>' + esc(x.name) + '</strong>' + (x.featured ? badge('Featured') : '') + '<small>' + esc([x.address, x.city].filter(Boolean).join(', ') || 'No address yet') + (x.phone ? ' · ' + esc(x.phone) : '') + (x.hours ? ' · ' + esc(x.hours) : '') + '</small></div>' +
+    (canWrite() ? button('Edit', 'dir-edit:' + x.id, 'compact') + button('Delete', 'dir-delete:' + x.id, 'compact danger') : '') + '</div>').join('');
+  const url = storeLink('stores');
+  return head('Stores', 'The shops, studios or pickup points customers can visit. They appear on your online store\'s Our stores page.', canWrite() ? button('Add store', 'dir-new', 'primary') : '', ['website', 'Online store']) + tabs('store-directory', websiteTabs) +
+    panel('Your stores', list.length ? '<div class="channel-list">' + cards + '</div>' + (url ? '<p class="compact-copy">' + link('View Our stores page', url) + '</p>' : '') : body('<p class="compact-copy">No stores yet. Add your first one. Until then the Our stores page shows your business address if you have one.</p>'));
+}
+function storeDirForm(x) {
+  const v = x || {};
+  return editForm('dir-record', v.id, input('Store name', 'name', v.name || '', 'text', 'required maxlength="80"') + input('Address', 'address', v.address || '', 'text', 'maxlength="300"') + input('City', 'city', v.city || '', 'text', 'maxlength="80"') +
+    input('Phone', 'phone', v.phone || '', 'tel', 'maxlength="30"') + input('Opening hours', 'hours', v.hours || '', 'text', 'maxlength="200" placeholder="Mon to Sat, 10am to 8pm"') + input('Map link (https://...)', 'map', v.map || '', 'url') +
+    '<input type="hidden" name="photo" value="' + esc(v.photo || '') + '"><label class="wide">Photo<input type="file" accept="image/*"></label>' + '<label class="inline"><input type="checkbox" name="featured" value="1"' + (v.featured ? ' checked' : '') + '> Show first</label>', 'Save store');
+}
+function taxesPage() {
+  const t = state.checkout.tax || { rate: 0, inclusive: true, gstin: '', label: 'GST' }; const on = Number(t.rate) > 0;
+  const sample = 1000, tx = on ? (t.inclusive ? sample * t.rate / (100 + Number(t.rate)) : sample * t.rate / 100) : 0;
+  return head('Taxes', 'GST on orders from your online store.', '') + tabs('taxes', orderTabs) +
+    panel('GST', body(canWrite() ? editForm('tax-settings', '', input('GST rate in % (0 = do not charge or show tax)', 'rate', t.rate ?? 0, 'number', 'min="0" max="28" step="0.1"') + input('Label shown to customers', 'label', t.label || 'GST', 'text', 'maxlength="20"') +
+      select('Your prices', 'inclusive', ['Include tax', 'Do not include tax (tax is added at checkout)'], t.inclusive === false ? 'Do not include tax (tax is added at checkout)' : 'Include tax') + input('Your GST number (optional, 15 characters)', 'gstin', t.gstin || '', 'text', 'maxlength="15" placeholder="08ABCDE1234F1Z5"') + input('Your state (splits tax into CGST + SGST inside your state, IGST outside)', 'sellerState', t.sellerState || '', 'text', 'maxlength="60" placeholder="Rajasthan"') +
+      '<p class="compact-copy">' + (on ? 'On an order of ₹1,000 the ' + esc(t.label || 'GST') + ' is about ₹' + tx.toFixed(2) + (t.inclusive === false ? ', added to the total.' : ', already inside the price.') : 'Tax is off. Orders show no tax line.') + ' Tax applies to the goods after any discount, not to shipping. The same rate is used for every product.</p>', 'Save tax settings') :
+      '<p class="compact-copy">' + (on ? esc(t.label || 'GST') + ' ' + Number(t.rate) + '% ' + (t.inclusive === false ? 'added at checkout' : 'included in prices') : 'Tax is off.') + '</p>'));
 }
 function parseZones(t) {
   return String(t || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => { const [name, states, fee, freeOver] = l.split('|').map((x) => x.trim());
@@ -776,7 +897,9 @@ function shippingPage() {
   const sh = state.checkout.shipping || {};
   return head('Shipping', 'What customers pay for delivery at checkout.', '') + tabs('shipping', orderTabs) +
     panel('Delivery charge', body(canWrite() ? editForm('checkout-settings', '', input('Delivery fee (Rs)', 'fee', sh.fee ?? 0, 'number', 'min="0" step="1"') + input('Free delivery above (Rs, 0 = never)', 'freeOver', sh.freeOver ?? 0, 'number', 'min="0" step="1"') + area('Note shown to customers', 'note', sh.note || '', 'maxlength="300"') + area('Shipping zones (optional). One per line: Zone name | State, State | Fee | Free above. The customer\'s state picks the zone; any other state pays the delivery fee above.', 'zones', (sh.zones || []).map((z) => [z.name, (z.states || []).join(', '), z.fee, z.freeOver].join(' | ')).join('\n'), 'rows="4" maxlength="2000" placeholder="Rajasthan | Rajasthan | 40 | 500"'), 'Save shipping') :
-      '<p class="compact-copy">Fee Rs ' + Number(sh.fee || 0) + (Number(sh.freeOver) > 0 ? ', free above Rs ' + Number(sh.freeOver) : '') + '.</p>'));
+      '<p class="compact-copy">Fee Rs ' + Number(sh.fee || 0) + (Number(sh.freeOver) > 0 ? ', free above Rs ' + Number(sh.freeOver) : '') + '.</p>')) +
+    panel('Price tiers', body(canWrite() ? editForm('shipping-tiers', '', area('One tier per line: order up to (Rs) | fee | label. Leave the amount empty for everything above.', 'tiers', (sh.tiers || []).map((t) => (t.upTo == null ? '' : t.upTo) + ' | ' + t.fee + ' | ' + (t.label || '')).join('\n'), 'rows="4" placeholder="500 | 40 | Small order\n | 20 | Big order"') +
+      '<p class="compact-copy">A zone for the customer\'s state wins first, then these tiers, then the delivery fee above. Customers see the reason with their shipping charge.</p>', 'Save tiers') : '<p class="compact-copy">' + ((sh.tiers || []).length ? (sh.tiers || []).map((t) => esc(t.label) + ': Rs ' + t.fee).join(', ') : 'No tiers.') + '</p>'));
 }
 function abandonedPage() {
   const rows = (state.abandoned || []).map((a) => [esc(a.name || '—'), esc(a.phone), (a.lines || []).map((l) => l.qty + ' × ' + esc(l.name)).join(', '), money(a.total), dateValue(a.updatedAt), a.recovered ? badge('Recovered') : badge('Not ordered', 'warn'),
@@ -830,7 +953,7 @@ const cfgList = (k) => (Array.isArray(state.store?.config?.[k]) ? state.store.co
 async function saveList(k, list) { const ctx = await api('sfx_store_save', { p: { [k]: list } }); applyContext(ctx); }
 const newId = () => 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const slugify = (v) => String(v || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
-const contentTabs = [['content', 'Overview'], ['pages', 'Pages and menus'], ['files', 'Files'], ['data', 'Custom data']];
+const contentTabs = [['content', 'Overview'], ['pages', 'Pages and menus'], ['blog', 'Blog'], ['redirects', 'Redirects'], ['versions', 'Saved versions'], ['files', 'Files'], ['data', 'Custom data'], ['custom-fields', 'Typed fields']];
 const rowActions = (kind, id) => canWrite() ? button('Edit', kind + '-edit:' + id, 'compact') + button('Delete', kind + '-delete:' + id, 'compact danger') : '';
 const storeLink = (path) => state.store.published && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html#/' + path : '';
 
@@ -856,7 +979,53 @@ function storePagesPage(bare) {
   return (bare ? '' : head('Pages', 'Pages customers see on your online store, such as About, FAQs or shipping details.', canWrite() ? button('Add page', 'page-new', 'primary') : '', ['website', 'Online store'])) +
     panel('Store pages', '<div class="filters"><input id="pg-query" type="search" aria-label="Search pages" placeholder="Search pages" value="' + esc(pgf.q) + '"><select id="pg-status" aria-label="Filter by visibility">' + ['', 'Visible', 'Hidden', 'Scheduled'].map((o) => '<option value="' + o + '"' + (o === pgf.status ? ' selected' : '') + '>' + (o || 'All visibility') + '</option>').join('') + '</select></div>' + bulk + '<div id="pages-results">' + pagesList() + '</div>');
 }
+function insightsPage() {
+  const r = state.insights; if (!r) return head('Insights', 'Loading your reports...', '');
+  const pct = (v) => v == null ? '—' : Number(v) + '%';
+  const f = r.funnel, pf = r.profit;
+  const funnel = panel('Visitor funnel (last ' + f.days + ' days)', table(['Step', 'Visitors', 'From the step before'], f.steps.map((s2, i) => [esc(s2.step), s2.count, i === 0 || !f.steps[i - 1].count ? '—' : Math.round(100 * s2.count / f.steps[i - 1].count) + '%'])) +
+    '<p class="compact-copy">Conversion rate: ' + pct(f.conversionRate) + ' · One-page visits: ' + pct(r.sessions.singleEventShare) + ' · ' + r.sessions.sessions + ' sessions</p>');
+  const profit = panel('Sales and profit (last ' + pf.days + ' days)', table(['Measure', 'Amount'], [['Orders', pf.orders], ['Gross sales', money(pf.grossSales)], ['Discounts', money(pf.discounts)], ['Refunds', money(pf.refunds)], ['Shipping charged', money(pf.shipping)], ['Tax collected', money(pf.tax)], ['Net sales', '<strong>' + money(pf.netSales) + '</strong>'], ['Average order', pf.averageOrder == null ? '—' : money(pf.averageOrder)],
+    ['Profit on items with a known cost', money(pf.profitOnKnownCost)], ['Share of sales with a known cost', pct(pf.costCoverage)]]) +
+    (pf.costCoverage != null && pf.costCoverage < 100 ? '<p class="compact-copy">Profit only counts items whose cost you entered, so it is incomplete until the share above is 100%. Add costs in Inventory, Details.</p>' : ''));
+  const inv = panel('Inventory (last ' + r.inventory.days + ' days)', table(['Product', 'Variant', 'Sold', 'Available', 'Sold of what was there', 'Days of stock', 'Class', 'Note'],
+    (r.inventory.rows || []).slice(0, 25).map((x) => [((state.inventory || []).find((v) => v.variantId === x.variantId) || {}).productId ? '<a href="' + pathFor('products/' + encodeURIComponent((state.inventory.find((v) => v.variantId === x.variantId)).productId)) + '">' + esc(x.product) + '</a>' : esc(x.product), esc(x.variant), x.sold, x.available, pct(x.sellThrough), x.daysOfCover == null ? '—' : x.daysOfCover, x.abc, { out_of_stock: 'Out of stock', dead_stock: 'Not selling', low_cover: 'Running low' }[x.flag] || ''])) +
+    '<p class="compact-copy">Stock value at cost: ' + money(r.inventory.stockValueAtCost) + (r.inventory.stockWithoutCost ? ' · ' + r.inventory.stockWithoutCost + ' item(s) in stock have no cost entered.' : '') + '</p>');
+  const cust = panel('Customers by recency, frequency and spend', table(['Group', 'Customers', 'Spent'], (r.rfm.segments || []).map((x) => [esc(x.segment), x.customers, money(x.money)])));
+  const coh = panel('Customers who came back', table(['First order month', 'Customers', 'Came back later'], (r.cohorts || []).map((c) => [dateValue(c.month), c.customers, (c.retention || []).slice(1).map((k) => '+' + k.monthsLater + 'm: ' + k.returned).join(' · ') || '—'])));
+  return head('Insights', 'Funnel, sales, profit, stock and customer reports. Cancelled and test orders are never counted.', '') + funnel + profit + inv + cust + coh;
+}
+function blogPage() {
+  const rows = (state.blog || []).map((b) => [esc(b.title), '<code>/blog/' + esc(b.handle) + '</code>', badge(b.status === 'published' ? 'Published' : 'Draft', b.status === 'published' ? '' : 'neutral'), dateValue(b.updatedAt),
+    canWrite() ? button('Edit', 'blog-edit:' + b.id, 'compact') + button('Delete', 'blog-delete:' + b.id, 'compact danger') : '']);
+  return head('Blog', 'Articles for your store. Only published posts are visible to customers.', canWrite() ? button('Write a post', 'blog-new', 'primary') : '') + tabs('blog', contentTabs) + panel('Posts', table(['Title', 'Address', 'Status', 'Updated', ''], rows));
+}
+function blogForm(b) {
+  const v = b || { status: 'draft', tags: [] };
+  return editForm('blog-record', b?.id, input('Title', 'title', v.title || '', 'text', 'required maxlength="150"') + input('Address (leave empty to use the title)', 'handle', v.handle || '', 'text', 'maxlength="80"') +
+    area('Short summary', 'excerpt', v.excerpt || '', 'maxlength="400"') + area('Post', 'body', v.body || '', 'rows="10" maxlength="100000"') + input('Author', 'author', v.author || '', 'text', 'maxlength="80"') +
+    input('Tags (comma separated)', 'tags', (v.tags || []).join(', '), 'text') + input('Search title (up to 70)', 'seoTitle', v.seoTitle || '', 'text', 'maxlength="70"') + area('Search description (up to 320)', 'seoDescription', v.seoDescription || '', 'maxlength="320"') +
+    select('Status', 'status', [['draft', 'Draft'], ['published', 'Published']], v.status || 'draft'), 'Save post');
+}
+function redirectsPage() {
+  const rows = (state.redirects || []).map((r) => ['<code>' + esc(r.from) + '</code>', '<code>' + esc(r.to) + '</code>', badge(r.auto ? 'Automatic' : 'Yours', r.auto ? 'neutral' : ''), canWrite() ? button('Edit', 'redirect-edit:' + r.id, 'compact') + button('Delete', 'redirect-delete:' + r.id, 'compact danger') : '']);
+  return head('Redirects', 'Send an old address to a new one. When you change a product, collection or post address, the old one is redirected for you.', canWrite() ? button('Add redirect', 'redirect-new', 'primary') : '') + tabs('redirects', contentTabs) + panel('All redirects', table(['From', 'To', 'Kind', ''], rows));
+}
+function revisionsPage() {
+  const rows = (state.revisions || []).map((r) => [new Date(r.createdAt).toLocaleString('en-IN'), esc(r.note || 'Saved version'), esc(r.theme), canWrite() ? button('Restore', 'revision-restore:' + r.id, 'compact') : '']);
+  return head('Saved versions', 'A copy of your store settings is saved before every change. Restore one to go back. Your current settings are saved first, so restoring can be undone.', canWrite() ? button('Save a version now', 'revision-save', 'primary') : '') + tabs('versions', contentTabs) + panel('Versions', table(['When', 'Note', 'Theme', ''], rows));
+}
+function customFieldsPage() {
+  const defs = state.metaDefs || []; const objs = state.metaObjectDefs || [];
+  return head('Typed fields', 'Fields with a type (text, number, yes/no, link, date) that are checked when saved. Mark one "show on the storefront" to let your store display it.', canWrite() ? button('Add field', 'metafield-new', 'primary') + button('Add record type', 'metaobject-new') : '') + tabs('custom-fields', contentTabs) +
+    panel('Fields', table(['Applies to', 'Name', 'Key', 'Type', 'On storefront', ''], defs.map((d) => [esc(d.ownerType), esc(d.label), '<code>' + esc(d.key) + '</code>', esc(d.valueType), d.storefront ? 'Yes' : 'No', canWrite() ? button('Delete', 'metafield-delete:' + d.id, 'compact danger') : '']))) +
+    panel('Record types', table(['Type', 'Name', 'Fields', 'Records'], objs.map((o) => [esc(o.type), esc(o.label), (o.fields || []).map((f) => esc(f.label)).join(', '), o.count])));
+}
 function contentPage(id) {
+  if (id === 'blog') return blogPage();
+  if (id === 'redirects') return redirectsPage();
+  if (id === 'versions') return revisionsPage();
+  if (id === 'custom-fields') return customFieldsPage();
   const pages = cfgList('pages'), files = cfgList('files'), fields = cfgList('customFields');
   if (id === 'pages') return head('Pages and menus', 'Create storefront pages. Visible pages appear on your online store.', canWrite() ? button('Add page', 'page-new', 'primary') : '') + tabs(id, contentTabs) + storePagesPage(true);
   if (id === 'files') return head('Files', 'Images and documents you reuse across pages. Paste the link of an image or file already uploaded.', canWrite() ? button('Add file', 'file-new', 'primary') : '') + tabs(id, contentTabs) +
@@ -871,8 +1040,9 @@ function fileForm(f) { return editForm('file-record', f?.id, input('Name', 'name
 function fieldForm(f) { return editForm('field-record', f?.id, input('Field name', 'name', f?.name || '', 'text', 'required maxlength="80"') + select('Applies to', 'appliesTo', ['Products', 'Customers', 'Orders', 'Collections'], f?.appliesTo || 'Products') + select('Value type', 'valueType', ['Text', 'Number', 'Yes or no', 'Date', 'List'], f?.valueType || 'Text'), 'Save field'); }
 function marketForm(m) { return editForm('market-record', m?.id, input('Market name', 'name', m?.name || '', 'text', 'required maxlength="80"') + input('Region (country or area)', 'region', m?.region || 'India', 'text', 'maxlength="80"') + select('Currency', 'currency', ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD'], m?.currency || 'INR') + select('Language', 'language', ['English', 'Hindi'], m?.language || 'English') + select('Status', 'status', ['Active', 'Draft'], m?.status || 'Draft'), 'Save market'); }
 function marketsPage() {
-  const ms = cfgList('markets');
+  const ms = cfgList('markets'); const hi = !!(state.languages || {}).hindi;
   return head('Markets', 'Plan where your store sells and which currency and language each market shows. Checkout currently charges in your store currency.', canWrite() ? button('Add market', 'market-new', 'primary') : '') +
+    panel('Store languages', body('<p class="compact-copy">Your product names, descriptions and pages stay exactly as you wrote them. Turning Hindi on adds a हिंदी / English button on your store that translates the shop\'s own labels (bag, checkout, buttons). The Hindi wording should be checked by a Hindi speaker.</p>' + (canWrite() ? editForm('languages-settings', '', select('Hindi on your store', 'hindi', ['Off', 'On'], hi ? 'On' : 'Off'), 'Save language') : '<p class="compact-copy">Hindi is ' + (hi ? 'on' : 'off') + '.</p>'))) +
     panel('Markets', table(['Market', 'Region', 'Currency', 'Language', 'Status', ''], ms.map((m) => [esc(m.name), esc(m.region), esc(m.currency), esc(m.language), status(m.status), rowActions('market', m.id)])));
 }
 const contentRecords = { page: ['pages', pageForm, 'page'], file: ['files', fileForm, 'file'], field: ['customFields', fieldForm, 'field'], market: ['markets', marketForm, 'market'] };
@@ -943,6 +1113,11 @@ async function roleAssign(select) {
 }
 
 // ---------- Products: bulk edit and CSV export ----------
+function scopeLine() {
+  const el = $('#bulk-scope'); if (!el) return;
+  const total = Number(el.dataset.total || 0), n = document.querySelectorAll('input[data-bulk]:checked').length;
+  el.innerHTML = n === 0 ? '' : n >= total ? 'All ' + total + ' product' + (total === 1 ? '' : 's') + ' in this list are selected. Changes apply to these ' + total + '.' : n + ' of ' + total + ' selected. <button type="button" class="btn compact" data-action="bulk-all">Select all ' + total + ' in this list</button>';
+}
 const bulkIds = () => [...document.querySelectorAll('input[data-bulk]:checked')].map((x) => x.dataset.bulk);
 function bulkForm(count) {
   return editForm('bulk-apply', '', '<p class="compact-copy wide">Changing ' + count + ' product' + (count === 1 ? '' : 's') + '. Leave a field empty to keep it as it is.</p>' +
@@ -1081,23 +1256,35 @@ export function workspace(id, record) {
   else if (id === 'collections' && record) html = collectionDetail(record);
   else if (productTabs.some(([k]) => k === id)) html = productsPage(id);
   else if (id === 'builder' && record) html = editorPage(record);
-  else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages'].includes(id)) html = websitePage(id);
+  else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages', 'store-directory'].includes(id)) html = websitePage(id);
+  else if (id === 'insights') html = insightsPage();
   else if (id === 'customers') html = customersPage();
   else if (id === 'discounts') html = discountsPage();
   else if (id === 'segments') html = segmentsPage();
   else if (id === 'companies') html = companiesPage();
   else if (id === 'growth') html = growthPage();
-  else if (['content', 'pages', 'files', 'data'].includes(id)) html = contentPage(id);
+  else if (['content', 'pages', 'files', 'data', 'blog', 'redirects', 'versions', 'custom-fields'].includes(id)) html = contentPage(id);
   else if (id === 'markets') html = marketsPage();
   else html = management(id);
   return { html, dispatch: (type, target, event, key, detail) => dispatch(id, type, target, event, key, detail) };
 }
 
 // ---------- actions ----------
+function formError(form, message) {
+  if (!form || !form.querySelector) return;
+  let box = form.querySelector('.form-error');
+  if (!box) { box = document.createElement('div'); box.className = 'form-error'; box.setAttribute('role', 'alert'); box.style.cssText = 'color:#b42318;background:#fef3f2;border:1px solid #fda29b;border-radius:8px;padding:8px 10px;margin:0 0 10px;font-size:13px'; form.prepend(box); }
+  box.textContent = message;
+  const bad = [...form.querySelectorAll('input[required],select[required],textarea[required]')].find((el) => !String(el.value || '').trim());
+  const target = bad || form.querySelector('input:not([type=hidden]),select,textarea');
+  if (bad) bad.setAttribute('aria-invalid', 'true');
+  if (target && typeof target.focus === 'function') target.focus();
+}
 async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); } }
 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (type === 'input' && target.id === 'settings-query') { settingsFilter(target.value); return; }
+  if (type === 'change' && target.matches && target.matches('input[data-bulk]')) scopeLine();
   if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
   if (id === 'builder' && sd && (type === 'input' || type === 'change') && target.closest && target.closest('#studs-form')) { studsRead(); return; }
   if (id === 'builder' && ed && type === 'change' && target.id === 'te-page') { edPicked(target.value); return; }
@@ -1163,8 +1350,36 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshCollections(); save(rid ? 'Collection updated.' : 'Collection created.'); close();
         if (!rid) location.hash = '/collections/' + c.id; else rerender();
       } else if (key === 'order-fulfill') {
-        await api('sfx_order_set_status', { p_id: rid, p_status: 'fulfilled', p_tracking: data.tracking || null });
-        await refreshOrders(); save('Order fulfilled.'); close(); rerender();
+        const o = state.orders.find((x) => x.id === rid);
+        const items = (o?.remaining || []).filter((r) => r.qty > 0).map((r) => ({ variantId: r.variantId, qty: Number(data['q_' + r.variantId] ?? r.qty) })).filter((r) => r.qty > 0);
+        if (!items.length) { flash('Choose at least one item to ship.'); return; }
+        await api('sfx_shipment_create', { p_order: rid, p: { items, carrier: data.carrier || null, tracking: data.tracking || null, trackingUrl: data.trackingUrl || null, notify: values.has('notify') } });
+        await refreshOrders(); save('Shipment created.'); close(); rerender();
+      } else if (key === 'shipment-edit') {
+        await api('sfx_shipment_update', { p_id: rid, p: { carrier: data.carrier || '', tracking: data.tracking || '', trackingUrl: data.trackingUrl || '' } });
+        await refreshOrders(); save('Tracking saved.'); close(); rerender();
+      } else if (key === 'credit-adjust') {
+        await api('sfx_credit_adjust', { p_customer: rid, p_delta: Number(data.delta), p_note: data.note }); await refreshCustomers(); save('Store credit updated.'); close(); rerender(true);
+      } else if (key === 'apikey-record') {
+        const k = await api('sfx_api_key_create', { p_name: data.name }); await refreshAccess(); save('Key created.');
+        dialog('Your new key', '<p class="compact-copy">' + esc(k.note) + '</p><p><code style="word-break:break-all;user-select:all">' + esc(k.key) + '</code></p>' + button('Done', 'close-dialog', 'primary')); rerender(true);
+      } else if (key === 'blog-record') {
+        await api('sfx_blog_save', { p_id: rid, p: { title: data.title, handle: data.handle, excerpt: data.excerpt, body: data.body, author: data.author, tags: String(data.tags || '').split(',').map((x) => x.trim()).filter(Boolean), seoTitle: data.seoTitle, seoDescription: data.seoDescription, status: data.status } });
+        await refreshBlog(); save('Post saved.'); close(); rerender(true);
+      } else if (key === 'redirect-record') {
+        await api('sfx_redirect_save', { p_id: rid, p: { from: data.from, to: data.to } }); await refreshRedirects(); save('Redirect saved.'); close(); rerender(true);
+      } else if (key === 'metafield-record') {
+        await api('sfx_metafield_def_save', { p_id: null, p: { ownerType: data.ownerType, key: data.key, label: data.label, valueType: data.valueType, storefront: data.storefront === 'yes' } }); await refreshCustomFields(); save('Field added.'); close(); rerender(true);
+      } else if (key === 'metaobject-record') {
+        const fields = String(data.fields || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const [k, label, valueType] = l.split('|').map((x) => x.trim()); return { key: k, label, valueType: valueType || 'text' }; });
+        await api('sfx_metaobject_def_save', { p: { type: data.type, label: data.label, fields } }); await refreshCustomFields(); save('Record type saved.'); close(); rerender(true);
+      } else if (key === 'return-receive') {
+        const r = state.returns.find((x) => x.id === rid);
+        await api('sfx_return_receive', { p_id: rid, p_lines: (r.lines || []).map((l, i) => ({ variantId: l.variantId, restock: data['k' + i] !== 'no' })) }); await refreshReturns(); save('Return received.'); close(); rerender(true);
+      } else if (key === 'order-cancel') {
+        await api('sfx_order_cancel', { p_order: rid, p: { reason: data.reason, restock: data.restock !== 'no' } }); await refreshOrders(); save('Order cancelled.'); close(); rerender(true);
+      } else if (key === 'refund-record') {
+        await api('sfx_refund_record', { p_order: rid, p: { amount: Number(data.amount), method: data.method, reason: data.reason } }); await refreshOrders(); save('Refund recorded.'); close(); rerender(true);
       } else if (key === 'order-note') {
         await api('sfx_order_note', { p_id: rid, p_note: data.note }); await refreshOrders(); save('Note saved.'); rerender();
       } else if (key === 'business') {
@@ -1178,8 +1393,18 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await refreshCustomers(); save(rid ? 'Customer updated.' : 'Customer added.'); close(); rerender(true);
       } else if (key === 'discount-record') {
         const expiresAt = data.expiresAt ? new Date(data.expiresAt + 'T23:59:59').toISOString() : '';
-        await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, usageLimit: data.usageLimit } });
+        const startsAt = data.startsAt ? new Date(data.startsAt + 'T00:00:00').toISOString() : '';
+        await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, startsAt, usageLimit: data.usageLimit, perCustomerLimit: data.perCustomerLimit,
+          buyQty: data.buyQty, getQty: data.getQty, getPercent: data.getPercent, automatic: data.automatic === 'yes', firstOrderOnly: data.firstOrderOnly === 'yes', productIds: data.productId ? [data.productId] : [] } });
         await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); rerender(true);
+      } else if (key === 'stock-details') {
+        await api('sfx_variant_meta_save', { p_variant: rid, p: { cost: data.cost === '' ? '' : String(data.cost), needsShipping: data.needsShipping !== 'no' } });
+        const n = Number(data.units || 0);
+        if (data.move !== 'none' && n > 0) await api('sfx_stock_set_unavailable', { p_variant: rid, p_delta: data.move === 'set' ? n : -n, p_reason: data.move === 'set' ? data.reason : 'released' });
+        await refreshInventory(); save('Stock details saved.'); close(); rerender(true);
+      } else if (key === 'stock-buffer') {
+        const n = Number(data.buffer); if (!Number.isInteger(n) || n < 0) { flash('Enter a whole number, 0 or more.'); return; }
+        await api('sfx_stock_buffer_save', { p_buffer: n }); state.checkout = Object.assign({}, state.checkout, { stockBuffer: n }); save('Stock buffer saved.'); close(); rerender(true);
       } else if (key === 'stock-adjust') {
         const n = Number(data.amount); if (!Number.isInteger(n)) { flash('Enter a whole number.'); return; }
         await api('sfx_stock_adjust', data.mode === 'set' ? { p_variant: rid, p_delta: 0, p_set: n, p_note: data.note } : { p_variant: rid, p_delta: n, p_note: data.note });
@@ -1204,6 +1429,22 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_return_set', { p_id: rid, p_status: 'refunded', p_amount: Number(data.amount) }); await refreshReturns(); save('Refund recorded.'); close(); rerender(true);
       } else if (key === 'return-rzp-refund') {
         await apiPost('/payments/sfx/refund/start', { returnId: rid, amount: Number(data.amount) }); await refreshReturns(); save('Refund sent through Razorpay.'); close(); rerender(true);
+      } else if (key === 'dir-record') {
+        const file = target.querySelector('input[type=file]')?.files?.[0]; const photo = file ? await uploadImage(file) : (data.photo || '');
+        const rec = { id: rid || undefined, name: data.name, address: data.address, city: data.city, phone: data.phone, hours: data.hours, map: data.map, photo, featured: data.featured === '1' };
+        const cur = state.storeDir || []; const list = rid ? cur.map((x) => x.id === rid ? rec : x) : (rec.featured ? [rec, ...cur] : [...cur, rec]);
+        await api('sfx_stores_save', { p: list }); await refreshStoreDir(); save('Store saved.'); close(); rerender(true);
+      } else if (key === 'languages-settings') {
+        await api('sfx_languages_save', { p: { hindi: data.hindi === 'On' } }); await refreshLanguages(); save('Language saved.'); rerender(true);
+      } else if (key === 'tax-settings') {
+        await api('sfx_tax_settings_save', { p: { rate: data.rate, label: data.label, gstin: data.gstin, sellerState: data.sellerState || '', inclusive: !/^Do not/.test(data.inclusive || '') } });
+        await refreshCheckout(); save('Tax settings saved.'); rerender(true);
+      } else if (key === 'checkout-rules') {
+        await api('sfx_checkout_rules_save', { p: { fields: { email: data.email, address2: data.address2, note: data.note }, payments: { cod: data.cod !== 'no', online: data.online !== 'no', codMax: data.codMax }, limits: { minOrder: data.minOrder, maxItems: data.maxItems } } });
+        await refreshCheckout(); save('Checkout rules saved.'); rerender(true);
+      } else if (key === 'shipping-tiers') {
+        const tiers = String(data.tiers || '').split('\n').map((l) => l.trim()).filter(Boolean).map((l, i) => { const [up, fee, label] = l.split('|').map((x) => x.trim()); if (fee === undefined || fee === '') throw new Error('Tier line ' + (i + 1) + ' needs an amount and a fee, like: 500 | 40 | Small order'); return { upTo: up === '' || /^any|rest|more/i.test(up) ? null : Number(up), fee: Number(fee), label }; });
+        await api('sfx_shipping_tiers_save', { p_tiers: tiers }); await refreshCheckout(); save('Shipping tiers saved.'); rerender(true);
       } else if (key === 'checkout-settings') {
         await api('sfx_checkout_settings_save', { p: { shipping: { fee: data.fee, freeOver: data.freeOver, note: data.note, zones: parseZones(data.zones) }, abandonCapture: state.checkout.abandonCapture } });
         await refreshCheckout(); save('Shipping saved.'); rerender(true);
@@ -1228,7 +1469,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         await api('sfx_store_set_razorpay', { p: { keyId: data.keyId, secret: data.secret } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay connected.'); close(); rerender();
       } else return;
-    } catch (e) { flash(e.message); }
+    } catch (e) { flash(e.message); formError(target, e.message); }
     finally { if (submitBtn) submitBtn.disabled = false; }
     return;
   }
@@ -1240,12 +1481,40 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   const action = target.dataset.action; if (!action) return;
   const [a, key, detail] = action.split(':');
   if (a === 'customer-new') return dialog('Add customer', customerForm(null));
+  if (a === 'discount-orders') { lb.orders.q = key || ''; location.hash = pathFor('orders').split('#')[1]; return; }
+  if (a === 'customer-detail' || a === 'consent-set') return withBusy(async () => {
+    if (a === 'consent-set') await api('sfx_customer_consent', { p_id: key, p_marketing: detail === 'on', p_source: 'staff' });
+    const d = await api('sfx_customer_detail', { p_id: key });
+    const addr = (d.addresses || []).map((x) => '<li>' + esc([x.address, x.city, x.state, x.pin].filter(Boolean).join(', ')) + (x.isDefault ? ' (default)' : '') + '</li>').join('') || '<li>No saved address.</li>';
+    const moves = (d.creditMoves || []).slice(0, 6).map((m) => '<li>' + (m.delta > 0 ? '+' : '') + money(m.delta) + ' · ' + esc(m.reason) + (m.note ? ' · ' + esc(m.note) : '') + '</li>').join('') || '<li>No credit activity.</li>';
+    dialog(d.name, '<div class="stack"><p class="compact-copy">' + esc(d.phone || '') + ' ' + esc(d.email || '') + '</p>' +
+      '<p><strong>Marketing messages:</strong> ' + (d.acceptsMarketing ? 'Agreed' : 'Not agreed') + (d.consentAt ? ' <small>(' + new Date(d.consentAt).toLocaleDateString('en-IN') + ' · ' + esc(d.consentSource || '') + ')</small>' : '') + '</p>' +
+      (canWrite() ? button(d.acceptsMarketing ? 'Record withdrawal' : 'Record agreement', 'consent-set:' + d.id + ':' + (d.acceptsMarketing ? 'off' : 'on')) : '') +
+      '<p><strong>Store credit:</strong> ' + money(d.creditBalance) + '</p><ul>' + moves + '</ul>' + (canWrite() ? button('Add or remove credit', 'credit-adjust:' + d.id) : '') +
+      '<p><strong>Addresses</strong></p><ul>' + addr + '</ul><p><strong>Orders</strong></p><ul>' + ((d.orders || []).map((x) => '<li><a href="' + pathFor('orders/' + x.id) + '">#' + esc(x.number) + '</a> · ' + money(x.total) + ' · ' + esc(x.status) + '</li>').join('') || '<li>No orders yet.</li>') + '</ul></div>');
+  });
+  if (a === 'credit-adjust') return dialog('Store credit', editForm('credit-adjust', key, input('Amount (use a minus to remove)', 'delta', '', 'number', 'required step="0.01"') + input('Note', 'note', '', 'text', 'maxlength="200"'), 'Save'));
+  if (a === 'blog-new') return dialog('Write a post', blogForm(null));
+  if (a === 'blog-edit') return withBusy(async () => { dialog('Edit post', blogForm(await api('sfx_blog_get', { p_id: key }))); });
+  if (a === 'blog-delete') return withBusy(async () => { if (!confirm('Delete this post?')) return; await api('sfx_blog_delete', { p_id: key }); await refreshBlog(); save('Post deleted.'); rerender(true); });
+  if (a === 'redirect-new') return dialog('Add redirect', editForm('redirect-record', '', input('Old address (starts with /)', 'from', '', 'text', 'required placeholder="/old-page"') + input('New address (starts with / or https://)', 'to', '', 'text', 'required placeholder="/collections/sale"'), 'Save redirect'));
+  if (a === 'redirect-edit') { const r = state.redirects.find((x) => x.id === key); return dialog('Edit redirect', editForm('redirect-record', key, input('Old address', 'from', r.from, 'text', 'required') + input('New address', 'to', r.to, 'text', 'required'), 'Save redirect')); }
+  if (a === 'redirect-delete') return withBusy(async () => { await api('sfx_redirect_delete', { p_id: key }); await refreshRedirects(); save('Redirect removed.'); rerender(true); });
+  if (a === 'revision-save') return withBusy(async () => { const r = await api('sfx_revision_save', { p_note: 'Saved by you' }); await refreshRevisions(); save(r.unchanged ? 'Nothing has changed since the last version.' : 'Version saved.'); rerender(true); });
+  if (a === 'revision-restore') return withBusy(async () => { if (!confirm('Restore this version of your store settings? Your current settings are saved first.')) return; await api('sfx_revision_restore', { p_id: key }); await refreshRevisions(); save('Version restored.'); rerender(true); });
+  if (a === 'metafield-new') return dialog('Add typed field', editForm('metafield-record', '', select('Applies to', 'ownerType', [['product', 'Products'], ['collection', 'Collections'], ['customer', 'Customers'], ['order', 'Orders'], ['store', 'The store']], 'product') + input('Name', 'label', '', 'text', 'required maxlength="80"') + input('Key (lowercase, like fabric)', 'key', '', 'text', 'required pattern="[a-z][a-z0-9_]{1,40}"') +
+    select('Type', 'valueType', [['text', 'Text'], ['number', 'Number'], ['boolean', 'Yes or no'], ['url', 'Link'], ['date', 'Date']], 'text') + select('Show on the storefront', 'storefront', [['no', 'No, keep it private'], ['yes', 'Yes']], 'no'), 'Add field'));
+  if (a === 'metafield-delete') return withBusy(async () => { if (!confirm('Delete this field and every value saved in it?')) return; await api('sfx_metafield_def_delete', { p_id: key }); await refreshCustomFields(); save('Field deleted.'); rerender(true); });
+  if (a === 'metaobject-new') return dialog('Add record type', editForm('metaobject-record', '', input('Type key (lowercase, like size_guide)', 'type', '', 'text', 'required pattern="[a-z][a-z0-9_]{1,40}"') + input('Name', 'label', '', 'text', 'required maxlength="80"') +
+    area('Fields, one per line: key | name | type (text, number, boolean, url, date)', 'fields', 'title | Title | text', 'rows="5"'), 'Add record type'));
   if (a === 'customer-edit') return dialog('Edit customer', customerForm(state.customers.find((c) => c.id === key)));
   if (a === 'customer-adopt') { const c = state.customers.find((x) => x.phone === decodeURIComponent(key)); return dialog('Save as customer', customerForm({ ...c, id: null })); }
   if (a === 'customer-delete') return withBusy(async () => { if (!confirm('Delete this customer record? Their past orders are not affected.')) return; await api('sfx_customer_delete', { p_id: key }); await refreshCustomers(); save('Customer deleted.'); rerender(true); });
   if (a === 'discount-new') return dialog('Create discount', discountForm(null));
   if (a === 'discount-edit') return dialog('Edit discount', discountForm(state.discounts.find((d) => d.id === key)));
   if (a === 'discount-toggle') return withBusy(async () => { const d = state.discounts.find((x) => x.id === key); await api('sfx_discount_set_status', { p_id: key, p_status: d.status === 'active' ? 'archived' : 'active' }); await refreshDiscounts(); save('Discount updated.'); rerender(true); });
+  if (a === 'stock-details') return dialog('Stock details', stockDetailsForm(state.inventory.find((v) => v.variantId === key)));
+  if (a === 'stock-buffer') return dialog('Stock buffer', editForm('stock-buffer', '', '<p class="compact-copy wide">Online orders cannot take a variant below this many units. Your own till is not held to it.</p>' + input('Units to keep back', 'buffer', (state.checkout && state.checkout.stockBuffer) || 0, 'number', 'min="0" step="1" required'), 'Save buffer'));
   if (a === 'stock-adjust') return dialog('Adjust stock', adjustForm(state.inventory.find((v) => v.variantId === key)));
   if (a === 'location-new') return dialog('Add location', editForm('location-record', '', input('Name', 'name', '', 'text', 'required maxlength="80"')));
   if (a === 'location-edit') return dialog('Rename location', editForm('location-record', key, input('Name', 'name', state.locations.find((l) => l.id === key)?.name || '', 'text', 'required maxlength="80"')));
@@ -1257,6 +1526,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'draft-convert') return withBusy(async () => { const r = await api('sfx_draft_convert', { p_id: key }); await Promise.all([refreshDrafts(), refreshOrders()]); save('Order ' + r.number + ' created.'); rerender(true); });
   if (a === 'draft-delete') return withBusy(async () => { if (!confirm('Delete this draft?')) return; await api('sfx_draft_delete', { p_id: key }); await refreshDrafts(); save('Draft deleted.'); rerender(true); });
   if (a === 'return-new') return dialog('Start a return', returnForm(state.orders.find((o) => o.id === key)));
+  if (a === 'return-set' && detail === 'received') { const r = state.returns.find((x) => x.id === key);
+    return dialog('Receive returned items', editForm('return-receive', key, '<p class="compact-copy wide">Choose what happens to each item you got back.</p>' +
+      (r.lines || []).map((l, i) => '<input type="hidden" name="v' + i + '" value="' + esc(l.variantId) + '">' + select(esc(l.name) + (l.label && l.label !== 'Default' ? ' · ' + esc(l.label) : '') + ' × ' + l.qty, 'k' + i, [['yes', 'Put back on sale'], ['no', 'Do not restock (damaged or opened)']], 'yes')).join(''), 'Mark received')); }
   if (a === 'return-set') {
     if (detail === 'refunded') { const r = state.returns.find((x) => x.id === key);
       if (r.online) return dialog('Refund through Razorpay', editForm('return-rzp-refund', key, '<p class="compact-copy wide">This order was paid online. The refund goes back to the customer\'s card or UPI through your own Razorpay account. Returned items are worth ' + money(r.value) + '.</p>' + input('Amount to refund (Rs)', 'amount', r.value, 'number', 'required min="1" step="0.01"'), 'Refund through Razorpay'));
@@ -1280,6 +1552,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     save(on ? (key === 'sync' ? 'Synced.' : 'Linked. ' + (r.styles || 0) + ' AUZsStyle products shared.') : 'Unlinked.'); rerender(true);
   });
   if (a === 'style-import') return withBusy(async () => { if (!confirm('Copy your AUZsStyle products, sizes, colours, prices and stock into this store? Existing imported products are refreshed.')) return; const r = await api('sfx_import_from_style'); await refreshProducts(); save(r.created + ' added, ' + r.updated + ' refreshed, ' + r.variants + ' variants.'); rerender(true); });
+  if (a === 'apikey-new') return dialog('Create an API key', editForm('apikey-record', '', input('Name (what will use it)', 'name', '', 'text', 'required maxlength="60" placeholder="Accounting export"'), 'Create key'));
+  if (a === 'apikey-revoke') return withBusy(async () => { if (!confirm('Revoke this key? Anything using it stops working.')) return; await api('sfx_api_key_revoke', { p_id: key }); await refreshAccess(); save('Key revoked.'); rerender(true); });
+  if (a === 'clear-filters') { for (const k of Object.keys(pf)) pf[k] = ''; const q = $('#table-query'); if (q) q.value = ''; for (const el of document.querySelectorAll('[id^="pf-"]')) el.value = ''; const r = $('#table-results'); if (r) r.innerHTML = productsList(''); return; }
+  if (a === 'bulk-all') { for (const el of document.querySelectorAll('input[data-bulk]')) el.checked = true; scopeLine(); return; }
   if (a === 'bulk-open') { const n = bulkIds().length; if (!n) { flash('Tick the products you want to change first.'); return; } return dialog('Bulk edit', bulkForm(n)); }
   if (a === 'products-csv') return downloadProductsCsv();
   if (await themeAction(a, key)) return;
@@ -1290,6 +1566,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'campaign-delete') return withBusy(async () => { if (!confirm('Delete this campaign?')) return; await api('sfx_campaign_delete', { p_id: key }); await refreshCampaigns(); save('Campaign deleted.'); rerender(true); });
   if (a === 'plan-pay') { const out = $('#plan-feedback'); target.disabled = true; out.textContent = 'Starting payment…'; return payPlan(out).catch((e) => { out.textContent = e.message; }).finally(() => { target.disabled = false; }); }
   if (a === 'plan-request') return withBusy(async () => { await api('request_storefront_reactivation', { p_notes: null }); save('Request sent. We will get back to you.'); });
+  if (a === 'dir-new') return dialog('Add store', storeDirForm(null));
+  if (a === 'dir-edit') return dialog('Edit store', storeDirForm((state.storeDir || []).find((x) => x.id === key)));
+  if (a === 'dir-delete') return withBusy(async () => { if (!confirm('Delete this store?')) return; await api('sfx_stores_save', { p: (state.storeDir || []).filter((x) => x.id !== key) }); await refreshStoreDir(); save('Store deleted.'); rerender(true); });
   if (a === 'pages-all') { const boxes = [...document.querySelectorAll('.pg-sel')]; const on = boxes.some((b) => !b.checked); boxes.forEach((b) => { b.checked = on; }); return; }
   if (a === 'page-copy') return withBusy(async () => { const items = cfgList('pages'), src = items.find((x) => x.id === key); if (!src) return; let slug = src.slug + '-copy', n = 2; while (items.some((x) => x.slug === slug)) slug = src.slug + '-copy-' + n++; await saveList('pages', [...items, { ...src, id: 'pg' + Date.now().toString(36), name: src.name + ' (copy)', slug, status: 'Hidden', publishAt: '', updatedOn: new Date().toISOString().slice(0, 10) }]); save('Page copied as hidden.'); rerender(true); });
   if (a === 'pages-bulk') {
@@ -1323,11 +1602,23 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'theme-use') return withBusy(async () => { await api('sfx_store_save', { p: { theme: key } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Theme updated.'); rerender(); });
   if (a === 'razorpay-clear') return withBusy(async () => { await api('sfx_store_set_razorpay', { p: { clear: true } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay disconnected.'); rerender(); });
   if (a === 'order-fulfill') {
-    return dialog('Fulfil order', editForm('order-fulfill', key, input('Tracking reference (optional)', 'tracking', '', 'text', 'maxlength="100"'), 'Mark as fulfilled'));
+    const o = state.orders.find((x) => x.id === key);
+    const qty = (o?.remaining || []).filter((r) => r.qty > 0).map((r) => input(esc(r.name) + (r.label && r.label !== 'Default' ? ' · ' + esc(r.label) : '') + ' (' + r.qty + ' left)', 'q_' + r.variantId, String(r.qty), 'number', 'min="0" max="' + r.qty + '"')).join('');
+    return dialog('Fulfil items', editForm('order-fulfill', key, qty + input('Carrier (optional)', 'carrier', '', 'text', 'maxlength="80"') + input('Tracking number (optional)', 'tracking', '', 'text', 'maxlength="100"') + input('Tracking link (optional, https)', 'trackingUrl', '', 'text', 'maxlength="400"') + '<label class="check"><input type="checkbox" name="notify" checked> Tell the customer</label>', 'Create shipment'));
   }
-  if (a === 'order-cancel') {
-    return withBusy(async () => { await api('sfx_order_set_status', { p_id: key, p_status: 'cancelled' }); await refreshOrders(); save('Order cancelled.'); rerender(); });
+  if (a === 'shipment-edit') {
+    const sh = state.orders.flatMap((x) => x.shipments || []).find((x) => x.id === key);
+    return dialog('Edit tracking', editForm('shipment-edit', key, input('Carrier', 'carrier', sh?.carrier || '', 'text', 'maxlength="80"') + input('Tracking number', 'tracking', sh?.tracking || '', 'text', 'maxlength="100"') + input('Tracking link (https)', 'trackingUrl', sh?.trackingUrl || '', 'text', 'maxlength="400"'), 'Save tracking'));
   }
+  if (a === 'shipment-set') {
+    return withBusy(async () => { await api('sfx_shipment_update', { p_id: key, p: { status: detail } }); await refreshOrders(); save('Shipment updated.'); rerender(); });
+  }
+  if (a === 'order-cancel') return dialog('Cancel order', editForm('order-cancel', key, '<p class="compact-copy wide">The customer is not charged for items that were never shipped. Nothing can be undone after this.</p>' +
+    select('Reason', 'reason', [['Customer changed mind', 'Customer changed mind'], ['Out of stock', 'Out of stock'], ['Wrong details', 'Wrong details'], ['Fraud risk', 'Fraud risk'], ['Other', 'Other']], 'Customer changed mind') +
+    select('Items', 'restock', [['yes', 'Put the items back on sale'], ['no', 'Do not restock (damaged or lost)']], 'yes'), 'Cancel order'));
+  if (a === 'refund-new') { const o = state.orders.find((x) => x.id === key); return dialog('Record a refund', editForm('refund-record', key, '<p class="compact-copy wide">Pay the customer back yourself (cash, UPI, bank), then record it here. You can refund up to ' + money(o.total - o.refunded) + ' more.</p>' +
+    input('Amount (Rs)', 'amount', '', 'number', 'required min="0.01" step="0.01"') + select('How it was paid back', 'method', [['manual', 'Cash, UPI or bank'], ['store_credit', 'Store credit']], 'manual') + input('Reason', 'reason', '', 'text', 'maxlength="200"'), 'Record refund')); }
+  if (a === 'order-test') return withBusy(async () => { await api('sfx_order_mark_test', { p_order: key, p_test: detail === 'on' }); await refreshOrders(); save(detail === 'on' ? 'Marked as a test order.' : 'Unmarked.'); rerender(true); });
   if (a === 'theme-install') return withBusy(async () => {
     const r = await api('sfx_theme_install', { p_theme_id: key });
     await Promise.all([refreshMarketplace(), refreshInstalls()]);

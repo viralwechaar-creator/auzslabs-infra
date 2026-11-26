@@ -14,21 +14,21 @@ export const templates = [
 // "Coming soon" rather than a form that quietly saves nowhere -- see workspace.js's REAL_SECTIONS.
 export const menu = [
   { id: 'home', name: 'Home', icon: 'home' },
-  { id: 'orders', name: 'Orders', icon: 'bag', children: [['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping']] },
+  { id: 'orders', name: 'Orders', icon: 'bag', children: [['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']] },
   { id: 'products', name: 'Products', icon: 'box', children: [['collections', 'Collections'], ['inventory', 'Inventory'], ['transfers', 'Transfers'], ['categories', 'Categories and tags']] },
   { id: 'customers', name: 'Customers', icon: 'user', children: [['segments', 'Segments'], ['companies', 'Companies']] },
   { id: 'growth', name: 'Growth', icon: 'spark' },
   { id: 'discounts', name: 'Discounts', icon: 'tag' },
-  { id: 'content', name: 'Content', icon: 'file', children: [['pages', 'Pages and menus'], ['files', 'Files'], ['data', 'Custom data']] },
+  { id: 'content', name: 'Content', icon: 'file', children: [['pages', 'Pages and menus'], ['blog', 'Blog'], ['redirects', 'Redirects'], ['versions', 'Saved versions'], ['files', 'Files'], ['data', 'Custom data'], ['custom-fields', 'Typed fields']] },
   { id: 'markets', name: 'Markets', icon: 'globe' },
-  { id: 'analytics', name: 'Analytics', icon: 'chart', children: [['reports', 'Reports'], ['live-view', 'Live view']] },
+  { id: 'analytics', name: 'Analytics', icon: 'chart', children: [['reports', 'Reports'], ['insights', 'Insights'], ['live-view', 'Live view']] },
   { label: 'Sales channels' },
   { id: 'channels', name: 'All channels', icon: 'swap' },
-  { id: 'website', name: 'Online store', icon: 'store', children: [['builder', 'Theme'], ['templates', 'Themes'], ['store-pages', 'Pages'], ['domains', 'Domains'], ['checkout', 'Payments']] },
+  { id: 'website', name: 'Online store', icon: 'store', children: [['builder', 'Theme'], ['templates', 'Themes'], ['store-pages', 'Pages'], ['store-directory', 'Stores'], ['domains', 'Domains'], ['checkout', 'Payments']] },
   { id: 'apps', name: 'Apps and plans', icon: 'grid' },
   { label: 'Business' },
   { id: 'team', name: 'Staff and access', icon: 'team', children: [['roles', 'Roles'], ['locations', 'Locations']] },
-  { id: 'settings', name: 'Settings', icon: 'settings', children: [['notifications', 'Notifications'], ['policies', 'Store policies'], ['privacy-settings', 'Customer privacy'], ['billing', 'Billing and renewals'], ['security', 'Sign-in and support'], ['switch-apps', 'Switch apps']] },
+  { id: 'settings', name: 'Settings', icon: 'settings', children: [['notifications', 'Notifications'], ['policies', 'Store policies'], ['privacy-settings', 'Customer privacy'], ['billing', 'Billing and renewals'], ['activity', 'Activity log'], ['staff-security', 'Staff security'], ['messages', 'Customer messages'], ['security', 'Sign-in and support'], ['switch-apps', 'Switch apps']] },
 ];
 
 export const icons = {

@@ -100,7 +100,7 @@ export async function handle(ctx) {
     // touch" form), so it also gets its own tighter cap -- a real visitor never submits this more than a
     // couple of times; this bounds the spam a bot can push into leads even if it clears the honeypot (db/131).
     // Anything a visitor can WRITE (orders, bookings, reviews, carts, payment notes) also has a tighter per-address cap than reading the menu.
-    if (!cfg.auth && /^(place_order|call_waiter|submit_|public_create_|public_order_|public_sty_(place_order|order_paid|cart_save|review_submit|return_request|notify_me)|public_sfx_(place_order|order_paid|review_submit|return_request|notify_me))/.test(fnName) && rateLimited(`pubwrite:${ip}`, 120, 10 * 60_000)) throw new HttpError(429, 'too many requests, please slow down');
+    if (!cfg.auth && /^(place_order|call_waiter|submit_|public_create_|public_order_|public_sty_(place_order|order_paid|cart_save|review_submit|return_request|notify_me)|public_sfx_(place_order|order_paid|review_submit|return_request|notify_me|customer_verify|customer_update))/.test(fnName) && rateLimited(`pubwrite:${ip}`, 120, 10 * 60_000)) throw new HttpError(429, 'too many requests, please slow down');
     if ((fnName === 'submit_lead' || fnName === 'submit_contact') && rateLimited(`lead:${ip}`, 5, 60 * 60_000)) throw new HttpError(429, 'too many requests, try again later');
     // start_storefront_trial provisions a live tenant instantly with no admin review at all (Path B, db/373) --
     // email verification is the only abuse gate it has, so it needs this at least as much as the request-only RPCs do.

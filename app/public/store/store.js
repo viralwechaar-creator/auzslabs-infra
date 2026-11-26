@@ -268,7 +268,7 @@ function shell() {
   const saved = E('a', { class: 'ic deskonly', href: link('wishlist'), 'aria-label': 'Saved' }, icon('mark'), countBadge(() => wish.length));
   const top = E('header', { class: 'top' },
     E('div', { class: 'l' },
-      E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), ...((themeHeader() || {}).links || []).map((l) => themeLink(l, 'deskonly')), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
+      E('a', { class: 'deskonly', href: link('shop?new=1') }, 'New in'), E('a', { class: 'deskonly', href: link('collections') }, 'Collections'), ...((themeHeader() || {}).links || []).map((l) => headerLink(l, 'deskonly')), E('button', { class: 'menu-pill phoneonly', onclick: openMenu }, E('i'), 'Menu')),
     brandEl,
     E('div', { class: 'r' }, E('button', { class: 'ic dview', id: 'dview', 'aria-label': 'Picture view', title: 'Picture view', onclick: toggleDense }, icon('dense')),
       E('a', { class: 'ic deskonly', href: link('stores'), 'aria-label': 'Stores' }, icon('pin')), E('button', { class: 'ic', 'aria-label': 'Search', onclick: openSearch }, icon('search')),
@@ -339,6 +339,7 @@ function themeHref(h) {
   h = String(h || ''); if (/^https:\/\//i.test(h) || h.startsWith('#/')) return h;
   return h === '/' || !h.startsWith('/') ? link('') : link(h.slice(1));
 }
+const headerLink = (l, cls) => (l.children || []).length ? E('span', { class: 'hdd ' + (cls || '') }, themeLink(l), E('span', { class: 'hddm' }, l.children.map((c) => themeLink(c)))) : themeLink(l, cls);
 const themeLink = (l, cls) => E('a', { class: cls || '', href: themeHref(l.href), target: /^https:/i.test(l.href) ? '_blank' : null, rel: /^https:/i.test(l.href) ? 'noopener' : null }, l.label);
 function minimalPages() {
   const seen = new Set();
@@ -390,7 +391,7 @@ function openMinimalMenu() {
         E('span', { class: 'minimal-mega-swatches', 'aria-hidden': 'true' }, palette.map((colour) => E('i', { style: { backgroundColor: colour } })) )])],
   ];
   dialog.append(E('div', { class: 'minimal-mega-top' },
-    E('nav', { 'aria-label': 'Featured links' }, item('New in', 'shop?new=1'), item('Collections', 'collections'), ((themeHeader() || {}).links || []).map((l) => themeLink(l))),
+    E('nav', { 'aria-label': 'Featured links' }, item('New in', 'shop?new=1'), item('Collections', 'collections'), ((themeHeader() || {}).links || []).map((l) => [themeLink(l), ...(l.children || []).map((c) => themeLink(c, 'sublink'))])),
     E('div', { class: 'minimal-mega-brand' }, item(D.shop.name, '')),
     E('div', { class: 'minimal-mega-actions' }, action('Search', 'search', openMinimalSearch),
       action('Notifications', 'bell', openMinimalNotifications), item('My account', 'me'), action('Bag', 'bag', openMinimalBag), close)),
@@ -1214,6 +1215,9 @@ V.bag = (v) => {
     E('div', { class: 'two' }, list, E('div', { class: 'card stick sum' }, E('div', { class: 't' }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 'mut tiny' }, shipLine(t)), freeBar(t), E('a', { class: 'btn wide', href: link('checkout') }, 'Process to checkout'))), recentBand(null));
 };
 function freeBar(sub) { const fo = +((cfg().shipping || {}).freeOver) || 0; if (!(fo > 0)) return null; const left = Math.max(fo - sub, 0); return E('div', null, E('div', { class: 'mut tiny' }, left ? 'Add ' + inr(left) + ' more for free shipping' : 'You have free shipping'), E('div', { class: 'fbar' }, E('i', { style: { width: Math.min(100, Math.round(sub / fo * 100)) + '%' } }))); }
+const taxCfg = () => { const t = cfg().tax || {}; return +t.rate > 0 ? { rate: +t.rate, inclusive: t.inclusive !== false, label: t.label || 'GST' } : null; };
+function taxOn(base) { const t = taxCfg(); if (!t || !(base > 0)) return 0; return Math.round((t.inclusive ? base * t.rate / (100 + t.rate) : base * t.rate / 100) * 100) / 100; }
+const taxRow = (amount) => { const t = taxCfg(); return t && amount > 0 ? E('div', { class: 't' }, E('span', null, t.label + (t.inclusive ? ' (included)' : '')), E('span', null, inr(amount))) : null; };
 function shipZone(state) { const st = String(state || '').trim().toLowerCase(); return st ? ((cfg().shipping || {}).zones || []).find((z) => (z.states || []).some((x) => String(x).trim().toLowerCase() === st)) : null; }
 function shipFee(sub, state) { const sh = shipZone(state) || cfg().shipping || {}; const fee = +sh.fee || 0, fo = +sh.freeOver || 0; return fo > 0 && sub >= fo ? 0 : fee; }
 function shipLine(sub, state) { const sh = shipZone(state) || cfg().shipping || {}; const f = shipFee(sub, state); return f ? 'Shipping ' + inr(f) + ((+sh.freeOver > 0) ? ' · free above ' + inr(sh.freeOver) : '') : 'Free shipping'; }
@@ -1232,7 +1236,7 @@ V.checkout = (v) => {
   const t = bagTotal(); let sh = shipFee(t, (LS.get('me', {}) || {}).state || 'Rajasthan'); const shipNote = E('div', { class: 'note' }, shipLine(t, (LS.get('me', {}) || {}).state || 'Rajasthan')); const save = E('input', { type: 'checkbox', checked: !!saved.name });
   let coupon = null; // { code, discount, msg }
   const sumBox = E('div');
-  const paintSum = () => { clear(sumBox); const d = coupon ? Math.min(coupon.discount, t + sh) : 0; sumBox.append(E('div', { class: 't', style: { paddingTop: '8px', borderTop: '1px solid var(--line)' } }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, sh ? inr(sh) : 'Free')), d ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon ' + coupon.code), E('span', null, '– ' + inr(d))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(t + sh - d)))); };
+  const paintSum = () => { clear(sumBox); const d = coupon ? Math.min(coupon.discount, t + sh) : 0; const tx = taxOn(Math.max(t - d, 0)); const addTax = taxCfg() && !taxCfg().inclusive ? tx : 0; sumBox.append(E('div', { class: 't', style: { paddingTop: '8px', borderTop: '1px solid var(--line)' } }, E('span', null, 'Subtotal'), E('span', null, inr(t))), E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, sh ? inr(sh) : 'Free')), d ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon ' + coupon.code), E('span', null, '– ' + inr(d))) : null, taxRow(tx), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(t + sh - d + addTax)))); };
   paintSum();
   const cin = E('input', { placeholder: 'Coupon code', 'aria-label': 'Coupon code', style: { textTransform: 'uppercase' } }); const cmsg = E('div', { class: 'tiny', style: { minHeight: '14px' } });
   const capply = async () => { cmsg.style.color = '#c0392b'; if (coupon) { coupon = null; cin.disabled = false; cin.value = ''; cmsg.textContent = ''; capplyBtn.textContent = 'Apply'; paintSum(); return; } if (!cin.value.trim()) return; capplyBtn.disabled = true;
@@ -1336,7 +1340,7 @@ V.order = async (v, tok) => {
     E('div', { class: 'mut' }, o.payment === 'cod' ? 'Pay ' + inr(o.total) + ' in cash when it arrives.' : o.paymentStatus === 'paid' ? 'Payment received.' : 'We will confirm your order once the payment is checked.'),
     o.status === 'cancelled' ? null : E('div', { class: 'steps' }, steps.map((_, i) => E('i', { class: i <= at ? 'on' : '' }))), o.status === 'cancelled' ? null : E('div', { class: 'live' }, o.status === 'cancelled' ? null : E('i'), E('b', null, cap(o.status)), E('span', null, ' · ' + (LIVE_MSG[o.status] || '')), E('div', { class: 'tiny mut' }, 'Updates by itself · checked ' + new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }))),
     E('div', { style: { marginTop: '12px' } }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty))))),
-    E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), +o.discount ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon' + (o.coupon ? ' ' + o.coupon : '')), E('span', null, '– ' + inr(o.discount))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
+    E('div', { class: 'sum', style: { marginTop: '10px' } }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), taxRow(+o.tax), +o.discount ? E('div', { class: 't', style: { color: '#1a7f3c' } }, E('span', null, 'Coupon' + (o.coupon ? ' ' + o.coupon : '')), E('span', null, '– ' + inr(o.discount))) : null, E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
     trackBox(o),
     E('div', { class: 'mut tiny', style: { marginTop: '10px' } }, 'Save this page to follow your order. Questions? ', E('a', { href: link('contact'), style: { textDecoration: 'underline' } }, 'Contact us'))), pbox, o.billUrl ? E('div', { class: 'note', style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' } }, E('div', null, E('b', null, 'Invoice'), E('div', { class: 'mut tiny' }, o.billNo ? 'Bill ' + o.billNo : 'Ready')), E('a', { class: 'btn sm', href: o.billUrl, target: '_blank', rel: 'noopener' }, 'View invoice')) : null, o.status === 'delivered' ? afterSale(o, tok, v) : null, E('a', { class: 'btn out', href: link('shop'), style: { justifySelf: 'center' } }, 'Keep shopping')));
   if (!['delivered', 'cancelled'].includes(o.status)) { const last = o.status + '|' + o.paymentStatus; v._ot = setInterval(async () => { if (!document.body.contains(v) || !location.hash.includes(tok)) return clearInterval(v._ot); let n = null; try { n = await rpc(`public_${PFX}_order`, { p_token: tok }); } catch { return; } if (n && n.status + '|' + n.paymentStatus !== last) { clearInterval(v._ot); const y = scrollY; await V.order(v, tok); scrollTo(0, y); toast('Order update: ' + cap(n.status)); } }, 12000); }
@@ -1390,7 +1394,7 @@ V.orders = async (v) => {
   const open = new Set(); let state = {};
   const paint = () => { clear(box); mine.forEach((m) => { const o = state[m.token]; if (!o) return; const live = !['delivered', 'cancelled'].includes(o.status);
     const det = E('div', { class: 'od' }, (o.lines || []).map((l) => E('div', { class: 'ln' }, E('div', { class: 'im' }, l.photo ? E('img', { src: l.photo, alt: '' }) : placeholder(l.name)), E('div', null, E('div', { class: 't' }, l.name), E('div', { class: 's' }, [l.colour, l.size].filter(Boolean).join(' · ') + ' × ' + l.qty)), E('div', null, inr(l.price * l.qty)))),
-      E('div', { class: 'sum' }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
+      E('div', { class: 'sum' }, E('div', { class: 't' }, E('span', null, 'Shipping'), E('span', null, o.shipping ? inr(o.shipping) : 'Free')), taxRow(+o.tax), E('div', { class: 't g' }, E('span', null, 'Total'), E('span', null, inr(o.total)))),
       E('div', { class: 'tiny mut' }, (o.payment === 'cod' ? 'Cash on delivery' : o.paymentStatus === 'paid' ? 'Paid' : 'Payment: ' + o.paymentStatus) + ' · placed ' + new Date(o.createdAt).toLocaleDateString('en-GB')), trackBox(o), E('a', { class: 'btn sm out', href: link('order/' + m.token), style: { justifySelf: 'start' } }, 'Open order page'));
     const steps = ['new', 'confirmed', 'packed', 'shipped', 'delivered']; const at = steps.indexOf(o.status);
     box.append(E('div', { class: 'card oc' }, E('button', { class: 'oh', onclick: () => { open.has(m.token) ? open.delete(m.token) : open.add(m.token); paint(); } }, E('div', null, E('div', { class: 't' }, o.number), E('div', { class: 'live' }, live ? E('i') : null, E('b', null, cap(o.status)), E('span', null, ' · ' + (STAT_MSG[o.status] || '')))), E('div', { class: 'tr' }, inr(o.total))),
@@ -1400,6 +1404,48 @@ V.orders = async (v) => {
   v._ot = setInterval(() => { if (!document.body.contains(v) || !location.hash.includes('orders')) return clearInterval(v._ot); load(true); }, 12000);
 };
 V.me = V.orders;
+// Customer account (sfx stores): sign in with a code sent by email or WhatsApp, then see orders, addresses, credit and marketing choice.
+V.account = async (v) => {
+  if (PFX !== 'sfx') return V.orders(v);
+  const KEY = 'acct.' + SLUG; const tok = () => { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
+  const setTok = (t) => { try { t ? localStorage.setItem(KEY, t) : localStorage.removeItem(KEY); } catch (e) { /* storage blocked */ } };
+  const head = E('div', { class: 'shophd' }, E('h1', null, 'My account'));
+  const wrap = E('div', { class: 'pg' }, head); v.append(wrap);
+  async function signedIn() {
+    let a = null; try { a = await rpc('public_sfx_customer_account', { p_token: tok() }); } catch (e) { a = null; }
+    if (!a) { setTok(''); return signIn(); }
+    clear(wrap); wrap.append(head);
+    const msg = E('div', { class: 'tiny', style: { minHeight: '14px', color: '#1a7f3c' } });
+    const mk = E('input', { type: 'checkbox' }); mk.checked = !!a.acceptsMarketing;
+    const nm = E('input', { value: a.name || '', 'aria-label': 'Name' });
+    wrap.append(
+      E('div', { class: 'card' }, E('h2', null, 'Hi, ' + (a.name || 'there')), E('div', { class: 'mut tiny' }, [a.phone, a.email].filter(Boolean).join(' · ')),
+        a.creditBalance > 0 ? E('div', { class: 'note', style: { marginTop: '8px' } }, 'Store credit: ' + inr(a.creditBalance)) : null,
+        E('div', { class: 'frm', style: { marginTop: '10px' } }, E('label', { class: 'fld' }, nm),
+          E('label', { class: 'tiny', style: { display: 'flex', gap: '8px', alignItems: 'center' } }, mk, 'Send me offers and updates'), msg,
+          E('div', { style: { display: 'flex', gap: '8px' } },
+            E('button', { class: 'btn', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sfx_customer_update', { p_token: tok(), p: { name: nm.value, acceptsMarketing: mk.checked } }); msg.textContent = 'Saved'; } catch (er) { msg.style.color = '#b3261e'; msg.textContent = er.message; } e.target.disabled = false; } }, 'Save'),
+            E('button', { class: 'btn out', onclick: async () => { try { await rpc('public_sfx_customer_signout', { p_token: tok() }); } catch (e) { /* already gone */ } setTok(''); signIn(); } }, 'Sign out')))),
+      E('h2', { style: { padding: '12px 4px 4px' } }, 'My orders'),
+      ...((a.orders || []).length ? (a.orders || []).map((o) => E('a', { class: 'card', href: link('order/' + o.token), style: { display: 'flex', justifyContent: 'space-between', textDecoration: 'none', color: 'inherit', marginBottom: '8px' } },
+        E('div', null, E('b', null, '#' + o.number), E('div', { class: 'mut tiny' }, cap(o.status) + ' · ' + new Date(o.createdAt).toLocaleDateString('en-GB'))), E('b', null, inr(o.total)))) : [E('div', { class: 'card mut' }, 'No orders yet.')]),
+      (a.addresses || []).length ? E('h2', { style: { padding: '12px 4px 4px' } }, 'Saved addresses') : null,
+      ...(a.addresses || []).map((d) => E('div', { class: 'card tiny', style: { marginBottom: '8px' } }, [d.address, d.city, d.state, d.pin].filter(Boolean).join(', '), d.isDefault ? E('span', { class: 'mut' }, '  (default)') : null)));
+  }
+  function signIn() {
+    clear(wrap); wrap.append(head);
+    const msg = E('div', { class: 'tiny', style: { minHeight: '14px', color: '#b3261e' } });
+    const contact = E('input', { placeholder: 'Phone number or email', 'aria-label': 'Phone number or email', autocomplete: 'username' });
+    const code = E('input', { placeholder: '6-digit code', inputmode: 'numeric', 'aria-label': 'Code', autocomplete: 'one-time-code' });
+    const step2 = E('div', { class: 'frm', hidden: true }, E('label', { class: 'fld' }, code),
+      E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; msg.textContent = ''; try { const r = await rpc('public_sfx_customer_verify', { p_slug: SLUG, p_contact: contact.value, p_code: code.value }); if (r && r.ok) { setTok(r.token); return signedIn(); } msg.textContent = (r && r.error) || 'That code did not work'; } catch (er) { msg.textContent = er.message; } e.target.disabled = false; } }, 'Sign in'));
+    const send = E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; msg.textContent = ''; try { const res = await fetch('https://api.auzslab.in/storefront/customer/code', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slug: SLUG, contact: contact.value }) }); if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Could not send the code'); msg.style.color = '#1a7f3c'; msg.textContent = 'If we know you, a code is on its way.'; step2.hidden = false; } catch (er) { msg.style.color = '#b3261e'; msg.textContent = er.message; } e.target.disabled = false; } }, 'Send me a code');
+    wrap.append(E('div', { class: 'card' }, E('h2', null, 'Sign in'), E('div', { class: 'mut tiny', style: { margin: '2px 0 8px' } }, 'Use the phone number or email from your earlier order. We will send a one-time code.'),
+      E('div', { class: 'frm' }, E('label', { class: 'fld' }, contact), send, msg, step2)),
+      E('div', { class: 'tiny mut', style: { padding: '10px 4px' } }, 'No account needed to order. ', E('a', { href: link('orders'), style: { textDecoration: 'underline' } }, 'Track an order without signing in')));
+  }
+  return tok() ? signedIn() : signIn();
+};
 
 // ---------- Journal (blogs / news), Media & gallery, Careers: all written by the owner in AUZsStyle -> Online store -> Store ----------
 const dateTxt = (d) => { try { return d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : ''; } catch (e) { return ''; } };
@@ -1511,6 +1557,7 @@ function footer() {
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Connect with us'), ph ? E('a', { href: 'tel:+' + (ph.length === 10 ? '91' + ph : ph) }, 'Call') : null, ph ? E('a', { href: 'https://wa.me/' + (ph.length === 10 ? '91' + ph : ph), target: '_blank', rel: 'noopener' }, 'Text (WhatsApp)') : null, ext('Instagram', so.instagram), ext('Facebook', so.facebook), c.email ? E('a', { href: 'mailto:' + c.email }, 'Email') : null),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'Order support'), E('a', { href: link('me') }, 'My account & orders'), E('a', { href: link('orders') }, 'Track your order'), E('a', { href: link('policy/returns') }, 'Returns & exchanges'), E('a', { href: link('policy/shipping') }, 'Shipping policy'), E('a', { href: link('faq') }, 'FAQs'), E('a', { href: link('policy/terms') }, 'Terms'), E('a', { href: link('policy/privacy') }, 'Privacy')),
     E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'We are ' + D.shop.name), E('a', { href: link('about') }, 'Our story'), E('a', { href: link('stores') }, 'Walk-in stores'), E('a', { href: link('collections') }, 'Collections'), blogsOn() ? E('a', { href: link('blog') }, 'Journal') : null, mediaOn() ? E('a', { href: link('media') }, 'Media & gallery') : null, jobsOn() ? E('a', { href: link('careers') }, 'Careers') : null, E('a', { href: link('contact') }, 'Contact')),
+    ...((themeFooter() || {}).columns || []).map((col) => E('div', { class: 'col' }, E('span', { class: 'lbl' }, col.title), ...(col.links || []).map((l) => themeLink(l)))),
     themeFooter() && (themeFooter().about || (themeFooter().links || []).length) ? E('div', { class: 'col' }, E('span', { class: 'lbl' }, 'More'), themeFooter().about ? E('p', { class: 'ftabout' }, themeFooter().about) : null, ...(themeFooter().links || []).map((l) => themeLink(l))) : null,
     E('div', { class: 'ftbrand' }, E('div', { class: 'big' }, D.shop.name))),
     E('div', { class: 'fin' }, E('span', null, '© ' + new Date().getFullYear() + ' ' + D.shop.name + '. All rights reserved'), themeFooter() && themeFooter().note ? E('span', { class: 'ftnote' }, themeFooter().note) : null, isMin() ? E('a', { href: link('sitemap') }, 'Sitemap') : null, E('a', { href: 'https://auzslab.in', target: '_blank', rel: 'noopener' }, 'Store by AUZslab'))))
@@ -1582,7 +1629,7 @@ const navState = () => { document.body.classList.toggle('atop', window.scrollY <
 window.addEventListener('scroll', navState, { passive: true }); window.addEventListener('hashchange', () => setTimeout(navState, 50));
 function ingest(d) {
   shopIcon(d);
-  D = d; STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
+  D = d; try { if (d.config && d.config.languages && d.config.languages.hindi && window.stHindi) window.stHindi.enable(); } catch {} STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
   STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
 }

@@ -116,6 +116,51 @@ export default async function run({ browser, stack }) {
     assert(/name="space"/.test(html) && /id="te-links"/.test(html), 'spacing controls or link list missing');
     await s.shot(page, 'sfx-theme-editor-spacing');
   }, 'critical');
+  await s.check('Taxes: inclusive keeps the total, exclusive adds tax, off changes nothing, bad GST number refused; Taxes and Apps pages open', async () => {
+    await rpc(stack, 'sfx_checkout_settings_save', { p: { shipping: { fee: 0, freeOver: 0, zones: [] } } }, owner);
+    const v = (await q('select id from sfx_variants where product_id=$1 limit 1', [pid]))[0].id; await q('update sfx_variants set stock=50, price=118 where product_id=$1', [pid]);
+    const ts = (t) => rpc(stack, 'sfx_tax_settings_save', { p: t }, owner);
+    const order = async () => { await q('delete from sfx_orders where tenant_id=$1', [tid]); await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: 'T Buyer', phone: '98765' + Math.floor(10000 + Math.random() * 89999), address: '12 Park Road, Ward 4', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', lines: [{ variantId: v, qty: 1 }] } });
+      const o = (await q('select total, tax from sfx_orders where tenant_id=$1 order by created_at desc limit 1', [tid]))[0]; return { total: Number(o.total), tax: Number(o.tax) }; };
+    let o = await order(); assert(o.total === 118 && o.tax === 0, 'tax off changed the order ' + JSON.stringify(o));
+    const bad = await ts({ rate: 18, gstin: 'NOTAGST' }); assert(/GST number/.test(JSON.stringify(bad.data)), 'bad GSTIN accepted: ' + JSON.stringify(bad.data).slice(0, 120));
+    const okr = await ts({ rate: 18, inclusive: true, gstin: '08ABCDE1234F1Z5', label: 'GST' }); assert(!okr.data?.error, JSON.stringify(okr.data).slice(0, 160));
+    o = await order(); assert(o.total === 118 && o.tax === 18, 'inclusive wrong ' + JSON.stringify(o));
+    await ts({ rate: 18, inclusive: false }); o = await order(); assert(o.tax === 21.24 && o.total === 139.24, 'exclusive wrong ' + JSON.stringify(o));
+    const pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert(pub.config.tax && pub.config.tax.rate === 18 && pub.config.tax.inclusive === false, 'public tax missing');
+    await open('#/taxes'); let t = await page.locator('main').innerText(); assert(/GST rate/.test(t) && /Save tax settings/.test(t), 'taxes page: ' + t.slice(0, 100));
+    await open('#/apps'); t = await page.locator('main').innerText(); assert(/Connected services/.test(t) && /Your plan/.test(t) && !/coming in a later release/.test(t), 'apps page: ' + t.slice(0, 120));
+    await ts({ rate: 0 });
+  }, 'critical');
+  await s.check('Stores directory: saved from the dashboard, cleaned, and shown on the public store', async () => {
+    const bad = await rpc(stack, 'sfx_stores_save', { p: [{ name: 'X', map: 'javascript:alert(1)' }] }, owner); assert(/https/.test(JSON.stringify(bad.data)), 'bad map accepted: ' + JSON.stringify(bad.data).slice(0, 120));
+    const ok = await rpc(stack, 'sfx_stores_save', { p: [{ name: 'Jodhpur flagship', address: '12 Sardarpura', city: 'Jodhpur', phone: '9876543210', hours: '10 to 8', map: 'https://maps.google.com/?q=x', featured: true }, { name: 'Pickup point', address: 'Near Clock Tower' }] }, owner);
+    assert(!ok.data?.error, JSON.stringify(ok.data).slice(0, 160));
+    const pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert((pub.config.stores || []).length === 2 && pub.config.stores[0].name === 'Jodhpur flagship', JSON.stringify(pub.config.stores).slice(0, 160));
+    await open('#/store-directory'); const t = await page.locator('main').innerText(); assert(/Jodhpur flagship/.test(t) && /Add store/.test(t), 'dashboard page: ' + t.slice(0, 120));
+    const sp = await ctx.newPage(); await sp.goto(stack.url('testcafe', '/store.html?design=minimal#/stores'), { waitUntil: 'load' }); await sp.waitForTimeout(3000);
+    assert(/Jodhpur flagship/.test(await sp.locator('body').innerText()), 'public Our stores page missing the store');
+  }, 'critical');
+  await s.check('Menus: header links keep one level of sub-links; footer keeps up to 3 clean columns; bad links dropped', async () => {
+    const c = (await q('select sfx_theme_chrome_clean($1::jsonb) as c', [JSON.stringify({
+      header: { announceText: '', links: [{ label: 'Shop', href: '/store.html#/shop', children: [{ label: 'Tees', href: '/store.html#/shop?c=tees', children: [{ label: 'deep', href: '/x' }] }, { label: 'Bad', href: 'javascript:alert(1)' }] }, { label: 'Plain', href: '/store.html#/about' }] },
+      footer: { about: '', note: '', links: [], columns: [{ title: 'Help', links: [{ label: 'Shipping', href: '/store.html#/policy/shipping' }, { label: 'Evil', href: 'javascript:1' }] }, { title: '', links: [{ label: 'x', href: '/x' }] }, { title: 'A', links: [{ label: 'a', href: '/a' }] }, { title: 'B', links: [{ label: 'b', href: '/b' }] }, { title: 'C', links: [{ label: 'c', href: '/c' }] }] } })]))[0].c;
+    const h = c.header.links; assert(h[0].children.length === 1 && h[0].children[0].label === 'Tees' && !('children' in h[0].children[0]) && !('children' in h[1]), 'header children wrong ' + JSON.stringify(h));
+    const f = c.footer.columns; assert(f.length === 3 && f[0].title === 'Help' && f[0].links.length === 1 && f.map((x) => x.title).join() === 'Help,A,B', 'footer columns wrong ' + JSON.stringify(f));
+    const old = (await q('select sfx_theme_chrome_clean($1::jsonb) as c', [JSON.stringify({ header: { links: [{ label: 'A', href: '/a' }] }, footer: { about: 'x', links: [{ label: 'B', href: '/b' }] } })]))[0].c;
+    assert(!('columns' in old.footer) && !('children' in old.header.links[0]), 'old shape changed: ' + JSON.stringify(old));
+  }, 'critical');
+  await s.check('Languages: off by default, Hindi switch saved, public store gets a language button and swaps labels', async () => {
+    let pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert(!(pub.config.languages), 'languages on by default');
+    const sv = await rpc(stack, 'sfx_languages_save', { p: { hindi: true } }, owner); assert(sv.data?.data?.hindi === true || sv.data?.hindi === true, JSON.stringify(sv.data).slice(0, 120));
+    pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data.data; assert(pub.config.languages?.hindi === true, 'public config missing languages');
+    const sp = await ctx.newPage(); await sp.goto(stack.url('testcafe', '/store.html?design=minimal#/bag'), { waitUntil: 'domcontentloaded' }); await sp.waitForTimeout(3000);
+    assert(await sp.locator('#st-lang').count() === 1, 'no language button'); await sp.click('#st-lang'); await sp.waitForTimeout(800);
+    const t = await sp.locator('body').innerText(); assert(/बैग/.test(t), 'labels not swapped: ' + t.slice(0, 160));
+    await sp.click('#st-lang'); await sp.waitForTimeout(500); assert(!/बैग/.test(await sp.locator('body').innerText()), 'did not switch back to English');
+    await open('#/markets'); const m = await page.locator('main').innerText(); assert(/Store languages/.test(m), 'dashboard languages panel missing');
+    await rpc(stack, 'sfx_languages_save', { p: { hindi: false } }, owner);
+  }, 'critical');
   await s.check('Customers has Customers / Segments / Companies tabs', async () => {
     await open('#/customers');
     const t = await page.locator('nav.tabs').innerText();
