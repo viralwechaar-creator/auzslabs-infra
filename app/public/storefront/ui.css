@@ -614,3 +614,14 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
 .shell .theme-card .tc-foot{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-top:var(--sp-2)}
 .shell .theme-card .tc-foot .btn{min-height:36px;padding:0 var(--sp-4)}
 @media (max-width:899px){.shell .work .cards{grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))}.shell .theme-card .tc-body{padding:var(--sp-3)}}
+
+/* 30. Phone Home header: room around the profile row and the swipeable figures */
+@media (max-width:899px){
+  .shell:has(.topbar.is-home){--hdr:calc(env(safe-area-inset-top,0px) + 176px)}
+  .shell .topbar.is-home{padding:calc(env(safe-area-inset-top,0px) + 14px) 20px 40px;row-gap:18px;align-content:flex-start}
+  .shell .topbar.is-home .m-hero{margin:0}
+  .shell .topbar.is-home .m-stats{gap:28px;padding:4px 0 2px;margin:0 -20px;padding-inline:20px;scroll-padding-inline:20px}
+  .shell .topbar.is-home .m-stats>div{gap:6px;min-width:112px}
+  .shell .topbar.is-home .m-stats span{font-size:13px;overflow:visible;text-overflow:clip}
+  .shell .topbar.is-home .m-stats b{font-size:20px}
+}
