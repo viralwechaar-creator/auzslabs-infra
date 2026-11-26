@@ -235,5 +235,24 @@ export default async function run({ browser, stack }) {
     assert(lines[0].qty === 2 && lines.some((l) => l.name === 'Engraving' && l.custom === true), JSON.stringify(lines).slice(0, 300));
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Draft order: custom price, custom item, discount, shipping and pay-later become the real order', async () => {
+    const tok = await (async () => (await (await fetch(stack.apiBase + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: USERS.cafeOwner, password: PASSWORD }) })).json()).access_token)();
+    const call3 = async (fn, args) => { const d = (await rpc(stack, fn, args, tok)).data; return d && d.data !== undefined && !d.error ? d.data : d; };
+    await q('update sfx_variants set stock = 50 where id = $1', [vs]);
+    await q("update sfx_stores set config = jsonb_set(coalesce(config,'{}'::jsonb), '{shipping}', '{\"fee\":99,\"freeOver\":0}'::jsonb) where tenant_id=$1", [tid]);
+    let d = await call3('sfx_draft_save', { p_id: null, p: { name: 'Phone Customer', phone: '9876500099', lines: [{ variantId: vs, qty: 2, price: 80 }, { custom: { name: 'Fitting', price: 50 }, qty: 1 }],
+      discount: { kind: 'percent', value: 10, note: 'Regular' }, shipping: { label: 'Local delivery', amount: 30 }, payLater: true } });
+    // lines 2 x 80 + 50 = 210, 10% = 21, shipping 30 => 219
+    assert(d.subtotal === 210 && d.discount === 21 && d.shipping === 30 && d.total === 219 && d.payLater === true, JSON.stringify([d.subtotal, d.discount, d.shipping, d.total]));
+    assert(/below zero/.test(JSON.stringify(await call3('sfx_draft_save', { p_id: null, p: { name: 'X Y', lines: [{ variantId: vs, qty: 1, price: -5 }] } }))), 'negative price accepted');
+    assert(/over 100/.test(JSON.stringify(await call3('sfx_draft_save', { p_id: null, p: { name: 'X Y', lines: [{ variantId: vs, qty: 1 }], discount: { kind: 'percent', value: 150 } } }))), '150% accepted');
+    const stock0 = (await q('select stock from sfx_variants where id=$1', [vs]))[0].stock;
+    const r = await call3('sfx_draft_convert', { p_id: d.id });
+    const o = (await q('select total::float t, shipping::float sh, shipping_label sl, discount_amount::float da, discount_code dc, lines, timeline from sfx_orders where id=$1', [r.orderId]))[0];
+    assert(o.t === 219 && o.sh === 30 && o.sl === 'Local delivery' && o.da === 21 && o.dc === null, JSON.stringify([o.t, o.sh, o.sl, o.da, o.dc]));
+    assert((await q('select stock from sfx_variants where id=$1', [vs]))[0].stock === stock0 - 2, 'stock: custom item must not take stock, catalogue line must');
+    assert(o.timeline.some((e) => /Payment due later/.test(e.label)), 'pay later not noted');
+    await q("update sfx_stores set config = config - 'shipping' where tenant_id=$1", [tid]);
+  });
   s.done();
 }

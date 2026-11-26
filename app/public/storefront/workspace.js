@@ -870,15 +870,20 @@ function categoriesPage() {
 // ---------- Orders: Drafts, Returns, Shipping, Abandoned checkouts ----------
 const variantOptions = () => (state.inventory || []).map((v) => [v.variantId, v.product + (v.variant !== 'Default' ? ' · ' + v.variant : '') + ' (' + v.online + ' left)']);
 function draftsPage() {
-  const rows = (state.drafts || []).map((d) => [esc(d.customer.name || '—'), (d.lines || []).reduce((s, l) => s + l.qty, 0) + ' items', money(d.total), d.status === 'open' ? badge('Open', 'neutral') : (d.orderId ? '<a href="' + pathFor('orders/' + d.orderId) + '">' + badge('Converted') + '</a>' : badge('Converted')),
+  const rows = (state.drafts || []).map((d) => [esc(d.customer.name || '—'), (d.lines || []).reduce((s, l) => s + l.qty, 0) + ' items', money(d.total) + (d.discount > 0 || d.shipping > 0 ? '<small> (' + [d.discount > 0 ? 'discount ' + money(d.discount) : '', d.shipping > 0 ? 'shipping ' + money(d.shipping) : ''].filter(Boolean).join(', ') + ')</small>' : '') + (d.payLater ? ' ' + badge('Pay later', 'warn') : ''), d.status === 'open' ? badge('Open', 'neutral') : (d.orderId ? '<a href="' + pathFor('orders/' + d.orderId) + '">' + badge('Converted') + '</a>' : badge('Converted')),
     d.status === 'open' && canWrite() ? button('Create order', 'draft-convert:' + d.id, 'compact primary') + button('Delete', 'draft-delete:' + d.id, 'compact danger') : '']);
   return head('Draft orders', 'Create an order by hand for a phone or in-person sale.', canWrite() ? button('Create draft', 'draft-new', 'primary') : '') + tabs('drafts', orderTabs) + panel('All drafts', table(['Customer', 'Items', 'Total', 'Status', ''], rows));
 }
 function draftForm() {
   const opts = [['', 'Choose a product']].concat(variantOptions());
-  const slot = (i) => '<div class="field-grid wide">' + select('Product ' + (i + 1), 'v' + i, opts, '') + input('Quantity', 'q' + i, i === 0 ? '1' : '', 'number', 'min="1" step="1"') + '</div>';
+  const slot = (i) => '<div class="field-grid wide">' + select('Product ' + (i + 1), 'v' + i, opts, '') + input('Quantity', 'q' + i, i === 0 ? '1' : '', 'number', 'min="1" step="1"') + input('Price (optional)', 'p' + i, '', 'number', 'min="0" step="0.01"') + '</div>';
   return editForm('draft-record', '', input('Customer name', 'name', '', 'text', 'required maxlength="120"') + input('Phone', 'phone', '', 'tel') + input('Address', 'address') + input('City', 'city') + input('PIN code', 'pin') +
-    slot(0) + slot(1) + slot(2) + area('Note', 'note', '', 'maxlength="1000"'), 'Save draft');
+    slot(0) + slot(1) + slot(2) +
+    '<p class="compact-copy wide">Leave the price empty to use the catalogue price. A custom item has no stock.</p>' +
+    '<div class="field-grid wide">' + input('Custom item name', 'cname', '', 'text', 'maxlength="120"') + input('Custom item price (Rs)', 'cprice', '', 'number', 'min="0" step="0.01"') + input('Custom item quantity', 'cq', '', 'number', 'min="0" step="1"') + '</div>' +
+    '<div class="field-grid wide">' + select('Discount', 'dkind', [['', 'No discount'], ['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)']], '') + input('Discount value', 'dval', '', 'number', 'min="0" step="0.01"') + input('Discount reason', 'dnote', '', 'text', 'maxlength="120"') + '</div>' +
+    '<div class="field-grid wide">' + input('Shipping name', 'slabel', '', 'text', 'maxlength="60" placeholder="Local delivery"') + input('Shipping charge (Rs, 0 = free)', 'sfee', '0', 'number', 'min="0" step="0.01"') + select('Payment', 'payterms', [['now', 'Collect when the order is created'], ['later', 'Payment due later']], 'now') + '</div>' +
+    area('Note', 'note', '', 'maxlength="1000"'), 'Save draft');
 }
 const RETURN_NEXT = { requested: [['approved', 'Approve', 'primary'], ['rejected', 'Reject', '']], approved: [['received', 'Mark received', 'primary']], received: [['refunded', 'Refund', 'primary']] };
 function returnsPage() {
@@ -1493,8 +1498,10 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'tags-record') {
         await api('sfx_product_set_tags', { p_id: rid, p_tags: data.tags }); await refreshCategories(); save('Tags saved.'); close(); rerender(true);
       } else if (key === 'draft-record') {
-        const lines = [0, 1, 2].filter((i) => data['v' + i] && Number(data['q' + i]) > 0).map((i) => ({ variantId: data['v' + i], qty: Number(data['q' + i]) }));
-        await api('sfx_draft_save', { p_id: rid, p: { name: data.name, phone: data.phone, address: data.address, city: data.city, pin: data.pin, note: data.note, lines } });
+        const lines = [0, 1, 2].filter((i) => data['v' + i] && Number(data['q' + i]) > 0).map((i) => ({ variantId: data['v' + i], qty: Number(data['q' + i]), price: data['p' + i] === '' || data['p' + i] == null ? undefined : Number(data['p' + i]) }));
+        if (data.cname && Number(data.cq) > 0) lines.push({ custom: { name: data.cname, price: Number(data.cprice) }, qty: Number(data.cq) });
+        await api('sfx_draft_save', { p_id: rid, p: { name: data.name, phone: data.phone, address: data.address, city: data.city, pin: data.pin, note: data.note, lines,
+          discount: data.dkind ? { kind: data.dkind, value: Number(data.dval) || 0, note: data.dnote } : undefined, shipping: { label: data.slabel, amount: Number(data.sfee) || 0 }, payLater: data.payterms === 'later' } });
         await refreshDrafts(); save('Draft saved.'); close(); rerender(true);
       } else if (key === 'return-record') {
         const order = state.orders.find((o) => o.id === rid); const lines = (order?.lines || []).map((l, i) => ({ variantId: data['vid' + i], qty: Number(data['rq' + i] || 0) })).filter((l) => l.qty > 0);
