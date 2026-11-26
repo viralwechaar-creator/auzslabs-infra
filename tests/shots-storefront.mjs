@@ -52,6 +52,7 @@ const savedLs = await boot.evaluate(() => { const o = {}; for (let i = 0; i < lo
 for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
   const ctx = await newCtx(browser, stack, { w, h, mobile }); await ctx.addInitScript((st) => { for (const [k, v] of Object.entries(st)) try { localStorage.setItem(k, v); } catch (e) { /* about:blank */ } }, savedLs);
   if (process.env.BASELINE) await ctx.route('**/storefront/ui.css*', (r) => r.abort());
+  if (process.env.SAFE) await ctx.route('**/storefront/*.css*', async (r) => { const f = new URL(r.request().url()).pathname; const body = (await import('node:fs')).readFileSync(path.join(process.cwd(), 'app/public' + f), 'utf8').replaceAll('env(safe-area-inset-top,0px)', process.env.SAFE + 'px').replaceAll('env(safe-area-inset-top, 0px)', process.env.SAFE + 'px'); await r.fulfill({ status: 200, contentType: 'text/css', body }); });
   const page = await ctx.newPage();
   const errs = []; page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 160)));
   for (const route of routes) {
@@ -82,6 +83,7 @@ for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
         await page.screenshot({ path: path.join(out, 'globe_map__' + sizeName + '.png') });
         await page.click('[data-g=toggle]'); await page.waitForTimeout(300);
       }
+      if (process.env.DBG && sizeName === 'phone' && scheme === 'light') { const d = await page.evaluate(() => { const g = (sel) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); const c = getComputedStyle(e); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), display: c.display, color: c.color, fs: c.fontSize, vis: c.visibility, op: c.opacity, text: (e.textContent || '').slice(0, 30) }; }; return { name: g('.mobile-page-name'), h1: g('.page-head h1'), top: g('.topbar'), brand: g('.mobile-brand'), crumb: g('.breadcrumb') }; }); console.log(route, JSON.stringify(d)); }
       const file = route.replace(/[^a-z0-9]+/gi, '_').slice(0, 40) + '__' + sizeName + '__' + scheme + '.png';
       await page.screenshot({ path: path.join(out, file), fullPage: false });
       results.push({ route: route.replace(firstOrder, '<order>').replace(pr.id, '<product>'), size: sizeName, scheme, file, ...m });
