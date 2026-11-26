@@ -92,5 +92,25 @@ export default async function run({ browser, stack }) {
     const a = await post({ slug: 'testcafe', contact: phone }); const b = await post({ slug: 'testcafe', contact: '1111111111' });
     assert(a.status === 200 && b.status === 200 && JSON.stringify(await a.json()) === JSON.stringify(await b.json()), 'route reveals who is a customer');
   });
+  await s.check('The public store account page: sign-in form, then orders after sign-in', async () => {
+    const ctx = await newCtx(browser, stack, { w: 420, h: 900 }); const pg = await ctx.newPage(); const errs = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html#/account'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    let t = await pg.locator('#view').innerText();
+    assert(/sign in/i.test(t) && /send me a code/i.test(t), JSON.stringify(t.slice(0, 300)) + ' | ' + JSON.stringify(errs).slice(0,200));
+    await q('delete from sfx_customer_codes where tenant_id=$1', [tid]);
+    const c = (await q("select sfx_customer_code_issue('testcafe', $1) r", [phone]))[0].r;
+    assert(c && c.code, 'no code issued');
+    const v = unwrap((await rpc(stack, 'public_sfx_customer_verify', { p_slug: 'testcafe', p_contact: phone, p_code: c.code })).data);
+    assert(v && v.ok && v.token, JSON.stringify(v));
+    await pg.evaluate(([k, tok]) => localStorage.setItem(k, tok), ['acct.testcafe', v.token]);
+    await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    t = await pg.locator('#view').innerText();
+    assert(/my orders/i.test(t) && /sign out/i.test(t) && /send me offers/i.test(t), t.slice(0, 400));
+    assert(await pg.locator('#view a[href*="#/order/"]').count() >= 1, 'no order link: ' + JSON.stringify(t.slice(0, 400)));
+    await pg.evaluate(() => [...document.querySelectorAll('#view button')].find((b) => /sign out/i.test(b.textContent)).click()); await pg.waitForTimeout(1200);
+    t = await pg.locator('#view').innerText();
+    assert(/send me a code/i.test(t), 'not signed out');
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }

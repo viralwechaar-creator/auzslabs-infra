@@ -109,5 +109,20 @@ export default async function run({ browser, stack }) {
     assert(/Orders/.test(d) && /#\d+|#[A-Z0-9-]+/.test(d), d.slice(0, 300));
     assert(!errs.length, JSON.stringify(errs).slice(0, 200));
   });
+  await s.check('Discount Used count opens the orders that used the code', async () => {
+    const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+    await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+    await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p }); }, [USERS.cafeOwner, PASSWORD]);
+    const o6 = await place(); await place();
+    await q("update sfx_orders set discount_code='LINK10' where id=$1", [o6]);
+    await q("delete from sfx_discounts where tenant_id=(select id from tenants where slug='testcafe') and upper(code)='LINK10'");
+    await q("insert into sfx_discounts (tenant_id, code, kind, value, used_count, status) select id, 'LINK10', 'percent', 10, 1, 'active' from tenants where slug='testcafe'");
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/discounts'), { waitUntil: 'load' }); await page.waitForTimeout(3000);
+    await page.evaluate(() => document.querySelector('a[data-action="discount-orders:LINK10"]').click()); await page.waitForTimeout(1500);
+    assert(/#\/orders/.test(page.url()), page.url());
+    const hrefs = await page.locator('#orders-results a[href*="#/orders/"]').evaluateAll((a) => [...new Set(a.map((x) => x.getAttribute('href')))]);
+    assert(hrefs.length === 1 && hrefs[0].endsWith(o6), 'orders not filtered to the code: ' + JSON.stringify(hrefs));
+    assert(!errs.length, JSON.stringify(errs).slice(0, 200));
+  });
   s.done();
 }

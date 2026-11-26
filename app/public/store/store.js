@@ -1427,10 +1427,10 @@ V.account = async (v) => {
             E('button', { class: 'btn', onclick: async (e) => { e.target.disabled = true; try { await rpc('public_sfx_customer_update', { p_token: tok(), p: { name: nm.value, acceptsMarketing: mk.checked } }); msg.textContent = 'Saved'; } catch (er) { msg.style.color = '#b3261e'; msg.textContent = er.message; } e.target.disabled = false; } }, 'Save'),
             E('button', { class: 'btn out', onclick: async () => { try { await rpc('public_sfx_customer_signout', { p_token: tok() }); } catch (e) { /* already gone */ } setTok(''); signIn(); } }, 'Sign out')))),
       E('h2', { style: { padding: '12px 4px 4px' } }, 'My orders'),
-      (a.orders || []).length ? (a.orders || []).map((o) => E('a', { class: 'card', href: link('order/' + o.token), style: { display: 'flex', justifyContent: 'space-between', textDecoration: 'none', color: 'inherit', marginBottom: '8px' } },
-        E('div', null, E('b', null, '#' + o.number), E('div', { class: 'mut tiny' }, cap(o.status) + ' · ' + new Date(o.createdAt).toLocaleDateString('en-GB'))), E('b', null, inr(o.total)))) : E('div', { class: 'card mut' }, 'No orders yet.'),
+      ...((a.orders || []).length ? (a.orders || []).map((o) => E('a', { class: 'card', href: link('order/' + o.token), style: { display: 'flex', justifyContent: 'space-between', textDecoration: 'none', color: 'inherit', marginBottom: '8px' } },
+        E('div', null, E('b', null, '#' + o.number), E('div', { class: 'mut tiny' }, cap(o.status) + ' · ' + new Date(o.createdAt).toLocaleDateString('en-GB'))), E('b', null, inr(o.total)))) : [E('div', { class: 'card mut' }, 'No orders yet.')]),
       (a.addresses || []).length ? E('h2', { style: { padding: '12px 4px 4px' } }, 'Saved addresses') : null,
-      (a.addresses || []).map((d) => E('div', { class: 'card tiny', style: { marginBottom: '8px' } }, [d.address, d.city, d.state, d.pin].filter(Boolean).join(', '), d.isDefault ? E('span', { class: 'mut' }, '  (default)') : null)));
+      ...(a.addresses || []).map((d) => E('div', { class: 'card tiny', style: { marginBottom: '8px' } }, [d.address, d.city, d.state, d.pin].filter(Boolean).join(', '), d.isDefault ? E('span', { class: 'mut' }, '  (default)') : null)));
   }
   function signIn() {
     clear(wrap); wrap.append(head);

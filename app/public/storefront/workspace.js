@@ -49,13 +49,13 @@ function home() {
 const orderTabs = [['orders', 'All orders'], ['drafts', 'Drafts'], ['abandoned-checkouts', 'Abandoned checkouts'], ['returns', 'Returns'], ['shipping', 'Shipping'], ['taxes', 'Taxes']];
 function orderBar() {
   const o = lb.orders;
-  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order or customer" value="' + esc(o.q) + '">' +
+  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer or discount code" value="' + esc(o.q) + '">' +
     '<select id="ol-pay" aria-label="Payment"><option value="">All payments</option>' + [['paid', 'Paid'], ['pending', 'Pending']].map(([v, t]) => '<option value="' + v + '"' + (o.pay === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
     sortSel('ol-sort', [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Total, high to low'], ['low', 'Total, low to high']], o.sort) + '</div>';
 }
 function ordersList() {
   const o = lb.orders, q = o.q.trim().toLowerCase();
-  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q)) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
+  let list = state.orders.filter((x) => (!q || String(x.number).toLowerCase().includes(q) || (x.customer || '').toLowerCase().includes(q) || (x.discountCode || '').toLowerCase() === q) && (!o.pay || String(x.payment || '').toLowerCase() === o.pay));
   list = list.slice().sort(o.sort === 'old' ? (a, b) => cmp(a.date, b.date) : o.sort === 'high' ? (a, b) => b.total - a.total : o.sort === 'low' ? (a, b) => a.total - b.total : (a, b) => cmp(b.date, a.date));
   const rows = table(['Order', 'Date', 'Customer', 'Total', 'Payment', 'Fulfillment'], list.map((o) => [
     link('#' + o.number, pathFor('orders/' + o.id)), dateValue(o.date), esc(o.customer || '—'), money(o.total), status(o.payment), status(o.status),
@@ -771,7 +771,7 @@ const discountValueLabel = (d) => (d.automatic ? 'Automatic · ' : '') + (d.kind
 function discountsPage() {
   const rows = (state.discounts || []).map((d) => [
     '<strong>' + esc(d.code) + '</strong>', discountValueLabel(d), d.minOrder != null ? money(d.minOrder) : '—', d.expiresAt ? dateValue(d.expiresAt) : 'No expiry',
-    d.usedCount + (d.usageLimit ? ' / ' + d.usageLimit : ''), badge(d.status === 'active' ? 'Active' : 'Archived', d.status === 'active' ? '' : 'neutral'),
+    (d.usedCount ? '<a href="#" data-action="discount-orders:' + esc(d.code) + '">' + d.usedCount + '</a>' : '0') + (d.usageLimit ? ' / ' + d.usageLimit : ''), badge(d.status === 'active' ? 'Active' : 'Archived', d.status === 'active' ? '' : 'neutral'),
     canWrite() ? button('Edit', 'discount-edit:' + d.id, 'compact') + button(d.status === 'active' ? 'Archive' : 'Activate', 'discount-toggle:' + d.id, 'compact') : '',
   ]);
   return head('Discounts', 'Codes your customers type at checkout.', canWrite() ? button('Create discount', 'discount-new', 'primary') : '') +
@@ -989,7 +989,7 @@ function insightsPage() {
     ['Profit on items with a known cost', money(pf.profitOnKnownCost)], ['Share of sales with a known cost', pct(pf.costCoverage)]]) +
     (pf.costCoverage != null && pf.costCoverage < 100 ? '<p class="compact-copy">Profit only counts items whose cost you entered, so it is incomplete until the share above is 100%. Add costs in Inventory, Details.</p>' : ''));
   const inv = panel('Inventory (last ' + r.inventory.days + ' days)', table(['Product', 'Variant', 'Sold', 'Available', 'Sold of what was there', 'Days of stock', 'Class', 'Note'],
-    (r.inventory.rows || []).slice(0, 25).map((x) => [esc(x.product), esc(x.variant), x.sold, x.available, pct(x.sellThrough), x.daysOfCover == null ? '—' : x.daysOfCover, x.abc, { out_of_stock: 'Out of stock', dead_stock: 'Not selling', low_cover: 'Running low' }[x.flag] || ''])) +
+    (r.inventory.rows || []).slice(0, 25).map((x) => [((state.inventory || []).find((v) => v.variantId === x.variantId) || {}).productId ? '<a href="' + pathFor('products/' + encodeURIComponent((state.inventory.find((v) => v.variantId === x.variantId)).productId)) + '">' + esc(x.product) + '</a>' : esc(x.product), esc(x.variant), x.sold, x.available, pct(x.sellThrough), x.daysOfCover == null ? '—' : x.daysOfCover, x.abc, { out_of_stock: 'Out of stock', dead_stock: 'Not selling', low_cover: 'Running low' }[x.flag] || ''])) +
     '<p class="compact-copy">Stock value at cost: ' + money(r.inventory.stockValueAtCost) + (r.inventory.stockWithoutCost ? ' · ' + r.inventory.stockWithoutCost + ' item(s) in stock have no cost entered.' : '') + '</p>');
   const cust = panel('Customers by recency, frequency and spend', table(['Group', 'Customers', 'Spent'], (r.rfm.segments || []).map((x) => [esc(x.segment), x.customers, money(x.money)])));
   const coh = panel('Customers who came back', table(['First order month', 'Customers', 'Came back later'], (r.cohorts || []).map((c) => [dateValue(c.month), c.customers, (c.retention || []).slice(1).map((k) => '+' + k.monthsLater + 'm: ' + k.returned).join(' · ') || '—'])));
@@ -1481,6 +1481,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   const action = target.dataset.action; if (!action) return;
   const [a, key, detail] = action.split(':');
   if (a === 'customer-new') return dialog('Add customer', customerForm(null));
+  if (a === 'discount-orders') { lb.orders.q = key || ''; location.hash = pathFor('orders').split('#')[1]; return; }
   if (a === 'customer-detail' || a === 'consent-set') return withBusy(async () => {
     if (a === 'consent-set') await api('sfx_customer_consent', { p_id: key, p_marketing: detail === 'on', p_source: 'staff' });
     const d = await api('sfx_customer_detail', { p_id: key });
