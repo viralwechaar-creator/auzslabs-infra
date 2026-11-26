@@ -48,7 +48,7 @@ await boot.evaluate(async ([e, p]) => { const c = window.supabase.createClient(C
 const savedLs = await boot.evaluate(() => { const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); o[k] = localStorage.getItem(k); } return o; }); await ctx0.close();
 
 for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
-  const ctx = await newCtx(browser, stack, { w, h, mobile }); await ctx.addInitScript((st) => { for (const [k, v] of Object.entries(st)) localStorage.setItem(k, v); }, savedLs);
+  const ctx = await newCtx(browser, stack, { w, h, mobile }); await ctx.addInitScript((st) => { for (const [k, v] of Object.entries(st)) try { localStorage.setItem(k, v); } catch (e) { /* about:blank */ } }, savedLs);
   if (process.env.BASELINE) await ctx.route('**/storefront/ui.css*', (r) => r.abort());
   const page = await ctx.newPage();
   const errs = []; page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 160)));

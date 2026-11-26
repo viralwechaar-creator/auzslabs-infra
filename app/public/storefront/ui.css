@@ -119,3 +119,58 @@ dialog input:not([type=checkbox]):not([type=radio]),dialog select{min-height:var
   dialog{max-width:100%;width:100%;max-height:92dvh;border-radius:var(--r-panel) var(--r-panel) 0 0;margin:auto 0 0}
 }
 @media (prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* 6. Shopify-admin look (owner reference screenshots): dark frame, one white rounded work panel, pill buttons, flat grey table header, 13px type */
+.shell{--r-ctl:999px;--r-field:10px;--r-panel:14px;--fs-title:17px;--fs-h2:14px;--fs-body:13px;--fs-small:12px;--ctl-h:32px;--line:#e5e5e5;--table:#f7f7f7;--pill:#f1f1f1;--pill-ink:#303030;--black:#303030;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13px;line-height:1.35;-webkit-font-smoothing:antialiased}
+.shell[data-theme=dark]{--line:#2e2e2e;--table:#242424;--pill:#2b2b2b;--pill-ink:#f1f1f1;--black:#f1f1f1}
+@media (min-width:900px){
+  .shell .work-layout{gap:0}
+  .shell .work-area{background:var(--paper);margin:5px 5px 5px 0;border-radius:14px;min-height:calc(100vh - 10px);overflow:clip}
+  .shell .sidebar{padding-right:6px}
+}
+.shell .topbar{height:50px;border-bottom:0;background:transparent;padding:0 var(--sp-4)}
+.shell .page-head h1,.shell .work h1{font-size:var(--fs-title);font-weight:650}
+.shell .work{background:transparent;padding:var(--sp-3) var(--sp-4) 28px;width:100%;max-width:none}
+/* buttons: white outlined pill, grey tonal pill, black primary pill */
+.shell .btn,.shell button.btn,.shell a.btn{border-radius:999px;font-size:13px;font-weight:550;min-height:32px;padding:0 14px;background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 0 rgb(0 0 0 / .03)}
+.shell .btn:hover{background:var(--pill)}
+.shell .btn.primary,.shell button.btn.primary{background:var(--black);border-color:var(--black);color:var(--paper)}
+.shell .btn.primary:hover{background:var(--black);filter:brightness(1.25)}
+.shell .btn.ghost,.shell .btn.compact:not(.primary):not(.danger){background:var(--pill);border-color:transparent;color:var(--pill-ink)}
+.shell .btn.compact{min-height:28px;padding:0 12px}
+/* fields */
+.shell input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell select,.shell textarea{border-radius:var(--r-field);border-color:#d4d4d4;font-size:13px;min-height:32px}
+.shell[data-theme=dark] input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),.shell[data-theme=dark] select,.shell[data-theme=dark] textarea{border-color:#3a3a3a}
+.shell input[type=checkbox]{width:16px;height:16px;border-radius:4px}
+/* sections: soft rounded outline, no heavy cards */
+.shell .panel,.shell .metric,.shell .card{border-radius:14px;border:1px solid var(--line);box-shadow:0 1px 2px rgb(0 0 0 / .05);background:var(--paper)}
+.shell .panel-title{border-bottom:0;padding:var(--sp-3) var(--sp-4) 0}
+.shell .panel-title h2,.shell .work h2{font-size:13px;font-weight:650}
+.shell .metrics{gap:var(--sp-3)}
+.shell .metric{padding:var(--sp-3) var(--sp-4)}
+.shell .metric span{color:var(--ink);border-bottom:1px dotted #9a9a9a;display:inline-block;width:fit-content;font-weight:500}
+.shell .metric strong{font-size:15px;font-weight:600}
+/* search and filter bar and tables */
+.shell .filters{border:1px solid var(--line);border-radius:12px;padding:6px 10px;margin:0 var(--sp-3) var(--sp-2);box-shadow:0 1px 2px rgb(0 0 0 / .04);background:var(--paper)}
+.shell .filters input,.shell .filters select{border:0;background:transparent;min-height:30px;box-shadow:none}
+.shell table{font-size:13px}
+.shell th{background:var(--table);border-bottom:0;color:var(--ink);font-weight:500;font-size:13px;padding:8px 12px;height:34px}
+.shell thead th:first-child{border-radius:8px 0 0 8px}.shell thead th:last-child{border-radius:0 8px 8px 0}
+.shell td{font-size:13px;height:42px;padding:6px 12px}
+.shell .panel>.table-scroll,.shell .panel>table{padding:0 var(--sp-2)}
+.shell .badge,.shell .pill{border-radius:8px;background:var(--pill);color:var(--pill-ink);font-weight:500;padding:2px 8px;font-size:12px}
+/* tabs keep their underline; links are blue like Shopify */
+.shell .work a:not(.btn):not(.tab):not([class]){color:#005bd3}
+/* sidebar: 13px, active item is a dark rounded row */
+.shell .side-nav a{font:500 13px/1.25 Inter,system-ui,sans-serif;min-height:32px;border-radius:10px;color:#e8e8e8;padding:6px 10px}
+.shell .side-nav a.sub{font-size:13px;color:#b5b5b5;padding-left:36px;min-height:30px}
+.shell .side-nav a[aria-current]{background:#303030;box-shadow:none;color:#fff;font-weight:650}
+.shell .side-nav a:hover{background:#1f1f1f}
+.shell .side-search,.shell .sidebar-head .side-search{background:#2b2b2b;border-color:#3a3a3a;border-radius:10px;min-height:34px;font-size:13px}
+@media (max-width:899px){
+  .shell .work-area{border-radius:0;margin:0}
+  .shell .filters{margin:0 0 var(--sp-2)}
+}
+.shell .tabs a,.shell .tabs button{color:var(--muted)!important}
+.shell .tabs a[aria-current],.shell .tabs button[aria-pressed=true]{color:var(--ink)!important}
