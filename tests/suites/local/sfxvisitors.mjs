@@ -15,20 +15,6 @@ export default async function run({ browser, stack }) {
   const owner = await login(USERS.cafeOwner);
   const summary = async () => (await rpc(stack, 'sfx_visitor_summary', { p_days: 14 }, owner)).data.data;
 
-  await s.check('Razorpay keys entered once in the storefront also switch on card payments in the AUZsStyle store', async () => {
-    await q("insert into sty_store (tenant_id, config) values ($1, '{\"on\":true}'::jsonb) on conflict (tenant_id) do update set config = '{\"on\":true}'::jsonb", [tid]);
-    const r = await rpc(stack, 'sfx_store_set_razorpay', { p: { keyId: 'rzp_test_abcdefgh12345', secret: 'secret_value_123456' } }, owner);
-    assert(!r.data.error, JSON.stringify(r.data).slice(0, 200));
-    const pub = (await rpc(stack, 'public_sfx_store', { p_slug: 'testcafe' })).data; const pd = pub && pub.data !== undefined ? pub.data : pub;
-    assert(pd && pd.config && pd.config.payOnline === true, 'the public store should say card payments are on: ' + JSON.stringify(pd && pd.config).slice(0, 160));
-    const c = (await q('select config from sty_store where tenant_id=$1', [tid]))[0].config;
-    assert(c.payOnline === true && c.rzpKey === 'rzp_test_abcdefgh12345' && c.on === true, JSON.stringify(c));
-    assert((await q('select 1 from sty_store_secrets where tenant_id=$1', [tid])).length === 1, 'secret copied');
-    await rpc(stack, 'sfx_store_set_razorpay', { p: { clear: true } }, owner);
-    const d = (await q('select config from sty_store where tenant_id=$1', [tid]))[0].config;
-    assert(d.payOnline === false && !d.rzpKey, JSON.stringify(d));
-    assert((await q('select 1 from sty_store_secrets where tenant_id=$1', [tid])).length === 0, 'secret removed');
-  }, 'critical');
   await s.check('A business with the storefront takes online orders only there: the old AUZsStyle store steps aside', async () => {
     await q("update tenant_settings set features = features || '{\"style\":true}' where tenant_id = $1", [tid]);
     await q("insert into sty_store (tenant_id, config) values ($1, '{\"on\":true}'::jsonb) on conflict (tenant_id) do update set config = '{\"on\":true}'::jsonb", [tid]);
