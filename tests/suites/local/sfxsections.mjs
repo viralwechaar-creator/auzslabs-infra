@@ -405,7 +405,8 @@ export default async function run({ browser, stack }) {
     const fr = page.frameLocator('#te-frame'); const h = fr.locator('.cb-heading').first();
     await h.click(); await page.waitForTimeout(700); await fr.locator('.cb-heading').first().click(); await page.waitForTimeout(300);
     const st = await page.evaluate(() => { const d = document.querySelector('#te-frame').contentDocument; const e = d.querySelector('.cb-heading'); return { ce: e && e.contentEditable, active: d.activeElement && d.activeElement.className, n: d.querySelectorAll('.cb-heading').length }; });
-    assert(st.ce === 'plaintext-only', 'dblclick state ' + JSON.stringify(st));
+    st.last = await page.evaluate(() => { const w = document.querySelector('#te-frame').contentWindow; try { return w.eval('PREVIEW_LAST') + '|' + w.eval('PREVIEW') + '|' + w.eval('typeof customEl'); } catch (e) { return 'err ' + e.message; } }); st.blk = await page.evaluate(() => { const d = document.querySelector('#te-frame').contentDocument; return [...d.querySelectorAll('[data-blk]')].map((x) => x.tagName + x.dataset.blk).join(','); });
+    assert(st.ce === 'plaintext-only', 'click state ' + JSON.stringify(st));
     await page.keyboard.press('Control+A'); await page.keyboard.type('Typed on the page'); await page.waitForTimeout(200);
     await fr.locator('body').click({ position: { x: 5, y: 5 } }).catch(() => {}); await page.evaluate(() => { const f = document.querySelector('#te-frame'); f.contentDocument.activeElement && f.contentDocument.activeElement.blur(); }); await page.waitForTimeout(800);
     await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
