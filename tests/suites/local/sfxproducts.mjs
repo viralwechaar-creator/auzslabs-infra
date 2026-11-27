@@ -94,7 +94,7 @@ export default async function run({ browser, stack }) {
     assert(await order('Punjab') === 50, 'flat fee not used for other states');
   }, 'critical');
   await s.check('Dashboard: the logo link opens Home, and dark mode cards stay readable (metrics, Team, Notifications)', async () => {
-    await open('#/'); const t = await page.locator('main').innerText(); assert(/Here's your activity/.test(t), 'logo route is blank: ' + t.slice(0, 80));
+    await open('#/'); const t = await page.locator('main').innerText(); assert(/Continue building your store|Sessions/.test(t), 'logo route is blank: ' + t.slice(0, 80));
     const low = async (hash) => { await open(hash); return page.evaluate(() => { document.querySelector('.shell').setAttribute('data-theme', 'dark');
       const lum = (c) => { const m = c.match(/[\d.]+/g).map(Number); const f = (v) => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }; return .2126 * f(m[0]) + .7152 * f(m[1]) + .0722 * f(m[2]); };
       const bg = (el) => { for (let e = el; e; e = e.parentElement) { const b = getComputedStyle(e).backgroundColor, a = b.match(/[\d.]+/g); if (a && (a.length < 4 || Number(a[3]) > .5)) return b; } return 'rgb(18,18,18)'; };

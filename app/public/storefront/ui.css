@@ -730,3 +730,49 @@ dialog#dialog form .actions{justify-content:flex-end;gap:8px;margin-top:var(--sp
 @media (max-width:899px){dialog#dialog{width:100%;max-width:100%;margin:auto 0 0;border-radius:22px 22px 0 0;max-height:92dvh}dialog#dialog form .actions .btn{flex:1}}
 dialog#dialog .dialog-head .btn{width:36px;min-height:36px;height:36px;padding:0;font-size:18px;line-height:1}
 dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visible{outline:0;box-shadow:none}
+
+/* 36. Home overview: period and channel picker, four figures with tiny trends, live visitors; a report card on hover */
+.shell .hm{position:relative;margin:0 0 var(--sp-5)}
+.shell .hm-top{display:flex;align-items:flex-start;gap:var(--sp-5);padding:var(--sp-2) 0 var(--sp-3)}
+.shell .hm-pick{position:relative;flex:none;padding-top:2px}
+.shell .hm button{font:inherit;border:0;background:transparent;color:inherit;padding:0;cursor:pointer;text-align:left;text-decoration:none;box-shadow:none}
+.shell .hm-pick-btn{color:var(--muted);font-size:14px}
+.shell .hm-pick-btn:hover{color:var(--ink)}
+.shell .hm-menu{position:absolute;left:-12px;top:30px;z-index:30;width:260px;background:var(--paper);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.18);padding:8px}
+.shell .hm-menu[hidden]{display:none}
+.shell .hm-grp{font-size:12px;color:var(--muted);padding:8px 12px 4px}
+.shell .hm-menu button{display:flex;width:100%;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:10px;font-size:14px}
+.shell .hm-menu button:hover{background:var(--soft)}
+.shell .hm-menu button i{font-style:normal;visibility:hidden}
+.shell .hm-menu button[aria-checked=true] i{visibility:visible}
+.shell .hm-figs{display:flex;gap:var(--sp-5);margin-left:auto}
+.shell .hm-fig{display:grid;gap:3px;min-width:96px;padding:2px 4px!important;border-radius:8px}
+.shell .hm-fig span{font-size:13px;color:var(--muted)}
+.shell .hm-fig b{font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:var(--ink)}
+.shell .hm-spark{width:36px;height:14px;color:#9a9a9a;margin-left:auto}
+.shell .hm-fig:hover span,.shell .hm-fig.on span{color:var(--ink)}
+.shell .hm-fig{grid-template-columns:auto auto;align-items:end}
+.shell .hm-fig span{grid-column:1/-1}
+.shell .hm-live{display:grid;gap:3px;text-decoration:none;color:inherit;padding:2px 0 2px var(--sp-3)}
+.shell .hm-live span{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.shell .hm-live b{font-size:15px;font-weight:600}
+.shell .hm-dot{width:7px;height:7px;border-radius:50%;background:#b5b5b5;display:inline-block}
+.shell .hm-dot.on{background:#1f9d55;box-shadow:0 0 0 3px rgba(31,157,85,.18)}
+.shell .hm-pop{position:absolute;right:0;top:58px;z-index:20;width:min(760px,100%)}
+.shell .hm-pop[hidden]{display:none}
+.shell .hm-card{background:var(--paper);border-radius:20px;box-shadow:0 14px 48px rgba(0,0,0,.16);padding:22px 24px 18px}
+.shell .hm-card-top{display:flex;align-items:baseline;gap:10px}
+.shell .hm-card-top b{font-size:28px;font-weight:550;letter-spacing:-.02em}
+.shell .hm-diff{font-size:13px;color:#5f5f5f}
+.shell .hm-diff.down{color:#b3261e}
+.shell .hm-card h3{font-size:14px;font-weight:600;margin:8px 0 0}
+.shell .hm-card p{font-size:13px;color:var(--muted);margin:2px 0 0}
+.shell .hm-card .hm-note{margin-top:6px}
+.shell .hm-chart{width:100%;height:auto;margin-top:var(--sp-3);color:var(--ink);overflow:visible}
+.shell .hm-chart text{font-size:11px;fill:var(--muted)}
+.shell .hm-chart .cur{stroke:#3d83c6;stroke-width:2;stroke-linecap:round}
+.shell .hm-chart .prev{stroke:#9cc3e6;stroke-width:1.6;stroke-dasharray:3 4;stroke-linecap:round}
+.shell .hm-legend{display:flex;gap:var(--sp-5);justify-content:center;font-size:12px;color:var(--muted);margin-top:var(--sp-2)}
+.shell .hm-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.shell .hm-legend i.cur{background:#3d83c6}.shell .hm-legend i.prev{background:#9cc3e6}
+@media (max-width:899px){.shell .hm{display:none}}

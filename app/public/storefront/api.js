@@ -84,6 +84,7 @@ export async function refreshCollections() { state.collections = (await api('sfx
 export async function refreshOrders() { state.orders = (await api('sfx_order_list')).map(toOrder); }
 export async function refreshStyleLink() { try { state.styleLink = await api('sfx_style_link_status'); } catch (e) { state.styleLink = { available: false, linked: false }; } }
 export async function refreshLive() { try { state.liveVisitors = await api('sfx_live_visitors'); } catch (e) { state.liveVisitors = { error: true }; } }
+export async function refreshVisitors60() { try { state.visitors60 = await api('sfx_visitor_summary', { p_days: 60 }); } catch (e) { state.visitors60 = { error: true }; } }
 export async function refreshVisitors(days = 14) { try { state.visitors = await api('sfx_visitor_summary', { p_days: days }); } catch (e) { state.visitors = { error: true }; } }
 export async function refreshCustomers() { state.customers = await api('sfx_customer_list'); }
 export async function refreshInsights() {
