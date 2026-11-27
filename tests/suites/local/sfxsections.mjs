@@ -340,6 +340,26 @@ export default async function run({ browser, stack }) {
     row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
     assert(row.pages[0].slug === 'sale' && row.sections[0].blocks[2].props.href === 'ref:page:sale', 'rename did not carry the link: ' + JSON.stringify([row.pages[0].slug, row.sections[0].blocks[2].props]));
   }, 'major');
+  await s.check('The overview board shows every page as a live preview card, filters by search, opens a page for editing and adds a page', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.click('[data-action="te-mode:board"]'); await page.waitForTimeout(1200);
+    const n = await page.locator('.te-card').count(); const th = await page.locator('.te-thumb').count();
+    assert(n >= 9 && th >= 5, 'cards ' + n + ' thumbs ' + th);
+    const titles = await page.locator('.te-card-title').allInnerTexts();
+    assert(titles.includes('Collection page') && titles.includes('Product page') && titles.includes('Cart page') && titles.includes('Home page'), titles.join(','));
+    await page.waitForTimeout(3000);
+    const filled = await page.evaluate(() => [...document.querySelectorAll('.te-thumb')].some((f) => { try { return f.contentDocument.querySelector('#view') && f.contentDocument.querySelector('#view').children.length > 0; } catch (e) { return false; } }));
+    assert(filled, 'no thumbnail rendered its page');
+    await page.fill('#te-board-q', 'cart'); await page.waitForTimeout(300);
+    assert(await page.locator('.te-card:visible').count() === 1, 'search did not filter');
+    await page.fill('#te-board-q', ''); await page.waitForTimeout(300);
+    const before = await page.locator('.te-card').count();
+    await page.selectOption('#te-board-tpl', 'blank'); await page.click('[data-action="te-addpage"]'); await page.waitForTimeout(1200);
+    assert(await page.locator('.te-card').count() === before + 1, 'page card not added');
+    await page.click('.te-card[data-cur="tpl:collection"] .te-thumb-hit'); await page.waitForTimeout(800);
+    assert(await page.locator('#te-page').inputValue() === 'tpl:collection', 'did not open the collection template');
+  }, 'major');
   await ctx.close();
   return s.done();
 }
