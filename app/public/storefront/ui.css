@@ -907,3 +907,18 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 .shell .topbar [data-tip]{position:relative;cursor:help}
 .shell .topbar [data-tip]::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 6px);width:max-content;max-width:min(280px,80vw);padding:8px 10px;border-radius:10px;background:#111;color:#fff;font:400 12px/1.4 Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:normal;box-shadow:0 4px 14px rgba(0,0,0,.2);opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .15s,transform .15s;z-index:60}
 .shell .topbar [data-tip]:hover::after,.shell .topbar [data-tip]:focus::after{opacity:1;transform:none}
+
+/* 45. Phone header icons a little smaller (bottom nav unchanged) */
+@media (max-width:899px){
+  .shell .topbar details.plus-menu.in-top>summary{width:34px;height:34px;min-height:34px}
+  .shell .topbar details.plus-menu.in-top>summary svg{width:17px;height:17px}
+  .shell .topbar .back-circle{width:30px;height:30px}
+  .shell .topbar .back-circle svg{width:14px;height:14px}
+  .shell .topbar .m-bell{transform:scale(.85);transform-origin:right center}
+  .shell .topbar .m-avatar{width:34px;height:34px;font-size:12px}
+  .shell .topbar .top-action{min-height:32px;padding:0 10px;font-size:13px}
+  .shell .topbar .top-action svg{width:14px;height:14px}
+}
+
+.shell .dup-title{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.shell .panel-title.dup-title-box{margin:0;padding:0;height:0;border:0;min-height:0}
