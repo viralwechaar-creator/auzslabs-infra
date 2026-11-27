@@ -950,7 +950,9 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 /* 47. Slightly smaller buttons and tighter vertical rhythm on every page */
 .shell .btn,.shell button.btn,.shell summary.btn{min-height:32px;padding:0 13px;font-size:12.5px}
 .shell .topbar .topbar-actions .btn,.shell .topbar .topbar-actions summary.btn{min-height:32px;padding:0 13px;font-size:12.5px}
-.shell .work{padding-top:14px;padding-bottom:24px}
+.shell .work{padding-bottom:24px}
+@media (min-width:900px){.shell .work{padding-top:14px}}
+@media (max-width:899px){.shell .work{padding-top:calc(var(--hdr) + 10px)}.shell:has(.topbar.is-home) .work{padding-top:calc(var(--hdr) + 2px)}}
 .shell .page-head{margin-bottom:8px}
 .shell .work .panel,.shell .work .card{margin-bottom:10px}
 .shell .work .panel+.panel{margin-top:0}
