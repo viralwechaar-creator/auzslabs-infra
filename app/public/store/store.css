@@ -1076,3 +1076,11 @@ body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(10
 /* header sub-menus and footer columns from the theme editor */
 .hdd{position:relative;display:inline-block}.hdd .hddm{display:none;position:absolute;left:0;top:100%;z-index:30;min-width:170px;padding:8px;background:var(--bg,#fff);border:1px solid var(--line,#e6e6e6);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.08);flex-direction:column;gap:4px}.hdd:hover .hddm,.hdd:focus-within .hddm{display:flex}.hdd .hddm a{padding:6px 8px;white-space:nowrap}
 .sublink{padding-left:18px!important;opacity:.85}
+
+/* Location question (shown once; remembered for 30 days if declined) */
+.geoask{position:fixed;left:16px;bottom:16px;z-index:90;max-width:340px;background:#fff;color:#111;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.2);padding:16px 18px;font:13px/1.45 system-ui,sans-serif}
+.geoask p{margin:0 0 12px}
+.geoask-btns{display:flex;gap:8px}
+.geoask-btns button{flex:1;min-height:40px;border:0;border-radius:999px;background:#f1f1f1;color:#111;font:600 13px system-ui,sans-serif;cursor:pointer}
+.geoask-btns .geo-yes{background:#111;color:#fff}
+@media (max-width:600px){.geoask{left:12px;right:12px;bottom:88px;max-width:none}}

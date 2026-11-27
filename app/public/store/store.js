@@ -1610,7 +1610,7 @@ const TR = (() => {
   let ref = ''; try { ref = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; if (ref === location.hostname) ref = ''; } catch {}
   const q = []; let page = '', t0 = 0, maxd = 0;
   let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
-  const push = (k, p, d) => { q.push({ sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret, tz }); if (q.length >= 25) flush(); };
+  const push = (k, p, d) => { const ev = { sid, k, p: p == null ? page : p, d: d || {}, dev, ref, ret, tz }; if (k === 'loc') { ev.lat = d.lat; ev.lng = d.lng; } q.push(ev); if (q.length >= 25) flush(); };
   function flush() { if (!q.length) return; const ev = q.splice(0, 40); sb.rpc(`public_${PFX}_track`, { p_slug: SLUG, p: { events: ev } }).then(() => {}, () => {}); }
   function depth() { const h = document.documentElement.scrollHeight - innerHeight; return h > 0 ? Math.min(100, Math.round(scrollY / h * 100)) : 100; }
   addEventListener('scroll', () => { const d = depth(); if (d > maxd) maxd = d; }, { passive: true });
@@ -1619,8 +1619,25 @@ const TR = (() => {
   addEventListener('pagehide', () => { leave(); flush(); });
   setInterval(flush, 12000);
   document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a,button'); if (!a) return; const w = a.classList.contains('gd') ? 'Get direction' : a.classList.contains('chat') || a.classList.contains('chatfab') ? 'WhatsApp chat' : /^tel:/.test(a.getAttribute('href') || '') ? 'Call' : a.classList.contains('hero') || (a.closest && a.closest('.hero')) ? 'Hero button' : ''; if (w) push('click', null, { what: w }); }, true);
-  return { enter(p) { leave(); page = p; t0 = Date.now(); maxd = 0; push('view', p); }, push, flush };
+  // Location is asked once, in plain words, and only a rounded position (about 10 km) is kept. Saying no is remembered for 30 days.
+  function sendLoc() { try { navigator.geolocation.getCurrentPosition((pos) => { push('loc', null, { lat: Math.round(pos.coords.latitude * 10) / 10, lng: Math.round(pos.coords.longitude * 10) / 10 }); flush(); }, () => {}, { timeout: 8000, maximumAge: 3600000 }); } catch {} }
+  function askLocation() {
+    if (DEMO || window.parent !== window || !navigator.geolocation) return;
+    let st = ''; try { st = localStorage.getItem('st.geo') || ''; } catch {}
+    if (st === '1') { sendLoc(); return; }
+    if (st.startsWith('0:') && Date.now() - Number(st.slice(2)) < 30 * 86400000) return;
+    setTimeout(() => {
+      if (document.querySelector('.geoask')) return;
+      const box = E('div', { class: 'geoask', role: 'dialog', 'aria-label': 'Share your location' }, E('p', null, 'Share your location? It helps ' + ((D && D.shop && D.shop.name) || 'this store') + ' show delivery options and see where visitors come from. Only a rough area (about 10 km) is kept, never your exact position.'),
+        E('div', { class: 'geoask-btns' }, E('button', { type: 'button', class: 'geo-yes' }, 'Allow'), E('button', { type: 'button', class: 'geo-no' }, 'Not now')));
+      box.querySelector('.geo-yes').onclick = () => { try { localStorage.setItem('st.geo', '1'); } catch {} box.remove(); sendLoc(); };
+      box.querySelector('.geo-no').onclick = () => { try { localStorage.setItem('st.geo', '0:' + Date.now()); } catch {} box.remove(); };
+      document.body.appendChild(box);
+    }, 9000);
+  }
+  return { enter(p) { leave(); page = p; t0 = Date.now(); maxd = 0; push('view', p); }, push, flush, askLocation };
 })();
+setTimeout(() => { try { TR.askLocation(); } catch (e) { /* never blocks the store */ } }, 0);
 
 // ---------- router ----------
 function route() {

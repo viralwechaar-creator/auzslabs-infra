@@ -34,6 +34,33 @@ export default async function run({ browser, stack }) {
     assert(Object.keys(live.zones).length === 2, 'the malformed zone must not be stored: ' + JSON.stringify(live.zones));
     await q("delete from sfx_web_events where sid like 'geoVisitor%'");
   });
+  await s.check('Shared location: kept rounded to 0.1 degree, drawn as a point instead of a time zone, bad values dropped, no exact position stored', async () => {
+    const view = (sid, tz) => ({ k: 'view', sid, p: '/', dev: 'phone', tz });
+    await rpc(stack, 'public_sfx_track', { p_slug: 'testcafe', p: { events: [view('locVisitor01', 'Asia/Kolkata'), view('locVisitor02', 'Asia/Kolkata'),
+      { k: 'loc', sid: 'locVisitor01', lat: 26.29876, lng: 73.01734 }, { k: 'loc', sid: 'locVisitor02', lat: 999, lng: 12 }, { k: 'loc', sid: 'locVisitor02', lat: 'x', lng: 'y' }] } });
+    const row = (await q("select lat::float lat, lng::float lng from sfx_web_events where sid='locVisitor01' and kind='loc'"))[0];
+    assert(row.lat === 26.3 && row.lng === 73, 'location not rounded: ' + JSON.stringify(row));
+    assert((await q("select count(*)::int n from sfx_web_events where sid='locVisitor02' and kind='loc'"))[0].n === 0, 'a bad position was stored');
+    const live = (await rpc(stack, 'sfx_live_visitors', {}, owner)).data.data;
+    assert(live.located === 1 && live.points.length === 1 && live.points[0].lat === 26.3, JSON.stringify([live.located, live.points]));
+    assert(live.zones['Asia/Kolkata'] === 1, 'the visitor without a shared location stays on the time zone: ' + JSON.stringify(live.zones));
+    await q("delete from sfx_web_events where sid like 'locVisitor%'");
+  });
+  await s.check('Store asks about location in plain words; Allow stores a rounded position, Not now is remembered', async () => {
+    const c2 = await browser.newContext({ viewport: { width: 1000, height: 800 }, geolocation: { latitude: 28.61394, longitude: 77.20902 }, permissions: ['geolocation'] }); const pg = await c2.newPage();
+    const sent = []; pg.on('request', (r) => { if (/_track/.test(r.url()) && r.postData()) sent.push(r.postData()); });
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' });
+    await pg.waitForSelector('.geoask', { timeout: 20000 });
+    assert(/rough area/.test(await pg.locator('.geoask').innerText()), 'the question does not say only a rough area is kept');
+    await pg.click('.geo-yes'); await pg.waitForTimeout(2000);
+    const body = sent.join(' '); assert(/"k":"loc"/.test(body) && /"lat":28\.6/.test(body) && /"lng":77\.2/.test(body) && !/28\.61/.test(body), 'rounded position not sent: ' + body.slice(0, 300));
+    await c2.close();
+    const c3 = await browser.newContext({ viewport: { width: 1000, height: 800 }, geolocation: { latitude: 10, longitude: 10 }, permissions: ['geolocation'] }); const p3 = await c3.newPage();
+    await p3.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await p3.waitForSelector('.geoask', { timeout: 20000 });
+    await p3.click('.geo-no'); await p3.reload({ waitUntil: 'load' }); await p3.waitForTimeout(11000);
+    assert(await p3.locator('.geoask').count() === 0, 'asked again right after Not now'); await c3.close();
+    await q("delete from sfx_web_events where kind='loc'");
+  });
   await s.check('Only this store: another business\'s events are not counted', async () => {
     const other = (await q("select id from tenants where slug <> 'testcafe' limit 1"))[0].id;
     await q("insert into sfx_web_events (tenant_id, sid, kind, page) values ($1,'other-sid-1','view','/x')", [other]);
