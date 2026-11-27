@@ -1108,3 +1108,15 @@ body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(10
 .custom-gallery{max-width:1200px}.custom-gallery h2{margin:0 0 18px}.cg-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .cg-grid figure{margin:0}.cg-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px;display:block}.cg-grid figcaption{font-size:13px;color:var(--ink-faint,#666);margin-top:6px}
 @media(max-width:700px){.custom-imgtext{grid-template-columns:1fr}.custom-imgtext.pic-right .it-pic{order:0}}
+
+/* Global design settings (db/455): set from the theme editor's Design page */
+.btn{color:var(--on-ink,#fff)}.custom-section .btn{color:var(--on-ink,#fff)}
+.custom-section a:not(.btn){color:var(--accent,inherit)}
+body.d-btn-accent .btn:not(.out):not(.soft),body.d-btn-accent .custom-section .btn{background:var(--accent,var(--ink));color:var(--on-accent,#fff)}
+body.d-btn-outline .btn:not(.out):not(.soft),body.d-btn-outline .custom-section .btn{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+body.d-bs-pill .btn,body.d-bs-pill .custom-section .btn{border-radius:999px}
+body.d-bs-soft .btn,body.d-bs-soft .custom-section .btn{border-radius:8px}
+body.d-bs-square .btn,body.d-bs-square .custom-section .btn{border-radius:0}
+body.d-font-serif{font-family:Georgia,"Times New Roman",serif}
+body.d-font-humanist{font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif}
+body.d-font-mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
