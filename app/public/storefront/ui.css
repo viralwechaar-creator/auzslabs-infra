@@ -776,3 +776,8 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 .shell .hm-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .shell .hm-legend i.cur{background:#3d83c6}.shell .hm-legend i.prev{background:#9cc3e6}
 @media (max-width:899px){.shell .hm{display:none}}
+
+/* Home figures: blue trend lines, green live dot */
+.shell .hm-spark{color:#3d83c6}
+.shell .hm-dot{background:#1f9d55}
+.shell .hm-dot:not(.on){opacity:.55}
