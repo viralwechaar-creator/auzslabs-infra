@@ -108,7 +108,7 @@ const orderMatches = (x, f) => f === 'archived' ? !!x.archived : f === 'all' ? t
 const orderPills = () => '<div class="pills" id="ol-pills" role="tablist" aria-label="Order status">' + ORDER_FILTERS.map(([k, n]) => '<button type="button" class="pill-tab" role="tab" data-action="ol-filter:' + k + '" aria-selected="' + (lb.orders.f === k) + '">' + n + '</button>').join('') + '</div>';
 function orderBar() {
   const o = lb.orders;
-  return '<div class="filters"><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer, tag or discount code" value="' + esc(o.q) + '">' +
+  return '<div class="filters"><button type="button" class="of-sbtn" data-action="ol-search" aria-label="Search orders"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg></button><input id="ol-query" type="search" aria-label="Search orders" placeholder="Search order, customer, tag or discount code" value="' + esc(o.q) + '">' +
     sortSel('ol-sort', [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Total, high to low'], ['low', 'Total, low to high']], o.sort) + '</div>' + orderPills();
 }
 function ordersList() {
@@ -1694,6 +1694,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   const action = target.dataset.action; if (!action) return;
   const [a, key, detail] = action.split(':');
   if (a === 'customer-new') return dialog('Add customer', customerForm(null));
+  if (a === 'ol-search') { const f = document.querySelector('.filters'); if (f) { f.classList.toggle('sopen'); const i = f.querySelector('#ol-query'); if (f.classList.contains('sopen') && i) i.focus(); } return; }
   if (a === 'ol-filter') { lb.orders.f = key; const r = $('#orders-results'); if (r) r.innerHTML = ordersList(); document.querySelectorAll('#ol-pills .pill-tab').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.action === 'ol-filter:' + key))); return; }
   if (a === 'co-custom') { coSync(); co.lines.push({ custom: true, name: '', price: 0, qty: 1 }); coRedraw(); return; }
   if (a === 'co-rm') { coSync(); co.lines.splice(Number(key), 1); coRedraw(); return; }
