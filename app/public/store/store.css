@@ -1084,3 +1084,8 @@ body.homehero .dock .zfab{display:grid;position:absolute;left:6px;bottom:calc(10
 .geoask-btns button{flex:1;min-height:40px;border:0;border-radius:999px;background:#f1f1f1;color:#111;font:600 13px system-ui,sans-serif;cursor:pointer}
 .geoask-btns .geo-yes{background:#111;color:#fff}
 @media (max-width:600px){.geoask{left:12px;right:12px;bottom:88px;max-width:none}}
+
+/* The footer always sits at the bottom of the screen, even when the page is short or empty (every template). */
+#app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+#app>main{flex:1 0 auto;width:100%}
+#app>footer{flex-shrink:0}
