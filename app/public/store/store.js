@@ -793,6 +793,34 @@ function customSection(s) {
 // Sections added with the section registry (db/452): each draws its own settings and, where it has them, its blocks (items).
 const safeHref = (h) => (/^(https:\/\/|\/|#)/i.test(String(h || '')) ? String(h) : '');
 const blocksOf = (s) => (Array.isArray(s.blocks) ? s.blocks.filter((b) => b && b.props) : []);
+// Content section (db/457): every element carries its own checked style. Values are set one property at a time (never as text), and
+// colours, numbers and choices are validated here again, so a saved value can never inject CSS.
+const colorOf = (v) => (/^#[0-9a-f]{6}$/i.test(v || '') ? v : '');
+const pxOf = (v, lo, hi) => { const n = Number(v); return v !== '' && v != null && Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) + 'px' : ''; };
+const setStyle = (el, m) => Object.entries(m).forEach(([k, v]) => { if (v) el.style.setProperty(k, v); });
+const FONT_STACKS = { serif: 'Georgia,"Times New Roman",serif', humanist: '"Trebuchet MS","Segoe UI",Verdana,sans-serif', mono: 'ui-monospace,"SF Mono",Menlo,Consolas,monospace' };
+const WEIGHTS = { bold: '700', medium: '500', normal: '400' }, LINES = { tight: '1.3', normal: '1.6', loose: '1.9' };
+const textBox = (p) => ({ 'font-size': pxOf(p.size, 10, 120), 'text-align': ['left', 'center', 'right'].includes(p.align) ? p.align : '', color: colorOf(p.color), 'font-family': FONT_STACKS[p.font] || '',
+  'background-color': colorOf(p.bg), 'border-radius': pxOf(p.radius, 0, 60), padding: pxOf(p.pad, 0, 80) });
+function contentBlock(b, sec) {
+  const p = b.props || {};
+  if (b.type === 'heading' && p.text) { const el = E('h2', { class: 'cb-heading' }, p.text);
+    setStyle(el, { ...textBox(p), 'font-weight': WEIGHTS[p.weight] || '', 'letter-spacing': p.spacing === 'wide' ? '.08em' : '', 'text-transform': p.case === 'upper' ? 'uppercase' : '' }); return el; }
+  if (b.type === 'text' && p.text) { const el = E('p', { class: 'cb-text' }, p.text); setStyle(el, { ...textBox(p), 'line-height': LINES[p.lineHeight] || '' }); return el; }
+  if (b.type === 'button' && p.label) { const href = safeHref(p.href);
+    const el = E('a', { class: 'btn cb-button' + (p.look === 'outline' ? ' out' : ''), href: href || '#' }, p.label);
+    if (p.newTab === 'yes' && href) { el.target = '_blank'; el.rel = 'noopener'; }
+    setStyle(el, { 'background-color': p.look === 'outline' ? '' : colorOf(p.bg), color: colorOf(p.color), 'border-radius': { sharp: '0', soft: '8px', pill: '999px' }[p.corners] || '',
+      height: { small: '28px', large: '46px' }[p.size] || '', padding: { small: '0 14px', large: '0 30px' }[p.size] || '', 'font-size': p.size === 'large' ? '12px' : '', 'align-self': p.width === 'full' ? 'stretch' : '' });
+    if (p.look === 'outline' && colorOf(p.bg)) el.style.setProperty('box-shadow', 'inset 0 0 0 1px ' + colorOf(p.bg)); return el; }
+  if (b.type === 'image' && /^(https:\/\/|\/)/.test(p.src || '')) { const href = safeHref(p.href);
+    const img = E('img', { src: p.src, alt: p.alt || '', loading: 'lazy' });
+    setStyle(img, { 'border-radius': pxOf(p.radius, 0, 60), 'aspect-ratio': { square: '1 / 1', wide: '16 / 9', portrait: '4 / 5' }[p.aspect] || '', 'object-fit': p.aspect && p.aspect !== 'auto' ? 'cover' : '' });
+    const wrap = E('div', { class: 'cb-image' }, href ? E('a', { href }, img) : img);
+    setStyle(wrap, { width: { full: '100%', large: '80%', medium: '60%', small: '40%' }[p.width] || '100%' }); return wrap; }
+  if (b.type === 'spacer') { const el = E('div', { class: 'cb-spacer', 'aria-hidden': 'true' }); setStyle(el, { height: pxOf(p.height, 4, 200) || '24px' }); return el; }
+  return null;
+}
 const CUSTOM_RENDERERS = {
   featured_collection(s, p) {
     const col = D.collections.find((c) => c.id === p.collection || c.handle === p.collection);
@@ -826,6 +854,15 @@ const CUSTOM_RENDERERS = {
       E('div', { class: 'cc-grid n' + items.length }, items.map((b) => { const href = safeHref(b.props.href);
         return E('div', { class: 'cc-col' }, b.props.title ? E('h3', null, b.props.title) : null, b.props.text ? E('p', null, b.props.text) : null,
           b.props.link_text && href ? E('a', { href }, b.props.link_text + ' →') : null); })));
+  },
+  content(s, p) {
+    const blocks = blocksOf(s); if (!blocks.length && !PREVIEW) return null;
+    const width = ['full', 'wide', 'narrow'].includes(p.width) ? p.width : 'wide', al = ['left', 'right'].includes(p.alignment) ? p.alignment : 'center';
+    const root = E('section', { class: 'custom-section custom-content cc-w-' + width + ' cc-a-' + al });
+    setStyle(root, { 'background-color': colorOf(p.bg), 'padding-top': pxOf(p.padY, 0, 200), 'padding-bottom': pxOf(p.padY, 0, 200), 'border-radius': pxOf(p.radius, 0, 60), gap: pxOf(p.gap, 0, 80) });
+    if (/^(https:\/\/|\/)[-a-zA-Z0-9_.\/:%?=&@~+]+$/.test(p.bgImage || '')) { setStyle(root, { 'background-image': 'url("' + p.bgImage + '")', 'background-size': 'cover', 'background-position': 'center' }); root.classList.add('cc-bgimg'); }
+    blocks.forEach((b, i) => { const el = contentBlock(b, p); if (el) { el.setAttribute('data-blk', String(i)); root.append(el); } });
+    return root;
   },
   links(s, p) {
     const items = blocksOf(s).filter((b) => b.props.label && safeHref(b.props.href));
@@ -905,7 +942,7 @@ function customEl(s, i, group) {
   if (!el) return null;
   if (PREVIEW) {
     el.setAttribute('data-sec', group ? group + ':' + i : String(i)); el.style.cursor = 'pointer';
-    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); parent.postMessage({ type: 'auz-select', index: i, group: group || '' }, location.origin); }, true);
+    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); const bl = ev.target.closest('[data-blk]'); parent.postMessage({ type: 'auz-select', index: i, group: group || '', block: bl ? Number(bl.dataset.blk) : -1 }, location.origin); }, true);
   }
   return el;
 }
@@ -980,7 +1017,7 @@ if (PREVIEW) {
     if (typeof route === 'function' && typeof shell === 'function' && chromeChanged && D) { const y = scrollY; shell(); route(); scrollTo(0, y); return; }
     if (typeof route === 'function' && (!location.hash || /^#\/?$/.test(location.hash))) { const y = scrollY; route(); scrollTo(0, y); }
   });
-  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'auz-highlight') { document.querySelectorAll('.custom-section.sel').forEach((n) => n.classList.remove('sel')); const n = document.querySelector('[data-sec="' + (e.data.group === 'header' || e.data.group === 'footer' ? e.data.group + ':' : '') + Number(e.data.index) + '"]'); if (n) { n.classList.add('sel'); if (e.data.scroll) n.scrollIntoView({ block: 'center', behavior: 'smooth' }); } } });
+  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'auz-highlight') { document.querySelectorAll('.custom-section.sel,.blk-sel').forEach((n) => n.classList.remove('sel', 'blk-sel')); const n = document.querySelector('[data-sec="' + (e.data.group === 'header' || e.data.group === 'footer' ? e.data.group + ':' : '') + Number(e.data.index) + '"]'); if (n) { n.classList.add('sel'); const bn = Number.isInteger(e.data.block) && e.data.block >= 0 ? n.querySelector('[data-blk="' + e.data.block + '"]') : null; if (bn) { bn.classList.add('blk-sel'); } if (e.data.scroll) (bn || n).scrollIntoView({ block: 'center', behavior: 'smooth' }); } } });
   setTimeout(() => { try { parent.postMessage({ type: 'auz-ready' }, location.origin); } catch (err) { /* not in a frame */ } }, 0);
   window.addEventListener('load', () => { try { parent.postMessage({ type: 'auz-ready' }, location.origin); } catch (err) { /* not in a frame */ } });
 }

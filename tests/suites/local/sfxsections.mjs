@@ -228,6 +228,66 @@ export default async function run({ browser, stack }) {
     const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
     assert(row.groups.footer.sections.length === 2 && row.groups.footer.sections[1].props.heading === 'About the shop' && row.groups.header.sections.length === 1, JSON.stringify(row.groups));
   }, 'major');
+  await s.check('Content section: elements are checked by the server and drawn with their own style on the public store', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const r = await page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const mk = (blocks, props = {}) => ({ sections: [{ id: 'k1', type: 'content', props, blocks }] });
+      const save = async (b, p) => { const x = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: mk(b, p) }); return x.error ? x.error.message : 'ok'; };
+      const badColour = await save([{ type: 'heading', props: { text: 'x', color: 'red' } }]);
+      const badLink = await save([{ type: 'button', props: { label: 'x', href: 'javascript:alert(1)' } }]);
+      const badType = await save([{ type: 'video', props: {} }]);
+      const badChoice = await save([{ type: 'heading', props: { text: 'x', weight: 'blazing' } }]);
+      const good = await save([
+        { id: 'e1', type: 'heading', props: { text: 'Styled headline', size: '500', color: '#aa0000', weight: 'bold', align: 'left', case: 'upper', bg: '#eeeeee', pad: '10' } },
+        { id: 'e2', type: 'text', props: { text: 'Body copy', size: '20', color: '#333333' } },
+        { id: 'e3', type: 'button', props: { label: 'Go', href: '/store.html#/shop', look: 'solid', bg: '#112233', color: '#ffffff', corners: 'pill', size: 'large', width: 'full' } },
+        { id: 'e4', type: 'image', props: { src: 'https://example.com/p.jpg', alt: 'p', width: 'medium', aspect: 'square', radius: '12' } },
+        { id: 'e5', type: 'spacer', props: { height: '64' } }], { bg: '#fafafa', padY: '80', width: 'narrow', alignment: 'left', gap: '20', radius: '16', evil: 'x' });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id });
+      return { badColour, badLink, badType, badChoice, good, pub: pub.error && pub.error.message }; }, inst);
+    assert(/colour like/.test(r.badColour), 'colour: ' + r.badColour); assert(/links must start/.test(r.badLink), 'link: ' + r.badLink);
+    assert(/unknown item type/.test(r.badType), 'type: ' + r.badType); assert(r.badChoice === 'ok', 'a bad choice is dropped, not refused: ' + r.badChoice);
+    assert(r.good === 'ok' && !r.pub, JSON.stringify(r));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    const h = row.sections[0].blocks[0].props;
+    assert(Number(h.size) === 120 && h.color === '#aa0000' && !('evil' in row.sections[0].props), 'size not clamped or evil kept: ' + JSON.stringify(h));
+    const pg = await ctx.newPage(); const e7 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const st = await pg.evaluate(() => { const g = (sel, props) => { const el = document.querySelector(sel); if (!el) return null; const cs = getComputedStyle(el); return Object.fromEntries(props.map((p) => [p, cs[p]])); };
+      return { sec: g('.custom-content', ['backgroundColor', 'paddingTop', 'maxWidth', 'alignItems', 'borderTopLeftRadius', 'rowGap']), h: g('.cb-heading', ['fontSize', 'color', 'textAlign', 'textTransform', 'fontWeight', 'paddingTop', 'backgroundColor']),
+        t: g('.cb-text', ['fontSize', 'color']), b: g('.cb-button', ['backgroundColor', 'borderTopLeftRadius', 'height', 'alignSelf']), i: g('.cb-image', ['width']), im: g('.cb-image img', ['aspectRatio', 'borderTopLeftRadius']), sp: g('.cb-spacer', ['height']), n: document.querySelectorAll('.custom-content [data-blk]').length }; });
+    assert(st.sec.backgroundColor === 'rgb(250, 250, 250)' && st.sec.paddingTop === '80px' && st.sec.maxWidth === '640px' && st.sec.alignItems === 'flex-start' && st.sec.borderTopLeftRadius === '16px' && st.sec.rowGap === '20px', 'section: ' + JSON.stringify(st.sec));
+    assert(st.h.fontSize === '120px' && st.h.color === 'rgb(170, 0, 0)' && st.h.textAlign === 'left' && st.h.textTransform === 'uppercase' && st.h.fontWeight === '700' && st.h.paddingTop === '10px' && st.h.backgroundColor === 'rgb(238, 238, 238)', 'heading: ' + JSON.stringify(st.h));
+    assert(st.t.fontSize === '20px' && st.t.color === 'rgb(51, 51, 51)', 'text: ' + JSON.stringify(st.t));
+    assert(st.b.backgroundColor === 'rgb(17, 34, 51)' && st.b.borderTopLeftRadius === '999px' && st.b.height === '46px' && st.b.alignSelf === 'stretch', 'button: ' + JSON.stringify(st.b));
+    assert(/60%/.test(st.i.width) || st.i.width.endsWith('px'), 'image: ' + JSON.stringify(st.i)); assert(st.im.borderTopLeftRadius === '12px' && /1 \/ 1/.test(st.im.aspectRatio), 'img: ' + JSON.stringify(st.im));
+    assert(st.sp.height === '64px' && st.n === 5, 'spacer/count: ' + JSON.stringify([st.sp, st.n]));
+    assert(!e7.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e7.slice(0, 3).join(' | '));
+  }, 'critical');
+  await s.check('The editor adds a Content section, picks an element by clicking it in the preview, and saves only the colours that were set', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    assert((await page.locator('#te-add-type option').allInnerTexts()).includes('Content'), 'Content not offered');
+    await page.selectOption('#te-add-type', 'content'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(1500);
+    assert(await page.locator('form[data-form="te-block"]').count() === 3, 'starter elements missing');
+    const frame = page.frameLocator('#te-frame');
+    await frame.locator('.cb-heading').first().click(); await page.waitForTimeout(700);
+    assert(await page.locator('form[data-form="te-block"].on').count() === 1, 'clicking the element did not select it');
+    assert(await page.locator('form[data-form="te-block"].on input[name=size]').count() === 1, 'its style controls are not shown');
+    await page.locator('form[data-form="te-block"].on input[name=size]').fill('48'); await page.waitForTimeout(300);
+    await page.locator('form[data-form="te-block"].on input[name=color]').fill('#336699'); await page.waitForTimeout(400);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    const hp = row.sections[0].blocks[0].props, tp = row.sections[0].blocks[1].props;
+    assert(Number(hp.size) === 48 && hp.color === '#336699', 'heading style not saved: ' + JSON.stringify(hp));
+    assert(!('color' in tp) && !('bg' in hp), 'colours that were never set were saved: ' + JSON.stringify([hp, tp]));
+    assert(!('bg' in row.sections[0].props), 'section colour saved untouched: ' + JSON.stringify(row.sections[0].props));
+    await page.locator('form[data-form="te-block"].on button', { hasText: 'Reset' }).first().click(); await page.waitForTimeout(400);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row2 = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(!('color' in row2.sections[0].blocks[0].props), 'reset did not clear the colour');
+  }, 'major');
   await ctx.close();
   return s.done();
 }

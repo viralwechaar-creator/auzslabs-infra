@@ -477,8 +477,9 @@ const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', 
 // Section types come from the server's registry (db/452); the six built-in types keep their hand-made forms below.
 const secDef = (t) => (state.sectionTypes || []).find((x) => x.type === t);
 const secLabel = (t) => (t === 'main' ? 'Main content' : secDef(t)?.label || sectionLabel[t] || t);
-const regField = (d, v, dis = '') => {
+const regField = (d, v, dis = '', reset = null) => {
   const val = v == null || v === '' ? (d.default ?? '') : v;
+  if (d.type === 'color') { const set = v != null && v !== ''; return '<label class="te-color">' + esc(d.label) + '<span><input type="color" name="' + d.id + '" value="' + esc(set ? v : (d.default || '#000000')) + '" ' + dis + '>' + (set ? '<code>' + esc(v) + '</code>' : '<code class="mut">not set</code>') + (set && reset && !dis ? button('Reset', reset(d.id), 'compact') : '') + '</span></label>'; }
   if (d.type === 'textarea') return area(d.label, d.id, val, dis);
   if (d.type === 'select') return select(d.label, d.id, d.options || [], String(val), dis);
   if (d.type === 'collection') return select(d.label, d.id, [['', 'Newest products']].concat((state.collections || []).map((c) => [c.id, c.name])), String(val), dis);
@@ -551,7 +552,7 @@ function sectionFieldsFor(s) {
 }
 function sectionFieldsBase(s) {
   const p = s.props || {};
-  if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.map((d) => regField(d, p[d.id], dis)).join(''); }
+  if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.map((d) => regField(d, p[d.id], dis, (id) => 'te-sclear:' + id)).join(''); }
   if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + input('Button link', 'href', p.href, 'url');
   if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
   if (s.type === 'image') return input('Image URL', 'url', p.url, 'url') + input('Caption', 'caption', p.caption);
@@ -601,7 +602,7 @@ const edDirty = () => edJson() !== ed.saved;
 function edSnapshot() { ed.undo.push(edJson()); if (ed.undo.length > 50) ed.undo.shift(); ed.redo = []; }
 function edPost(scroll) {
   const f = $('#te-frame'); if (!f?.contentWindow) return;
-  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl, design: ed.design, groups: ed.groups, view: edView() }, location.origin); if (ed.sel >= 0 && (ed.cur === 'home' || edCurPage() || edTplKind() || edGroupKind())) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, group: edGroupKind() || '', scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
+  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl, design: ed.design, groups: ed.groups, view: edView() }, location.origin); if (ed.sel >= 0 && (ed.cur === 'home' || edCurPage() || edTplKind() || edGroupKind())) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, group: edGroupKind() || '', block: ed.blk, scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
 }
 function edPageSelect() {
   const opts = [['home', 'Home page'], ...TPL_KINDS.map(([k, l]) => ['tpl:' + k, l]), ['header', 'Header'], ['footer', 'Footer'], ['design', 'Design settings'], ['group:header', 'Top of every page'], ['group:footer', 'Bottom of every page'], ...ed.pages.map((p, i) => ['p:' + i, 'Page: ' + p.title])];
@@ -629,21 +630,25 @@ function edChromeHtml(kind) {
     area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + area('Footer columns (up to 3). Start each with ## Title, then one link per line.', 'columns', columnsText(ed.footer.columns), 'rows="7"' + dis + ' placeholder="## Help\nShipping | /store.html#/policy/shipping"') + '</div></form></div>';
 }
 const STARTERS = {
+  content: { props: { padY: '48', width: 'wide', alignment: 'center', gap: '12' }, blocks: [{ type: 'heading', props: { text: 'Your headline', size: '36' } }, { type: 'text', props: { text: 'Write a few lines about this part of your store.' } }, { type: 'button', props: { label: 'Shop now', href: '/store.html#/shop' } }] },
   featured_collection: { props: { heading: 'Featured products', count: '4', columns: '4' } },
   image_text: { props: { heading: 'Tell your story', body: 'Write a few lines about your brand.', layout: 'left' } },
   faq: { props: { heading: 'Questions' }, blocks: [{ type: 'question', props: { question: 'How long does delivery take?', answer: 'Write your answer here.' } }, { type: 'question', props: { question: 'Can I return an item?', answer: 'Write your answer here.' } }] },
   columns: { props: { heading: 'Why shop with us' }, blocks: [1, 2, 3].map((n) => ({ type: 'column', props: { title: 'Point ' + n, text: 'A short line about it.' } })) },
   gallery: { props: { heading: 'Gallery' }, blocks: [] },
 };
-// the items (blocks) of the selected section: each has its own small form, in order
+// the items (blocks) of the selected section: each has its own small form, in order. A block with many settings (an element of the
+// Content section) shows its form only while it is selected, either here or by clicking it in the preview.
 function blocksHtml(x) {
   const def = secDef(x.type); if (!def || !def.blockTypes || !def.blockTypes.length) return '';
-  const w = canWrite(), dis = w ? '' : 'disabled', bt = def.blockTypes[0], list = x.blocks || [];
-  const rows = list.map((b, i) => { const t = def.blockTypes.find((z) => z.type === b.type) || bt;
-    return '<form data-form="te-block" data-bi="' + i + '" class="te-block"><div class="te-block-head"><strong>' + esc(t.label) + ' ' + (i + 1) + '</strong>' +
-      (w ? '<span>' + (i > 0 ? button('Up', 'te-bup:' + i, 'compact') : '') + (i < list.length - 1 ? button('Down', 'te-bdown:' + i, 'compact') : '') + button('Remove', 'te-bremove:' + i, 'compact danger') + '</span>' : '') +
-      '</div><div class="field-grid te-fields">' + t.settings.map((d) => regField(d, (b.props || {})[d.id], dis).replace(/(<input type="url" name="href")/, '$1 list="te-links"')).join('') + '</div></form>'; }).join('');
-  return '<div class="te-blocks"><h3>Items</h3>' + (rows || '<p class="compact-copy">No items yet.</p>') + (w && list.length < def.maxBlocks ? button('Add ' + bt.label.toLowerCase(), 'te-badd', 'primary') : '') + '</div>';
+  const w = canWrite(), dis = w ? 'disabled' : '', list = x.blocks || [], multi = def.blockTypes.length > 1;
+  const rows = list.map((b, i) => { const t = def.blockTypes.find((z) => z.type === b.type) || def.blockTypes[0], pr = b.props || {};
+    const open = t.settings.length <= 4 || i === ed.blk; const sum = String(pr.text || pr.label || pr.question || pr.title || pr.src || '').slice(0, 30);
+    return '<form data-form="te-block" data-bi="' + i + '" class="te-block' + (i === ed.blk ? ' on' : '') + '"><div class="te-block-head" data-action="te-bsel:' + i + '"><strong>' + esc(t.label) + ' ' + (i + 1) + '</strong>' + (open ? '' : '<small>' + esc(sum) + '</small>') +
+      (w ? '<span>' + (i > 0 ? button('Up', 'te-bup:' + i, 'compact') : '') + (i < list.length - 1 ? button('Down', 'te-bdown:' + i, 'compact') : '') + button('Remove', 'te-bremove:' + i, 'compact danger') + '</span>' : '') + '</div>' +
+      (open ? '<div class="field-grid te-fields">' + t.settings.map((d) => regField(d, pr[d.id], w ? '' : 'disabled', (id) => 'te-bclear:' + i + ':' + id).replace(/(<input type="url" name="(?:href|src|image)")/, '$1 list="te-links"')).join('') + '</div>' : '') + '</form>'; }).join('');
+  const add = w && list.length < def.maxBlocks ? (multi ? '<div class="te-badd-row"><select id="te-badd-type" aria-label="Element type">' + def.blockTypes.map((t) => '<option value="' + t.type + '">' + esc(t.label) + '</option>').join('') + '</select>' + button('Add element', 'te-badd', 'primary') + '</div>' : button('Add ' + def.blockTypes[0].label.toLowerCase(), 'te-badd', 'primary')) : '';
+  return '<div class="te-blocks"><h3>' + (multi ? 'Elements' : 'Items') + '</h3>' + (rows || '<p class="compact-copy">No ' + (multi ? 'elements' : 'items') + ' yet.</p>') + add + '</div>';
 }
 // ---- Design settings: controls come from the server's list (db/455); only a setting the owner touches is saved ----
 const lumOf = (h) => { const m = /^#([0-9a-f]{6})$/i.exec(h || ''); if (!m) return 0; const c = [0, 2, 4].map((i) => { const v = parseInt(m[1].slice(i, i + 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
@@ -705,7 +710,7 @@ if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data || !ed) return;
   if (e.data.type === 'auz-ready') edPost();
   if (e.data.type === 'auz-select' && (e.data.group === 'header' || e.data.group === 'footer') && ed.cur !== 'group:' + e.data.group) { ed.cur = 'group:' + e.data.group; edBind(); edRefresh('lrbp'); }
-  if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.snapped = false; edRefresh('lrb'); }
+  if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.blk = Number.isInteger(e.data.block) ? e.data.block : -1; ed.snapped = false; edRefresh('lrb'); }
 });
 // ---------- Studs theme: settings editor with a live preview of the DRAFT (nothing here changes the live store) ----------
 let sd = null; // { id, settings, saved }
@@ -751,7 +756,7 @@ function editorPage(installId) {
   const i = state.installs.find((x) => x.id === installId);
   if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
   if (i.draftContent?.kind === 'studs') return studsEditor(i);
-  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, rev: i.revision || 0, groups: normGroups(dc.groups), design: structuredClone(dc.design || {}), home: sections, sections, tpl: normTpl(dc.templates), header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
+  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, blk: -1, rev: i.revision || 0, groups: normGroups(dc.groups), design: structuredClone(dc.design || {}), home: sections, sections, tpl: normTpl(dc.templates), header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
   const w = canWrite();
   const types = (state.sectionTypes?.length ? state.sectionTypes.map((x) => [x.type, x.label]) : Object.entries(sectionLabel)).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
   const unpublished = !state.store.published ? '<div class="notice te-note">Your store is switched off, so the preview may show “not open yet”. Turn it on under Online store to see it here.</div>' : '';
@@ -764,9 +769,9 @@ function editorPage(installId) {
     '<div class="te-stage"><iframe id="te-frame" class="te-frame ' + ed.device + '" src="/store.html?preview=draft&shop=' + encodeURIComponent(state.tenant?.slug || '') + '#/" title="Live preview of your store"></iframe></div></div>' +
     '<aside class="panel te-right" id="te-right">' + edRightHtml() + '</aside></div>';
 }
-function edHandle(a, key) {
+function edHandle(a, key, detail) {
   if (!ed) return false;
-  if (a === 'te-select') { ed.sel = Number(key); ed.snapped = false; edRefresh('lr', true); return true; }
+  if (a === 'te-select') { ed.sel = Number(key); ed.blk = -1; ed.snapped = false; edRefresh('lr', true); return true; }
   if (a === 'te-device') { ed.device = key; const f = $('#te-frame'); if (f) f.className = 'te-frame ' + key; document.querySelectorAll('[data-action^="te-device:"]').forEach((b) => b.classList.toggle('primary', b.dataset.action === 'te-device:' + key)); return true; }
   if (!canWrite()) return false;
   if (a === 'te-addpage') {
@@ -781,12 +786,18 @@ function edHandle(a, key) {
   if (a === 'te-remove') { if (ed.sel < 0 || ed.sections[ed.sel]?.type === 'main') return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
   if (a === 'te-dclear') { edSnapshot(); ed.snapped = true; delete ed.design[key]; edRefresh('rb'); return true; }
   if (a === 'te-dreset') { edSnapshot(); ed.snapped = true; ed.design = {}; edRefresh('rb'); return true; }
+  if (a === 'te-bsel') { ed.blk = Number(key); ed.snapped = false; edRefresh('rb', true); return true; }
+  if (a === 'te-bclear' || a === 'te-sclear') {
+    const x = ed.sections[ed.sel]; if (!x) return true; edSnapshot(); ed.snapped = true;
+    const pr = a === 'te-bclear' ? (x.blocks && x.blocks[Number(key)] && x.blocks[Number(key)].props) : x.props; if (pr) delete pr[a === 'te-bclear' ? detail : key];
+    edRefresh('rb'); return true;
+  }
   if (a === 'te-badd' || a === 'te-bremove' || a === 'te-bup' || a === 'te-bdown') {
     const x = ed.sections[ed.sel], def = secDef(x?.type); if (!def?.blockTypes?.length) return true;
     const list = x.blocks || [], i = Number(key); edSnapshot(); ed.snapped = true;
-    if (a === 'te-badd') { if (list.length >= def.maxBlocks) return true; x.blocks = [...list, { id: uid(), type: def.blockTypes[0].type, props: {} }]; }
-    else if (a === 'te-bremove') { x.blocks = list.filter((_, n) => n !== i); }
-    else { const to = i + (a === 'te-bup' ? -1 : 1); if (!list[to]) return true; const c = [...list]; [c[i], c[to]] = [c[to], c[i]]; x.blocks = c; }
+    if (a === 'te-badd') { if (list.length >= def.maxBlocks) return true; const type = ($('#te-badd-type') && $('#te-badd-type').value) || def.blockTypes[0].type; x.blocks = [...list, { id: uid(), type, props: {} }]; ed.blk = x.blocks.length - 1; }
+    else if (a === 'te-bremove') { x.blocks = list.filter((_, n) => n !== i); ed.blk = -1; }
+    else { const to = i + (a === 'te-bup' ? -1 : 1); if (!list[to]) return true; const c = [...list]; [c[i], c[to]] = [c[to], c[i]]; x.blocks = c; if (ed.blk === i) ed.blk = to; }
     edRefresh('rb', true); return true;
   }
   if (a === 'te-up' || a === 'te-down') { const to = ed.sel + (a === 'te-up' ? -1 : 1); if (!ed.sections[to]) return true; edSnapshot(); const [x] = ed.sections.splice(ed.sel, 1); ed.sections.splice(to, 0, x); ed.sel = to; ed.snapped = true; edRefresh('lrb', true); return true; }
@@ -805,18 +816,21 @@ function edChromeInput(target) {
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
   edPost(); return true;
 }
-function edBlockInput(target) {
+function edBlockInput(target, type) {
   const form = target.closest('form[data-form="te-block"]'); if (!form || !ed || ed.sel < 0 || !canWrite()) return false;
-  const x = ed.sections[ed.sel], i = Number(form.dataset.bi); if (!x?.blocks?.[i]) return true;
+  const x = ed.sections[ed.sel], i = Number(form.dataset.bi); if (!x?.blocks?.[i] || !target.name) return true;
   if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
-  x.blocks[i] = { ...x.blocks[i], props: Object.fromEntries(new FormData(form)) };
+  x.blocks[i] = { ...x.blocks[i], props: { ...(x.blocks[i].props || {}), [target.name]: target.value } };
   const b = $('#te-actions'); if (b) { const html = edBarHtml(); if (b.dataset.html !== html) { b.dataset.html = html; b.innerHTML = html; } }
+  if (type === 'change' && target.type === 'color') edRefresh('r');
   edPost(); return true;
 }
 function edInput(target) {
   const form = target.closest('form[data-form="te-section"]'); if (!form || !ed || ed.sel < 0 || !canWrite()) return false;
   if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
-  ed.sections[ed.sel] = { ...ed.sections[ed.sel], props: Object.fromEntries(new FormData(form)) };
+  const old = ed.sections[ed.sel].props || {}, next = Object.fromEntries(new FormData(form));
+  form.querySelectorAll('input[type=color]').forEach((c) => { if (c !== target && !(c.name in old)) delete next[c.name]; });
+  ed.sections[ed.sel] = { ...ed.sections[ed.sel], props: next };
   const el = $('#te-list'); if (el) el.innerHTML = edListHtml();
   const b = $('#te-actions'); if (b) { const html = edBarHtml(); if (b.dataset.html !== html) { b.dataset.html = html; b.innerHTML = html; } }
   edPost(); return true;
@@ -1594,8 +1608,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'builder' && ed && type === 'change' && target.id === 'te-page') { edPicked(target.value); return; }
   if (id === 'builder' && ed && type === 'input' && target.closest && target.closest('form[data-form="te-chrome"], form[data-form="te-page"]')) { edChromeInput(target); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-design"]')) { edDesignInput(target, type); return; }
-  if (id === 'builder' && ed && type === 'input' && target.closest && target.closest('form[data-form="te-block"]')) { edBlockInput(target); return; }
-  if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
+  if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-block"]')) { edBlockInput(target, type); return; }
+  if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); else if (target.type === 'color') edRefresh('r'); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
   if ((type === 'input' || type === 'change') && target.closest && target.closest('.product-record') && ['name', 'handle', 'seoTitle', 'seoDescription', 'description'].includes(target.name)) { const f = target.closest('form'); if (target.name === 'description') { const rp = f.querySelector('[data-rich-preview]'); if (rp) rp.innerHTML = target.value ? richHtml(target.value) : '<p class="compact-copy">A preview of your formatting shows here.</p>'; } const el = f.querySelector('[data-seo-preview]'); if (!el) return; if (el) el.innerHTML = seoPreview(f.elements.seoTitle.value || f.elements.name.value, f.elements.handle.value, f.elements.seoDescription.value || f.elements.description.value); }
@@ -2044,7 +2058,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     await Promise.all([refreshInstalls()]); const ctx = await api('sfx_context'); applyContext(ctx);
     save('This theme is now active on your storefront.'); rerender();
   });
-  if (a && a.startsWith('te-') && a !== 'te-save' && a !== 'te-publish') { if (edHandle(a, key)) return; }
+  if (a && a.startsWith('te-') && a !== 'te-save' && a !== 'te-publish') { if (edHandle(a, key, detail)) return; }
   if (a === 'te-save') return withBusy(async () => { if (await edSave()) save('Design saved as a draft.'); });
   if (a === 'te-publish') return withBusy(async () => { if (!confirm('Publish this design to your live storefront?')) return; if (!(await edSave())) return; await api('sfx_theme_customize_publish', { p_install_id: ed.id }); await refreshInstalls(); save('Published to your storefront.'); rerender(); });
   if (a === 'theme-history') return withBusy(async () => {
