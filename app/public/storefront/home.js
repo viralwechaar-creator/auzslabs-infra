@@ -74,3 +74,12 @@ export function mountHomeOverview(host, redraw) {
   document.addEventListener('click', (e) => { if (!host.isConnected) return; if (!menu.hidden && !menu.contains(e.target)) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
   menu.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.hmPeriod) hm.period = b.dataset.hmPeriod; if (b.dataset.hmChannel) hm.channel = b.dataset.hmChannel; redraw(); });
 }
+
+// Phone Home: the figures that sit in the black header (live visitors with a green ring, then orders, conversion rate, sessions and sales with small trends)
+export function phoneStats() {
+  const lv = state.liveVisitors && !state.liveVisitors.error ? state.liveVisitors : null;
+  const ms = metrics(), by = (k) => ms.find((m) => m.key === k);
+  const cell = (m) => '<div><span>' + m.label + '</span><b>' + m.fmt(m.value) + spark(m.cur) + '</b></div>';
+  return '<div class="m-stats"><a class="m-live" href="' + pathFor('live-view') + '"><span>Live</span><b><i class="hm-ring' + (lv && lv.now ? ' on' : '') + '"></i>' + (lv ? lv.now : '—') + '</b></a>' +
+    ['orders', 'conversion', 'sessions', 'sales'].map((k) => cell(by(k))).join('') + '</div>';
+}
