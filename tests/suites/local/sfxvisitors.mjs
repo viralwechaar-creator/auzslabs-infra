@@ -5,6 +5,7 @@ import { rpc } from '../../lib/api.mjs';
 import { q, USERS, PASSWORD } from '../../lib/db.mjs';
 
 export default async function run({ browser, stack }) {
+  let payNowToken = '';
   const s = suite('Storefront visitors', 'A visit, add-to-bag, checkout and order event update the dashboard counters; zero and unavailable are shown differently.');
   await q("update tenant_settings set features = features || '{\"storefront\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
   await q("insert into sfx_stores (tenant_id, published) select id, true from tenants where slug='testcafe' on conflict (tenant_id) do update set published=true");
@@ -51,7 +52,7 @@ export default async function run({ browser, stack }) {
     const vid = (await q("select v.id from sfx_variants v join sfx_products p on p.id=v.product_id where p.name='Card Tee' and p.tenant_id=$1 limit 1", [tid]))[0].id;
     const ord = await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: 'Pay Tester', email: 'pay@test.in', phone: '9812300099', address: '1 Road', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', country: 'India', payment: 'online', lines: [{ variantId: vid, qty: 1 }] } });
     const od = ord.data && ord.data.data !== undefined ? ord.data.data : ord.data; assert(od && od.token, 'order not placed: ' + JSON.stringify(ord.data).slice(0, 200));
-    assert((await q('select payment_method from sfx_orders where token=$1', [od.token]))[0].payment_method === 'online', 'order should be an online order');
+    assert((await q('select payment_method from sfx_orders where token=$1', [od.token]))[0].payment_method === 'online', 'order should be an online order'); payNowToken = od.token;
     const post = async (path, body) => { const r = await fetch(stack.apiBase + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); return { status: r.status, j: await r.json().catch(() => ({})) }; };
     const authPost = async (path, body) => { const r = await fetch(stack.apiBase + path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + owner }, body: JSON.stringify(body) }); return { status: r.status, j: await r.json().catch(() => ({})) }; };
     const chk = await authPost('/payments/sfx/razorpay/check', { keyId: 'rzp_test_TESTKEY12', secret: 'secret_value_123456' }); assert(chk.status === 200 && chk.j.mode === 'test', 'key check: ' + JSON.stringify(chk));
@@ -164,7 +165,7 @@ export default async function run({ browser, stack }) {
   await s.check('Card checkout in the real store page: choosing Card opens the Razorpay window (no order is placed silently)', async () => {
     const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page); page.setDefaultTimeout(9000);
     try {
-    await page.route('https://checkout.razorpay.com/**', (route) => route.fulfill({ contentType: 'text/javascript', body: 'window.Razorpay=function(o){window.__rz=o;this.on=function(){};this.open=function(){window.__rzOpened=true;};};' }));
+    await page.route('https://checkout.razorpay.com/**', (route) => route.fulfill({ contentType: 'text/javascript', body: 'window.Razorpay=function(o){window.__rz=o;this.on=function(){};this.open=function(){window.__rzOpened=true;if(o.modal&&o.modal.ondismiss)o.modal.ondismiss();};};' }));
     await page.goto(stack.url('testcafe', '/store.html#/shop'), { waitUntil: 'load' }); await page.waitForSelector('.pc .in a', { timeout: 15000 });
     await page.locator('.pc .in a', { hasText: /Card Tee/ }).first().click(); await page.waitForSelector('.pd .info');
     const sz = page.locator('.info .sz:not(.off)').first(); if (await sz.count()) await sz.click();
@@ -177,8 +178,12 @@ export default async function run({ browser, stack }) {
     await page.waitForTimeout(5000);
     const opened = await page.evaluate(() => window.__rzOpened === true); const info = await page.evaluate(() => location.hash + ' | ' + [...document.querySelectorAll('.toast,.note,.err,[role=status]')].map((x) => x.innerText).join(' / '));
     assert(opened, 'Razorpay did not open. ' + info + ' | errs ' + errs.slice(0, 3).join(' ; '));
-    const tk = (await q("select token from sfx_orders where tenant_id=$1 and customer->>'phone'='9811122244' order by created_at desc limit 1", [tid]))[0].token;
-    await page.goto(stack.url('testcafe', '/store.html#/order/' + tk), { waitUntil: 'load' }); await page.waitForTimeout(1500);
+    const row = (await q("select token, status, cancel_reason from sfx_orders where tenant_id=$1 and customer->>'phone'='9811122244' order by created_at desc limit 1", [tid]))[0];
+    assert(row.status === 'cancelled' && /payment/i.test(row.cancel_reason || ''), 'the unpaid order should be cancelled when the customer leaves the payment: ' + JSON.stringify(row));
+    assert(await page.evaluate(() => location.hash.includes('checkout')), 'the customer should stay on checkout: ' + info);
+    const bagKept = await page.evaluate(() => Object.keys(localStorage).some((k) => /bag/.test(k) && (localStorage.getItem(k) || '[]').length > 4));
+    assert(bagKept, 'the items must stay in the bag');
+    await page.goto(stack.url('testcafe', '/store.html#/order/' + payNowToken), { waitUntil: 'load' }); await page.waitForTimeout(1500);
     assert(await page.locator('button.btn.wide', { hasText: /Pay now/ }).count() === 1, 'an unpaid online order should offer Pay now: ' + (await page.locator('body').innerText()).slice(0, 160).replace(/\n/g, ' '));
     } catch (e) { throw new Error('PAY: ' + (await page.locator('.checkout-payment').innerText().catch(() => 'none')).replace(/\n/g, ' ') + ' | PAGE: ' + (await page.locator('body').innerText().catch(() => '')).slice(0, 60).replace(/\n/g, ' ') + ' | ' + page.url() + ' | ' + String(e.message).split('\n').slice(0, 3).join(' ')); }
     await c.close();
