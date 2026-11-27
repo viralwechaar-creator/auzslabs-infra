@@ -194,6 +194,40 @@ export default async function run({ browser, stack }) {
     row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
     assert(!row.design || Object.keys(row.design).length === 0, 'reset did not clear: ' + JSON.stringify(row.design));
   }, 'major');
+  await s.check('Shared groups: the server checks them, and every public page shows the header group on top and the footer group at the bottom', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const groups = { header: { sections: [{ id: 'h1', type: 'announcement', props: { text: 'Free shipping this week' } }] },
+      footer: { sections: [{ id: 'f1', type: 'links', props: { heading: 'Help' }, blocks: [{ id: 'l1', type: 'link', props: { label: 'Returns policy', href: '/policy/returns' } }, { id: 'l2', type: 'link', props: { label: 'Bad', href: 'javascript:x' } }] }] } };
+    const r = await page.evaluate(async ([id, g]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const many = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { groups: { header: { sections: Array.from({ length: 9 }, () => ({ type: 'text', props: {} })) } } } });
+      const main = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { groups: { footer: { sections: [{ type: 'main' }] } } } });
+      const link = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { groups: g } });
+      const ok = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { groups: { footer: { sections: [{ id: 'f1', type: 'links', props: { heading: 'Help' }, blocks: [{ id: 'l1', type: 'link', props: { label: 'Returns policy', href: '/policy/returns' } }] }] }, header: g.header } } });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id });
+      return { many: many.error && many.error.message, main: main.error && main.error.message, link: link.error && link.error.message, ok: ok.error && ok.error.message, pub: pub.error && pub.error.message }; }, [inst, groups]);
+    assert(/up to 8/.test(r.many || ''), 'many: ' + r.many); assert(/unknown type/.test(r.main || ''), 'main: ' + r.main);
+    assert(/links must start/.test(r.link || ''), 'unsafe link: ' + r.link); assert(!r.ok && !r.pub, JSON.stringify(r));
+    const pg = await ctx.newPage(); const e6 = watch(pg);
+    for (const route of ['', 'shop', 'about']) {
+      await pg.goto(stack.url('testcafe', '/store.html#/' + route), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2200);
+      const o = await pg.evaluate(() => { const k = [...document.querySelector('#view').children]; return { first: k[0] ? k[0].innerText : '', last: k[k.length - 1] ? k[k.length - 1].innerText : '' }; });
+      assert(/Free shipping this week/.test(o.first) && /Returns policy/.test(o.last), route + ': ' + JSON.stringify(o));
+    }
+    assert(!e6.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e6.slice(0, 3).join(' | '));
+  }, 'critical');
+  await s.check('The editor lists the shared groups, edits them like any section list and saves', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    const opts = await page.locator('#te-page option').allInnerTexts();
+    assert(opts.includes('Top of every page') && opts.includes('Bottom of every page'), opts.join(','));
+    await page.selectOption('#te-page', 'group:footer'); await page.waitForTimeout(600);
+    assert(/Link row/.test(await page.locator('#te-list').innerText()), 'footer section missing: ' + await page.locator('#te-list').innerText());
+    await page.selectOption('#te-add-type', 'text'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(400);
+    await page.locator('#te-right input[name=heading]').fill('About the shop'); await page.waitForTimeout(300);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.groups.footer.sections.length === 2 && row.groups.footer.sections[1].props.heading === 'About the shop' && row.groups.header.sections.length === 1, JSON.stringify(row.groups));
+  }, 'major');
   await ctx.close();
   return s.done();
 }

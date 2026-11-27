@@ -827,6 +827,12 @@ const CUSTOM_RENDERERS = {
         return E('div', { class: 'cc-col' }, b.props.title ? E('h3', null, b.props.title) : null, b.props.text ? E('p', null, b.props.text) : null,
           b.props.link_text && href ? E('a', { href }, b.props.link_text + ' →') : null); })));
   },
+  links(s, p) {
+    const items = blocksOf(s).filter((b) => b.props.label && safeHref(b.props.href));
+    if (!items.length) return null;
+    return E('section', { class: 'custom-section custom-links' }, p.heading ? E('h3', null, p.heading) : null,
+      E('div', { class: 'cl-row' }, items.map((b) => E('a', { href: safeHref(b.props.href) }, b.props.label))));
+  },
   gallery(s, p) {
     const items = blocksOf(s).filter((b) => b.props.image);
     if (!items.length) return null;
@@ -892,14 +898,14 @@ function bookingSection(p) {
 // unsaved draft sections by postMessage, so the canvas updates as they type. Same-origin only; ignored otherwise.
 const PREVIEW = new URLSearchParams(location.search).get('preview') === 'draft';
 let PREVIEW_SECTIONS = null;
-function customEl(s, i) {
+function customEl(s, i, group) {
   let el = customSection(s);
   if (el && s.props) { if (s.props.space === 'compact' || s.props.space === 'roomy') el.classList.add('sp-' + s.props.space); if (s.props.align === 'left') el.classList.add('al-left'); }
   if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));
   if (!el) return null;
   if (PREVIEW) {
-    el.setAttribute('data-sec', String(i)); el.style.cursor = 'pointer';
-    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); parent.postMessage({ type: 'auz-select', index: i }, location.origin); }, true);
+    el.setAttribute('data-sec', group ? group + ':' + i : String(i)); el.style.cursor = 'pointer';
+    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); parent.postMessage({ type: 'auz-select', index: i, group: group || '' }, location.origin); }, true);
   }
   return el;
 }
@@ -931,6 +937,19 @@ function applyDesign(d) {
   if (['pill', 'soft', 'square'].includes(d.buttonShape)) document.body.classList.add('d-bs-' + d.buttonShape);
   if (['serif', 'humanist', 'mono'].includes(d.font)) document.body.classList.add('d-font-' + d.font);
 }
+// Shared header and footer groups (db/456): sections shown on every page, the header group at the top and the footer group at the bottom.
+let PREVIEW_GROUPS = null;
+function groupSections(kind) {
+  const g = PREVIEW && PREVIEW_GROUPS ? PREVIEW_GROUPS[kind] : (cfg().themeGroups || {})[kind];
+  return g && Array.isArray(g.sections) ? g.sections : [];
+}
+function applyGroups(id, view) {
+  if (id === 'checkout') return;
+  const top = groupSections('header'), bottom = groupSections('footer'); if (!top.length && !bottom.length) return;
+  const first = view.firstChild;
+  top.forEach((x, i) => { const el = customEl(x, i, 'header'); if (el) view.insertBefore(el, first); });
+  bottom.forEach((x, i) => { const el = customEl(x, i, 'footer'); if (el) view.append(el); });
+}
 let PREVIEW_TPL = null;
 const TEMPLATE_OF = { shop: 'collection', p: 'product', bag: 'cart' };
 function templateSections(kind) {
@@ -951,8 +970,9 @@ if (PREVIEW) {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'auz-draft' || !Array.isArray(e.data.sections)) return;
     PREVIEW_SECTIONS = e.data.sections.slice(0, 60);
     if (e.data.templates && typeof e.data.templates === 'object') PREVIEW_TPL = e.data.templates;
+    if (e.data.groups && typeof e.data.groups === 'object') PREVIEW_GROUPS = e.data.groups;
     if (e.data.design && typeof e.data.design === 'object') { PREVIEW_DESIGN = e.data.design; applyDesign(PREVIEW_DESIGN); }
-    const chrome = JSON.stringify({ h: e.data.header, f: e.data.footer, p: e.data.pages, t: e.data.templates });
+    const chrome = JSON.stringify({ h: e.data.header, f: e.data.footer, p: e.data.pages, t: e.data.templates, g: e.data.groups });
     const chromeChanged = chrome !== (PREVIEW_CHROME && PREVIEW_CHROME.__j);
     if (e.data.header !== undefined || e.data.footer !== undefined || e.data.pages !== undefined) PREVIEW_CHROME = { header: e.data.header || null, footer: e.data.footer || null, pages: Array.isArray(e.data.pages) ? e.data.pages : [], __j: chrome };
     const want = '#/' + (e.data.view || '');
@@ -960,7 +980,7 @@ if (PREVIEW) {
     if (typeof route === 'function' && typeof shell === 'function' && chromeChanged && D) { const y = scrollY; shell(); route(); scrollTo(0, y); return; }
     if (typeof route === 'function' && (!location.hash || /^#\/?$/.test(location.hash))) { const y = scrollY; route(); scrollTo(0, y); }
   });
-  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'auz-highlight') { document.querySelectorAll('.custom-section.sel').forEach((n) => n.classList.remove('sel')); const n = document.querySelector('[data-sec="' + Number(e.data.index) + '"]'); if (n) { n.classList.add('sel'); if (e.data.scroll) n.scrollIntoView({ block: 'center', behavior: 'smooth' }); } } });
+  window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data && e.data.type === 'auz-highlight') { document.querySelectorAll('.custom-section.sel').forEach((n) => n.classList.remove('sel')); const n = document.querySelector('[data-sec="' + (e.data.group === 'header' || e.data.group === 'footer' ? e.data.group + ':' : '') + Number(e.data.index) + '"]'); if (n) { n.classList.add('sel'); if (e.data.scroll) n.scrollIntoView({ block: 'center', behavior: 'smooth' }); } } });
   setTimeout(() => { try { parent.postMessage({ type: 'auz-ready' }, location.origin); } catch (err) { /* not in a frame */ } }, 0);
   window.addEventListener('load', () => { try { parent.postMessage({ type: 'auz-ready' }, location.origin); } catch (err) { /* not in a frame */ } });
 }
@@ -1760,7 +1780,7 @@ function route() {
   document.body.classList.toggle('minimal-store', minimal);
   view.dataset.page = id;
   view.classList.toggle('minimal-home', id === 'home' && minimal);
-  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = Object.hasOwn(V, id) ? V[id] : V.home; try { const r = fn(view, parts[1]); if (r && r.then) r.then(() => applyTemplate(id, view), (e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); else applyTemplate(id, view); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
+  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = Object.hasOwn(V, id) ? V[id] : V.home; try { const r = fn(view, parts[1]); if (r && r.then) r.then(() => { applyTemplate(id, view); applyGroups(id, view); }, (e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); else { applyTemplate(id, view); applyGroups(id, view); } } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   if (minimal && id === 'home') scheduleWelcome(() => $('#app .chatfab').click());
   else if (minimal) $('#chatwel')?.remove();
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');

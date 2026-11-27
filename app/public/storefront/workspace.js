@@ -569,7 +569,11 @@ const TPL_KINDS = [['collection', 'Collection page', 'shop'], ['product', 'Produ
 const normTpl = (t) => { const o = {}; TPL_KINDS.forEach(([k]) => { const list = structuredClone((t && t[k] && t[k].sections) || []); if (!list.some((x) => x.type === 'main')) list.unshift({ id: 'main', type: 'main', props: {} }); o[k] = { sections: list }; }); return o; };
 const edTplKind = () => (ed && ed.cur.startsWith('tpl:') && ed.tpl && ed.tpl[ed.cur.slice(4)] ? ed.cur.slice(4) : null);
 const tplToSave = () => { const o = {}; TPL_KINDS.forEach(([k]) => { if (ed.tpl[k].sections.length > 1) o[k] = ed.tpl[k]; }); return o; };
-const edJson = () => JSON.stringify({ sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl, design: ed.design });
+// Shared header and footer groups (db/456): sections shown on every page
+const normGroups = (g) => ({ header: { sections: structuredClone((g && g.header && g.header.sections) || []) }, footer: { sections: structuredClone((g && g.footer && g.footer.sections) || []) } });
+const edGroupKind = () => (ed && ed.cur.startsWith('group:') && ed.groups && ed.groups[ed.cur.slice(6)] ? ed.cur.slice(6) : null);
+const groupsToSave = () => { const o = {}; ['header', 'footer'].forEach((k) => { if (ed.groups[k].sections.length) o[k] = ed.groups[k]; }); return o; };
+const edJson = () => JSON.stringify({ sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl, design: ed.design, groups: ed.groups });
 const PAGE_TEMPLATES = {
   about: ['About us', [{ type: 'hero', props: { heading: 'Our story', sub: 'Who we are and why we make what we make.' } }, { type: 'text', props: { heading: 'How it started', body: 'Tell visitors where the idea came from.' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'text', props: { heading: 'What we care about', body: 'Quality, honest prices and people.' } }]],
   contact: ['Contact', [{ type: 'hero', props: { heading: 'Get in touch', sub: 'We usually reply within a day.' } }, { type: 'text', props: { heading: 'Visit or call', body: 'Add your address, opening hours and phone number here.' } }, { type: 'button', props: { text: 'Browse the shop', href: '/shop' } }]],
@@ -587,8 +591,8 @@ const parseColumns = (txt) => { const cols = []; for (const raw of String(txt ||
 const RESERVED_SLUGS = new Set(['shop', 'home', 'p', 'bag', 'checkout', 'me', 'orders', 'order', 'stores', 'about', 'faq', 'contact', 'blog', 'media', 'careers', 'policy', 'sitemap', 'collections', 'wishlist', 'page']);
 const pageSlug = (t) => { const x = String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page'; return RESERVED_SLUGS.has(x) ? x + '-page' : x; };
 const edCurPage = () => (ed.cur.startsWith('p:') ? ed.pages[Number(ed.cur.slice(2))] : null);
-function edBind() { const k = edTplKind(), p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : k ? ed.tpl[k].sections : p ? p.sections : ed.home; if (ed.cur !== 'home' && !k && !p && ed.cur !== 'header' && ed.cur !== 'footer' && ed.cur !== 'design') ed.cur = 'home'; }
-function edApply(doc) { ed.home = doc.sections || []; ed.header = doc.header || { announceText: '', announceHref: '', links: [] }; ed.footer = doc.footer || { about: '', note: '', links: [] }; ed.pages = doc.pages || []; ed.tpl = normTpl(doc.templates); ed.design = structuredClone(doc.design || {}); edBind(); }
+function edBind() { const k = edTplKind(), g = edGroupKind(), p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : k ? ed.tpl[k].sections : g ? ed.groups[g].sections : p ? p.sections : ed.home; if (ed.cur !== 'home' && !k && !g && !p && ed.cur !== 'header' && ed.cur !== 'footer' && ed.cur !== 'design') ed.cur = 'home'; }
+function edApply(doc) { ed.home = doc.sections || []; ed.header = doc.header || { announceText: '', announceHref: '', links: [] }; ed.footer = doc.footer || { about: '', note: '', links: [] }; ed.pages = doc.pages || []; ed.tpl = normTpl(doc.templates); ed.design = structuredClone(doc.design || {}); ed.groups = normGroups(doc.groups); edBind(); }
 const edView = () => {
   const k = edTplKind(); if (k) { if (k === 'product') { const pr = (state.products || []).find((x) => x.status === 'Active'); return pr ? 'p/' + pr.id : 'shop'; } return TPL_KINDS.find((x) => x[0] === k)[2]; }
   return edCurPage() ? 'page/' + edCurPage().slug : '';
@@ -597,10 +601,10 @@ const edDirty = () => edJson() !== ed.saved;
 function edSnapshot() { ed.undo.push(edJson()); if (ed.undo.length > 50) ed.undo.shift(); ed.redo = []; }
 function edPost(scroll) {
   const f = $('#te-frame'); if (!f?.contentWindow) return;
-  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl, design: ed.design, view: edView() }, location.origin); if (ed.sel >= 0 && (ed.cur === 'home' || edCurPage() || edTplKind())) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
+  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl, design: ed.design, groups: ed.groups, view: edView() }, location.origin); if (ed.sel >= 0 && (ed.cur === 'home' || edCurPage() || edTplKind() || edGroupKind())) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, group: edGroupKind() || '', scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
 }
 function edPageSelect() {
-  const opts = [['home', 'Home page'], ...TPL_KINDS.map(([k, l]) => ['tpl:' + k, l]), ['header', 'Header'], ['footer', 'Footer'], ['design', 'Design settings'], ...ed.pages.map((p, i) => ['p:' + i, 'Page: ' + p.title])];
+  const opts = [['home', 'Home page'], ...TPL_KINDS.map(([k, l]) => ['tpl:' + k, l]), ['header', 'Header'], ['footer', 'Footer'], ['design', 'Design settings'], ['group:header', 'Top of every page'], ['group:footer', 'Bottom of every page'], ...ed.pages.map((p, i) => ['p:' + i, 'Page: ' + p.title])];
   return '<select id="te-page" aria-label="Page">' + opts.map(([v, t]) => '<option value="' + esc(v) + '"' + (ed.cur === v ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
 }
 function edListHtml() {
@@ -609,8 +613,10 @@ function edListHtml() {
   if (ed.cur === 'footer') return '<p class="compact-copy">The footer block: a short text and links shown in the footer. Edit it on the right.</p>';
   const tplNote = edTplKind() ? '<p class="compact-copy">The page’s own content is the Main content row. Add sections above or below it, and move that row to choose where it sits.</p>' : '';
   if (edCurPage() && !ed.sections.length) return '<p class="compact-copy">This page has no sections yet. Add one below.</p>';
+  if (edGroupKind() && !ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. A section here shows on every page, ' + (edGroupKind() === 'header' ? 'at the top' : 'at the bottom') + '.</p>';
   if (!ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. Sections show on your home page after the store’s own content.</p>';
-  return tplNote + ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(secLabel(x.type)) + '</span><small>' + esc(x.type === 'main' ? 'The page itself' : String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
+  const groupNote = edGroupKind() ? '<p class="compact-copy">These sections show on every page, ' + (edGroupKind() === 'header' ? 'at the top' : 'at the bottom') + '. Good for a promotion bar, a link row or a few columns of links.</p>' : '';
+  return tplNote + groupNote + ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(secLabel(x.type)) + '</span><small>' + esc(x.type === 'main' ? 'The page itself' : String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
 }
 const chromePicker = (dis) => '<label class="wide">Add a link to a page or product<select data-chrome-pick' + dis + '><option value="">Choose…</option>' + linkOptions().map(([n, u]) => '<option value="' + esc(n + ' | ' + u) + '">' + esc(n) + '</option>').join('') + '</select></label>';
 function edChromeHtml(kind) {
@@ -675,7 +681,7 @@ function edRightHtml() {
     (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Remove section', 'te-remove') + '</div>' : '') + '</form>' + blocksHtml(x) + '</div>';
 }
 function edPageTools() {
-  if (edTplKind()) return '';
+  if (edTplKind() || edGroupKind()) return '';
   const p = edCurPage();
   const tpl = '<select id="te-add-page-tpl" aria-label="Page template">' + Object.entries(PAGE_TEMPLATES).map(([k, v]) => '<option value="' + k + '">' + esc(v[0]) + '</option>').join('') + '</select>' + button('Add page', 'te-addpage');
   if (!p) return ed.pages.length >= 8 ? '' : tpl;
@@ -698,6 +704,7 @@ function edRefresh(parts = 'lbr', scroll = false) {
 if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data || !ed) return;
   if (e.data.type === 'auz-ready') edPost();
+  if (e.data.type === 'auz-select' && (e.data.group === 'header' || e.data.group === 'footer') && ed.cur !== 'group:' + e.data.group) { ed.cur = 'group:' + e.data.group; edBind(); edRefresh('lrbp'); }
   if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.snapped = false; edRefresh('lrb'); }
 });
 // ---------- Studs theme: settings editor with a live preview of the DRAFT (nothing here changes the live store) ----------
@@ -744,7 +751,7 @@ function editorPage(installId) {
   const i = state.installs.find((x) => x.id === installId);
   if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
   if (i.draftContent?.kind === 'studs') return studsEditor(i);
-  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, rev: i.revision || 0, design: structuredClone(dc.design || {}), home: sections, sections, tpl: normTpl(dc.templates), header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
+  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, rev: i.revision || 0, groups: normGroups(dc.groups), design: structuredClone(dc.design || {}), home: sections, sections, tpl: normTpl(dc.templates), header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
   const w = canWrite();
   const types = (state.sectionTypes?.length ? state.sectionTypes.map((x) => [x.type, x.label]) : Object.entries(sectionLabel)).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
   const unpublished = !state.store.published ? '<div class="notice te-note">Your store is switched off, so the preview may show “not open yet”. Turn it on under Online store to see it here.</div>' : '';
@@ -770,7 +777,7 @@ function edHandle(a, key) {
     ed.cur = 'p:' + (ed.pages.length - 1); edBind(); ed.sel = 0; ed.snapped = true; edRefresh('lrbp'); return true;
   }
   if (a === 'te-rmpage') { const p = edCurPage(); if (!p || !confirm('Remove the page "' + p.title + '"?')) return true; edSnapshot(); ed.pages.splice(Number(ed.cur.slice(2)), 1); ed.cur = 'home'; edBind(); ed.sel = ed.sections.length ? 0 : -1; ed.snapped = true; edRefresh('lrbp'); return true; }
-  if (a === 'te-add') { if (edTplKind() && ed.sections.length >= 13) return true; const type = $('#te-add-type')?.value || 'text'; const st = STARTERS[type]; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(st ? st.props : SECTION_DEFAULTS[type] || {}) }, ...(st && st.blocks ? { blocks: st.blocks.map((b) => ({ id: uid(), type: b.type, props: { ...b.props } })) } : {}) }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-add') { if ((edTplKind() && ed.sections.length >= 13) || (edGroupKind() && ed.sections.length >= 8)) return true; const type = $('#te-add-type')?.value || 'text'; const st = STARTERS[type]; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(st ? st.props : SECTION_DEFAULTS[type] || {}) }, ...(st && st.blocks ? { blocks: st.blocks.map((b) => ({ id: uid(), type: b.type, props: { ...b.props } })) } : {}) }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
   if (a === 'te-remove') { if (ed.sel < 0 || ed.sections[ed.sel]?.type === 'main') return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
   if (a === 'te-dclear') { edSnapshot(); ed.snapped = true; delete ed.design[key]; edRefresh('rb'); return true; }
   if (a === 'te-dreset') { edSnapshot(); ed.snapped = true; ed.design = {}; edRefresh('rb'); return true; }
@@ -786,7 +793,7 @@ function edHandle(a, key) {
   if (a === 'te-undo' || a === 'te-redo') { const from = a === 'te-undo' ? ed.undo : ed.redo, to = a === 'te-undo' ? ed.redo : ed.undo; if (!from.length) return true; to.push(edJson()); edApply(JSON.parse(from.pop())); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrbp'); return true; }
   return false;
 }
-function edPicked(v) { ed.cur = v; edBind(); ed.sel = v === 'design' ? -1 : v.startsWith('tpl:') ? ed.sections.findIndex((x) => x.type !== 'main') : ed.sections.length && (v === 'home' || v.startsWith('p:')) ? 0 : -1; ed.snapped = false; edRefresh('lrbp'); }
+function edPicked(v) { ed.cur = v; edBind(); ed.sel = v === 'design' ? -1 : v.startsWith('group:') ? (ed.sections.length ? 0 : -1) : v.startsWith('tpl:') ? ed.sections.findIndex((x) => x.type !== 'main') : ed.sections.length && (v === 'home' || v.startsWith('p:')) ? 0 : -1; ed.snapped = false; edRefresh('lrbp'); }
 function edChromeInput(target) {
   if (target.matches && target.matches('[data-chrome-pick]')) { const f = target.closest('form'), ta = f?.querySelector('textarea[name=links]'); if (ta && target.value) { ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + target.value; target.value = ''; ta.dispatchEvent(new Event('input', { bubbles: true })); } return true; }
   const form = target.closest('form[data-form="te-chrome"], form[data-form="te-page"]'); if (!form || !ed || !canWrite()) return false;
@@ -816,7 +823,7 @@ function edInput(target) {
 }
 async function edSave() {
   const i = state.installs.find((x) => x.id === ed.id); if (!i) return;
-  const content = { ...(i.draftContent || {}), sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: tplToSave(), design: ed.design };
+  const content = { ...(i.draftContent || {}), sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: tplToSave(), design: ed.design, groups: groupsToSave() };
   // the server refuses the save if someone else changed this design since it was opened (revision check, db/454)
   const put = async () => { const r = await api('sfx_theme_customize_save', { p_install_id: ed.id, p_content: content, p_expected: ed.rev }); ed.rev = r.revision; i.revision = r.revision; };
   try { await put(); } catch (e) {

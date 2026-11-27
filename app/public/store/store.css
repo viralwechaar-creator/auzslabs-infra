@@ -1120,3 +1120,7 @@ body.d-bs-square .btn,body.d-bs-square .custom-section .btn{border-radius:0}
 body.d-font-serif{font-family:Georgia,"Times New Roman",serif}
 body.d-font-humanist{font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif}
 body.d-font-mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+
+/* Link row (db/456) */
+.custom-links{padding-top:18px;padding-bottom:18px}.custom-links h3{margin:0 0 8px;font-size:13px;color:var(--mut)}
+.cl-row{display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:center}.cl-row a{font-weight:600;text-decoration:underline;text-underline-offset:3px}
