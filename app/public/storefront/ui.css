@@ -896,3 +896,14 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
   .shell .gl-wrap.sopen .gl-search{display:block;width:calc(100% - 60px)}
   .shell .lv-map{padding-bottom:0}
 }
+
+/* 44. One page name, in the fixed top bar. Description is a preview on the name. */
+.shell .work:not(.has-crumb) .page-head h1,.shell .work:not(.has-crumb) .page-head>div>p{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.shell .work:not(.has-crumb) .page-head{margin:0;min-height:0;gap:0}
+.shell .work:not(.has-crumb) .page-head:not(:has(.actions>*)){display:block;height:0;margin:0}
+.shell .work:not(.has-crumb) .page-head .actions{margin-bottom:var(--sp-2)}
+.shell .work:not(.has-crumb) .page-head .actions:empty{display:none}
+@media (min-width:900px){.shell .topbar{position:sticky;top:0;z-index:30;background:var(--paper);border-bottom:1px solid var(--line)}}
+.shell .topbar [data-tip]{position:relative;cursor:help}
+.shell .topbar [data-tip]::after{content:attr(data-tip);position:absolute;left:0;top:calc(100% + 6px);width:max-content;max-width:min(280px,80vw);padding:8px 10px;border-radius:10px;background:#111;color:#fff;font:400 12px/1.4 Inter,system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:normal;box-shadow:0 4px 14px rgba(0,0,0,.2);opacity:0;pointer-events:none;transform:translateY(-3px);transition:opacity .15s,transform .15s;z-index:60}
+.shell .topbar [data-tip]:hover::after,.shell .topbar [data-tip]:focus::after{opacity:1;transform:none}

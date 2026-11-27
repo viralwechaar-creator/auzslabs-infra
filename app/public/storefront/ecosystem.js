@@ -159,6 +159,9 @@ export function rerender(skipRefresh) {
       topActions.insertBefore(b, topActions.firstChild);
     }
   }
+  // The page name is shown once, in the top bar; what the page is about shows as a small preview when the name is pointed at or tapped.
+  { const ph = document.querySelector('.page-head'), tip = ph && !trail ? (ph.querySelector('p')?.textContent || '').trim() : '';
+    if (tip) document.querySelectorAll('.topbar .breadcrumb > strong, .topbar .mobile-page-name').forEach((n) => { n.dataset.tip = tip; n.tabIndex = 0; n.setAttribute('role', 'button'); n.setAttribute('aria-label', n.textContent + '. ' + tip); }); }
   // Phone: the create menu lives in the top bar next to the bell, like Shopify.
   const plus = document.querySelector('.page-head .plus-menu'), tb = document.querySelector('.topbar .topbar-actions');
   if (plus && tb && matchMedia('(max-width:899px)').matches) { plus.classList.add('in-top'); plus.querySelector('summary').innerHTML = '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>'; tb.insertBefore(plus, tb.firstChild); }
