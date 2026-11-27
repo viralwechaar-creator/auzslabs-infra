@@ -397,13 +397,13 @@ export default async function run({ browser, stack }) {
     assert(await pg.locator('.cb-heading.anim-in').count() === 1, 'did not animate in');
     assert(!e10.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e10.slice(0, 3).join(' | '));
   }, 'major');
-  await s.check('Double-clicking a heading in the preview lets you type on the page, and the change reaches the draft', async () => {
+  await s.check('Clicking a selected heading in the preview lets you type on the page, and the change reaches the draft', async () => {
     const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
     await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
     await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
     await page.selectOption('#te-add-type', 'content'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(2500);
     const fr = page.frameLocator('#te-frame'); const h = fr.locator('.cb-heading').first();
-    await h.dblclick(); await page.waitForTimeout(300);
+    await h.click(); await page.waitForTimeout(700); await fr.locator('.cb-heading').first().click(); await page.waitForTimeout(300);
     const st = await page.evaluate(() => { const d = document.querySelector('#te-frame').contentDocument; const e = d.querySelector('.cb-heading'); return { ce: e && e.contentEditable, active: d.activeElement && d.activeElement.className, n: d.querySelectorAll('.cb-heading').length }; });
     assert(st.ce === 'plaintext-only', 'dblclick state ' + JSON.stringify(st));
     await page.keyboard.press('Control+A'); await page.keyboard.type('Typed on the page'); await page.waitForTimeout(200);
