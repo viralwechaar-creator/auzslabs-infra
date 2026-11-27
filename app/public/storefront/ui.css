@@ -946,3 +946,19 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
   .shell .summary-cell .sparkline polyline{stroke-width:1.5}
 }
 @media (min-width:900px){.shell .work .panel .filters input,.shell .work .panel .filters input[type=search]{background:transparent!important;border:0!important}}
+
+/* 47. Slightly smaller buttons and tighter vertical rhythm on every page */
+.shell .btn,.shell button.btn,.shell summary.btn{min-height:32px;padding:0 13px;font-size:12.5px}
+.shell .topbar .topbar-actions .btn,.shell .topbar .topbar-actions summary.btn{min-height:32px;padding:0 13px;font-size:12.5px}
+.shell .work{padding-top:14px;padding-bottom:24px}
+.shell .page-head{margin-bottom:8px}
+.shell .work .panel,.shell .work .card{margin-bottom:10px}
+.shell .work .panel+.panel{margin-top:0}
+.shell .work .tabs{margin:0 0 10px}
+.shell .summary-bar{padding:2px 0 8px;margin-bottom:8px}
+.shell .work .panel .filters{margin:0 0 8px}
+.shell .work .cards,.shell .work .metrics{gap:10px}
+.shell .work section+section{margin-top:10px}
+.shell .work .panel-title{margin-bottom:6px}
+.shell .work table th,.shell .work table td{padding-top:9px;padding-bottom:9px}
+@media (max-width:899px){.shell .work .panel,.shell .work .card{margin-bottom:10px}.shell .work .cards{gap:10px}.shell .work .panel+.panel{margin-top:0}}
