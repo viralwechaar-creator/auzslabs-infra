@@ -159,6 +159,9 @@ export function rerender(skipRefresh) {
       topActions.insertBefore(b, topActions.firstChild);
     }
   }
+  // A panel heading that only repeats the page or tab name is not shown again (kept for screen readers).
+  { const names = new Set([activeName, ...[...document.querySelectorAll('.work .tabs [aria-current], .work .pill-tab[aria-selected="true"]')].map((n) => n.textContent)].map((t) => String(t || '').trim().toLowerCase()).filter(Boolean));
+    document.querySelectorAll('.work .panel > .panel-title > h2').forEach((h) => { if (names.has(h.textContent.trim().toLowerCase())) { h.classList.add('dup-title'); const t = h.parentElement; if (t.children.length === 1) t.classList.add('dup-title-box'); } }); }
   // The page name is shown once, in the top bar; what the page is about shows as a small preview when the name is pointed at or tapped.
   { const ph = document.querySelector('.page-head'), tip = ph && !trail ? (ph.querySelector('p')?.textContent || '').trim() : '';
     if (tip) document.querySelectorAll('.topbar .breadcrumb > strong, .topbar .mobile-page-name').forEach((n) => { n.dataset.tip = tip; n.tabIndex = 0; n.setAttribute('role', 'button'); n.setAttribute('aria-label', n.textContent + '. ' + tip); }); }
@@ -172,6 +175,8 @@ export function rerender(skipRefresh) {
       if (!tbx) return;
       const main = box.querySelector(':scope > .plus-menu') || [...box.querySelectorAll('a.btn.primary, button.btn.primary[data-action]')].find((el) => !el.closest('form') && el.offsetParent !== null);
       if (main) { main.classList.add('in-top'); tbx.appendChild(main); }
+      // Desktop: the other page buttons (Export, Bulk edit...) sit in the top bar too
+      if (matchMedia('(min-width:900px)').matches) [...box.querySelectorAll(':scope > *, :scope > .desk-only > *')].filter((el) => el !== main && !el.closest('form') && (el.matches('a.btn, button.btn[data-action], button[data-action]'))).reverse().forEach((el) => { el.classList.add('in-top'); tbx.insertBefore(el, main || tbx.firstChild); });
     });
   }
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
