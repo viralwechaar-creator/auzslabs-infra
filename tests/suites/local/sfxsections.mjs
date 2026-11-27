@@ -309,7 +309,7 @@ export default async function run({ browser, stack }) {
       return { bad1, bad2, bad3, good, pub: pub.error && pub.error.message }; }, [inst, cid, pid]);
     assert(/not valid/.test(r.bad1) && /not valid/.test(r.bad2) && /not valid/.test(r.bad3), JSON.stringify(r)); assert(r.good === 'ok' && !r.pub, JSON.stringify(r));
     const pg = await ctx.newPage(); const e8 = watch(pg);
-    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => localStorage.clear()); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
     const hrefs = await pg.evaluate(() => Object.fromEntries([...document.querySelectorAll('.cb-button')].map((a) => [a.textContent, a.getAttribute('href')])));
     assert(hrefs.Coll === '#/shop?col=' + cid, JSON.stringify(hrefs)); assert(hrefs.Prod === '#/p/' + pid, JSON.stringify(hrefs));
     assert(hrefs.Page === '#/page/about-us' && hrefs.Cat === '#/shop?cat=Tops%20%26%20Tees' && hrefs.Gone === '#/shop' && hrefs.Cart === '#/bag', JSON.stringify(hrefs));
