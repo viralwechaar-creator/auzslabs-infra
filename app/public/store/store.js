@@ -117,7 +117,7 @@ const go = (p) => { location.hash = '#/' + p; };
 const link = (p) => '#/' + p;
 const cfg = () => D.config || {};
 // Studs (db/398) reuses the Minimal behaviour for every page it does not draw itself (checkout, account, orders, policies).
-const isMin = () => { const t = cfg().template; return t === 'minimal' || t === 'studs'; };
+const isMin = () => { const t = cfg().template; return t === 'minimal' || t === 'studs' || t === 'kaarigari'; };
 const COURIERS = { 'Delhivery': 'https://www.delhivery.com/track-v2/package/', 'India Post': 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx?', 'DTDC': 'https://www.dtdc.in/tracking.asp?', 'Blue Dart': 'https://www.bluedart.com/tracking?trackfor=', 'Ecom Express': 'https://ecomexpress.in/tracking/?awb_field=', 'XpressBees': 'https://www.xpressbees.com/shipment/tracking?awb=', 'Shiprocket': 'https://shiprocket.co/tracking/' };
 function trackBox(o) {
   if (!o.trackingNo && !o.courier) return null;
@@ -1832,6 +1832,15 @@ function route() {
     }
     window.StudsTheme.frame();
   }
+  if (cfg().template === 'kaarigari' && window.KaarigariTheme) {
+    if (window.KaarigariTheme.owns(id)) {
+      document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
+      window.KaarigariTheme.show(parts);
+      TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
+      return;
+    }
+    window.KaarigariTheme.frame();
+  }
   view._disconnectProduct?.();
   view._disconnectProduct = null;
   clear(view);
@@ -1873,7 +1882,7 @@ function ingest(d) {
 }
 const PREVIEW_STUDS = new URLSearchParams(location.search).get('preview') === 'studs' && window.parent !== window;
 // ?preview=classic|minimal|studs on the store's own address shows that design with the store's real products; the live design is not changed
-const PREVIEW_T = (() => { const v = new URLSearchParams(location.search).get('preview'); return ['classic', 'minimal', 'studs'].includes(v) && !PREVIEW_STUDS ? v : ''; })();
+const PREVIEW_T = (() => { const v = new URLSearchParams(location.search).get('preview'); return ['classic', 'minimal', 'studs', 'kaarigari'].includes(v) && !PREVIEW_STUDS ? v : ''; })();
 function waitStudsPreview() {
   return new Promise((resolve) => {
     let done = false; const finish = (v) => { if (!done) { done = true; resolve(v); } };
@@ -1900,6 +1909,17 @@ function loadStuds() {
     document.head.append(sc);
   });
 }
+// Kaarigari has no own-chrome settings panel worth exposing to the builder's live preview yet (a fixed bespoke
+// design, like Studs' chrome but without Studs' per-field settings editor) -- it only needs its one script, no
+// extra forms stylesheet.
+function loadKaarigari() {
+  if (window.KaarigariTheme) return window.KaarigariTheme.ready();
+  return new Promise((resolve) => {
+    const sc = document.createElement('script'); sc.src = '/store/kaarigari.js?v=1';
+    sc.onload = () => resolve(window.KaarigariTheme ? window.KaarigariTheme.ready() : null); sc.onerror = () => resolve(null);
+    document.head.append(sc);
+  });
+}
 async function boot() {
   const app = $('#app');
   if (!location.hash) {
@@ -1916,8 +1936,9 @@ async function boot() {
   // exists -- must not try to use it; drop the stale cache and fall through to a fresh fetch, which can only
   // ever return '1' or 'minimal' now.
   if (cached && cached.config && cached.config.template === '2') cached = null;
-  // Studs draws its own page chrome from the live data, so it never uses the instant first paint from the last visit.
-  if (cached && cached.config && cached.config.template === 'studs') cached = null;
+  // Studs and Kaarigari each draw their own page chrome from the live data, so neither ever uses the instant
+  // first paint from the last visit.
+  if (cached && cached.config && (cached.config.template === 'studs' || cached.config.template === 'kaarigari')) cached = null;
   if (PREVIEW_STUDS || PREVIEW_T || DEMO) cached = null;
   // Restore which product's RPCs the cached copy was fetched with, so an interaction fired before the fresh
   // fetch below resolves (see the cached-first-paint branch) still hits the right public_<prefix>_* functions.
@@ -1940,7 +1961,7 @@ async function boot() {
   if (cached && cached.styles && !cached.closed) {
     ingest(cached); shell(); window.addEventListener('hashchange', route); route();
     fresh.then((d) => { if (!d || d.closed) return; remember(d);
-      if (d.config && d.config.template === 'studs') { location.reload(); return; }
+      if (d.config && (d.config.template === 'studs' || d.config.template === 'kaarigari')) { location.reload(); return; }
       ingest(d); const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0]; if (!['checkout', 'order', 'orders', 'me'].includes(h) && !document.querySelector('.sheetwrap')) { const y = scrollY; route(); scrollTo(0, y); } }).catch(() => {});
     return;
   }
@@ -1956,6 +1977,7 @@ async function boot() {
   if (PREVIEW_T && d.config) d.config = { ...d.config, template: PREVIEW_T };
   ingest(d);
   if (cfg().template === 'studs') await loadStuds();
+  if (cfg().template === 'kaarigari') await loadKaarigari();
   shell(); window.addEventListener('hashchange', route); route();
   if (PREVIEW_T) { const u = new URL(location.href); u.searchParams.delete('preview'); document.body.append(E('div', { class: 'prevbar' }, E('span', null, 'Preview of the ' + PREVIEW_T[0].toUpperCase() + PREVIEW_T.slice(1) + ' design with your own products. Your live store is unchanged.'), E('a', { href: u.toString() }, 'Exit preview'))); }
 }
