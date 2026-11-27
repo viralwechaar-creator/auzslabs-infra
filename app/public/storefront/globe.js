@@ -20,8 +20,10 @@ export function mountGlobe(host, zones, opts = {}) {
   host.dataset.mounted = '1';
   const dark = (opts.theme || 'light') === 'dark';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const pts = Object.entries(zones || {}).filter(([z]) => TZ[z]).map(([z, n]) => ({ z, n, lat: TZ[z][0], lng: TZ[z][1] }));
-  const unknown = Object.values(zones || {}).reduce((s, n) => s + n, 0) - pts.reduce((s, p) => s + p.n, 0);
+  const zonePts = Object.entries(zones || {}).filter(([z]) => TZ[z]).map(([z, n]) => ({ z, n, lat: TZ[z][0], lng: TZ[z][1] }));
+  const shared = (opts.points || []).map((p) => ({ z: 'Shared location', n: p.n, lat: Number(p.lat), lng: Number(p.lng) }));
+  const pts = shared.concat(zonePts);
+  const unknown = Object.values(zones || {}).reduce((s, n) => s + n, 0) - zonePts.reduce((s, p) => s + p.n, 0);
 
   host.innerHTML = '<div class="gl-wrap"><canvas class="gl-canvas" tabindex="0" role="img" aria-label="Live visitors on an interactive globe. Drag to turn, scroll or pinch to zoom."></canvas>' +
     '<div class="gl-legend"><span><i class="gl-dot gl-v"></i>Visitors right now</span></div>' +
@@ -147,7 +149,7 @@ export function mountGlobe(host, zones, opts = {}) {
     else return; e.preventDefault(); kick();
   });
   function hitAt(e) { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; return hits.find((h) => (h.x - x) ** 2 + (h.y - y) ** 2 <= h.r * h.r); }
-  function showTip(h) { if (!h) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = h.p.n + ' visitor' + (h.p.n === 1 ? '' : 's') + ' · ' + h.p.z.split('/').pop().replace(/_/g, ' '); tip.style.left = Math.min(W - 150, Math.max(8, h.x + 10)) + 'px'; tip.style.top = Math.max(8, h.y - 36) + 'px'; }
+  function showTip(h) { if (!h) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = h.p.n + ' visitor' + (h.p.n === 1 ? '' : 's') + ' · ' + (h.p.z === 'Shared location' ? 'shared their location' : h.p.z.split('/').pop().replace(/_/g, ' ')); tip.style.left = Math.min(W - 150, Math.max(8, h.x + 10)) + 'px'; tip.style.top = Math.max(8, h.y - 36) + 'px'; }
   function hover(e) { if (e.pointerType === 'mouse') showTip(hitAt(e)); }
   function tap(e) { showTip(hitAt(e)); }
 
