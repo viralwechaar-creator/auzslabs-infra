@@ -1,6 +1,7 @@
 // Live View globe and map. One canvas, no libraries. Dotted land from a 1-degree mask, visitors as pulsing dots.
 // Globe: drag to turn it, scroll or pinch to zoom, arrow keys and + / - also work. Map: drag to pan, scroll or pinch to zoom.
 import { LAND, TZ } from './globe-data.js?v=1';
+import { searchPlaces } from './places.js?v=1';
 
 const RAD = Math.PI / 180;
 const mask = (() => { const bin = atob(LAND); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; })();
@@ -23,11 +24,13 @@ export function mountGlobe(host, zones, opts = {}) {
   const zonePts = Object.entries(zones || {}).filter(([z]) => TZ[z]).map(([z, n]) => ({ z, n, lat: TZ[z][0], lng: TZ[z][1] }));
   const shared = (opts.points || []).map((p) => ({ z: 'Shared location', n: p.n, lat: Number(p.lat), lng: Number(p.lng) }));
   const pts = shared.concat(zonePts);
+  const ords = (opts.orders || []).filter((o) => isFinite(o.lat) && isFinite(o.lng)).map((o) => ({ z: o.label || 'Order', n: o.n || 1, lat: Number(o.lat), lng: Number(o.lng), o: 1 }));
   const unknown = Object.values(zones || {}).reduce((s, n) => s + n, 0) - zonePts.reduce((s, p) => s + p.n, 0);
 
   host.innerHTML = '<div class="gl-wrap"><canvas class="gl-canvas" tabindex="0" role="img" aria-label="Live visitors on an interactive globe. Drag to turn, scroll or pinch to zoom."></canvas>' +
-    '<div class="gl-legend"><span><i class="gl-dot gl-v"></i>Visitors right now</span></div>' +
-    '<div class="gl-tools"><button type="button" class="gl-btn" data-g="toggle" aria-label="Switch between globe and map" title="Globe / map"></button><button type="button" class="gl-btn" data-g="in" aria-label="Zoom in">+</button><button type="button" class="gl-btn" data-g="out" aria-label="Zoom out">−</button><button type="button" class="gl-btn" data-g="reset" aria-label="Reset view" title="Reset">↺</button></div>' +
+    '<div class="gl-legend">' + (opts.orders ? '<span><i class="gl-dot gl-o"></i>Orders</span>' : '') + '<span><i class="gl-dot gl-v"></i>Visitors right now</span></div>' +
+    (opts.search ? '<div class="gl-search"><input type="search" placeholder="Search location" aria-label="Search location" autocomplete="off"><div class="gl-res" hidden></div></div>' : '') +
+    '<div class="gl-tools">' + (opts.onPanel ? '<button type="button" class="gl-btn" data-g="panel" aria-label="Show or hide the reports panel" title="Show or hide the reports panel"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1.5 10S5 4.5 10 4.5 18.5 10 18.5 10 15 15.5 10 15.5 1.5 10 1.5 10z"/><circle cx="10" cy="10" r="2.4"/></svg></button>' : '') + '<button type="button" class="gl-btn" data-g="toggle" aria-label="Switch between globe and map" title="Globe / map"></button><button type="button" class="gl-btn" data-g="in" aria-label="Zoom in">+</button><button type="button" class="gl-btn" data-g="out" aria-label="Zoom out">−</button><button type="button" class="gl-btn" data-g="full" aria-label="Full screen" title="Full screen"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 8V3h5M17 8V3h-5M3 12v5h5M17 12v5h-5"/></svg></button><button type="button" class="gl-btn" data-g="reset" aria-label="Reset view" title="Reset">↺</button></div>' +
     '<div class="gl-tip" hidden></div><div class="gl-note"></div></div>';
   const cv = host.querySelector('canvas'), ctx = cv.getContext('2d'), tip = host.querySelector('.gl-tip'), note = host.querySelector('.gl-note'), tbtn = host.querySelector('[data-g=toggle]');
   note.textContent = pts.length ? '' : (unknown ? 'Visitors are online, but their browsers did not share a location.' : 'No visitors right now. Dots appear here as people open your store.');
@@ -101,11 +104,12 @@ export function mountGlobe(host, zones, opts = {}) {
   let hits = [];
   function markers(time, project, visible) {
     hits = [];
-    for (const p of pts) {
+    for (const p of pts.concat(ords)) {
       const q = project(p); if (!visible(q)) continue;
+      const rgb = p.o ? '124,77,255' : '37,150,235', fill = p.o ? '#7c4dff' : '#2596eb';
       const base = 5 + Math.min(9, Math.sqrt(p.n) * 2.2), pulse = (time / 1400 + p.lng / 90) % 1;
-      ctx.beginPath(); ctx.arc(q.x, q.y, base + pulse * 14, 0, 6.2832); ctx.strokeStyle = 'rgba(37,150,235,' + (0.45 * (1 - pulse)).toFixed(2) + ')'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.beginPath(); ctx.arc(q.x, q.y, base, 0, 6.2832); ctx.fillStyle = '#2596eb'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = dark ? '#0b1220' : '#fff'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(q.x, q.y, base + pulse * 14, 0, 6.2832); ctx.strokeStyle = 'rgba(' + rgb + ',' + (0.45 * (1 - pulse)).toFixed(2) + ')'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(q.x, q.y, base, 0, 6.2832); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = dark ? '#0b1220' : '#fff'; ctx.stroke();
       hits.push({ x: q.x, y: q.y, r: base + 8, p });
     }
   }
@@ -149,7 +153,7 @@ export function mountGlobe(host, zones, opts = {}) {
     else return; e.preventDefault(); kick();
   });
   function hitAt(e) { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; return hits.find((h) => (h.x - x) ** 2 + (h.y - y) ** 2 <= h.r * h.r); }
-  function showTip(h) { if (!h) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = h.p.n + ' visitor' + (h.p.n === 1 ? '' : 's') + ' · ' + (h.p.z === 'Shared location' ? 'shared their location' : h.p.z.split('/').pop().replace(/_/g, ' ')); tip.style.left = Math.min(W - 150, Math.max(8, h.x + 10)) + 'px'; tip.style.top = Math.max(8, h.y - 36) + 'px'; }
+  function showTip(h) { if (!h) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = h.p.o ? h.p.n + ' order' + (h.p.n === 1 ? '' : 's') + ' · ' + h.p.z : h.p.n + ' visitor' + (h.p.n === 1 ? '' : 's') + ' · ' + (h.p.z === 'Shared location' ? 'shared their location' : h.p.z.split('/').pop().replace(/_/g, ' ')); tip.style.left = Math.min(W - 150, Math.max(8, h.x + 10)) + 'px'; tip.style.top = Math.max(8, h.y - 36) + 'px'; }
   function hover(e) { if (e.pointerType === 'mouse') showTip(hitAt(e)); }
   function tap(e) { showTip(hitAt(e)); }
 
@@ -157,12 +161,22 @@ export function mountGlobe(host, zones, opts = {}) {
     const b = e.target.closest('[data-g]'); if (!b) return; auto = false;
     if (b.dataset.g === 'in') zoomBy(1.3); else if (b.dataset.g === 'out') zoomBy(1 / 1.3);
     else if (b.dataset.g === 'reset') { g.lat = home.lat * RAD; g.lng = home.lng * RAD; g.zoom = 1; m.cx = home.lng; m.cy = home.lat; m.zoom = 1; auto = !reduce; kick(); }
+    else if (b.dataset.g === 'panel') { const on = opts.onPanel(); b.classList.toggle('on', !on); setTimeout(() => { size(); kick(); }, 60); }
+    else if (b.dataset.g === 'full') { const w = host.querySelector('.gl-wrap'); if (document.fullscreenElement) document.exitFullscreen(); else if (w.requestFullscreen) w.requestFullscreen().catch(() => {}); }
     else if (b.dataset.g === 'toggle') { mode = mode === 'globe' ? 'map' : 'globe'; label(); size(); tip.hidden = true; kick(); }
   });
   function label() { tbtn.innerHTML = mode === 'globe'
     ? '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M2.5 4.5l5-1.5 5 1.5 5-1.5v12l-5 1.5-5-1.5-5 1.5z"/><path d="M7.5 3v12.5M12.5 4.5V17"/></svg>'
     : '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7.2"/><path d="M2.8 10h14.4M10 2.8c2.4 2.2 2.4 12.2 0 14.4M10 2.8c-2.4 2.2-2.4 12.2 0 14.4"/></svg>';
     tbtn.title = mode === 'globe' ? 'Switch to map' : 'Switch to globe'; cv.setAttribute('aria-label', mode === 'globe' ? 'Live visitors on an interactive globe. Drag to turn, scroll or pinch to zoom.' : 'Live visitors on a world map. Drag to pan, scroll or pinch to zoom.'); }
+  function fly(lat, lng) { auto = false; g.lat = lat * RAD; g.lng = lng * RAD; g.zoom = Math.max(g.zoom, 2.2); g.vlat = g.vlng = 0; m.cx = lng; m.cy = lat; m.zoom = Math.max(m.zoom, 4); clampZoom(); kick(); }
+  const sbox = host.querySelector('.gl-search input'), sres = host.querySelector('.gl-res');
+  if (sbox) {
+    const show = () => { const r = searchPlaces(sbox.value); sres.hidden = !r.length; sres.innerHTML = ''; r.forEach((x) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = x.name; b.addEventListener('click', () => { fly(x.lat, x.lng); sbox.value = x.name; sres.hidden = true; }); sres.appendChild(b); }); };
+    sbox.addEventListener('input', show);
+    sbox.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); const r = searchPlaces(sbox.value)[0]; if (r) { fly(r.lat, r.lng); sres.hidden = true; } } });
+    sbox.addEventListener('blur', () => setTimeout(() => { sres.hidden = true; }, 150));
+  }
   label(); size();
   const ro = new ResizeObserver(() => { size(); kick(); }); ro.observe(host.querySelector('.gl-wrap'));
   raf = requestAnimationFrame(frame);
