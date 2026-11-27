@@ -1086,3 +1086,8 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
 .shell .filters{border:0!important}
 @media (min-width:900px){.shell .work .panel .filters{border:1px solid var(--line)!important}}
 @media (max-width:899px){.shell .work .panel .filters{border:1px solid var(--line)!important}}
+
+/* 54. No tab bars: every sub-page is its own page, opened from the sidebar / Menu */
+.shell .work .tabs[aria-label="Page tabs"],.shell .work .tabs[aria-label="Analytics pages"]{display:none!important}
+@media (max-width:899px){.shell .work>.tabs[aria-label="Product detail"]{display:flex!important}}
+.shell .summary-bar:not(:has(.sparkline)){display:none}
