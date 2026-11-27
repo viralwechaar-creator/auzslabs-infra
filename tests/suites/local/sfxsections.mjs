@@ -372,11 +372,14 @@ export default async function run({ browser, stack }) {
     const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
     assert(row.header.announceHref === 'ref:page:sale' && row.header.links.length === 2 && row.header.links[0].href === 'ref:product:' + pid, JSON.stringify(row.header));
     assert(row.footer.links[0].href === 'ref:shop' && row.footer.columns[0].links[0].href === 'ref:faq', JSON.stringify(row.footer));
+    const pubc = (await q('select published_content->\'header\' as h from sfx_theme_installs where id=$1', [inst]))[0].h;
+    const act = (await q("select active_install_id = $2 as a from sfx_stores where tenant_id=$1", [tid, inst]))[0].a;
+    const pgx = await ctx.newPage(); const apiCfg = await pgx.evaluate(async () => 0).catch(() => 0); await pgx.close();
     const pg = await ctx.newPage(); const e9 = watch(pg);
     await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
     const hrefs = await pg.evaluate(() => ({ ann: (document.querySelector('.announce a') || {}).getAttribute && document.querySelector('.announce a').getAttribute('href'), links: [...document.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]) }));
     const get = (t) => (hrefs.links.find((x) => x[0] === t) || [])[1];
-    assert(hrefs.ann === '#/page/sale', 'ann=' + hrefs.ann + ' ' + JSON.stringify(hrefs.links.slice(0, 12))); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
+    assert(hrefs.ann === '#/page/sale', 'active=' + act + ' pub=' + JSON.stringify(pubc) + ' ann=' + hrefs.ann + ' ' + JSON.stringify(hrefs.links.slice(0, 12))); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
     assert(!e9.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e9.slice(0, 3).join(' | '));
   }, 'major');
   await ctx.close();
