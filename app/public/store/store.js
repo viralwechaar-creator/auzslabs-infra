@@ -1277,7 +1277,14 @@ V.checkout = (v) => {
     btn.disabled = true; btn.textContent = 'Placing…';
     try {
       const r = await rpc(`public_${PFX}_place_order`, { p_slug: SLUG, p: { name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'), city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: g('note'), payment: pay, coupon: coupon ? coupon.code : '', customerToken: useCredit ? acctTok() : undefined, useCredit: useCredit || undefined, lines: bagLines().map((l) => ({ variantId: l.v, qty: l.q })) } });
-      if (pay === 'online') { await rzpPay(r.token, () => done(r, g), () => { done(r, g); }); return; }
+      if (pay === 'online') {
+        await rzpPay(r.token, () => done(r, g), async () => {
+          // payment window closed or could not open: keep the bag, cancel the unpaid order (storefront), let the customer try again
+          if (PFX === 'sfx') { try { await rpc('public_sfx_order_abandon', { p_token: r.token }); } catch (e) { /* the order page still offers Pay now */ } err.textContent = 'The payment was not completed. Your items are still in your bag, you can try again.'; btn.disabled = false; btn.textContent = 'Place order'; return; }
+          done(r, g);
+        });
+        return;
+      }
       done(r, g);
     } catch (e) { err.textContent = e.message; btn.disabled = false; btn.textContent = 'Place order'; }
   };
