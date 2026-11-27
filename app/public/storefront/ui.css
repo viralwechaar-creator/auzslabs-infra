@@ -749,15 +749,15 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 .shell .hm-fig{display:grid;gap:3px;min-width:96px;padding:2px 4px!important;border-radius:8px}
 .shell .hm-fig span{font-size:13px;color:var(--muted)}
 .shell .hm-fig b{font-size:15px;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:var(--ink)}
-.shell .hm-spark{width:36px;height:14px;color:#9a9a9a;margin-left:auto}
+.shell .hm-spark{width:36px;height:14px;color:#3d83c6;margin-left:auto}
 .shell .hm-fig:hover span,.shell .hm-fig.on span{color:var(--ink)}
 .shell .hm-fig{grid-template-columns:auto auto;align-items:end}
 .shell .hm-fig span{grid-column:1/-1}
 .shell .hm-live{display:grid;gap:3px;text-decoration:none;color:inherit;padding:2px 0 2px var(--sp-3)}
 .shell .hm-live span{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .shell .hm-live b{font-size:15px;font-weight:600}
-.shell .hm-dot{width:7px;height:7px;border-radius:50%;background:#b5b5b5;display:inline-block}
-.shell .hm-dot.on{background:#1f9d55;box-shadow:0 0 0 3px rgba(31,157,85,.18)}
+.shell .hm-dot{width:7px;height:7px;border-radius:50%;background:#1f9d55;opacity:.55;display:inline-block}
+.shell .hm-dot.on{opacity:1;background:#1f9d55;box-shadow:0 0 0 3px rgba(31,157,85,.18)}
 .shell .hm-pop{position:absolute;right:0;top:58px;z-index:20;width:min(760px,100%)}
 .shell .hm-pop[hidden]{display:none}
 .shell .hm-card{background:var(--paper);border-radius:20px;box-shadow:0 14px 48px rgba(0,0,0,.16);padding:22px 24px 18px}
@@ -837,4 +837,26 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
   .shell .lv-3 .lv-row{display:grid;gap:6px;padding:4px 10px;border-left:1px solid var(--line)}
   .shell .lv-3 .lv-row:first-child{border-left:0;padding-left:0}
   .shell .lv-3 .lv-row strong{font-size:22px}
+}
+
+/* 40. Phone Home: everything one step smaller, closer to Shopify's phone Home */
+@media (max-width:899px){
+  .shell:has(.topbar.is-home){--hdr:calc(env(safe-area-inset-top,0px) + 150px)}
+  .shell .topbar.is-home{padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 30px;row-gap:12px}
+  .shell .topbar.is-home .m-stats{gap:18px;padding:2px 16px 0;margin:0 -16px}
+  .shell .topbar.is-home .m-stats>div,.shell .topbar.is-home .m-stats>a{gap:3px;min-width:0}
+  .shell .topbar.is-home .m-stats span{font-size:11px}
+  .shell .topbar.is-home .m-stats b{font-size:17px;gap:6px}
+  .shell .topbar.is-home .m-stats .hm-spark{width:22px;height:10px}
+  .shell .hm-ring{width:11px;height:11px;border-width:1.5px}
+  .shell .home-greet{font-size:16px;margin:2px 0 14px}
+  .shell .setup h2,.shell .home-main .panel-title h2{font-size:15px}
+  .shell .setup h3{font-size:15px;margin:16px 0 8px}
+  .shell .setup .muted{font-size:13px;margin:0 0 10px}
+  .shell .setup .setup-count{font-size:12px;padding:5px 11px;margin-bottom:14px}
+  .shell .setup .steps a.step{padding:11px 12px;font-size:14px;gap:11px}
+  .shell .home-main .panel,.shell .home-side .panel{border-radius:14px!important;padding:12px 12px 4px;margin-top:18px}
+  .shell .home-main .panel tbody tr{padding:10px 0}
+  .shell .home-main .panel tbody td{font-size:12px}
+  .shell .home-main .panel tbody td[data-label=Order],.shell .home-main .panel tbody td[data-label=Total]{font-size:14px}
 }
