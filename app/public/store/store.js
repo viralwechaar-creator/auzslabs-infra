@@ -779,19 +779,31 @@ function customSection(s) {
   const p = s.props || {};
   if (s.type === 'hero' && (p.heading || p.sub)) return E('section', { class: 'custom-section custom-hero' },
     p.heading ? E('h2', null, p.heading) : null, p.sub ? E('p', null, p.sub) : null,
-    p.cta && p.href ? E('a', { class: 'btn', href: p.href }, p.cta) : null);
+    p.cta && safeHref(p.href) ? E('a', { class: 'btn', href: safeHref(p.href) }, p.cta) : null);
   if (s.type === 'text' && (p.heading || p.body)) return E('section', { class: 'custom-section custom-text' },
     p.heading ? E('h2', null, p.heading) : null, p.body ? E('p', null, p.body) : null);
   if (s.type === 'image' && p.url) return E('section', { class: 'custom-section custom-image' },
     E('img', { src: p.url, alt: p.caption || '' }), p.caption ? E('div', { class: 'cap' }, p.caption) : null);
-  if (s.type === 'button' && p.text && p.href) return E('section', { class: 'custom-section custom-button' }, E('a', { class: 'btn', href: p.href }, p.text));
+  if (s.type === 'button' && p.text && safeHref(p.href)) return E('section', { class: 'custom-section custom-button' }, E('a', { class: 'btn', href: safeHref(p.href) }, p.text));
   if (s.type === 'announcement' && p.text) return E('div', { class: 'custom-section custom-announcement' }, p.text);
   if (s.type === 'booking') return bookingSection(p);
   if (CUSTOM_RENDERERS[s.type]) return CUSTOM_RENDERERS[s.type](s, p);
   return null;
 }
 // Sections added with the section registry (db/452): each draws its own settings and, where it has them, its blocks (items).
-const safeHref = (h) => (/^(https:\/\/|\/|#)/i.test(String(h || '')) ? String(h) : '');
+// A link can be a typed address or a reference (db/458) to a page, collection, product or category: turned into the right address here, so
+// it keeps working after a rename. A reference to something that no longer exists goes to the shop instead of a dead page.
+const REF_PAGES = { home: '#/', shop: '#/shop', collections: '#/collections', about: '#/about', contact: '#/contact', faq: '#/faq', stores: '#/stores', cart: '#/bag' };
+function resolveRef(h) {
+  const m = /^ref:([a-z]+)(?::(.+))?$/.exec(h); if (!m) return '';
+  if (!m[2]) return REF_PAGES[m[1]] || '';
+  if (m[1] === 'page') return '#/page/' + encodeURIComponent(m[2]);
+  if (m[1] === 'collection') return (D.collections || []).some((c) => c.id === m[2]) ? '#/shop?col=' + encodeURIComponent(m[2]) : '#/shop';
+  if (m[1] === 'product') return BYID[m[2]] ? '#/p/' + encodeURIComponent(m[2]) : '#/shop';
+  if (m[1] === 'category') return '#/shop?cat=' + encodeURIComponent(m[2]);
+  return '';
+}
+const safeHref = (h) => { const x = String(h || ''); return x.startsWith('ref:') ? resolveRef(x) : (/^(https:\/\/|\/|#)/i.test(x) ? x : ''); };
 const blocksOf = (s) => (Array.isArray(s.blocks) ? s.blocks.filter((b) => b && b.props) : []);
 // Content section (db/457): every element carries its own checked style. Values are set one property at a time (never as text), and
 // colours, numbers and choices are validated here again, so a saved value can never inject CSS.
