@@ -32,6 +32,21 @@ export default async function run({ browser, stack }) {
     const href = await pg.locator('.prevbar a').getAttribute('href'); assert(!/preview=/.test(href), 'exit link still has preview: ' + href);
     assert(!e4.filter((x) => !/sentry|fonts/i.test(x)).length, e4.slice(0, 3).join(' | '));
   }, 'major');
+  await s.check('Studs preview lists collections with their pictures (collection picture, or the first product picture)', async () => {
+    const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("delete from sfx_collections where tenant_id=$1 and name='Preview Drop'", [tid]);
+    await q("insert into sfx_products (tenant_id, name, handle, status, price, images) values ($1, 'Preview Tee', 'preview-tee-' || substr(md5(random()::text),1,4), 'active', 700, '[]'::jsonb)", [tid]);
+    const p1 = (await q("select id from sfx_products where tenant_id=$1 and name='Preview Tee' order by created_at desc limit 1", [tid]))[0].id;
+    await q("insert into sfx_variants (tenant_id, product_id, label, price, stock, position) values ($1, $2, 'M', 700, 5, 0)", [tid, p1]);
+    const cid = (await q("insert into sfx_collections (tenant_id, name, handle, image) values ($1, 'Preview Drop', 'preview-drop', '/uploads/collection-cover.jpg') returning id", [tid]))[0].id;
+    await q('insert into sfx_collection_products (collection_id, product_id, position) values ($1, $2, 0)', [cid, p1]);
+    await new Promise((r) => setTimeout(r, 16000)); // the public answer is shared for a few seconds
+    const pg = await ctx.newPage(); const e5 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html?preview=studs#/collections'), { waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    const card = pg.locator('.collections', { hasText: /Preview Drop/ }); const dump = await pg.evaluate(() => { const h = document.getElementById('studs-host'); const r = h && h.shadowRoot; return (r ? r.querySelector('main') && r.querySelector('main').innerText : 'no host ' + document.body.className).slice(0, 200); }); assert(await card.count() >= 1, 'collection missing from the Studs collections page: ' + dump.replace(/\n/g, ' '));
+    const src = await pg.locator('.collections img').first().getAttribute('src'); assert(/collection-cover/.test(src || ''), 'collection picture not used: ' + src);
+    assert(!e5.filter((x) => !/sentry|fonts|404/i.test(x)).length, e5.slice(0, 3).join(' | '));
+  }, 'major');
   await s.check('Developer portal offers the booking section with its own form', async () => {
     const dev = await ctx.newPage(); const e3 = watch(dev);
     await dev.goto(stack.url('testcafe', '/theme-dev.html'), { waitUntil: 'load' }); await dev.waitForTimeout(1500);

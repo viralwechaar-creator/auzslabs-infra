@@ -21,16 +21,17 @@
   function products() {
     const cols = H.D.collections || [];
     return H.STY().map((s) => {
-      const col = cols.find((c) => (c.styleIds || []).includes(s.id));
+      const mine = cols.filter((c) => (c.styleIds || []).includes(s.id)), col = mine[0];
       const files = H.photos(s).map(safeUrl).filter(Boolean);
       const left = H.isGone(s) ? 0 : H.leftOf(s);
       const sizes = H.sizesOf(s);
-      return { id: s.id, slug: s.id, name: s.name, price: +s.price || 0, category: s.category || 'Products', collection: col ? col.name : '',
+      return { id: s.id, slug: s.id, name: s.name, price: +s.price || 0, category: s.category || 'Products', collection: col ? col.name : '', collections: mine.map((c) => c.name),
         colours: H.colours(s), colour: H.colours(s)[0] || '', files, sizes: sizes.length ? sizes : ['One size'], stock: left, description: s.description || '',
         fabric: s.fabric || (s.details && s.details.fabric) || '', washcare: s.washcare || (s.details && s.details.washcare) || '', style: s, created: s.createdAt || '' };
     });
   }
-  const collectionNames = (all) => [...new Set(all.map((p) => p.collection).filter(Boolean))];
+  const inCol = (p, n) => (p.collections || [p.collection]).includes(n);
+  const collectionNames = (all) => [...new Set(all.flatMap((p) => p.collections || [p.collection]).filter(Boolean))];
   const bySlug = (all, id) => all.find((p) => p.slug === id);
   const newest = (all, n) => all.slice().sort((a, b) => String(b.created).localeCompare(String(a.created))).slice(0, n);
 
@@ -39,12 +40,12 @@
     const st = S(); const names = collectionNames(all);
     const firstPhoto = (p) => (p && p.files[0]) || '';
     const dropNames = Array.isArray(st.dropSlugs) && st.dropSlugs.length ? st.dropSlugs : null;
-    let drop = dropNames ? dropNames.map((x) => bySlug(all, x)).filter(Boolean) : (st.dropCollection ? all.filter((p) => p.collection === st.dropCollection) : []);
+    let drop = dropNames ? dropNames.map((x) => bySlug(all, x)).filter(Boolean) : (st.dropCollection ? all.filter((p) => inCol(p, st.dropCollection)) : []);
     if (!drop.length) drop = newest(all, 4);
     const dropIds = new Set(drop.map((p) => p.slug));
-    const colImg = st.collectionImages || {};
+    const colImg = { ...Object.fromEntries((H.D.collections || []).filter((c) => c.image).map((c) => [c.name, c.image])), ...(st.collectionImages || {}) };
     const campaigns = (Array.isArray(st.campaigns) && st.campaigns.length ? st.campaigns
-      : names.map((n) => ({ image: colImg[n] || firstPhoto(all.find((p) => p.collection === n)), collection: n }))).filter((c) => c.image);
+      : names.map((n) => ({ image: colImg[n] || firstPhoto(all.find((p) => inCol(p, n))), collection: n }))).filter((c) => c.image);
     return {
       announcements: (Array.isArray(st.announcements) && st.announcements.length ? st.announcements : [{ text: H.cfg().tagline || ('Welcome to ' + H.D.shop.name), href: '#/shop' }]),
       hero: { image: safeUrl(st.heroImage) || firstPhoto(drop[0]) || firstPhoto(all[0]), href: st.heroHref || '#/drop', alt: st.heroAlt || H.D.shop.name, label: st.heroLabel || 'Explore the drop' },
@@ -240,7 +241,7 @@
 
   function detail(p, all, c) {
     const lab = (i) => galleryLabels[i] || ('View ' + (i + 1)); const f = p.files;
-    const related = all.filter((x) => x.slug !== p.slug && ((p.collection && x.collection === p.collection) || x.category === p.category)).slice(0, 4);
+    const related = all.filter((x) => x.slug !== p.slug && ((p.collection && (x.collections || []).some((n) => (p.collections || []).includes(n))) || x.category === p.category)).slice(0, 4);
     const sizeBlock = p.sizes[0] === 'One size' ? '' : `<div class="size-block"><fieldset ${p.stock ? '' : 'disabled'}><legend>Size <span id="selected-size">${esc(p.sizes[0])}</span></legend><div class="sizes">${p.sizes.map((s, i) => `<label><input class="sr-only" form="add-product" type="radio" name="size" value="${esc(s)}" ${i === 0 ? 'checked' : ''} required>${esc(s)}</label>`).join('')}</div></fieldset><button class="size-guide" type="button" aria-haspopup="dialog">Size guide</button></div>`;
     const colourBlock = p.colours.length > 1 ? `<div class="size-block"><fieldset ${p.stock ? '' : 'disabled'}><legend>Colour <span id="selected-colour">${esc(p.colours[0])}</span></legend><div class="sizes">${p.colours.map((s, i) => `<label><input class="sr-only" form="add-product" type="radio" name="colour" value="${esc(s)}" ${i === 0 ? 'checked' : ''}>${esc(s)}</label>`).join('')}</div></fieldset></div>` : '';
     const info = [['Material', p.fabric], ['Colour', p.colour], ['Care', p.washcare]].filter(([, v]) => v);
@@ -381,9 +382,9 @@
     else if (page === 'shop') { const cat = q.get('category') || ''; const sel = all.some((p) => p.category === cat) ? cat : ''; listing(sel ? all.filter((p) => p.category === sel) : all, sel || 'Shop all', '', false, c, sel ? ((S().categoryNotes || {})[sel] || (sel + ' from ' + H.D.shop.name + ' is picked to be worn on repeat. Every piece is made to move with your everyday rotation. Browse the full range below.')) : ''); }
     else if (page === 'search') { const term = (q.get('q') || '').trim(); listing(all, term ? 'Search for “' + term + '”' : 'All products', term, true, c); }
     else if (page === 'collections') {
-      const names = c.names; contentPage('Collections', names.length ? '<div class="collections">' + names.map((n) => { const img = safeUrl(c.colImg[n]) || (all.find((p) => p.collection === n) || { files: [] }).files[0] || ''; return `<a class="collection" href="#/collection/${esc(slug(n))}">${img ? `<img loading="lazy" src="${esc(img)}" alt="">` : ''}<strong>${esc(n)}</strong></a>`; }).join('') + '</div>' : '<p class="copy">No collections yet.</p>');
+      const names = c.names; contentPage('Collections', names.length ? '<div class="collections">' + names.map((n) => { const img = safeUrl(c.colImg[n]) || (all.find((p) => inCol(p, n)) || { files: [] }).files[0] || ''; return `<a class="collection" href="#/collection/${esc(slug(n))}">${img ? `<img loading="lazy" src="${esc(img)}" alt="">` : ''}<strong>${esc(n)}</strong></a>`; }).join('') + '</div>' : '<p class="copy">No collections yet.</p>');
     }
-    else if (page === 'collection') { const n = c.names.find((x) => slug(x) === id); if (n) listing(all.filter((p) => p.collection === n), n, '', true, c); else contentPage('Collection not found', '<a href="#/collections">All collections <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>'); }
+    else if (page === 'collection') { const n = c.names.find((x) => slug(x) === id); if (n) listing(all.filter((p) => inCol(p, n)), n, '', true, c); else contentPage('Collection not found', '<a href="#/collections">All collections <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>'); }
     else if (page === 'p' && bySlug(all, id)) detail(bySlug(all, id), all, c);
     else if (page === 'p') contentPage('Product not found', '<a href="#/shop">Continue shopping <svg class="arr" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true"><path d="M7 17 17 7M8.5 7H17v8.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>');
     else if (page === 'bag') main.innerHTML = `<section class="section cart-page"><h1 class="page-title">Shopping bag</h1>${bagMarkup(true)}</section>`;
