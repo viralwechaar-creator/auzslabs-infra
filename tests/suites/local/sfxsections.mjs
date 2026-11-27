@@ -309,7 +309,7 @@ export default async function run({ browser, stack }) {
       return { bad1, bad2, bad3, good, pub: pub.error && pub.error.message }; }, [inst, cid, pid]);
     assert(/not valid/.test(r.bad1) && /not valid/.test(r.bad2) && /not valid/.test(r.bad3), JSON.stringify(r)); assert(r.good === 'ok' && !r.pub, JSON.stringify(r));
     const pg = await ctx.newPage(); const e8 = watch(pg);
-    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => localStorage.clear()); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
     const hrefs = await pg.evaluate(() => Object.fromEntries([...document.querySelectorAll('.cb-button')].map((a) => [a.textContent, a.getAttribute('href')])));
     assert(hrefs.Coll === '#/shop?col=' + cid, JSON.stringify(hrefs)); assert(hrefs.Prod === '#/p/' + pid, JSON.stringify(hrefs));
     assert(hrefs.Page === '#/page/about-us' && hrefs.Cat === '#/shop?cat=Tops%20%26%20Tees' && hrefs.Gone === '#/shop' && hrefs.Cart === '#/bag', JSON.stringify(hrefs));
@@ -376,7 +376,7 @@ export default async function run({ browser, stack }) {
     const act = (await q("select active_install_id = $2 as a from sfx_stores where tenant_id=$1", [tid, inst]))[0].a;
     const pgx = await ctx.newPage(); const apiCfg = await pgx.evaluate(async () => 0).catch(() => 0); await pgx.close();
     const pg = await ctx.newPage(); const e9 = watch(pg);
-    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
     const hrefs = await pg.evaluate(() => ({ ann: (document.querySelector('.announce a') || {}).getAttribute && document.querySelector('.announce a').getAttribute('href'), links: [...document.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]) }));
     const get = (t) => (hrefs.links.find((x) => x[0] === t) || [])[1];
     assert(hrefs.ann === '#/page/sale', 'active=' + act + ' pub=' + JSON.stringify(pubc) + ' ann=' + hrefs.ann + ' ' + JSON.stringify(hrefs.links.slice(0, 12))); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
