@@ -775,7 +775,30 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 .shell .hm-legend{display:flex;gap:var(--sp-5);justify-content:center;font-size:12px;color:var(--muted);margin-top:var(--sp-2)}
 .shell .hm-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .shell .hm-legend i.cur{background:#3d83c6}.shell .hm-legend i.prev{background:#9cc3e6}
-@media (max-width:899px){.shell .hm{display:none}}
+/* 38. Home overview on the phone: a swipeable row of metric cards under the store name (Shopify's phone Home) */
+@media (max-width:899px){
+  .shell .topbar.is-home .m-stats{display:none!important}
+  .shell:has(.topbar.is-home){--hdr:calc(env(safe-area-inset-top,0px) + 100px)}
+  .shell .topbar.is-home{padding-bottom:40px!important;row-gap:0!important}
+  .shell .hm{margin:0 0 var(--sp-4)}
+  .shell .hm-top{flex-direction:column;gap:var(--sp-3);padding:0}
+  .shell .hm-pick{padding:0}
+  .shell .hm .hm-pick-btn{display:inline-flex;align-items:center;min-height:36px;padding:0 14px!important;border-radius:999px;background:var(--soft);color:var(--ink);font-size:13px}
+  .shell .hm-menu{left:0;top:42px;width:min(300px,calc(100vw - 32px))}
+  .shell .hm-figs,.shell .hm-top{margin-left:0}
+  .shell .hm-figs{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none}
+  .shell .hm-figs::-webkit-scrollbar{display:none}
+  .shell .hm .hm-fig{flex:none;width:148px;min-width:0;grid-template-columns:1fr;gap:4px;padding:12px 14px!important;border:1px solid var(--line);border-radius:16px;background:var(--paper);scroll-snap-align:start}
+  .shell .hm .hm-fig span{font-size:12px}
+  .shell .hm .hm-fig b{font-size:20px;font-weight:600;letter-spacing:-.01em}
+  .shell .hm-spark{width:100%;height:26px;margin:4px 0 0;color:#3d83c6}
+  .shell .hm-live{width:100%;box-sizing:border-box;flex-direction:row;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--paper)}
+  .shell .hm-live span{font-size:13px}
+  .shell .hm-live b{font-size:18px}
+  .shell .hm-pop{position:static;width:100%;margin-top:var(--sp-3)}
+  .shell .hm-card{padding:16px 16px 12px;border-radius:18px;box-shadow:0 4px 18px rgba(0,0,0,.10)}
+  .shell .hm-card-top b{font-size:24px}
+}
 
 /* Home figures: blue trend lines, green live dot */
 .shell .hm-spark{color:#3d83c6}
