@@ -53,6 +53,10 @@ export default async function run({ browser, stack }) {
     const od = ord.data && ord.data.data !== undefined ? ord.data.data : ord.data; assert(od && od.token, 'order not placed: ' + JSON.stringify(ord.data).slice(0, 200));
     assert((await q('select payment_method from sfx_orders where token=$1', [od.token]))[0].payment_method === 'online', 'order should be an online order');
     const post = async (path, body) => { const r = await fetch(stack.apiBase + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); return { status: r.status, j: await r.json().catch(() => ({})) }; };
+    const authPost = async (path, body) => { const r = await fetch(stack.apiBase + path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + owner }, body: JSON.stringify(body) }); return { status: r.status, j: await r.json().catch(() => ({})) }; };
+    const chk = await authPost('/payments/sfx/razorpay/check', { keyId: 'rzp_test_TESTKEY12', secret: 'secret_value_123456' }); assert(chk.status === 200 && chk.j.mode === 'test', 'key check: ' + JSON.stringify(chk));
+    assert((await authPost('/payments/sfx/razorpay/check', { keyId: 'nope', secret: 'x' })).status === 400, 'a malformed key should be refused');
+    const tst = await authPost('/payments/sfx/razorpay/test', {}); assert(tst.status === 200 && tst.j.ok, 'saved keys test: ' + JSON.stringify(tst));
     const st = await post('/payments/sfx/start', { token: od.token }); assert(st.status === 200 && st.j.key === 'rzp_test_TESTKEY12' && /^order_/.test(st.j.orderId), JSON.stringify(st));
   }, 'critical');
   await s.check('Zero activity: the summary is empty but available', async () => {
