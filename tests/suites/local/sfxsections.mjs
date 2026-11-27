@@ -360,6 +360,25 @@ export default async function run({ browser, stack }) {
     await page.click('.te-card[data-cur="tpl:collection"] .te-thumb-hit'); await page.waitForTimeout(800);
     assert(await page.locator('#te-page').inputValue() === 'tpl:collection', 'did not open the collection template');
   }, 'major');
+  await s.check('Header, footer and announcement links accept references, and the public store resolves them', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const r = await page.evaluate(async ([id, pid]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const save = async (h, f) => { const x = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { header: h, footer: f } }); return x.error ? x.error.message : 'ok'; };
+      const ok = await save({ announceText: 'Hi', announceHref: 'ref:page:sale', links: [{ label: 'Tee', href: 'ref:product:' + pid }, { label: 'Bad', href: 'ref:nonsense' }, { label: 'Cart', href: 'ref:cart' }] }, { about: 'a', note: 'n', links: [{ label: 'Shop', href: 'ref:shop' }], columns: [{ title: 'Help', links: [{ label: 'FAQ', href: 'ref:faq' }] }] });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id });
+      const d = await c.from('sfx_theme_installs').select('draft_content').eq('id', id).maybeSingle();
+      return { ok, pub: pub.error && pub.error.message, d: d.data && d.data.draft_content }; }, [inst, pid]);
+    assert(r.ok === 'ok' && !r.pub, JSON.stringify(r));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.header.announceHref === 'ref:page:sale' && row.header.links.length === 2 && row.header.links[0].href === 'ref:product:' + pid, JSON.stringify(row.header));
+    assert(row.footer.links[0].href === 'ref:shop' && row.footer.columns[0].links[0].href === 'ref:faq', JSON.stringify(row.footer));
+    const pg = await ctx.newPage(); const e9 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const hrefs = await pg.evaluate(() => ({ ann: (document.querySelector('.announce a') || {}).getAttribute && document.querySelector('.announce a').getAttribute('href'), links: [...document.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]) }));
+    const get = (t) => (hrefs.links.find((x) => x[0] === t) || [])[1];
+    assert(hrefs.ann === '#/page/sale', JSON.stringify(hrefs.ann)); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
+    assert(!e9.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e9.slice(0, 3).join(' | '));
+  }, 'major');
   await ctx.close();
   return s.done();
 }
