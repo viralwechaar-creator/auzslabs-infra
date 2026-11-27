@@ -832,3 +832,22 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 .shell .gl-btn.on{outline:2px solid #7c4dff}
 .shell .gl-wrap:fullscreen{border-radius:0}
 @media (max-width:899px){.shell .lv{grid-template-columns:1fr;min-height:0}.shell .lv-side{max-height:none}.shell .lv-map .gl-wrap{min-height:420px}.shell .gl-search{width:calc(100% - 28px);top:60px}}
+
+/* 39. Live view on the phone (Shopify's phone Live View): globe first, round search and map buttons, cards underneath */
+@media (max-width:899px){
+  .shell .lv{display:flex;flex-direction:column;gap:12px;min-height:0}
+  .shell .lv-map{order:-1}
+  .shell .lv-map .gl-wrap{height:360px;min-height:0;background:transparent;border-radius:0;overflow:visible}
+  .shell .lv-map .gl-canvas{border-radius:0}
+  .shell .gl-btn[data-g=in],.shell .gl-btn[data-g=out],.shell .gl-btn[data-g=reset],.shell .gl-btn[data-g=full],.shell .gl-btn[data-g=panel]{display:none}
+  .shell .gl-tools{top:0;right:0}
+  .shell .gl-search{left:0;top:2px;width:calc(100% - 60px)}
+  .shell .gl-search input{height:44px;font-size:16px}
+  .shell .gl-legend{left:0;right:auto;top:auto;bottom:0;flex-direction:row;gap:16px;background:transparent;padding:0;font-size:13px}
+  .shell .lv-tile,.shell .lv-card{border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .shell .lv-tile strong{font-size:22px}
+  .shell .lv-3{display:grid;grid-template-columns:repeat(3,1fr)}
+  .shell .lv-3 .lv-row{display:grid;gap:6px;padding:4px 10px;border-left:1px solid var(--line)}
+  .shell .lv-3 .lv-row:first-child{border-left:0;padding-left:0}
+  .shell .lv-3 .lv-row strong{font-size:22px}
+}

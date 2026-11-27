@@ -223,7 +223,7 @@ function live(){
   const empty = '<p class="lv-empty">No data for this date range</p>';
   return '<div class="lv" data-live-view data-orders="'+esc(JSON.stringify(Object.values(placed)))+'"><aside class="lv-side"><div class="lv-tiles">'+
     [['Visitors right now',n('now')],['Total sales',money(total(paid(current),'total'))],['Sessions',n('today')],['Orders',current.length]].map(([a,b])=>'<div class="lv-tile"><span>'+a+'</span><strong>'+b+'</strong></div>').join('')+'</div>'+
-    card('Customer behavior',row('Active carts',n('inBag'))+row('Checking out',n('inCheckout'))+row('Purchased',current.length))+
+    card('Customer behavior','<div class="lv-3">'+row('Active carts',n('inBag'))+row('Checking out',n('inCheckout'))+row('Purchased',current.length)+'</div>')+
     card('Sessions by location',zoneRows.length?zoneRows.map(([z,c])=>row(z.split('/').pop().replace(/_/g,' '),c)).join(''):empty)+
     card('New vs returning customers',mine.length?row('New customers',fresh)+row('Returning customers',returning):empty)+
     card('Total sales by product',prodRows.length?prodRows.map(([a,b])=>row(a,money(b))).join(''):empty)+
