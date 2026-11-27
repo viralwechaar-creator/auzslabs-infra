@@ -1134,3 +1134,9 @@ body.d-font-mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 .custom-content.cc-bgimg{color:#fff}
 .blk-sel{outline:2px solid #3b82f6;outline-offset:3px}
 [data-blk]{position:relative}
+
+/* content animations (db/460) */
+.anim{opacity:0;transition:opacity .6s ease,transform .6s ease}
+.anim-rise{transform:translateY(24px)}.anim-left{transform:translateX(-32px)}.anim-right{transform:translateX(32px)}.anim-zoom{transform:scale(.94)}
+.anim.anim-in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.anim{opacity:1!important;transform:none!important;transition:none}}

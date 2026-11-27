@@ -814,7 +814,16 @@ const FONT_STACKS = { serif: 'Georgia,"Times New Roman",serif', humanist: '"Treb
 const WEIGHTS = { bold: '700', medium: '500', normal: '400' }, LINES = { tight: '1.3', normal: '1.6', loose: '1.9' };
 const textBox = (p) => ({ 'font-size': pxOf(p.size, 10, 120), 'text-align': ['left', 'center', 'right'].includes(p.align) ? p.align : '', color: colorOf(p.color), 'font-family': FONT_STACKS[p.font] || '',
   'background-color': colorOf(p.bg), 'border-radius': pxOf(p.radius, 0, 60), padding: pxOf(p.pad, 0, 80) });
-function contentBlock(b, sec) {
+const ANIMS = ['fade', 'rise', 'left', 'right', 'zoom'];
+function withAnim(el, p) { if (el && ANIMS.includes(p && p.anim)) { el.classList.add('anim', 'anim-' + p.anim); animObserve(el); } return el; }
+let ANIM_IO = null;
+function animObserve(el) {
+  if (!('IntersectionObserver' in window) || PREVIEW) { el.classList.add('anim-in'); return; }
+  if (!ANIM_IO) ANIM_IO = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add('anim-in'); ANIM_IO.unobserve(x.target); } }), { threshold: .12 });
+  ANIM_IO.observe(el);
+}
+const contentBlock = (b, sec) => withAnim(contentBlockBase(b, sec), (b && b.props) || {});
+function contentBlockBase(b, sec) {
   const p = b.props || {};
   if (b.type === 'heading' && p.text) { const el = E('h2', { class: 'cb-heading' }, p.text);
     setStyle(el, { ...textBox(p), 'font-weight': WEIGHTS[p.weight] || '', 'letter-spacing': p.spacing === 'wide' ? '.08em' : '', 'text-transform': p.case === 'upper' ? 'uppercase' : '' }); return el; }
@@ -873,6 +882,7 @@ const CUSTOM_RENDERERS = {
     const root = E('section', { class: 'custom-section custom-content cc-w-' + width + ' cc-a-' + al });
     setStyle(root, { 'background-color': colorOf(p.bg), 'padding-top': pxOf(p.padY, 0, 200), 'padding-bottom': pxOf(p.padY, 0, 200), 'border-radius': pxOf(p.radius, 0, 60), gap: pxOf(p.gap, 0, 80) });
     if (/^(https:\/\/|\/)[-a-zA-Z0-9_.\/:%?=&@~+]+$/.test(p.bgImage || '')) { setStyle(root, { 'background-image': 'url("' + p.bgImage + '")', 'background-size': 'cover', 'background-position': 'center' }); root.classList.add('cc-bgimg'); }
+    withAnim(root, p);
     blocks.forEach((b, i) => { const el = contentBlock(b, p); if (el) { el.setAttribute('data-blk', String(i)); root.append(el); } });
     return root;
   },
