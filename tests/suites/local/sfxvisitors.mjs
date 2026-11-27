@@ -44,6 +44,17 @@ export default async function run({ browser, stack }) {
     const own = (await q("select count(*)::int n from sty_styles where tenant_id=(select id from tenants where slug='demo')"))[0].n;
     assert(d.styles.length >= own, 'every AUZsStyle style is listed: ' + d.styles.length + ' vs ' + own);
   }, 'major');
+  await s.check('Card checkout: an online order starts a Razorpay payment on the storefront route and verifies', async () => {
+    const sr = await rpc(stack, 'sfx_store_set_razorpay', { p: { keyId: 'rzp_test_TESTKEY12', secret: 'secret_value_123456' } }, owner); assert(!sr.data.error, 'keys: ' + JSON.stringify(sr.data).slice(0, 160));
+    assert((await q('select 1 from sfx_store_secrets where tenant_id=$1', [tid])).length === 1, 'secret not saved');
+    const np = await rpc(stack, 'sfx_product_save', { p_id: null, p: { name: 'Card Tee', category: 'Tees', price: 500, status: 'active', variants: [{ label: 'M', price: 500, stock: 5 }] } }, owner);
+    const vid = (await q("select v.id from sfx_variants v join sfx_products p on p.id=v.product_id where p.name='Card Tee' and p.tenant_id=$1 limit 1", [tid]))[0].id;
+    const ord = await rpc(stack, 'public_sfx_place_order', { p_slug: 'testcafe', p: { name: 'Pay Tester', email: 'pay@test.in', phone: '9812300099', address: '1 Road', city: 'Jodhpur', state: 'Rajasthan', pin: '342001', country: 'India', payment: 'online', lines: [{ variantId: vid, qty: 1 }] } });
+    const od = ord.data && ord.data.data !== undefined ? ord.data.data : ord.data; assert(od && od.token, 'order not placed: ' + JSON.stringify(ord.data).slice(0, 200));
+    assert((await q('select payment_method from sfx_orders where token=$1', [od.token]))[0].payment_method === 'online', 'order should be an online order');
+    const post = async (path, body) => { const r = await fetch(stack.apiBase + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); return { status: r.status, j: await r.json().catch(() => ({})) }; };
+    const st = await post('/payments/sfx/start', { token: od.token }); assert(st.status === 200 && st.j.key === 'rzp_test_TESTKEY12' && /^order_/.test(st.j.orderId), JSON.stringify(st));
+  }, 'critical');
   await s.check('Zero activity: the summary is empty but available', async () => {
     const v = await summary(); assert(v.tracking === true && v.visitors === 0 && v.series.length === 14, JSON.stringify(v).slice(0, 200));
   }, 'critical');
@@ -146,4 +157,26 @@ export default async function run({ browser, stack }) {
     assert(!errs.filter((x) => !/sentry|fonts|googletag/i.test(x)).length, errs.slice(0, 3).join(' | '));
   }, 'critical');
   s.done();
+  await s.check('Card checkout in the real store page: choosing Card opens the Razorpay window (no order is placed silently)', async () => {
+    const c = await newCtx(browser, stack, { w: 1280, h: 800 }); const page = await c.newPage(); const errs = watch(page); page.setDefaultTimeout(9000);
+    try {
+    await page.route('https://checkout.razorpay.com/**', (route) => route.fulfill({ contentType: 'text/javascript', body: 'window.Razorpay=function(o){window.__rz=o;this.on=function(){};this.open=function(){window.__rzOpened=true;};};' }));
+    await page.goto(stack.url('testcafe', '/store.html#/shop'), { waitUntil: 'load' }); await page.waitForSelector('.pc .in a', { timeout: 15000 });
+    await page.locator('.pc .in a', { hasText: /Card Tee/ }).first().click(); await page.waitForSelector('.pd .info');
+    const sz = page.locator('.info .sz:not(.off)').first(); if (await sz.count()) await sz.click();
+    await page.locator('.info .btn', { hasText: /Add to bag/ }).click(); await page.waitForTimeout(300);
+    await page.evaluate(() => { location.hash = '#/bag'; }); await page.waitForSelector('.ln', { timeout: 8000 });
+    await page.keyboard.press('Escape'); await page.evaluate(() => { location.hash = '#/checkout'; }); await page.waitForSelector('.frm .fld input');
+    await page.fill('input[aria-label="Phone"]', '9811122244'); await page.fill('input[aria-label="First name"]', 'Card'); await page.fill('input[aria-label="Address"]', '5 Test Road'); await page.fill('input[aria-label="City"]', 'Jodhpur'); await page.fill('input[aria-label="PIN code"]', '342001');
+    const opt = page.locator('.checkout-payment .opt', { hasText: /Card, UPI/ }); assert(await opt.count() === 1, 'the card option is not offered: ' + (await page.locator('.checkout-payment').innerText()));
+    await opt.click(); await page.locator('button.btn.wide', { hasText: /Place order/ }).click();
+    await page.waitForTimeout(5000);
+    const opened = await page.evaluate(() => window.__rzOpened === true); const info = await page.evaluate(() => location.hash + ' | ' + [...document.querySelectorAll('.toast,.note,.err,[role=status]')].map((x) => x.innerText).join(' / '));
+    assert(opened, 'Razorpay did not open. ' + info + ' | errs ' + errs.slice(0, 3).join(' ; '));
+    const tk = (await q("select token from sfx_orders where tenant_id=$1 and customer->>'phone'='9811122244' order by created_at desc limit 1", [tid]))[0].token;
+    await page.goto(stack.url('testcafe', '/store.html#/order/' + tk), { waitUntil: 'load' }); await page.waitForTimeout(1500);
+    assert(await page.locator('button.btn.wide', { hasText: /Pay now/ }).count() === 1, 'an unpaid online order should offer Pay now: ' + (await page.locator('body').innerText()).slice(0, 160).replace(/\n/g, ' '));
+    } catch (e) { throw new Error('PAY: ' + (await page.locator('.checkout-payment').innerText().catch(() => 'none')).replace(/\n/g, ' ') + ' | PAGE: ' + (await page.locator('body').innerText().catch(() => '')).slice(0, 60).replace(/\n/g, ' ') + ' | ' + page.url() + ' | ' + String(e.message).split('\n').slice(0, 3).join(' ')); }
+    await c.close();
+  }, 'critical');
 }

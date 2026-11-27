@@ -1355,6 +1355,11 @@ V.order = async (v, tok) => {
       E('div', { class: 'qrbox' }, img ? E('img', { src: img, alt: 'UPI QR' }) : null, E('div', { class: 'lbl' }, o.upi.id)),
       o.paymentStatus === 'submitted' ? E('div', { class: 'note', style: { marginTop: '10px' } }, 'Thank you. We have your reference and will confirm the payment shortly.') : E('div', { class: 'frm', style: { marginTop: '10px' } }, E('label', { class: 'fld' }, utr), msg, E('button', { class: 'btn wide', onclick: async (e) => { e.target.disabled = true; try { await rpc(`public_${PFX}_order_paid`, { p_token: tok, p_utr: utr.value }); route(); } catch (er) { msg.textContent = er.message; e.target.disabled = false; } } }, 'I have paid'))));
   }
+  // an online order that is placed but not paid (the payment window was closed or could not open): let the customer pay now
+  if (o.payment === 'online' && o.paymentStatus !== 'paid' && o.status !== 'cancelled') {
+    pbox.append(E('div', { class: 'card', style: { marginTop: '10px' } }, E('h2', null, 'Pay ' + inr(o.amountDue != null ? o.amountDue : o.total)), E('div', { class: 'mut tiny', style: { margin: '4px 0 10px' } }, 'Your order is placed but not paid yet. Pay with a card, UPI or net banking.'),
+      E('button', { class: 'btn wide', onclick: (e) => { e.target.disabled = true; rzpPay(tok, () => route(), () => { e.target.disabled = false; }); } }, 'Pay now')));
+  }
   v.append(E('div', { class: 'pg' }, E('div', { class: 'card' }, E('div', { class: 'lbl' }, 'Order ' + o.number), E('h1', { style: { margin: '4px 0' } }, o.status === 'cancelled' ? 'Order cancelled' : 'Thank you, ' + ((o.customer && o.customer.name) || '').split(' ')[0]),
     o.creditApplied > 0 ? E('div', { class: 'mut' }, 'Store credit used: ' + inr(o.creditApplied)) : null,
     E('div', { class: 'mut' }, o.payment === 'cod' ? (o.amountDue > 0 ? 'Pay ' + inr(o.amountDue) + ' in cash when it arrives.' : 'Paid with your store credit.') : o.paymentStatus === 'paid' ? 'Payment received.' : 'We will confirm your order once the payment is checked.'),
