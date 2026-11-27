@@ -887,3 +887,12 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
   .shell .lv-3 .lv-row strong{font-size:20px}
   .shell .lv-map{position:static;padding-bottom:56px}
 }
+
+/* 42. Search is an icon on the phone; it opens the field over the globe */
+.gl-sbtn{display:none}
+@media (max-width:899px){
+  .shell .gl-sbtn{display:grid}
+  .shell .gl-search{display:none;z-index:3}
+  .shell .gl-wrap.sopen .gl-search{display:block;width:calc(100% - 60px)}
+  .shell .lv-map{padding-bottom:0}
+}
