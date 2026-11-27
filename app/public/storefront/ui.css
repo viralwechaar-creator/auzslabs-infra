@@ -1109,3 +1109,24 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
   .shell .work .panel .filters{margin-bottom:6px!important}
 }
 @media (min-width:900px){.shell .work{padding-top:2px}.shell .topbar{height:46px}}
+
+/* 56. Settings sidebar like Shopify's: logo in the rail, "‹ Settings" title, dark search pill, store block, plain list without group labels */
+.shell .settings-sidebar .settings-rail .brand{display:grid!important;margin-bottom:6px}
+.shell .settings-sidebar .settings-brand,.shell .settings-sidebar .drawer-switch{display:none!important}
+.shell .settings-sidebar .settings-back{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:650;color:#fff;margin:6px 4px 10px}
+.shell .settings-sidebar .settings-back span{font-size:20px;line-height:1}
+.shell .settings-sidebar .settings-search-wrap{display:flex;align-items:center;gap:8px;background:#3a3a3d;color:#e9e9ea;border-radius:12px;padding:0 12px;min-height:38px;margin:0 0 12px}
+.shell .settings-sidebar .settings-search-wrap svg{width:16px;height:16px;flex:none}
+.shell .settings-sidebar .settings-search{flex:1;min-width:0;background:transparent!important;border:0!important;color:#fff!important;font-size:14px;outline:0;padding:0;min-height:36px}
+.shell .settings-sidebar .settings-search::placeholder{color:#c9c9cc}
+.shell .settings-sidebar .settings-store{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px 12px;color:#fff}
+.shell .settings-sidebar .ss-text{display:grid;gap:1px;min-width:0}
+.shell .settings-sidebar .ss-text strong{font-size:14px;font-weight:650}
+.shell .settings-sidebar .ss-text small{font-size:13px;color:#c9c9cc;overflow:hidden;text-overflow:ellipsis}
+.shell .settings-sidebar .ss-av{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#9ae26b;color:#16340a;font-size:12px;font-weight:700;flex:none}
+.shell .settings-sidebar .settings-links .nav-label{display:none}
+.shell .settings-sidebar .settings-links a{min-height:36px;font-size:14px;font-weight:600;color:#f1f1f2;border-radius:12px;padding:0 12px;gap:10px}
+.shell .settings-sidebar .settings-links a[aria-current]{background:#3a3a3d;color:#fff}
+.shell .settings-sidebar .settings-links section{margin:0}
+.shell .settings-sidebar .settings-links a svg{width:18px;height:18px}
+.shell .settings-sidebar .settings-search{text-align:left}
