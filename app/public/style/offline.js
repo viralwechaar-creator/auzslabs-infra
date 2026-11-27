@@ -43,7 +43,7 @@ const scope = () => (S.dash && S.dash.tenant ? S.dash.tenant.slug : (window.TENA
 // ---------- which functions are which ----------
 // Changes that can wait on the device. Anything not listed here (and not a read) needs a connection.
 const QUEUEABLE = new Set([
-  'sty_sell', 'sty_return', 'sty_receive', 'sty_adjust', 'sty_save_style', 'sty_set_variant', 'sty_set_badge', 'sty_set_colour_photos', 'sty_set_photo_use', 'sty_set_tags',
+  'sty_sell', 'sty_return', 'sty_receive', 'sty_adjust', 'sty_save_style', 'sty_set_variant', 'sty_set_badge', 'sty_set_web', 'sty_set_colour_photos', 'sty_set_photo_use', 'sty_set_tags',
   'sty_bulk_edit', 'sty_delete_styles', 'sty_transfer', 'sty_receive_transfer', 'sty_cancel_transfer', 'sty_save_supplier', 'sty_pay_supplier',
   'sty_save_customer', 'sty_collect_due', 'sty_void_sale', 'sty_collection_save', 'sty_collection_delete', 'sty_collection_members',
   'sty_coupon_save', 'sty_coupon_delete', 'sty_save_branch', 'sty_save_settings', 'sty_save_fy', 'sty_close_fy', 'sty_gst_period_file', 'sty_gst_period_reopen', 'sty_set_target', 'sty_hold_save', 'sty_shift_open', 'sty_shift_close',
@@ -260,6 +260,7 @@ const OVERLAY = {
           if (q.barcode) x.v.barcode = q.barcode;
           break;
         }
+        case 'sty_set_web': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.web = { ...(s.web || {}), ...e.args.p }; break; }
         case 'sty_set_badge': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.badge = e.args.p_badge || null; break; }
         case 'sty_set_tags': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.tags = e.args.p_tags || []; break; }
         case 'sty_set_colour_photos': { const s = cat.find((z) => z.id === e.args.p_id); if (s) s.colourPhotos = e.args.p || {}; break; }
@@ -440,7 +441,7 @@ async function localResult(fn, args) {
 
 // ---------- the "Waiting changes" list ----------
 const FN_LABEL = {
-  sty_sell: 'Bill', sty_return: 'Return', sty_receive: 'Stock bought', sty_adjust: 'Stock change', sty_save_style: 'Style saved', sty_set_variant: 'Size/colour edited', sty_set_badge: 'Label changed',
+  sty_sell: 'Bill', sty_return: 'Return', sty_receive: 'Stock bought', sty_adjust: 'Stock change', sty_save_style: 'Style saved', sty_set_variant: 'Size/colour edited', sty_set_badge: 'Label changed', sty_set_web: 'Website details',
   sty_bulk_edit: 'Many styles edited', sty_delete_styles: 'Styles deleted', sty_transfer: 'Stock transfer', sty_save_supplier: 'Supplier saved', sty_pay_supplier: 'Supplier payment',
   sty_save_customer: 'Customer saved', sty_collect_due: 'Due collected', sty_void_sale: 'Bill cancelled', sty_collection_save: 'Collection saved', sty_collection_members: 'Collection changed',
   sty_coupon_save: 'Coupon saved', sty_save_branch: 'Branch saved', sty_save_settings: 'Settings saved', sty_save_fy: 'Financial year saved', sty_close_fy: 'Financial year closed', sty_gst_period_file: 'Marked as filed', sty_gst_period_reopen: 'Reopened', sty_hold_save: 'Bill on hold', sty_shift_open: 'Shift opened', sty_shift_close: 'Shift closed',

@@ -612,3 +612,8 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 .icard .ic-s{grid-column:1/-1;grid-row:2;min-width:0;text-align:left}
 .icard .ic-f{grid-column:1/-1;grid-row:3;justify-content:flex-start;flex-wrap:wrap}
 @media (max-width:899px){.kpis{grid-template-columns:1fr}.kpis>.kpi:last-child:nth-child(odd){grid-column:auto}}
+
+/* product form in cards, same order as the storefront's: information, media, pricing, organization, search listing, status, variants */
+.ed-cards{grid-template-columns:minmax(0,1fr);gap:12px}
+.ed-card{padding:14px;gap:12px 14px}
+.ed-h{font-size:13px;font-weight:600;grid-column:1/-1}

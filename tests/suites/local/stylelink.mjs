@@ -81,6 +81,25 @@ export default async function run({ stack }) {
     assert((await q('select status from sfx_orders where id=$1', [so.id]))[0].status === 'cancelled' && await stockOf(v.source_variant_id) === before, 'cancel did not return stock exactly once');
   }, 'critical');
 
+  await s.check('Search listing, origin, draft status and collection pictures follow in both directions (db/446)', async () => {
+    await ok('sty_set_web', { p_id: made.id, p: { seoTitle: 'Link Shirt | Test', seoDescription: 'A shirt', handle: 'Link Shirt Special', origin: 'India', webStatus: 'draft' } });
+    const w = (await q('select name, web from sty_styles where id=$1', [made.id]))[0]; assert(w.web.handle === 'link-shirt-special' && w.web.webStatus === 'draft', JSON.stringify(w.web));
+    const pr = (await q('select handle, status, seo_title, extra from sfx_products where id=$1', [prod.id]))[0];
+    assert(pr.status === 'draft' && pr.handle === 'link-shirt-special' && pr.seo_title === 'Link Shirt | Test' && pr.extra.origin === 'India', JSON.stringify(pr));
+    await ok('sty_set_web', { p_id: made.id, p: { webStatus: 'active' } });
+    assert((await q('select status from sfx_products where id=$1', [prod.id]))[0].status === 'active', 'back to active');
+    await ok('sfx_product_extra_save', { p_id: prod.id, p: { seoTitle: 'From the web', origin: 'Italy', vendor: 'Brandy' } });
+    await q('select sfx_link_pull_product($1)', [prod.id]);
+    const back = (await q('select web, brand from sty_styles where id=$1', [made.id]))[0]; assert(back.web.seoTitle === 'From the web' && back.web.origin === 'Italy' && back.brand === 'Brandy', JSON.stringify(back));
+    await q("update sty_collections set image='/uploads/c1.jpg' where tenant_id=$1 and name='Summer Link'", [tid]);
+    await q('select sfx_link_sync_collections($1, true)', [tid]);
+    assert((await q("select image from sfx_collections where tenant_id=$1 and name='Summer Link'", [tid]))[0].image === '/uploads/c1.jpg', 'collection picture not copied');
+    const slug = (await q('select slug from tenants where id=$1', [tid]))[0].slug;
+    const pub = (await rpc(stack, 'public_sfx_store', { p_slug: slug })).data; const d = pub && pub.data !== undefined ? pub.data : pub;
+    const col = d && d.collections && d.collections.find((c) => c.name === 'Summer Link');
+    assert(col && col.image === '/uploads/c1.jpg', 'public store should return the collection picture: ' + JSON.stringify(col));
+  }, 'critical');
+
   await s.check('Unlinked, nothing is copied either way', async () => {
     await ok('sfx_style_link_set', { p_on: false });
     await ok('sty_save_style', { p: { name: 'Unlinked Jacket', category: 'Jackets', price: 100, colours: ['Red'], sizes: ['S'] } });
