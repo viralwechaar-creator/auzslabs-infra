@@ -997,3 +997,15 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 
 /* 49. Phone: the page tab row is gone; each sub-page opens on its own from the Menu */
 @media (max-width:899px){.shell .work>.tabs,.shell .work .tabs[aria-label="Page tabs"]{display:none!important}}
+
+/* 50. Status colours like Shopify: green active, blue draft, yellow waiting, red problem, grey finished */
+.shell .chip.ok{background:#b4f1a8;color:#0c5132}
+.shell .chip.info{background:#a4e8f2;color:#00414e}
+.shell .chip.warn{background:#ffe6a3;color:#5e4200;border:0}
+.shell .chip.bad{background:#fdd1d0;color:#8e0b21}
+.shell .chip.neutral{background:#e8e8e8;color:#4a4a4a}
+.shell[data-theme=dark] .chip.ok{background:#1d4a2a;color:#b4f1a8}
+.shell[data-theme=dark] .chip.info{background:#0f4450;color:#a4e8f2}
+.shell[data-theme=dark] .chip.warn{background:#5a4510;color:#ffe6a3}
+.shell[data-theme=dark] .chip.bad{background:#5a1f22;color:#fdd1d0}
+.shell[data-theme=dark] .chip.neutral{background:#333;color:#ddd}
