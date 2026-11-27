@@ -570,7 +570,7 @@ function linkPick(sel) {
 function edRenameRefs(from, to) {
   const a = 'ref:page:' + from, b = 'ref:page:' + to;
   const walk = (o) => { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === 'object') for (const k of Object.keys(o)) { if (o[k] === a) o[k] = b; else walk(o[k]); } };
-  walk(ed.home); walk(ed.pages); walk(ed.tpl); walk(ed.groups);
+  walk(ed.home); walk(ed.pages); walk(ed.tpl); walk(ed.groups); walk(ed.header); walk(ed.footer);
 }
 const linkList = () => '<datalist id="te-links">' + linkOptions().map(([n, u]) => '<option value="' + esc(u) + '">' + esc(n) + '</option>').join('') + '</datalist>';
 const spaceFields = (p) => '<label>Spacing<select name="space">' + [['compact', 'Compact'], ['normal', 'Normal'], ['roomy', 'Roomy']].map(([k, l]) => '<option value="' + k + '"' + ((p.space || 'normal') === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
@@ -666,12 +666,12 @@ function edListHtml() {
   const groupNote = edGroupKind() ? '<p class="compact-copy">These sections show on every page, ' + (edGroupKind() === 'header' ? 'at the top' : 'at the bottom') + '. Good for a promotion bar, a link row or a few columns of links.</p>' : '';
   return tplNote + groupNote + ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(secLabel(x.type)) + '</span><small>' + esc(x.type === 'main' ? 'The page itself' : String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
 }
-const chromePicker = (dis) => '<label class="wide">Add a link to a page or product<select data-chrome-pick' + dis + '><option value="">Choose…</option>' + linkOptions().map(([n, u]) => '<option value="' + esc(n + ' | ' + u) + '">' + esc(n) + '</option>').join('') + '</select></label>';
+const chromePicker = (dis) => '<label class="wide">Add a link to a page or product<select data-chrome-pick' + dis + '><option value="">Choose…</option>' + linkGroups().flatMap((g) => g[1]).filter(([k]) => k.startsWith('ref:')).map(([k, t]) => '<option value="' + esc(t + ' | ' + k) + '">' + esc(t) + '</option>').join('') + '</select></label>';
 function edChromeHtml(kind) {
   const w = canWrite(); const dis = w ? '' : ' disabled';
   if (kind === 'header') return '<div class="panel-title"><h2>Header</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="header"><div class="field-grid te-fields">' +
-    input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + input('Announcement link (optional)', 'announceHref', ed.header.announceHref, 'text', 'placeholder="/shop or https://..."' + dis) +
-    area('Extra menu links. One per line: Label | /path or https://link (up to 8). A line starting with - is a sub-link of the line above.', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
+    input('Announcement bar text', 'announceText', ed.header.announceText, 'text', 'maxlength="160"' + dis) + linkField('Announcement link (optional)', 'announceHref', ed.header.announceHref, dis) +
+    area('Extra menu links. One per line: Label | /path, https://link or a reference chosen below (up to 8). A line starting with - is a sub-link of the line above.', 'links', linesOf(ed.header.links), 'rows="5"' + dis) + chromePicker(dis) + '</div></form></div>';
   return '<div class="panel-title"><h2>Footer</h2></div><div class="panel-body"><form data-form="te-chrome" data-kind="footer"><div class="field-grid te-fields">' +
     area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
     area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + area('Footer columns (up to 3). Start each with ## Title, then one link per line.', 'columns', columnsText(ed.footer.columns), 'rows="7"' + dis + ' placeholder="## Help\nShipping | /store.html#/policy/shipping"') + '</div></form></div>';

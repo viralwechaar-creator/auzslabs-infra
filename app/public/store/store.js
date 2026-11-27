@@ -336,7 +336,7 @@ const themeHeader = () => (PREVIEW_CHROME ? PREVIEW_CHROME.header : cfg().themeH
 const themeFooter = () => (PREVIEW_CHROME ? PREVIEW_CHROME.footer : cfg().themeFooter) || null;
 const themePages = () => (PREVIEW_CHROME ? PREVIEW_CHROME.pages : cfg().themePages) || [];
 function themeHref(h) {
-  h = String(h || ''); if (/^https:\/\//i.test(h) || h.startsWith('#/')) return h;
+  h = String(h || ''); if (h.startsWith('ref:')) return safeHref(h) || link(''); if (/^https:\/\//i.test(h) || h.startsWith('#/')) return h;
   return h === '/' || !h.startsWith('/') ? link('') : link(h.slice(1));
 }
 const headerLink = (l, cls) => (l.children || []).length ? E('span', { class: 'hdd ' + (cls || '') }, themeLink(l), E('span', { class: 'hddm' }, l.children.map((c) => themeLink(c)))) : themeLink(l, cls);

@@ -309,7 +309,7 @@ export default async function run({ browser, stack }) {
       return { bad1, bad2, bad3, good, pub: pub.error && pub.error.message }; }, [inst, cid, pid]);
     assert(/not valid/.test(r.bad1) && /not valid/.test(r.bad2) && /not valid/.test(r.bad3), JSON.stringify(r)); assert(r.good === 'ok' && !r.pub, JSON.stringify(r));
     const pg = await ctx.newPage(); const e8 = watch(pg);
-    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
     const hrefs = await pg.evaluate(() => Object.fromEntries([...document.querySelectorAll('.cb-button')].map((a) => [a.textContent, a.getAttribute('href')])));
     assert(hrefs.Coll === '#/shop?col=' + cid, JSON.stringify(hrefs)); assert(hrefs.Prod === '#/p/' + pid, JSON.stringify(hrefs));
     assert(hrefs.Page === '#/page/about-us' && hrefs.Cat === '#/shop?cat=Tops%20%26%20Tees' && hrefs.Gone === '#/shop' && hrefs.Cart === '#/bag', JSON.stringify(hrefs));
@@ -359,6 +359,28 @@ export default async function run({ browser, stack }) {
     assert(await page.locator('.te-card').count() === before + 1, 'page card not added');
     await page.click('.te-card[data-cur="tpl:collection"] .te-thumb-hit'); await page.waitForTimeout(800);
     assert(await page.locator('#te-page').inputValue() === 'tpl:collection', 'did not open the collection template');
+  }, 'major');
+  await s.check('Header, footer and announcement links accept references, and the public store resolves them', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const r = await page.evaluate(async ([id, pid]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const save = async (h, f) => { const x = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { header: h, footer: f } }); return x.error ? x.error.message : 'ok'; };
+      const ok = await save({ announceText: 'Hi', announceHref: 'ref:page:sale', links: [{ label: 'Tee', href: 'ref:product:' + pid }, { label: 'Bad', href: 'ref:nonsense' }, { label: 'Cart', href: 'ref:cart' }] }, { about: 'a', note: 'n', links: [{ label: 'Shop', href: 'ref:shop' }], columns: [{ title: 'Help', links: [{ label: 'FAQ', href: 'ref:faq' }] }] });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id });
+      const d = await c.from('sfx_theme_installs').select('draft_content').eq('id', id).maybeSingle();
+      return { ok, pub: pub.error && pub.error.message, d: d.data && d.data.draft_content }; }, [inst, pid]);
+    assert(r.ok === 'ok' && !r.pub, JSON.stringify(r));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.header.announceHref === 'ref:page:sale' && row.header.links.length === 2 && row.header.links[0].href === 'ref:product:' + pid, JSON.stringify(row.header));
+    assert(row.footer.links[0].href === 'ref:shop' && row.footer.columns[0].links[0].href === 'ref:faq', JSON.stringify(row.footer));
+    const pubc = (await q('select published_content->\'header\' as h from sfx_theme_installs where id=$1', [inst]))[0].h;
+    const act = (await q("select active_install_id = $2 as a from sfx_stores where tenant_id=$1", [tid, inst]))[0].a;
+    const pgx = await ctx.newPage(); const apiCfg = await pgx.evaluate(async () => 0).catch(() => 0); await pgx.close();
+    const pg = await ctx.newPage(); const e9 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const hrefs = await pg.evaluate(() => ({ ann: (document.querySelector('.announce a') || {}).getAttribute && document.querySelector('.announce a').getAttribute('href'), links: [...document.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]) }));
+    const get = (t) => (hrefs.links.find((x) => x[0] === t) || [])[1];
+    assert(hrefs.ann === '#/page/sale', 'active=' + act + ' pub=' + JSON.stringify(pubc) + ' ann=' + hrefs.ann + ' ' + JSON.stringify(hrefs.links.slice(0, 12))); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
+    assert(!e9.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e9.slice(0, 3).join(' | '));
   }, 'major');
   await ctx.close();
   return s.done();
