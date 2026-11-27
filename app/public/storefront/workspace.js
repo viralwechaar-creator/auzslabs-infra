@@ -744,7 +744,7 @@ function checkoutPage() {
   const connected = state.store.razorpayConnected;
   return head('Payments', 'Connect your own Razorpay account so customers can pay by card, UPI, or netbanking at checkout.', '') + tabs('checkout', websiteTabs) +
     panel('Razorpay', body(connected ?
-      '<p class="compact-copy">Online payments are connected. Customers can also always pay cash on delivery.</p>' + (canWrite() ? button('Disconnect', 'razorpay-clear') : '') :
+      '<p class="compact-copy">Online payments are connected. Customers can also always pay cash on delivery.</p>' + (canWrite() ? button('Check connection', 'razorpay-test') + button('Disconnect', 'razorpay-clear') : '') :
       '<p class="compact-copy">Not connected yet. Customers can still check out and pay cash on delivery.</p>' + (canWrite() ? editForm('razorpay', null, input('Key ID', 'keyId', '', 'text', 'required placeholder="rzp_live_..."') + input('Key Secret', 'secret', '', 'password', 'required'), 'Connect Razorpay') : ''))) +
     panel('Checkout rules', body(canWrite() ? editForm('checkout-rules', '', (() => { const r = state.checkout.rules || { fields: {}, payments: {}, limits: {} };
       return select('Email at checkout', 'email', [['optional', 'Optional'], ['required', 'Required']], r.fields.email || 'optional') + select('Second address line', 'address2', [['optional', 'Show'], ['hidden', 'Hide']], r.fields.address2 || 'optional') + select('Order note', 'note', [['optional', 'Show'], ['hidden', 'Hide']], r.fields.note || 'optional') +
@@ -1678,6 +1678,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       } else if (key === 'campaign-record') {
         await api('sfx_campaign_save', { p_id: rid, p: { name: data.name, channel: data.channel, discountCode: data.discountCode, spend: data.spend } }); await refreshCampaigns(); save('Campaign saved.'); close(); rerender(true);
       } else if (key === 'razorpay') {
+        await apiPost('/payments/sfx/razorpay/check', { keyId: data.keyId, secret: data.secret });
         await api('sfx_store_set_razorpay', { p: { keyId: data.keyId, secret: data.secret } });
         const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay connected.'); close(); rerender();
       } else return;
@@ -1852,6 +1853,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'variant-remove') { const f = target.closest('form'); const list = collectVariants(f); list.splice(Number(key), 1); f.querySelector('.product-variant-grid').innerHTML = variantEditor(list); return; }
   if (a === 'variant-fill') { const f = target.closest('form'); const bp = f.querySelector('[name=bulkPrice]').value, bs = f.querySelector('[name=bulkStock]').value; const list = collectVariants(f).map((v) => ({ ...v, price: bp !== '' ? Number(bp) : v.price, stock: bs !== '' ? Number(bs) : v.stock })); f.querySelector('.product-variant-grid').innerHTML = variantEditor(list); flash('Applied. Save variants to keep it.'); return; }
   if (a === 'theme-use') return withBusy(async () => { await api('sfx_store_save', { p: { theme: key } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Theme updated.'); rerender(); });
+  if (a === 'razorpay-test') return withBusy(async () => { const r = await apiPost('/payments/sfx/razorpay/test', {}); save('Razorpay accepted your keys (' + r.mode + ' mode).'); });
   if (a === 'razorpay-clear') return withBusy(async () => { await api('sfx_store_set_razorpay', { p: { clear: true } }); const ctx = await api('sfx_context'); applyContext(ctx); save('Razorpay disconnected.'); rerender(); });
   if (a === 'order-fulfill') {
     const o = state.orders.find((x) => x.id === key);

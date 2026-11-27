@@ -96,6 +96,32 @@ export async function handle(ctx) {
   // AUZslab storefront platform: card/UPI/net banking with the STORE'S OWN Razorpay keys (db/372) -- the
   // exact same shape as AUZsStyle's /payments/sty/start+verify above, for the exact same reason (a signed
   // HMAC confirm, not a webhook, because this product also lets each store use its own Razorpay account).
+  // The owner pastes their Razorpay keys: check them against Razorpay BEFORE saving, so a wrong secret is caught here and not by a customer at checkout.
+  if (url.pathname === '/payments/sfx/razorpay/check' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxrzpchk:${ip}`, 15, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { keyId, secret } = await readJsonBody(req);
+    const kid = String(keyId || '').trim(), sec = String(secret || '').trim();
+    if (!/^rzp_(live|test)_[A-Za-z0-9]{8,}$/.test(kid) || sec.length < 12) throw new HttpError(400, 'Enter the Key ID (rzp_live_... or rzp_test_...) and the Key Secret from your Razorpay dashboard.');
+    const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/orders?count=1`, { headers: { authorization: 'Basic ' + Buffer.from(`${kid}:${sec}`).toString('base64') } }).catch(() => null);
+    if (!res) throw new HttpError(400, 'Could not reach Razorpay to check the keys. Try again in a moment.');
+    if (res.status === 401 || res.status === 403) {
+      const b = await res.json().catch(() => ({}));
+      throw new HttpError(400, 'Razorpay did not accept these keys' + (b && b.error && b.error.description ? ' (' + b.error.description + ')' : '') + '. Copy the Key ID and the Key Secret from the same mode (Test or Live) in your Razorpay dashboard, and make sure the secret is complete.');
+    }
+    return reply(200, { ok: true, mode: kid.startsWith('rzp_live_') ? 'live' : 'test' });
+  }
+  // Test the keys already saved for this store (the "Check connection" button), so the owner sees Razorpay's own answer.
+  if (url.pathname === '/payments/sfx/razorpay/test' && req.method === 'POST') {
+    if (!user) throw new HttpError(401, 'authentication required');
+    if (rateLimited(`sfxrzptest:${ip}`, 15, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
+    const { rows } = await withAuth(user.id, (client) => client.query('select sfx_razorpay_keys() as k')).catch((e) => { throw new HttpError(400, e.message || 'not allowed'); });
+    const k = rows[0] && rows[0].k; if (!k) throw new HttpError(400, 'Razorpay is not connected for this store yet.');
+    const res = await fetch(`${process.env.RAZORPAY_API_URL || 'https://api.razorpay.com/v1'}/orders?count=1`, { headers: { authorization: 'Basic ' + Buffer.from(`${k.key}:${k.secret}`).toString('base64') } }).catch(() => null);
+    if (!res) throw new HttpError(400, 'Could not reach Razorpay. Try again in a moment.');
+    if (!res.ok) { const b = await res.json().catch(() => ({})); throw new HttpError(400, 'Razorpay says: ' + ((b && b.error && b.error.description) || ('error ' + res.status)) + '. Disconnect and connect again with the correct Key ID and Key Secret (same mode: Test or Live).'); }
+    return reply(200, { ok: true, mode: k.key.startsWith('rzp_live_') ? 'live' : 'test' });
+  }
   if (url.pathname === '/payments/sfx/start' && req.method === 'POST') {
     if (rateLimited(`sfxrzp:${ip}`, 20, 15 * 60_000)) throw new HttpError(429, 'too many attempts, try again later');
     const { token } = await readJsonBody(req);
@@ -107,7 +133,7 @@ export async function handle(ctx) {
       body: JSON.stringify({ amount: Math.round(Number(k.total) * 100), currency: 'INR', receipt: String(k.number).slice(0, 40) }),
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok || !body.id) throw new HttpError(400, 'The store\'s card payment is not working right now. Please choose another way to pay.');
+    if (!res.ok || !body.id) { console.error('[sfx card payment] Razorpay refused the order for ' + k.number + ': ' + res.status + ' ' + JSON.stringify((body && body.error) || body).slice(0, 300)); throw new HttpError(400, 'The store\'s card payment is not working right now. Please choose another way to pay.'); }
     await pool.query('select sfx_online_set_order($1, $2)', [String(token), body.id]);
     return reply(200, { key: k.key, orderId: body.id, amount: body.amount, name: k.name, phone: k.phone, email: k.email, number: k.number });
   }
