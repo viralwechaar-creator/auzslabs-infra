@@ -67,6 +67,50 @@ export default async function run({ browser, stack }) {
     assert(await pg.locator('.custom-gallery img').count() === 1, 'gallery missing');
     assert(!e2.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e2.slice(0, 3).join(' | '));
   }, 'critical');
+  await s.check('Page templates: the server keeps one main row, refuses bad content, and the public store puts sections above and below the page', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const tpl = { sections: content.sections, templates: {
+      collection: { sections: [{ id: 'a', type: 'text', props: { heading: 'Above the grid', body: 'x' } }, { type: 'main' }, { type: 'main' }, { id: 'b', type: 'text', props: { heading: 'Below the grid', body: 'y' } }] },
+      product: { sections: [{ id: 'm', type: 'main' }, { id: 'c', type: 'text', props: { heading: 'After the product', body: 'z' } }] },
+      cart: { sections: [{ id: 'd', type: 'text', props: { heading: 'Cart note', body: 'w' } }] },
+      bogus: { sections: [{ type: 'text' }] } } };
+    const r = await page.evaluate(async ([id, t]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const bad = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { templates: { collection: { sections: [{ type: 'nope' }] } } } });
+      const many = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { templates: { cart: { sections: Array.from({ length: 14 }, () => ({ type: 'text', props: {} })) } } } });
+      const ok = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: t });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id });
+      return { bad: bad.error && bad.error.message, many: many.error && many.error.message, ok: ok.error && ok.error.message, pub: pub.error && pub.error.message }; }, [inst, tpl]);
+    assert(/unknown type/.test(r.bad || ''), 'bad: ' + r.bad); assert(/up to 12/.test(r.many || ''), 'many: ' + r.many); assert(!r.ok && !r.pub, JSON.stringify(r));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(!row.templates.bogus, 'unknown template kept');
+    assert(row.templates.collection.sections.map((x) => x.type).join() === 'text,main,text', row.templates.collection.sections.map((x) => x.type).join());
+    const pg = await ctx.newPage(); const e3 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html#/shop'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const order = await pg.evaluate(() => { const v = document.querySelector('#view'); const k = [...v.children]; return { first: k[0].innerText.slice(0, 40), last: k[k.length - 1].innerText.slice(0, 40), n: k.length }; });
+    assert(/Above the grid/.test(order.first) && /Below the grid/.test(order.last) && order.n > 2, JSON.stringify(order));
+    await pg.goto(stack.url('testcafe', '/store.html#/p/' + pid), { waitUntil: 'load' }); await pg.waitForTimeout(1500); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    assert(/After the product/.test(await pg.locator('#view').innerText()), 'product template missing');
+    await pg.goto(stack.url('testcafe', '/store.html#/bag'), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2000);
+    assert(/Cart note/.test(await pg.locator('#view').innerText()), 'cart template missing');
+    assert(!e3.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e3.slice(0, 3).join(' | '));
+  }, 'critical');
+  await s.check('The editor lists the three page templates, locks the main row and saves a section above it', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    const opts = await page.locator('#te-page option').allInnerTexts();
+    assert(['Collection page', 'Product page', 'Cart page'].every((x) => opts.includes(x)), opts.join(','));
+    await page.selectOption('#te-page', 'tpl:cart'); await page.waitForTimeout(600);
+    assert(/Main content/.test(await page.locator('#te-list').innerText()), 'main row missing');
+    await page.locator('.te-item', { hasText: 'Main content' }).click(); await page.waitForTimeout(300);
+    assert(await page.locator('[data-action="te-remove"]').count() === 0, 'main row can be removed');
+    await page.selectOption('#te-add-type', 'text'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(400);
+    await page.locator('#te-right input[name=heading]').fill('Free returns'); await page.waitForTimeout(300);
+    await page.click('[data-action="te-up"]'); await page.waitForTimeout(300);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    const cart = row.templates.cart.sections;
+    assert(cart.map((x) => x.type).join() === 'main,text,text' && cart[1].props.heading === 'Free returns' && cart[2].props.heading === 'Cart note', JSON.stringify(cart));
+  }, 'major');
   await s.check('The editor adds a section with items, edits an item and saves', async () => {
     const before = errs.length;
     const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;

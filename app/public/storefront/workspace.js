@@ -476,7 +476,7 @@ const websiteTabs = [['website', 'Store overview'], ['builder', 'Themes'], ['sto
 const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar', booking: 'Appointment booking' };
 // Section types come from the server's registry (db/452); the six built-in types keep their hand-made forms below.
 const secDef = (t) => (state.sectionTypes || []).find((x) => x.type === t);
-const secLabel = (t) => secDef(t)?.label || sectionLabel[t] || t;
+const secLabel = (t) => (t === 'main' ? 'Main content' : secDef(t)?.label || sectionLabel[t] || t);
 const regField = (d, v, dis = '') => {
   const val = v == null || v === '' ? (d.default ?? '') : v;
   if (d.type === 'textarea') return area(d.label, d.id, val, dis);
@@ -564,7 +564,12 @@ function sectionFieldsBase(s) {
 // ---- Theme editor: sections list | live preview of the store | settings of the selected section ----
 const SECTION_DEFAULTS = { hero: { heading: 'New heading', sub: 'A short line about your store.' }, text: { heading: 'About us', body: 'Tell your story here.' }, image: { url: '', caption: '' }, button: { text: 'Shop now', href: '/store.html' }, announcement: { text: 'Free shipping on orders over ₹999' }, booking: { heading: 'Book an appointment', note: '' } };
 let ed = null; // the open editor: { id, sections, sel, undo, redo, saved, device, snapped }
-const edJson = () => JSON.stringify({ sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages });
+// Page templates (db/453): Collection, Product and Cart pages each have a list with one locked "main" entry (the page itself)
+const TPL_KINDS = [['collection', 'Collection page', 'shop'], ['product', 'Product page', 'p'], ['cart', 'Cart page', 'bag']];
+const normTpl = (t) => { const o = {}; TPL_KINDS.forEach(([k]) => { const list = structuredClone((t && t[k] && t[k].sections) || []); if (!list.some((x) => x.type === 'main')) list.unshift({ id: 'main', type: 'main', props: {} }); o[k] = { sections: list }; }); return o; };
+const edTplKind = () => (ed && ed.cur.startsWith('tpl:') && ed.tpl && ed.tpl[ed.cur.slice(4)] ? ed.cur.slice(4) : null);
+const tplToSave = () => { const o = {}; TPL_KINDS.forEach(([k]) => { if (ed.tpl[k].sections.length > 1) o[k] = ed.tpl[k]; }); return o; };
+const edJson = () => JSON.stringify({ sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl });
 const PAGE_TEMPLATES = {
   about: ['About us', [{ type: 'hero', props: { heading: 'Our story', sub: 'Who we are and why we make what we make.' } }, { type: 'text', props: { heading: 'How it started', body: 'Tell visitors where the idea came from.' } }, { type: 'image', props: { url: '', caption: '' } }, { type: 'text', props: { heading: 'What we care about', body: 'Quality, honest prices and people.' } }]],
   contact: ['Contact', [{ type: 'hero', props: { heading: 'Get in touch', sub: 'We usually reply within a day.' } }, { type: 'text', props: { heading: 'Visit or call', body: 'Add your address, opening hours and phone number here.' } }, { type: 'button', props: { text: 'Browse the shop', href: '/shop' } }]],
@@ -582,25 +587,29 @@ const parseColumns = (txt) => { const cols = []; for (const raw of String(txt ||
 const RESERVED_SLUGS = new Set(['shop', 'home', 'p', 'bag', 'checkout', 'me', 'orders', 'order', 'stores', 'about', 'faq', 'contact', 'blog', 'media', 'careers', 'policy', 'sitemap', 'collections', 'wishlist', 'page']);
 const pageSlug = (t) => { const x = String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page'; return RESERVED_SLUGS.has(x) ? x + '-page' : x; };
 const edCurPage = () => (ed.cur.startsWith('p:') ? ed.pages[Number(ed.cur.slice(2))] : null);
-function edBind() { const p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : p ? p.sections : ed.home; if (ed.cur !== 'home' && !p && ed.cur !== 'header' && ed.cur !== 'footer') ed.cur = 'home'; }
-function edApply(doc) { ed.home = doc.sections || []; ed.header = doc.header || { announceText: '', announceHref: '', links: [] }; ed.footer = doc.footer || { about: '', note: '', links: [] }; ed.pages = doc.pages || []; edBind(); }
-const edView = () => (edCurPage() ? 'page/' + edCurPage().slug : '');
+function edBind() { const k = edTplKind(), p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : k ? ed.tpl[k].sections : p ? p.sections : ed.home; if (ed.cur !== 'home' && !k && !p && ed.cur !== 'header' && ed.cur !== 'footer') ed.cur = 'home'; }
+function edApply(doc) { ed.home = doc.sections || []; ed.header = doc.header || { announceText: '', announceHref: '', links: [] }; ed.footer = doc.footer || { about: '', note: '', links: [] }; ed.pages = doc.pages || []; ed.tpl = normTpl(doc.templates); edBind(); }
+const edView = () => {
+  const k = edTplKind(); if (k) { if (k === 'product') { const pr = (state.products || []).find((x) => x.status === 'Active'); return pr ? 'p/' + pr.id : 'shop'; } return TPL_KINDS.find((x) => x[0] === k)[2]; }
+  return edCurPage() ? 'page/' + edCurPage().slug : '';
+};
 const edDirty = () => edJson() !== ed.saved;
 function edSnapshot() { ed.undo.push(edJson()); if (ed.undo.length > 50) ed.undo.shift(); ed.redo = []; }
 function edPost(scroll) {
   const f = $('#te-frame'); if (!f?.contentWindow) return;
-  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, view: edView() }, location.origin); if (ed.sel >= 0 && (ed.cur === 'home' || edCurPage())) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
+  try { f.contentWindow.postMessage({ type: 'auz-draft', sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: ed.tpl, view: edView() }, location.origin); if (ed.sel >= 0 && (ed.cur === 'home' || edCurPage() || edTplKind())) f.contentWindow.postMessage({ type: 'auz-highlight', index: ed.sel, scroll: !!scroll }, location.origin); } catch (e) { /* frame not ready */ }
 }
 function edPageSelect() {
-  const opts = [['home', 'Home page'], ['header', 'Header'], ['footer', 'Footer'], ...ed.pages.map((p, i) => ['p:' + i, 'Page: ' + p.title])];
+  const opts = [['home', 'Home page'], ...TPL_KINDS.map(([k, l]) => ['tpl:' + k, l]), ['header', 'Header'], ['footer', 'Footer'], ...ed.pages.map((p, i) => ['p:' + i, 'Page: ' + p.title])];
   return '<select id="te-page" aria-label="Page">' + opts.map(([v, t]) => '<option value="' + esc(v) + '"' + (ed.cur === v ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</select>';
 }
 function edListHtml() {
   if (ed.cur === 'header') return '<p class="compact-copy">The header block: an announcement bar and extra menu links. Edit it on the right.</p>';
   if (ed.cur === 'footer') return '<p class="compact-copy">The footer block: a short text and links shown in the footer. Edit it on the right.</p>';
+  const tplNote = edTplKind() ? '<p class="compact-copy">The page’s own content is the Main content row. Add sections above or below it, and move that row to choose where it sits.</p>' : '';
   if (edCurPage() && !ed.sections.length) return '<p class="compact-copy">This page has no sections yet. Add one below.</p>';
   if (!ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. Sections show on your home page after the store’s own content.</p>';
-  return ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(secLabel(x.type)) + '</span><small>' + esc(String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
+  return tplNote + ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(secLabel(x.type)) + '</span><small>' + esc(x.type === 'main' ? 'The page itself' : String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
 }
 const chromePicker = (dis) => '<label class="wide">Add a link to a page or product<select data-chrome-pick' + dis + '><option value="">Choose…</option>' + linkOptions().map(([n, u]) => '<option value="' + esc(n + ' | ' + u) + '">' + esc(n) + '</option>').join('') + '</select></label>';
 function edChromeHtml(kind) {
@@ -634,10 +643,13 @@ function edRightHtml() {
   const x = ed.sections[ed.sel];
   if (!x) return '<div class="panel-title"><h2>Section settings</h2></div><div class="panel-body"><p class="compact-copy">Pick a section on the left, or click it in the preview, to edit it.</p></div>';
   const w = canWrite();
+  if (x.type === 'main') return '<div class="panel-title"><h2>Main content</h2></div><div class="panel-body"><p class="compact-copy">This is the page itself: ' + ({ collection: 'the product grid with its filters', product: 'the product pictures, options and buy button', cart: 'the bag and checkout button' }[edTplKind()] || 'its own content') + '. It cannot be removed or edited here, but you can move it up or down to put your sections above or below it.</p>' +
+    (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + '</div>' : '') + '</div>';
   return '<div class="panel-title"><h2>' + esc(secLabel(x.type)) + '</h2></div><div class="panel-body"><form data-form="te-section"><div class="field-grid te-fields">' + sectionFieldsFor(x) + '</div>' +
     (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Remove section', 'te-remove') + '</div>' : '') + '</form>' + blocksHtml(x) + '</div>';
 }
 function edPageTools() {
+  if (edTplKind()) return '';
   const p = edCurPage();
   const tpl = '<select id="te-add-page-tpl" aria-label="Page template">' + Object.entries(PAGE_TEMPLATES).map(([k, v]) => '<option value="' + k + '">' + esc(v[0]) + '</option>').join('') + '</select>' + button('Add page', 'te-addpage');
   if (!p) return ed.pages.length >= 8 ? '' : tpl;
@@ -706,7 +718,7 @@ function editorPage(installId) {
   const i = state.installs.find((x) => x.id === installId);
   if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
   if (i.draftContent?.kind === 'studs') return studsEditor(i);
-  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, home: sections, sections, header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
+  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, home: sections, sections, tpl: normTpl(dc.templates), header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
   const w = canWrite();
   const types = (state.sectionTypes?.length ? state.sectionTypes.map((x) => [x.type, x.label]) : Object.entries(sectionLabel)).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
   const unpublished = !state.store.published ? '<div class="notice te-note">Your store is switched off, so the preview may show “not open yet”. Turn it on under Online store to see it here.</div>' : '';
@@ -732,8 +744,8 @@ function edHandle(a, key) {
     ed.cur = 'p:' + (ed.pages.length - 1); edBind(); ed.sel = 0; ed.snapped = true; edRefresh('lrbp'); return true;
   }
   if (a === 'te-rmpage') { const p = edCurPage(); if (!p || !confirm('Remove the page "' + p.title + '"?')) return true; edSnapshot(); ed.pages.splice(Number(ed.cur.slice(2)), 1); ed.cur = 'home'; edBind(); ed.sel = ed.sections.length ? 0 : -1; ed.snapped = true; edRefresh('lrbp'); return true; }
-  if (a === 'te-add') { const type = $('#te-add-type')?.value || 'text'; const st = STARTERS[type]; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(st ? st.props : SECTION_DEFAULTS[type] || {}) }, ...(st && st.blocks ? { blocks: st.blocks.map((b) => ({ id: uid(), type: b.type, props: { ...b.props } })) } : {}) }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
-  if (a === 'te-remove') { if (ed.sel < 0) return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
+  if (a === 'te-add') { if (edTplKind() && ed.sections.length >= 13) return true; const type = $('#te-add-type')?.value || 'text'; const st = STARTERS[type]; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(st ? st.props : SECTION_DEFAULTS[type] || {}) }, ...(st && st.blocks ? { blocks: st.blocks.map((b) => ({ id: uid(), type: b.type, props: { ...b.props } })) } : {}) }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-remove') { if (ed.sel < 0 || ed.sections[ed.sel]?.type === 'main') return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
   if (a === 'te-badd' || a === 'te-bremove' || a === 'te-bup' || a === 'te-bdown') {
     const x = ed.sections[ed.sel], def = secDef(x?.type); if (!def?.blockTypes?.length) return true;
     const list = x.blocks || [], i = Number(key); edSnapshot(); ed.snapped = true;
@@ -746,7 +758,7 @@ function edHandle(a, key) {
   if (a === 'te-undo' || a === 'te-redo') { const from = a === 'te-undo' ? ed.undo : ed.redo, to = a === 'te-undo' ? ed.redo : ed.undo; if (!from.length) return true; to.push(edJson()); edApply(JSON.parse(from.pop())); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrbp'); return true; }
   return false;
 }
-function edPicked(v) { ed.cur = v; edBind(); ed.sel = ed.sections.length && (v === 'home' || v.startsWith('p:')) ? 0 : -1; ed.snapped = false; edRefresh('lrbp'); }
+function edPicked(v) { ed.cur = v; edBind(); ed.sel = v.startsWith('tpl:') ? ed.sections.findIndex((x) => x.type !== 'main') : ed.sections.length && (v === 'home' || v.startsWith('p:')) ? 0 : -1; ed.snapped = false; edRefresh('lrbp'); }
 function edChromeInput(target) {
   if (target.matches && target.matches('[data-chrome-pick]')) { const f = target.closest('form'), ta = f?.querySelector('textarea[name=links]'); if (ta && target.value) { ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + target.value; target.value = ''; ta.dispatchEvent(new Event('input', { bubbles: true })); } return true; }
   const form = target.closest('form[data-form="te-chrome"], form[data-form="te-page"]'); if (!form || !ed || !canWrite()) return false;
@@ -776,7 +788,7 @@ function edInput(target) {
 }
 async function edSave() {
   const i = state.installs.find((x) => x.id === ed.id); if (!i) return;
-  const content = { ...(i.draftContent || {}), sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages };
+  const content = { ...(i.draftContent || {}), sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: tplToSave() };
   await api('sfx_theme_customize_save', { p_install_id: ed.id, p_content: content });
   i.draftContent = content; ed.saved = edJson(); edRefresh('b');
 }
