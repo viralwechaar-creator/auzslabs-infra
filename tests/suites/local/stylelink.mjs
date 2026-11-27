@@ -100,6 +100,12 @@ export default async function run({ stack }) {
     assert(col && col.image === '/uploads/c1.jpg', 'public store should return the collection picture: ' + JSON.stringify(col));
   }, 'critical');
 
+  await s.check('The public order page gets the customer name and payment method (it crashed without them)', async () => {
+    const o = (await q("select token, customer, payment_method from sfx_orders where tenant_id=$1 and customer->>'name' is not null limit 1", [tid]))[0]; assert(o, 'need an order');
+    const r = (await rpc(stack, 'public_sfx_order', { p_token: o.token })).data; const d = r && r.data !== undefined ? r.data : r;
+    assert(d && d.customer && d.customer.name === o.customer.name && d.payment === o.payment_method, JSON.stringify(d).slice(0, 200));
+  }, 'critical');
+
   await s.check('Unlinked, nothing is copied either way', async () => {
     await ok('sfx_style_link_set', { p_on: false });
     await ok('sty_save_style', { p: { name: 'Unlinked Jacket', category: 'Jackets', price: 100, colours: ['Red'], sizes: ['S'] } });
