@@ -1167,3 +1167,17 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
 /* 61. Theme editor: link picker */
 .te-link{display:grid;gap:6px;margin-top:4px}
 .te-link select,.te-link input{width:100%}
+
+/* 62. Theme editor: overview board */
+.te-boardbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
+.te-boardbar input[type=search]{min-width:240px;flex:1;max-width:360px}
+.te-boardadd{display:flex;gap:8px;align-items:center;margin-left:auto}
+.te-boardh{font-size:13px;color:var(--muted,#666);font-weight:600;margin:18px 0 8px}
+.te-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--cw),1fr));gap:20px 18px}
+.te-card[hidden]{display:none}
+.te-card-title{font-size:13px;margin-bottom:6px}
+.te-thumb-wrap{position:relative;width:var(--cw);height:calc(var(--cw) * .625);overflow:hidden;border:1px solid var(--line,#ddd);border-radius:10px;background:#fff}
+.te-thumb{width:1280px;height:800px;border:0;transform:scale(var(--s));transform-origin:0 0;pointer-events:none;background:#fff}
+.te-thumb-plain{padding:14px;font-size:13px;color:var(--muted,#666)}
+.te-thumb-hit{position:absolute;inset:0;border:0;background:transparent;cursor:pointer;padding:0}
+.te-thumb-hit:hover,.te-thumb-hit:focus-visible{box-shadow:inset 0 0 0 2px #3b82f6;border-radius:10px;outline:none}
