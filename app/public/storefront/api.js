@@ -127,6 +127,7 @@ export async function refreshMarketplace() { state.marketplace = await api('sfx_
 export async function refreshInstalls() {
   state.installs = await api('sfx_theme_install_list');
   if (!state.sectionTypes || !state.sectionTypes.length) { try { state.sectionTypes = await api('sfx_section_registry'); } catch (e) { state.sectionTypes = []; } }
+  if (!state.designSettings || !state.designSettings.length) { try { state.designSettings = await api('sfx_design_registry'); } catch (e) { state.designSettings = []; } }
 }
 
 async function blocked(title, message) {

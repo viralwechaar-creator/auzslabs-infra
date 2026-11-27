@@ -95,6 +95,7 @@ export const emptyState = () => ({
   plan: { plan_status: 'trial', blocked: false },
   domains: [],
   marketplace: [],  // sfx_theme_marketplace_list(): every approved theme (built-in + developer), db/375
+  designSettings: [], // sfx_design_registry(): the global design settings (db/455)
   sectionTypes: [], // sfx_section_registry(): the section types and their settings (db/452)
   installs: [],     // sfx_theme_install_list(): this store's own installed copies
   notifications: [],

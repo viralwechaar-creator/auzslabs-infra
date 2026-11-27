@@ -909,6 +909,28 @@ function customSections(v, list) {
 }
 // Page templates (db/453): the Collection, Product and Cart pages can have sections above and below their own content.
 // The list holds one "main" entry (the page's own content); without one the sections go after it.
+// Global design settings (db/455): colours, corner shape, button style, font and spacing for the whole store, as CSS variables and body classes.
+let PREVIEW_DESIGN = null;
+const DESIGN_RADII = { sharp: [0, 0, 0], soft: [14, 10, 6], round: [32, 24, 16] };
+const DESIGN_SPACE = { compact: '10px', normal: '14px', roomy: '20px' };
+const hexLum = (h) => { const m = /^#([0-9a-f]{6})$/i.exec(h || ''); if (!m) return 0; const c = [0, 2, 4].map((i) => { const v = parseInt(m[1].slice(i, i + 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+function applyDesign(d) {
+  d = d && typeof d === 'object' ? d : {};
+  const st = document.documentElement.style;
+  ['--bg', '--card', '--ink', '--accent', '--on-ink', '--on-accent', '--r1', '--r2', '--r3', '--pad'].forEach((k) => st.removeProperty(k));
+  [...document.body.classList].filter((c) => /^d-/.test(c)).forEach((c) => document.body.classList.remove(c));
+  if (cfg().template === 'studs') return;
+  const hex = (k) => (/^#[0-9a-f]{6}$/i.test(d[k] || '') ? d[k] : '');
+  if (hex('bg')) st.setProperty('--bg', d.bg);
+  if (hex('card')) st.setProperty('--card', d.card);
+  if (hex('ink')) { st.setProperty('--ink', d.ink); st.setProperty('--on-ink', hexLum(d.ink) > 0.5 ? '#0c0c0c' : '#ffffff'); }
+  if (hex('accent')) { st.setProperty('--accent', d.accent); st.setProperty('--on-accent', hexLum(d.accent) > 0.5 ? '#0c0c0c' : '#ffffff'); }
+  if (DESIGN_RADII[d.radius]) DESIGN_RADII[d.radius].forEach((r, i) => st.setProperty('--r' + (i + 1), r + 'px'));
+  if (DESIGN_SPACE[d.spacing] && d.spacing !== 'normal') st.setProperty('--pad', DESIGN_SPACE[d.spacing]);
+  if (d.buttons === 'accent' || d.buttons === 'outline') document.body.classList.add('d-btn-' + d.buttons);
+  if (['pill', 'soft', 'square'].includes(d.buttonShape)) document.body.classList.add('d-bs-' + d.buttonShape);
+  if (['serif', 'humanist', 'mono'].includes(d.font)) document.body.classList.add('d-font-' + d.font);
+}
 let PREVIEW_TPL = null;
 const TEMPLATE_OF = { shop: 'collection', p: 'product', bag: 'cart' };
 function templateSections(kind) {
@@ -929,6 +951,7 @@ if (PREVIEW) {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'auz-draft' || !Array.isArray(e.data.sections)) return;
     PREVIEW_SECTIONS = e.data.sections.slice(0, 60);
     if (e.data.templates && typeof e.data.templates === 'object') PREVIEW_TPL = e.data.templates;
+    if (e.data.design && typeof e.data.design === 'object') { PREVIEW_DESIGN = e.data.design; applyDesign(PREVIEW_DESIGN); }
     const chrome = JSON.stringify({ h: e.data.header, f: e.data.footer, p: e.data.pages, t: e.data.templates });
     const chromeChanged = chrome !== (PREVIEW_CHROME && PREVIEW_CHROME.__j);
     if (e.data.header !== undefined || e.data.footer !== undefined || e.data.pages !== undefined) PREVIEW_CHROME = { header: e.data.header || null, footer: e.data.footer || null, pages: Array.isArray(e.data.pages) ? e.data.pages : [], __j: chrome };
@@ -1767,6 +1790,7 @@ function ingest(d) {
   D = d; try { if (d.config && d.config.languages && d.config.languages.hindi && window.stHindi) window.stHindi.enable(); } catch {} STY = (D.styles || []).filter((x) => x.variants && x.variants.length); BYID = {}; VAR = {};
   STY.forEach((x) => { BYID[x.id] = x; x.variants.forEach((y) => { VAR[y.id] = { ...y, sid: x.id }; }); });
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
+  applyDesign(PREVIEW && PREVIEW_DESIGN ? PREVIEW_DESIGN : (d.config || {}).themeDesign);
 }
 const PREVIEW_STUDS = new URLSearchParams(location.search).get('preview') === 'studs' && window.parent !== window;
 // ?preview=classic|minimal|studs on the store's own address shows that design with the store's real products; the live design is not changed

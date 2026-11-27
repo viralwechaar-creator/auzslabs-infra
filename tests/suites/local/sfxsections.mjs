@@ -160,6 +160,40 @@ export default async function run({ browser, stack }) {
     assert(row.sections.length === 1 && row.sections[0].props.heading === 'Their second change', 'their version was overwritten: ' + JSON.stringify(row.sections));
     assert(/Their second change/.test(await page.locator('#te-list').innerText().catch(() => '') + await page.locator('body').innerText()), 'editor did not load their version');
   }, 'major');
+  await s.check('Design settings: the server checks them, and the public store applies them', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const r = await page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const reg = await c.rpc('sfx_design_registry');
+      const bad = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { design: { accent: 'red' } } });
+      const ok = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { sections: [], design: { bg: '#112233', accent: '#aa0000', radius: 'sharp', buttons: 'accent', buttonShape: 'nope', font: 'serif', evil: 'x' } } });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id });
+      return { ids: reg.data.map((d) => d.id), bad: bad.error && bad.error.message, ok: ok.error && ok.error.message, pub: pub.error && pub.error.message }; }, inst);
+    assert(['bg', 'card', 'ink', 'accent', 'radius', 'buttons', 'buttonShape', 'font', 'spacing'].every((x) => r.ids.includes(x)), r.ids.join());
+    assert(/colour like/.test(r.bad || ''), 'bad: ' + r.bad); assert(!r.ok && !r.pub, JSON.stringify(r));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.design.bg === '#112233' && row.design.radius === 'sharp' && !('evil' in row.design) && !('buttonShape' in row.design), JSON.stringify(row.design));
+    const pg = await ctx.newPage();
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const css = await pg.evaluate(() => ({ bg: document.documentElement.style.getPropertyValue('--bg'), r1: document.documentElement.style.getPropertyValue('--r1'), cls: document.body.className, on: document.documentElement.style.getPropertyValue('--on-accent') }));
+    assert(css.bg === '#112233' && css.r1 === '0px' && /d-btn-accent/.test(css.cls) && /d-font-serif/.test(css.cls) && css.on === '#ffffff', JSON.stringify(css));
+  }, 'critical');
+  await s.check('The editor has a Design page with colour and choice controls, saves only what was changed, and can reset', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = draft_content - 'design' where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    assert((await page.locator('#te-page option').allInnerTexts()).includes('Design settings'), 'no Design entry');
+    await page.selectOption('#te-page', 'design'); await page.waitForTimeout(600);
+    assert(await page.locator('form[data-form="te-design"] input[type=color]').count() === 4, 'colour controls');
+    await page.locator('form[data-form="te-design"] input[name=accent]').fill('#123456'); await page.waitForTimeout(400);
+    await page.selectOption('form[data-form="te-design"] select[name=radius]', 'round'); await page.waitForTimeout(400);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    let row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.design.accent === '#123456' && row.design.radius === 'round' && !('bg' in row.design), JSON.stringify(row.design));
+    await page.click('[data-action="te-dreset"]'); await page.waitForTimeout(400);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(!row.design || Object.keys(row.design).length === 0, 'reset did not clear: ' + JSON.stringify(row.design));
+  }, 'major');
   await ctx.close();
   return s.done();
 }
