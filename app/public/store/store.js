@@ -787,8 +787,55 @@ function customSection(s) {
   if (s.type === 'button' && p.text && p.href) return E('section', { class: 'custom-section custom-button' }, E('a', { class: 'btn', href: p.href }, p.text));
   if (s.type === 'announcement' && p.text) return E('div', { class: 'custom-section custom-announcement' }, p.text);
   if (s.type === 'booking') return bookingSection(p);
+  if (CUSTOM_RENDERERS[s.type]) return CUSTOM_RENDERERS[s.type](s, p);
   return null;
 }
+// Sections added with the section registry (db/452): each draws its own settings and, where it has them, its blocks (items).
+const safeHref = (h) => (/^(https:\/\/|\/|#)/i.test(String(h || '')) ? String(h) : '');
+const blocksOf = (s) => (Array.isArray(s.blocks) ? s.blocks.filter((b) => b && b.props) : []);
+const CUSTOM_RENDERERS = {
+  featured_collection(s, p) {
+    const col = D.collections.find((c) => c.id === p.collection || c.handle === p.collection);
+    const count = Math.min(12, Math.max(1, parseInt(p.count, 10) || 4));
+    const list = (col ? col.styleIds.map((id) => BYID[id]).filter(Boolean) : newest(count)).slice(0, count);
+    if (!list.length) return null;
+    const cols = [2, 3, 4].includes(parseInt(p.columns, 10)) ? parseInt(p.columns, 10) : 4;
+    const root = E('section', { class: 'custom-section custom-fcol cols-' + cols },
+      p.heading || (col && col.name) ? E('h2', null, p.heading || col.name) : null, gridOf(list, false),
+      p.button ? E('a', { class: 'btn', href: col ? link('shop?col=' + encodeURIComponent(col.id)) : link('shop') }, p.button) : null);
+    return root;
+  },
+  image_text(s, p) {
+    if (!p.image && !p.heading && !p.body) return null;
+    const href = safeHref(p.href);
+    return E('section', { class: 'custom-section custom-imgtext ' + (p.layout === 'right' ? 'pic-right' : 'pic-left') },
+      p.image ? E('div', { class: 'it-pic' }, E('img', { src: p.image, alt: p.heading || '', loading: 'lazy' })) : null,
+      E('div', { class: 'it-text' }, p.heading ? E('h2', null, p.heading) : null, p.body ? E('p', null, p.body) : null,
+        p.button && href ? E('a', { class: 'btn', href }, p.button) : null));
+  },
+  faq(s, p) {
+    const items = blocksOf(s).filter((b) => b.props.question);
+    if (!items.length) return null;
+    return E('section', { class: 'custom-section custom-faq' }, p.heading ? E('h2', null, p.heading) : null,
+      items.map((b) => E('details', null, E('summary', null, b.props.question), b.props.answer ? E('p', null, b.props.answer) : null)));
+  },
+  columns(s, p) {
+    const items = blocksOf(s).filter((b) => b.props.title || b.props.text);
+    if (!items.length) return null;
+    return E('section', { class: 'custom-section custom-cols' }, p.heading ? E('h2', null, p.heading) : null,
+      E('div', { class: 'cc-grid n' + items.length }, items.map((b) => { const href = safeHref(b.props.href);
+        return E('div', { class: 'cc-col' }, b.props.title ? E('h3', null, b.props.title) : null, b.props.text ? E('p', null, b.props.text) : null,
+          b.props.link_text && href ? E('a', { href }, b.props.link_text + ' →') : null); })));
+  },
+  gallery(s, p) {
+    const items = blocksOf(s).filter((b) => b.props.image);
+    if (!items.length) return null;
+    return E('section', { class: 'custom-section custom-gallery' }, p.heading ? E('h2', null, p.heading) : null,
+      E('div', { class: 'cg-grid' }, items.map((b) => { const href = safeHref(b.props.href);
+        const img = E('img', { src: b.props.image, alt: b.props.caption || '', loading: 'lazy' });
+        return E('figure', null, href ? E('a', { href }, img) : img, b.props.caption ? E('figcaption', null, b.props.caption) : null); })));
+  },
+};
 // A real appointment-booking widget -- the SAME booking mechanism the Salon Console design
 // (app/public/salon/) already uses (public_salon_page/public_salon_slots/public_create_booking, db/132),
 // not a second booking system invented for the marketplace. Any tenant with services configured as

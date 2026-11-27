@@ -124,7 +124,10 @@ export async function refreshDomains() { state.domains = await api('sfx_domain_l
 // installs (its own draft/published copy of each theme it has installed -- see that migration's own
 // comment on why an install is a copy, never a live reference back to the developer's listing).
 export async function refreshMarketplace() { state.marketplace = await api('sfx_theme_marketplace_list'); }
-export async function refreshInstalls() { state.installs = await api('sfx_theme_install_list'); }
+export async function refreshInstalls() {
+  state.installs = await api('sfx_theme_install_list');
+  if (!state.sectionTypes || !state.sectionTypes.length) { try { state.sectionTypes = await api('sfx_section_registry'); } catch (e) { state.sectionTypes = []; } }
+}
 
 async function blocked(title, message) {
   document.title = title;

@@ -474,6 +474,17 @@ const websiteTabs = [['website', 'Store overview'], ['builder', 'Themes'], ['sto
 // listing's content into this store's OWN install row (sfx_theme_installs) -- editing it later can
 // never touch another store's copy of the same theme, or the developer's original listing.
 const sectionLabel = { hero: 'Hero banner', text: 'Text block', image: 'Image', button: 'Button', announcement: 'Announcement bar', booking: 'Appointment booking' };
+// Section types come from the server's registry (db/452); the six built-in types keep their hand-made forms below.
+const secDef = (t) => (state.sectionTypes || []).find((x) => x.type === t);
+const secLabel = (t) => secDef(t)?.label || sectionLabel[t] || t;
+const regField = (d, v, dis = '') => {
+  const val = v == null || v === '' ? (d.default ?? '') : v;
+  if (d.type === 'textarea') return area(d.label, d.id, val, dis);
+  if (d.type === 'select') return select(d.label, d.id, d.options || [], String(val), dis);
+  if (d.type === 'collection') return select(d.label, d.id, [['', 'Newest products']].concat((state.collections || []).map((c) => [c.id, c.name])), String(val), dis);
+  if (d.type === 'number') return input(d.label, d.id, val, 'number', dis);
+  return input(d.label, d.id, val, d.type === 'url' || d.type === 'image' ? 'url' : 'text', dis);
+};
 // A theme with no uploaded preview still gets a picture: our two stock images, or a small drawn storefront in the theme's own colour.
 function themePreview(t) {
   if (t.previewImageUrl) return t.previewImageUrl;
@@ -536,10 +547,11 @@ const spaceFields = (p) => '<label>Spacing<select name="space">' + [['compact', 
 function sectionFieldsFor(s) {
   const p = s.props || {};
   const fields = sectionFieldsBase(s);
-  return fields ? fields.replace(/(<input type="url" name="(?:href)")/g, '$1 list="te-links"') + linkList() + (s.type === 'announcement' || s.type === 'booking' ? '' : spaceFields(p)) : fields;
+  return fields ? fields.replace(/(<input type="url" name="(?:href)")/g, '$1 list="te-links"') + linkList() + (s.type === 'announcement' || s.type === 'booking' || secDef(s.type)?.layout === false ? '' : spaceFields(p)) : fields;
 }
 function sectionFieldsBase(s) {
   const p = s.props || {};
+  if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.map((d) => regField(d, p[d.id], dis)).join(''); }
   if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + input('Button link', 'href', p.href, 'url');
   if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
   if (s.type === 'image') return input('Image URL', 'url', p.url, 'url') + input('Caption', 'caption', p.caption);
@@ -566,7 +578,9 @@ const parseLinks = (txt, max) => { const out = []; for (const raw of String(txt 
   if (child && out.length) { const p = out[out.length - 1]; p.children = [...(p.children || []), l].slice(0, 8); } else if (!child && out.length < max) out.push(l); } return out; };
 const columnsText = (cols) => (cols || []).map((c) => '## ' + c.title + '\n' + (c.links || []).map((l) => l.label + ' | ' + l.href).join('\n')).join('\n\n');
 const parseColumns = (txt) => { const cols = []; for (const raw of String(txt || '').split('\n')) { const x = raw.trim(); if (!x) continue; if (/^##\s*/.test(x)) { if (cols.length < 3) cols.push({ title: x.replace(/^##\s*/, '').slice(0, 40), links: [] }); continue; } const c = cols[cols.length - 1]; if (!c) continue; const [label, ...r] = x.split('|'); const l = { label: (label || '').trim(), href: r.join('|').trim() }; if (l.label && l.href && c.links.length < 8) c.links.push(l); } return cols.filter((c) => c.title && c.links.length); };
-const pageSlug = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page';
+// addresses the store already uses for its own pages: a custom page on one of them would be dropped when the design is saved
+const RESERVED_SLUGS = new Set(['shop', 'home', 'p', 'bag', 'checkout', 'me', 'orders', 'order', 'stores', 'about', 'faq', 'contact', 'blog', 'media', 'careers', 'policy', 'sitemap', 'collections', 'wishlist', 'page']);
+const pageSlug = (t) => { const x = String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'page'; return RESERVED_SLUGS.has(x) ? x + '-page' : x; };
 const edCurPage = () => (ed.cur.startsWith('p:') ? ed.pages[Number(ed.cur.slice(2))] : null);
 function edBind() { const p = edCurPage(); ed.sections = ed.cur === 'home' ? ed.home : p ? p.sections : ed.home; if (ed.cur !== 'home' && !p && ed.cur !== 'header' && ed.cur !== 'footer') ed.cur = 'home'; }
 function edApply(doc) { ed.home = doc.sections || []; ed.header = doc.header || { announceText: '', announceHref: '', links: [] }; ed.footer = doc.footer || { about: '', note: '', links: [] }; ed.pages = doc.pages || []; edBind(); }
@@ -586,7 +600,7 @@ function edListHtml() {
   if (ed.cur === 'footer') return '<p class="compact-copy">The footer block: a short text and links shown in the footer. Edit it on the right.</p>';
   if (edCurPage() && !ed.sections.length) return '<p class="compact-copy">This page has no sections yet. Add one below.</p>';
   if (!ed.sections.length) return '<p class="compact-copy">No sections yet. Add one below. Sections show on your home page after the store’s own content.</p>';
-  return ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(sectionLabel[x.type] || x.type) + '</span><small>' + esc(String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
+  return ed.sections.map((x, i) => '<button type="button" class="te-item' + (i === ed.sel ? ' on' : '') + '" data-action="te-select:' + i + '"><span>' + esc(secLabel(x.type)) + '</span><small>' + esc(String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 28)) + '</small></button>').join('');
 }
 const chromePicker = (dis) => '<label class="wide">Add a link to a page or product<select data-chrome-pick' + dis + '><option value="">Choose…</option>' + linkOptions().map(([n, u]) => '<option value="' + esc(n + ' | ' + u) + '">' + esc(n) + '</option>').join('') + '</select></label>';
 function edChromeHtml(kind) {
@@ -598,13 +612,30 @@ function edChromeHtml(kind) {
     area('About text', 'about', ed.footer.about, 'rows="3" maxlength="400"' + dis) + input('Small note (shown at the bottom)', 'note', ed.footer.note, 'text', 'maxlength="200"' + dis) +
     area('Footer links (one per line: Label | /path or https://link, up to 12)', 'links', linesOf(ed.footer.links), 'rows="6"' + dis) + chromePicker(dis) + area('Footer columns (up to 3). Start each with ## Title, then one link per line.', 'columns', columnsText(ed.footer.columns), 'rows="7"' + dis + ' placeholder="## Help\nShipping | /store.html#/policy/shipping"') + '</div></form></div>';
 }
+const STARTERS = {
+  featured_collection: { props: { heading: 'Featured products', count: '4', columns: '4' } },
+  image_text: { props: { heading: 'Tell your story', body: 'Write a few lines about your brand.', layout: 'left' } },
+  faq: { props: { heading: 'Questions' }, blocks: [{ type: 'question', props: { question: 'How long does delivery take?', answer: 'Write your answer here.' } }, { type: 'question', props: { question: 'Can I return an item?', answer: 'Write your answer here.' } }] },
+  columns: { props: { heading: 'Why shop with us' }, blocks: [1, 2, 3].map((n) => ({ type: 'column', props: { title: 'Point ' + n, text: 'A short line about it.' } })) },
+  gallery: { props: { heading: 'Gallery' }, blocks: [] },
+};
+// the items (blocks) of the selected section: each has its own small form, in order
+function blocksHtml(x) {
+  const def = secDef(x.type); if (!def || !def.blockTypes || !def.blockTypes.length) return '';
+  const w = canWrite(), dis = w ? '' : 'disabled', bt = def.blockTypes[0], list = x.blocks || [];
+  const rows = list.map((b, i) => { const t = def.blockTypes.find((z) => z.type === b.type) || bt;
+    return '<form data-form="te-block" data-bi="' + i + '" class="te-block"><div class="te-block-head"><strong>' + esc(t.label) + ' ' + (i + 1) + '</strong>' +
+      (w ? '<span>' + (i > 0 ? button('Up', 'te-bup:' + i, 'compact') : '') + (i < list.length - 1 ? button('Down', 'te-bdown:' + i, 'compact') : '') + button('Remove', 'te-bremove:' + i, 'compact danger') + '</span>' : '') +
+      '</div><div class="field-grid te-fields">' + t.settings.map((d) => regField(d, (b.props || {})[d.id], dis).replace(/(<input type="url" name="href")/, '$1 list="te-links"')).join('') + '</div></form>'; }).join('');
+  return '<div class="te-blocks"><h3>Items</h3>' + (rows || '<p class="compact-copy">No items yet.</p>') + (w && list.length < def.maxBlocks ? button('Add ' + bt.label.toLowerCase(), 'te-badd', 'primary') : '') + '</div>';
+}
 function edRightHtml() {
   if (ed.cur === 'header' || ed.cur === 'footer') return edChromeHtml(ed.cur);
   const x = ed.sections[ed.sel];
   if (!x) return '<div class="panel-title"><h2>Section settings</h2></div><div class="panel-body"><p class="compact-copy">Pick a section on the left, or click it in the preview, to edit it.</p></div>';
   const w = canWrite();
-  return '<div class="panel-title"><h2>' + esc(sectionLabel[x.type] || x.type) + '</h2></div><div class="panel-body"><form data-form="te-section"><div class="field-grid te-fields">' + sectionFieldsFor(x) + '</div>' +
-    (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Remove section', 'te-remove') + '</div>' : '') + '</form></div>';
+  return '<div class="panel-title"><h2>' + esc(secLabel(x.type)) + '</h2></div><div class="panel-body"><form data-form="te-section"><div class="field-grid te-fields">' + sectionFieldsFor(x) + '</div>' +
+    (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Remove section', 'te-remove') + '</div>' : '') + '</form>' + blocksHtml(x) + '</div>';
 }
 function edPageTools() {
   const p = edCurPage();
@@ -677,7 +708,7 @@ function editorPage(installId) {
   if (i.draftContent?.kind === 'studs') return studsEditor(i);
   if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, home: sections, sections, header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
   const w = canWrite();
-  const types = Object.entries(sectionLabel).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
+  const types = (state.sectionTypes?.length ? state.sectionTypes.map((x) => [x.type, x.label]) : Object.entries(sectionLabel)).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
   const unpublished = !state.store.published ? '<div class="notice te-note">Your store is switched off, so the preview may show “not open yet”. Turn it on under Online store to see it here.</div>' : '';
   return head(esc(i.themeName), 'Design your home page sections and see them live. Nothing goes public until you review and publish.', '<span id="te-actions" class="te-actions">' + edBarHtml() + '</span>', ['builder', 'Theme']) + unpublished +
     '<div class="te"><aside class="panel te-left"><div class="panel-title"><h2>Sections</h2></div><div class="panel-body"><div id="te-list" class="te-list">' + edListHtml() + '</div>' +
@@ -701,8 +732,16 @@ function edHandle(a, key) {
     ed.cur = 'p:' + (ed.pages.length - 1); edBind(); ed.sel = 0; ed.snapped = true; edRefresh('lrbp'); return true;
   }
   if (a === 'te-rmpage') { const p = edCurPage(); if (!p || !confirm('Remove the page "' + p.title + '"?')) return true; edSnapshot(); ed.pages.splice(Number(ed.cur.slice(2)), 1); ed.cur = 'home'; edBind(); ed.sel = ed.sections.length ? 0 : -1; ed.snapped = true; edRefresh('lrbp'); return true; }
-  if (a === 'te-add') { const type = $('#te-add-type')?.value || 'text'; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(SECTION_DEFAULTS[type] || {}) } }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-add') { const type = $('#te-add-type')?.value || 'text'; const st = STARTERS[type]; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(st ? st.props : SECTION_DEFAULTS[type] || {}) }, ...(st && st.blocks ? { blocks: st.blocks.map((b) => ({ id: uid(), type: b.type, props: { ...b.props } })) } : {}) }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
   if (a === 'te-remove') { if (ed.sel < 0) return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
+  if (a === 'te-badd' || a === 'te-bremove' || a === 'te-bup' || a === 'te-bdown') {
+    const x = ed.sections[ed.sel], def = secDef(x?.type); if (!def?.blockTypes?.length) return true;
+    const list = x.blocks || [], i = Number(key); edSnapshot(); ed.snapped = true;
+    if (a === 'te-badd') { if (list.length >= def.maxBlocks) return true; x.blocks = [...list, { id: uid(), type: def.blockTypes[0].type, props: {} }]; }
+    else if (a === 'te-bremove') { x.blocks = list.filter((_, n) => n !== i); }
+    else { const to = i + (a === 'te-bup' ? -1 : 1); if (!list[to]) return true; const c = [...list]; [c[i], c[to]] = [c[to], c[i]]; x.blocks = c; }
+    edRefresh('rb', true); return true;
+  }
   if (a === 'te-up' || a === 'te-down') { const to = ed.sel + (a === 'te-up' ? -1 : 1); if (!ed.sections[to]) return true; edSnapshot(); const [x] = ed.sections.splice(ed.sel, 1); ed.sections.splice(to, 0, x); ed.sel = to; ed.snapped = true; edRefresh('lrb', true); return true; }
   if (a === 'te-undo' || a === 'te-redo') { const from = a === 'te-undo' ? ed.undo : ed.redo, to = a === 'te-undo' ? ed.redo : ed.undo; if (!from.length) return true; to.push(edJson()); edApply(JSON.parse(from.pop())); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrbp'); return true; }
   return false;
@@ -717,6 +756,14 @@ function edChromeInput(target) {
   else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
   else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12), columns: parseColumns(d.columns) };
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
+  edPost(); return true;
+}
+function edBlockInput(target) {
+  const form = target.closest('form[data-form="te-block"]'); if (!form || !ed || ed.sel < 0 || !canWrite()) return false;
+  const x = ed.sections[ed.sel], i = Number(form.dataset.bi); if (!x?.blocks?.[i]) return true;
+  if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
+  x.blocks[i] = { ...x.blocks[i], props: Object.fromEntries(new FormData(form)) };
+  const b = $('#te-actions'); if (b) { const html = edBarHtml(); if (b.dataset.html !== html) { b.dataset.html = html; b.innerHTML = html; } }
   edPost(); return true;
 }
 function edInput(target) {
@@ -1491,6 +1538,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'builder' && sd && (type === 'input' || type === 'change') && target.closest && target.closest('#studs-form')) { studsRead(); return; }
   if (id === 'builder' && ed && type === 'change' && target.id === 'te-page') { edPicked(target.value); return; }
   if (id === 'builder' && ed && type === 'input' && target.closest && target.closest('form[data-form="te-chrome"], form[data-form="te-page"]')) { edChromeInput(target); return; }
+  if (id === 'builder' && ed && type === 'input' && target.closest && target.closest('form[data-form="te-block"]')) { edBlockInput(target); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }
