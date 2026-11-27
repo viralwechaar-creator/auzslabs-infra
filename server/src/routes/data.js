@@ -121,7 +121,7 @@ export async function handle(ctx) {
     // session still valid after telling the owner "your old password stops working" -- that sentence was only true of
     // the password, never the still-open session, until this line.
     if (fnName === 'admin_reset_client_password' && result && /^[0-9a-f-]{36}$/i.test(String(result.user_id || ''))) await revokeAllSessionsForUser(result.user_id).catch(() => {});
-    if (user && (fnName.startsWith('sty_') || fnName.startsWith('admin_') || fnName === 'push_record' || fnName.startsWith('save_'))) invalidatePublic();
+    if (user && (fnName.startsWith('sty_') || fnName.startsWith('sfx_') || fnName.startsWith('admin_') || fnName === 'push_record' || fnName.startsWith('save_'))) invalidatePublic();
     return reply(200, { data: result });
   }
   return false;
