@@ -3431,3 +3431,11 @@ Plan: `docs/` notes are in the chat history only; the target is a Shopify-style 
 - Editor (`storefront/workspace.js`): page picker entry "Design settings" with colour pickers, choice lists, a per-colour Reset, "Reset all", and a warning when text and background contrast is under 4.5. Live in the preview by postMessage (`design`).
 - Not built: text size, heading font, per-page colour overrides, colour schemes (a set of colours chosen per section), saved presets, designs inherited from a theme's own defaults in the registry.
 - Test: `sfxsections` (11 checks). Deploy: `bash tools/migrate.sh apply` (db/455), `docker compose up -d --build api`, `git pull`. Not seen on a real phone or desktop.
+
+## Storefront theme editor, step 5: shared header and footer groups (db/456)
+- `content.groups = { header: { sections }, footer: { sections } }`: ordered section lists shown on EVERY page (except checkout), the header group at the top of the page content and the footer group at the bottom. Up to 8 sections per group, each checked by the registry (`sfx_theme_groups_clean`; a `main` entry is refused). The store's own menu bar and footer keep their separate `header` / `footer` settings (announcement text, links, columns), so nothing existing changes.
+- New section type `links` (a row of links, items `label` + `href`), seeded in db/456; useful in both groups.
+- `public_sfx_store` returns `config.themeGroups` from the PUBLISHED content. Store: `applyGroups(id, view)` runs after `applyTemplate`; preview receives `groups` by postMessage; group sections carry `data-sec="header:0"` / `footer:0` so selection does not clash with home sections (`auz-select` / `auz-highlight` carry a `group`).
+- Editor: page picker entries "Top of every page" and "Bottom of every page" use the same section list UI (add, edit, items, move, remove); `groupsToSave()` saves only non-empty groups.
+- Not built: a newsletter signup section (needs a subscribe endpoint), group sections that differ per market or page, making the store's own menu bar and footer into sections.
+- Test: `sfxsections` (13 checks). Deploy: `bash tools/migrate.sh apply` (db/456), `docker compose up -d --build api`, `git pull`. Not seen on a real phone or desktop.
