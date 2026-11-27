@@ -397,6 +397,22 @@ export default async function run({ browser, stack }) {
     assert(await pg.locator('.cb-heading.anim-in').count() === 1, 'did not animate in');
     assert(!e10.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e10.slice(0, 3).join(' | '));
   }, 'major');
+  await s.check('Clicking a selected heading in the preview lets you type on the page, and the change reaches the draft', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.selectOption('#te-add-type', 'content'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(2500);
+    const fr = page.frameLocator('#te-frame'); const h = fr.locator('.cb-heading').first();
+    await h.click(); await page.waitForTimeout(700); await fr.locator('.cb-heading').first().click(); await page.waitForTimeout(300);
+    const st = await page.evaluate(() => { const d = document.querySelector('#te-frame').contentDocument; const e = d.querySelector('.cb-heading'); return { ce: e && e.contentEditable, active: d.activeElement && d.activeElement.className, n: d.querySelectorAll('.cb-heading').length }; });
+    st.last = await page.evaluate(() => { const w = document.querySelector('#te-frame').contentWindow; try { return w.eval('PREVIEW_LAST') + '|' + w.eval('PREVIEW') + '|' + w.eval('typeof customEl'); } catch (e) { return 'err ' + e.message; } }); st.blk = await page.evaluate(() => { const d = document.querySelector('#te-frame').contentDocument; return [...d.querySelectorAll('[data-blk]')].map((x) => x.tagName + x.dataset.blk).join(','); });
+    assert(st.ce === 'plaintext-only', 'click state ' + JSON.stringify(st));
+    await page.keyboard.press('Control+A'); await page.keyboard.type('Typed on the page'); await page.waitForTimeout(200);
+    await fr.locator('body').click({ position: { x: 5, y: 5 } }).catch(() => {}); await page.evaluate(() => { const f = document.querySelector('#te-frame'); f.contentDocument.activeElement && f.contentDocument.activeElement.blur(); }); await page.waitForTimeout(800);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.sections[0].blocks[0].props.text === 'Typed on the page', JSON.stringify(row.sections[0].blocks[0].props));
+  }, 'major');
   await ctx.close();
   return s.done();
 }
