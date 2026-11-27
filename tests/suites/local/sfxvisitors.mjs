@@ -14,6 +14,18 @@ export default async function run({ browser, stack }) {
   const owner = await login(USERS.cafeOwner);
   const summary = async () => (await rpc(stack, 'sfx_visitor_summary', { p_days: 14 }, owner)).data.data;
 
+  await s.check('Razorpay keys entered once in the storefront also switch on card payments in the AUZsStyle store', async () => {
+    await q("insert into sty_store (tenant_id, config) values ($1, '{\"on\":true}'::jsonb) on conflict (tenant_id) do update set config = '{\"on\":true}'::jsonb", [tid]);
+    const r = await rpc(stack, 'sfx_store_set_razorpay', { p: { keyId: 'rzp_test_abcdefgh12345', secret: 'secret_value_123456' } }, owner);
+    assert(!r.data.error, JSON.stringify(r.data).slice(0, 200));
+    const c = (await q('select config from sty_store where tenant_id=$1', [tid]))[0].config;
+    assert(c.payOnline === true && c.rzpKey === 'rzp_test_abcdefgh12345' && c.on === true, JSON.stringify(c));
+    assert((await q('select 1 from sty_store_secrets where tenant_id=$1', [tid])).length === 1, 'secret copied');
+    await rpc(stack, 'sfx_store_set_razorpay', { p: { clear: true } }, owner);
+    const d = (await q('select config from sty_store where tenant_id=$1', [tid]))[0].config;
+    assert(d.payOnline === false && !d.rzpKey, JSON.stringify(d));
+    assert((await q('select 1 from sty_store_secrets where tenant_id=$1', [tid])).length === 0, 'secret removed');
+  }, 'critical');
   await s.check('Zero activity: the summary is empty but available', async () => {
     const v = await summary(); assert(v.tracking === true && v.visitors === 0 && v.series.length === 14, JSON.stringify(v).slice(0, 200));
   }, 'critical');
