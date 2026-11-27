@@ -896,3 +896,16 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
   .shell .gl-wrap.sopen .gl-search{display:block;width:calc(100% - 60px)}
   .shell .lv-map{padding-bottom:0}
 }
+
+/* 43. Orders on the phone: search is an icon (opens the field), smaller type, like Shopify's phone Orders */
+.of-sbtn{display:none}
+@media (max-width:899px){
+  .shell .work:has(#orders-results) .filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:transparent;border:0;box-shadow:none;padding:0;margin:0 0 8px}
+  .shell .work:has(#orders-results) .filters>.of-sbtn{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:0;min-height:40px;order:1}
+  .shell .work:has(#orders-results) .filters>select{order:2;flex:0 0 40px;width:40px;min-width:40px;height:40px;min-height:40px;border:1px solid var(--line);border-radius:50%;background-color:var(--paper)}
+  .shell .work:has(#orders-results) .filters>input{display:none;order:3;flex:1 1 100%;border:1px solid var(--line);border-radius:999px;background:var(--paper);min-height:40px;font-size:16px}
+  .shell .work:has(#orders-results) .filters.sopen>input{display:block}
+  .shell .order-card .oc-top,.shell .order-card .oc-top *{font-size:15px}
+  .shell .order-card{padding:11px 0}
+  .shell .oc-day{font-size:12px;margin:14px 0 4px}
+}
