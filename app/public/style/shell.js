@@ -324,7 +324,7 @@ async function route_() {
   }
   main.focus({ preventScroll: true }); window.scrollTo(0, 0);
 }
-const NOTE_TYPES = /^(store_|style_)/;
+const NOTE_TYPES = /^(store_|style_)/, WEB_NOTES = /^store_/; // online-order notices belong to the storefront when it is on
 let NOTES = [];
 function bellCount() { return NOTES.filter((n) => !n.read).length; }
 function bellBtn() {
@@ -333,7 +333,7 @@ function bellBtn() {
 }
 async function refreshNotes() {
   if (!S.user) return; // nothing to ask before sign-in (or while the licence screen shows)
-  try { const { data } = await sb.from('notifications').select('id,type,title,body,read,created_at').gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString()).order('created_at').limit(500); NOTES = (data || []).filter((x) => NOTE_TYPES.test(x.type)).reverse(); } catch { return; }
+  try { const { data } = await sb.from('notifications').select('id,type,title,body,read,created_at').gte('created_at', new Date(Date.now() - 30 * 864e5).toISOString()).order('created_at').limit(500); NOTES = (data || []).filter((x) => !(storefrontOn() && WEB_NOTES.test(x.type)) && NOTE_TYPES.test(x.type)).reverse(); } catch { return; }
   document.querySelectorAll('.btn.bell').forEach((b) => b.replaceWith(bellBtn()));
 }
 function noteTarget(n) { return n.type === 'style_request' ? 'requests' : n.type === 'style_soldout' ? 'stock' : n.type === 'style_return_request' ? 'bills' : 'store'; }

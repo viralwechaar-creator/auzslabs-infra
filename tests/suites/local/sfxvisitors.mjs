@@ -26,6 +26,15 @@ export default async function run({ browser, stack }) {
     assert(d.payOnline === false && !d.rzpKey, JSON.stringify(d));
     assert((await q('select 1 from sty_store_secrets where tenant_id=$1', [tid])).length === 0, 'secret removed');
   }, 'critical');
+  await s.check('A business with the storefront takes online orders only there: the old AUZsStyle store steps aside', async () => {
+    await q("update tenant_settings set features = features || '{\"style\":true}' where tenant_id = $1", [tid]);
+    await q("insert into sty_store (tenant_id, config) values ($1, '{\"on\":true}'::jsonb) on conflict (tenant_id) do update set config = '{\"on\":true}'::jsonb", [tid]);
+    const st = await rpc(stack, 'public_sty_store', { p_slug: 'testcafe' });
+    assert(st.data === null || st.data.data === null || st.data.data === undefined, 'old store should answer nothing: ' + JSON.stringify(st.data).slice(0, 160));
+    const po = await rpc(stack, 'public_sty_place_order', { p_slug: 'testcafe', p: { items: [] } });
+    assert(/storefront/i.test(JSON.stringify(po.data)), 'old order path should refuse: ' + JSON.stringify(po.data).slice(0, 160));
+    await q("update tenant_settings set features = (features || '{\"storefront\":true}') - 'style' where tenant_id = $1", [tid]);
+  }, 'critical');
   await s.check('Zero activity: the summary is empty but available', async () => {
     const v = await summary(); assert(v.tracking === true && v.visitors === 0 && v.series.length === 14, JSON.stringify(v).slice(0, 200));
   }, 'critical');
