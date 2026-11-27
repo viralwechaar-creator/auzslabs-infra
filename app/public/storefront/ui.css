@@ -994,3 +994,6 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
   .shell .work .panel .filters>select{flex:0 0 36px;width:36px;min-width:36px;appearance:none;-webkit-appearance:none;font-size:0;color:transparent;padding:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23444' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 16V4M3 7l3-3 3 3M14 4v12M11 13l3 3 3-3'/%3E%3C/svg%3E") center/20px no-repeat!important}
   .shell .metric>span:first-child{margin:0!important;padding:0!important}
 }
+
+/* 49. Phone: the page tab row is gone; each sub-page opens on its own from the Menu */
+@media (max-width:899px){.shell .work>.tabs,.shell .work .tabs[aria-label="Page tabs"]{display:none!important}}
