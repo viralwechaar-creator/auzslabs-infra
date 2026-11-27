@@ -111,5 +111,16 @@ export default async function run({ browser, stack }) {
     assert(cards.length >= 2 && cards.every((src) => src.length > 10), 'a theme card has no picture: ' + JSON.stringify(cards.map((c) => c.slice(0, 40))));
     assert(!errs2.length, JSON.stringify(errs2).slice(0, 200));
   });
+  await s.check('Demo business installs priced themes for free; a real shop still has to buy them', async () => {
+    const r = await page.evaluate(async ([e, p]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p });
+      const price = async () => (await c.rpc('sfx_theme_marketplace_list')).data.find((t) => t.slug === 'minimal'); const th = await price();
+      return { id: th.id, price: th.priceCents }; }, [USERS.cafeOwner, PASSWORD]);
+    await q("update sfx_themes set price_cents=900 where slug='minimal'"); await q("delete from sfx_theme_installs where theme_id=$1 and tenant_id=(select id from tenants where slug='testcafe')", [r.id]);
+    const run1 = () => page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key); const l = (await c.rpc('sfx_theme_marketplace_list')).data.find((t) => t.slug === 'minimal'); const i = await c.rpc('sfx_theme_install', { p_theme_id: id }); return { price: l.priceCents, err: i.error && i.error.message, ok: !!(i.data && i.data.installId) }; }, r.id);
+    const real = await run1(); assert(real.price === 900 && /premium/i.test(real.err || '') && !real.ok, 'a real shop got a priced theme for free: ' + JSON.stringify(real));
+    await q("update tenants set is_demo=true where slug='testcafe'");
+    const demo = await run1(); await q("update tenants set is_demo=false where slug='testcafe'"); await q("update sfx_themes set price_cents=0 where slug='minimal'");
+    assert(demo.price === 0 && demo.ok, 'demo should see it free and install it: ' + JSON.stringify(demo));
+  });
   s.done();
 }
