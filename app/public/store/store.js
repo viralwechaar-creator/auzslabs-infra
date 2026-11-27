@@ -1719,7 +1719,7 @@ function loadStuds() {
   if (window.StudsTheme) return window.StudsTheme.ready();
   return new Promise((resolve) => {
     const lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = '/store/studs-forms.css?v=1'; document.head.append(lk);
-    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=9';
+    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=10';
     sc.onload = () => resolve(window.StudsTheme ? window.StudsTheme.ready() : null); sc.onerror = () => resolve(null);
     document.head.append(sc);
   });
