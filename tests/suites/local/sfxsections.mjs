@@ -288,6 +288,58 @@ export default async function run({ browser, stack }) {
     const row2 = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
     assert(!('color' in row2.sections[0].blocks[0].props), 'reset did not clear the colour');
   }, 'major');
+  await s.check('Link references: the server accepts valid ones and refuses bad ones, and the public store turns them into the right addresses', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("delete from sfx_collections where tenant_id=$1 and name='Ref Drop'", [tid]);
+    await q("insert into sfx_collections (tenant_id, name, handle) values ($1, 'Ref Drop', 'ref-drop')", [tid]);
+    const cid = (await q("select id from sfx_collections where tenant_id=$1 and name='Ref Drop'", [tid]))[0].id;
+    await q("insert into sfx_collection_products (collection_id, product_id, position) values ($1, $2, 0) on conflict do nothing", [cid, pid]);
+    const btn = (label, href) => ({ type: 'button', props: { label, href } });
+    const r = await page.evaluate(async ([id, cid, pid]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const mk = (blocks) => ({ sections: [{ id: 'r1', type: 'content', props: {}, blocks }, { id: 'r2', type: 'button', props: { text: 'Legacy shop', href: 'ref:shop' } }] });
+      const save = async (b) => { const x = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: mk(b) }); return x.error ? x.error.message : 'ok'; };
+      const bad1 = await save([{ type: 'button', props: { label: 'x', href: 'ref:page:Bad Slug' } }]);
+      const bad2 = await save([{ type: 'button', props: { label: 'x', href: 'ref:nonsense' } }]);
+      const bad3 = await save([{ type: 'button', props: { label: 'x', href: 'ref:product:123' } }]);
+      const good = await save([
+        { type: 'button', props: { label: 'Coll', href: 'ref:collection:' + cid } }, { type: 'button', props: { label: 'Prod', href: 'ref:product:' + pid } },
+        { type: 'button', props: { label: 'Page', href: 'ref:page:about-us' } }, { type: 'button', props: { label: 'Cat', href: 'ref:category:Tops & Tees' } },
+        { type: 'button', props: { label: 'Gone', href: 'ref:collection:00000000-0000-0000-0000-000000000000' } }, { type: 'button', props: { label: 'Cart', href: 'ref:cart' } }]);
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id });
+      return { bad1, bad2, bad3, good, pub: pub.error && pub.error.message }; }, [inst, cid, pid]);
+    assert(/not valid/.test(r.bad1) && /not valid/.test(r.bad2) && /not valid/.test(r.bad3), JSON.stringify(r)); assert(r.good === 'ok' && !r.pub, JSON.stringify(r));
+    const pg = await ctx.newPage(); const e8 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const hrefs = await pg.evaluate(() => Object.fromEntries([...document.querySelectorAll('.cb-button')].map((a) => [a.textContent, a.getAttribute('href')])));
+    assert(hrefs.Coll === '#/shop?col=' + cid, JSON.stringify(hrefs)); assert(hrefs.Prod === '#/p/' + pid, JSON.stringify(hrefs));
+    assert(hrefs.Page === '#/page/about-us' && hrefs.Cat === '#/shop?cat=Tops%20%26%20Tees' && hrefs.Gone === '#/shop' && hrefs.Cart === '#/bag', JSON.stringify(hrefs));
+    assert(await pg.locator('.custom-button a[href="#/shop"]').count() === 1, 'legacy button reference not resolved');
+    assert(!e8.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e8.slice(0, 3).join(' | '));
+  }, 'critical');
+  await s.check('The editor has a link picker, saves a reference, and a renamed page address keeps its links working', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const cid = (await q("select id from sfx_collections where tenant_id=$1 and name='Ref Drop'", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.selectOption('#te-add-type', 'content'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(800);
+    await page.selectOption('#te-add-page-tpl', 'blank'); await page.click('[data-action="te-addpage"]'); await page.waitForTimeout(600);
+    await page.selectOption('#te-page', 'home'); await page.waitForTimeout(600);
+    await page.locator('.te-item').first().click(); await page.waitForTimeout(300);
+    await page.click('[data-action="te-bsel:2"]'); await page.waitForTimeout(400);
+    const pick = page.locator('form[data-form="te-block"].on select[data-link-pick]');
+    assert(await pick.count() === 1, 'no link picker on the button');
+    const labels = await pick.locator('option').allInnerTexts(); assert(labels.includes('Ref Drop') && labels.includes('Section Tee') && labels.includes('All products') && labels.includes('New page'), labels.join(','));
+    await pick.selectOption('ref:collection:' + cid); await page.waitForTimeout(400);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    let row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.sections[0].blocks[2].props.href === 'ref:collection:' + cid, 'collection reference not saved: ' + JSON.stringify(row.sections[0].blocks[2].props));
+    await page.locator('form[data-form="te-block"].on select[data-link-pick]').selectOption('ref:page:new-page'); await page.waitForTimeout(400);
+    await page.selectOption('#te-page', 'p:0'); await page.waitForTimeout(500);
+    await page.locator('form[data-form="te-page"] input[name=slug]').fill('sale'); await page.waitForTimeout(400);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.pages[0].slug === 'sale' && row.sections[0].blocks[2].props.href === 'ref:page:sale', 'rename did not carry the link: ' + JSON.stringify([row.pages[0].slug, row.sections[0].blocks[2].props]));
+  }, 'major');
   await ctx.close();
   return s.done();
 }

@@ -480,6 +480,7 @@ const secLabel = (t) => (t === 'main' ? 'Main content' : secDef(t)?.label || sec
 const regField = (d, v, dis = '', reset = null) => {
   const val = v == null || v === '' ? (d.default ?? '') : v;
   if (d.type === 'color') { const set = v != null && v !== ''; return '<label class="te-color">' + esc(d.label) + '<span><input type="color" name="' + d.id + '" value="' + esc(set ? v : (d.default || '#000000')) + '" ' + dis + '>' + (set ? '<code>' + esc(v) + '</code>' : '<code class="mut">not set</code>') + (set && reset && !dis ? button('Reset', reset(d.id), 'compact') : '') + '</span></label>'; }
+  if (d.type === 'url') return linkField(d.label, d.id, val, dis);
   if (d.type === 'textarea') return area(d.label, d.id, val, dis);
   if (d.type === 'select') return select(d.label, d.id, d.options || [], String(val), dis);
   if (d.type === 'collection') return select(d.label, d.id, [['', 'Newest products']].concat((state.collections || []).map((c) => [c.id, c.name])), String(val), dis);
@@ -542,6 +543,35 @@ function linkOptions() {
   (state.products || []).filter((x) => x.status === 'Active').slice(0, 60).forEach((x) => o.push([x.name, base + '?view=p&p=' + encodeURIComponent(x.id)]));
   return o;
 }
+// ---- Link picker (db/458): a link points at a store page, collection, product or category, or at a typed address ----
+// The choice is saved as a reference (ref:collection:<id>, ref:page:<slug>...) that the store turns into the right address, so it survives renames.
+function linkGroups() {
+  const store = [['ref:home', 'Home'], ['ref:shop', 'All products'], ['ref:collections', 'Collections'], ['ref:about', 'About'], ['ref:contact', 'Contact'], ['ref:faq', 'FAQ'], ['ref:stores', 'Stores'], ['ref:cart', 'Cart']];
+  const pages = [...(ed?.pages || []).map((pg) => ['ref:page:' + pg.slug, pg.title]), ...cfgList('pages').filter((x) => x.slug && x.name).map((x) => ['ref:page:' + x.slug, x.name])];
+  const cols = (state.collections || []).filter((c) => c.id && c.name).map((c) => ['ref:collection:' + c.id, c.name]);
+  const prods = (state.products || []).filter((x) => x.status === 'Active' && x.id).slice(0, 100).map((x) => ['ref:product:' + x.id, x.name]);
+  const cats = [...new Set((state.products || []).map((x) => x.category).filter((c) => c && /^[A-Za-z0-9 _&.,()'-]{1,60}$/.test(c)))].sort().map((c) => ['ref:category:' + c, c]);
+  return [['Store', store], ['Pages', pages], ['Collections', cols], ['Products', prods], ['Categories', cats]];
+}
+function linkField(label, name, value, dis = '') {
+  const v = String(value || ''), groups = linkGroups(), all = groups.flatMap((g) => g[1]);
+  const sel = v === '' ? '' : v.startsWith('ref:') ? (all.some(([k]) => k === v) ? v : '__missing') : '__custom';
+  const opts = '<option value=""' + (sel === '' ? ' selected' : '') + '>No link</option>' +
+    groups.filter((g) => g[1].length).map(([g, list]) => '<optgroup label="' + esc(g) + '">' + list.map(([k, t]) => '<option value="' + esc(k) + '"' + (k === v ? ' selected' : '') + '>' + esc(t) + '</option>').join('') + '</optgroup>').join('') +
+    (sel === '__missing' ? '<option value="__missing" selected>(missing: ' + esc(v) + ')</option>' : '') + '<option value="__custom"' + (sel === '__custom' ? ' selected' : '') + '>Web address…</option>';
+  return '<label class="wide">' + label + '<span class="te-link"><select data-link-pick aria-label="' + esc(label) + ' target" ' + dis + '>' + opts + '</select><input type="text" name="' + name + '" value="' + esc(v) + '" placeholder="https://… or /page" ' + (sel === '__custom' ? '' : 'hidden ') + dis + '></span></label>';
+}
+function linkPick(sel) {
+  const input = sel.parentElement.querySelector('input[name]'); if (!input) return;
+  if (sel.value === '__custom') { input.hidden = false; input.focus(); return; }
+  input.hidden = true; if (sel.value !== '__missing') input.value = sel.value; input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+// renaming a page address keeps every link that points at it working
+function edRenameRefs(from, to) {
+  const a = 'ref:page:' + from, b = 'ref:page:' + to;
+  const walk = (o) => { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === 'object') for (const k of Object.keys(o)) { if (o[k] === a) o[k] = b; else walk(o[k]); } };
+  walk(ed.home); walk(ed.pages); walk(ed.tpl); walk(ed.groups);
+}
 const linkList = () => '<datalist id="te-links">' + linkOptions().map(([n, u]) => '<option value="' + esc(u) + '">' + esc(n) + '</option>').join('') + '</datalist>';
 const spaceFields = (p) => '<label>Spacing<select name="space">' + [['compact', 'Compact'], ['normal', 'Normal'], ['roomy', 'Roomy']].map(([k, l]) => '<option value="' + k + '"' + ((p.space || 'normal') === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>' +
   '<label>Text alignment<select name="align">' + [['center', 'Centered'], ['left', 'Left']].map(([k, l]) => '<option value="' + k + '"' + ((p.align || 'center') === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></label>';
@@ -553,10 +583,10 @@ function sectionFieldsFor(s) {
 function sectionFieldsBase(s) {
   const p = s.props || {};
   if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.map((d) => regField(d, p[d.id], dis, (id) => 'te-sclear:' + id)).join(''); }
-  if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + input('Button link', 'href', p.href, 'url');
+  if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + linkField('Button link', 'href', p.href);
   if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
   if (s.type === 'image') return input('Image URL', 'url', p.url, 'url') + input('Caption', 'caption', p.caption);
-  if (s.type === 'button') return input('Button text', 'text', p.text) + input('Button link', 'href', p.href, 'url');
+  if (s.type === 'button') return input('Button text', 'text', p.text) + linkField('Button link', 'href', p.href);
   if (s.type === 'announcement') return input('Announcement text', 'text', p.text);
   if (s.type === 'booking') return input('Heading', 'heading', p.heading || 'Book an appointment') + area('Note', 'note', p.note) +
     '<p class="compact-copy">Shows a real booking form on your storefront -- services, dates and times come from your own catalog/settings, the same booking system the Salon console uses. If you haven’t set up services yet, this section tells visitors booking isn’t ready.</p>';
@@ -810,7 +840,7 @@ function edChromeInput(target) {
   const form = target.closest('form[data-form="te-chrome"], form[data-form="te-page"]'); if (!form || !ed || !canWrite()) return false;
   if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
   const d = Object.fromEntries(new FormData(form));
-  if (form.dataset.form === 'te-page') { const p = edCurPage(); if (!p) return true; p.title = String(d.title || '').slice(0, 60); p.slug = pageSlug(d.slug || d.title); const o = $('#te-page-wrap'); if (o) o.innerHTML = edPageSelect(); }
+  if (form.dataset.form === 'te-page') { const p = edCurPage(); if (!p) return true; const oldSlug = p.slug; p.title = String(d.title || '').slice(0, 60); p.slug = pageSlug(d.slug || d.title); if (oldSlug !== p.slug) edRenameRefs(oldSlug, p.slug); const o = $('#te-page-wrap'); if (o) o.innerHTML = edPageSelect(); }
   else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
   else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12), columns: parseColumns(d.columns) };
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
@@ -1603,6 +1633,7 @@ async function withBusy(fn) { try { await fn(); } catch (e) { flash(e.message); 
 async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (type === 'input' && target.id === 'settings-query') { settingsFilter(target.value); return; }
   if (type === 'change' && target.matches && target.matches('input[data-bulk]')) scopeLine();
+  if (type === 'change' && target.matches && target.matches('select[data-link-pick]')) { linkPick(target); return; }
   if (type === 'change' && target.id === 'report-range') { reportRange = target.value; rerender(); return; }
   if (id === 'builder' && sd && (type === 'input' || type === 'change') && target.closest && target.closest('#studs-form')) { studsRead(); return; }
   if (id === 'builder' && ed && type === 'change' && target.id === 'te-page') { edPicked(target.value); return; }
