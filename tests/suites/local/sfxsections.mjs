@@ -382,6 +382,21 @@ export default async function run({ browser, stack }) {
     assert(hrefs.ann === '#/page/sale', 'active=' + act + ' pub=' + JSON.stringify(pubc) + ' ann=' + hrefs.ann + ' ' + JSON.stringify(hrefs.links.slice(0, 12))); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
     assert(!e9.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e9.slice(0, 3).join(' | '));
   }, 'major');
+  await s.check('Animations: the server keeps valid ones, and the public store animates an element when it scrolls into view', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const r = await page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const x = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { sections: [{ id: 'an1', type: 'content', props: { anim: 'fade' }, blocks: [{ type: 'heading', props: { text: 'Animated headline', anim: 'rise' } }, { type: 'text', props: { text: 'Plain', anim: 'sparkle' } }] }] } });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); return { e: x.error && x.error.message, pub: pub.error && pub.error.message }; }, inst);
+    assert(!r.e && !r.pub, JSON.stringify(r));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.sections[0].props.anim === 'fade' && row.sections[0].blocks[0].props.anim === 'rise' && !('anim' in row.sections[0].blocks[1].props), JSON.stringify(row.sections[0]));
+    const pg = await ctx.newPage(); const e10 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    assert(await pg.locator('.cb-heading.anim-rise').count() === 1 && await pg.locator('.custom-content.anim-fade').count() === 1, 'animation classes missing');
+    await pg.locator('.cb-heading').scrollIntoViewIfNeeded(); await pg.waitForTimeout(1200);
+    assert(await pg.locator('.cb-heading.anim-in').count() === 1, 'did not animate in');
+    assert(!e10.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e10.slice(0, 3).join(' | '));
+  }, 'major');
   await ctx.close();
   return s.done();
 }
