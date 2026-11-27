@@ -495,8 +495,12 @@ function themeCard(t) {
   const buy = t.installed ? badge('Installed') :
     t.priceCents > 0 ? (canWrite() ? button('Buy for ' + price, 'theme-buy:' + t.id, 'primary') : '<p class="compact-copy">Premium theme. Ask an owner or manager to buy it.</p>') :
     canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
-  const demo = { studs: 'studs-preview/', minimal: 'store.html?demo=minimal', classic: 'store.html?demo=classic', salon: 'salon/index.html?preview=1', kiln: 'site-kiln.html', 'kiln-salon': 'site-kiln.html' }[String(t.slug || '').toLowerCase()];
-  const previewBtn = demo ? '<a class="btn" href="https://auzslab.in/' + demo + '" target="_blank" rel="noopener" aria-label="Preview ' + esc(t.name) + ' theme">Preview</a>' : '';
+  const tslug = String(t.slug || '').toLowerCase();
+  // classic, minimal and studs preview on the store's OWN address with its real products (the same address it runs on when live)
+  const own = ['classic', 'minimal', 'studs'].includes(tslug) && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html?preview=' + tslug : '';
+  const demo = { studs: 'studs-preview/', minimal: 'store.html?demo=minimal', classic: 'store.html?demo=classic', salon: 'salon/index.html?preview=1', kiln: 'site-kiln.html', 'kiln-salon': 'site-kiln.html' }[tslug];
+  const previewHref = own || (demo ? 'https://auzslab.in/' + demo : '');
+  const previewBtn = previewHref ? '<a class="btn" href="' + previewHref + '" target="_blank" rel="noopener" aria-label="Preview ' + esc(t.name) + ' theme">Preview</a>' : '';
   return '<article class="card theme-card"><div class="tile-img">' + themePreviewHtml(t) + '</div><div class="tc-body"><div class="tc-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
     '<p class="tc-desc">' + esc(t.description || (t.isBuiltin ? 'AUZslab first-party theme.' : 'By ' + (t.developerName || 'a theme developer') + '.')) + '</p>' + ((buy || previewBtn) ? '<div class="tc-foot">' + previewBtn + buy + '</div>' : '') + '</div></article>';
 }

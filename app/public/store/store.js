@@ -1691,6 +1691,8 @@ function ingest(d) {
   bag = LS.get('bag', []).filter((b) => VAR[b.v]); wish = LS.get('wish', []).filter((id) => BYID[id]);
 }
 const PREVIEW_STUDS = new URLSearchParams(location.search).get('preview') === 'studs' && window.parent !== window;
+// ?preview=classic|minimal|studs on the store's own address shows that design with the store's real products; the live design is not changed
+const PREVIEW_T = (() => { const v = new URLSearchParams(location.search).get('preview'); return ['classic', 'minimal', 'studs'].includes(v) && !PREVIEW_STUDS ? v : ''; })();
 function waitStudsPreview() {
   return new Promise((resolve) => {
     let done = false; const finish = (v) => { if (!done) { done = true; resolve(v); } };
@@ -1735,7 +1737,7 @@ async function boot() {
   if (cached && cached.config && cached.config.template === '2') cached = null;
   // Studs draws its own page chrome from the live data, so it never uses the instant first paint from the last visit.
   if (cached && cached.config && cached.config.template === 'studs') cached = null;
-  if (PREVIEW_STUDS || DEMO) cached = null;
+  if (PREVIEW_STUDS || PREVIEW_T || DEMO) cached = null;
   // Restore which product's RPCs the cached copy was fetched with, so an interaction fired before the fresh
   // fetch below resolves (see the cached-first-paint branch) still hits the right public_<prefix>_* functions.
   if (cached) PFX = cached.__pfx === 'sfx' ? 'sfx' : 'sty';
@@ -1770,8 +1772,10 @@ async function boot() {
   // it sends the draft settings. Anyone opening ?preview=studs directly gets the normal store, so a store never shows Studs to the
   // public until the merchant publishes it.
   if (PREVIEW_STUDS && d.config) { const settings = await waitStudsPreview(); if (settings) d.config = { ...d.config, template: 'studs', studs: settings }; }
+  if (PREVIEW_T && d.config) d.config = { ...d.config, template: PREVIEW_T };
   ingest(d);
   if (cfg().template === 'studs') await loadStuds();
   shell(); window.addEventListener('hashchange', route); route();
+  if (PREVIEW_T) { const u = new URL(location.href); u.searchParams.delete('preview'); document.body.append(E('div', { class: 'prevbar' }, E('span', null, 'Preview of the ' + PREVIEW_T[0].toUpperCase() + PREVIEW_T.slice(1) + ' design with your own products. Your live store is unchanged.'), E('a', { href: u.toString() }, 'Exit preview'))); }
 }
 boot();
