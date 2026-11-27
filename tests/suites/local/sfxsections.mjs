@@ -128,6 +128,38 @@ export default async function run({ browser, stack }) {
     assert(last.type === 'faq' && last.blocks.length === 3 && last.blocks[2].props.question === 'Is it cotton?', JSON.stringify(last));
     assert(!errs.slice(before).filter((x) => !/sentry|fonts|example\.com|reading 'open'/i.test(x)).length, errs.slice(before).slice(0, 3).join(' | '));
   }, 'major');
+  await s.check('Revision check: a stale save is refused, a current or missing revision works', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const r = await page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const get = async () => (await c.rpc('sfx_theme_install_list')).data.find((x) => x.id === id).revision;
+      const r0 = await get(); const body = { sections: [{ id: 'z1', type: 'text', props: { heading: 'Rev test', body: 'x' } }] };
+      const a = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: body, p_expected: r0 });
+      const stale = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: body, p_expected: r0 });
+      const none = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { sections: [{ id: 'z2', type: 'text', props: { heading: 'Rev test 2', body: 'x' } }] } });
+      return { r0, a: a.error ? a.error.message : a.data, stale: stale.error ? stale.error.message : 'ACCEPTED', none: none.error ? none.error.message : none.data, r3: await get() }; }, inst);
+    assert(r.a.revision === r.r0 + 1, JSON.stringify(r)); assert(/changed by someone else/.test(r.stale), r.stale);
+    assert(r.none.revision === r.r0 + 2 && r.r3 === r.r0 + 2, JSON.stringify(r));
+  }, 'critical');
+  await s.check('The editor warns when someone else saved first, and can overwrite or load their version', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    const other = async (txt) => q("update sfx_theme_installs set draft_content = jsonb_set(draft_content, '{sections}', $2::jsonb) where id=$1", [inst, JSON.stringify([{ id: 'o1', type: 'text', props: { heading: txt, body: 'b' } }])]);
+    await other('Their change');
+    await page.selectOption('#te-add-type', 'text'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(300);
+    await page.locator('#te-right input[name=heading]').fill('My change'); await page.waitForTimeout(300);
+    let msg = ''; page.once('dialog', async (d) => { msg = d.message(); await d.accept(); });
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    assert(/Someone else saved/.test(msg), 'no warning: ' + msg);
+    let row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.sections.some((x) => x.props.heading === 'My change') && !row.sections.some((x) => x.props.heading === 'Their change'), 'overwrite did not keep mine: ' + JSON.stringify(row.sections));
+    await other('Their second change');
+    await page.selectOption('#te-add-type', 'text'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(300);
+    page.once('dialog', async (d) => { await d.dismiss(); });
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(2000);
+    row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.sections.length === 1 && row.sections[0].props.heading === 'Their second change', 'their version was overwritten: ' + JSON.stringify(row.sections));
+    assert(/Their second change/.test(await page.locator('#te-list').innerText().catch(() => '') + await page.locator('body').innerText()), 'editor did not load their version');
+  }, 'major');
   await ctx.close();
   return s.done();
 }

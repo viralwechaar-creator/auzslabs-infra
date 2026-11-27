@@ -718,7 +718,7 @@ function editorPage(installId) {
   const i = state.installs.find((x) => x.id === installId);
   if (!i) return head('Theme not found', 'This install could not be found.', wl('Theme', 'builder'));
   if (i.draftContent?.kind === 'studs') return studsEditor(i);
-  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, home: sections, sections, tpl: normTpl(dc.templates), header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
+  if (!ed || ed.id !== installId) { const dc = i.draftContent || {}; const sections = structuredClone(dc.sections || []); ed = { id: installId, rev: i.revision || 0, home: sections, sections, tpl: normTpl(dc.templates), header: structuredClone(dc.header || { announceText: '', announceHref: '', links: [] }), footer: structuredClone(dc.footer || { about: '', note: '', links: [] }), pages: structuredClone(dc.pages || []), cur: 'home', sel: sections.length ? 0 : -1, undo: [], redo: [], saved: '', device: 'desktop', snapped: false }; ed.saved = edJson(); }
   const w = canWrite();
   const types = (state.sectionTypes?.length ? state.sectionTypes.map((x) => [x.type, x.label]) : Object.entries(sectionLabel)).map(([t, l]) => '<option value="' + t + '">' + l + '</option>').join('');
   const unpublished = !state.store.published ? '<div class="notice te-note">Your store is switched off, so the preview may show “not open yet”. Turn it on under Online store to see it here.</div>' : '';
@@ -789,8 +789,15 @@ function edInput(target) {
 async function edSave() {
   const i = state.installs.find((x) => x.id === ed.id); if (!i) return;
   const content = { ...(i.draftContent || {}), sections: ed.home, header: ed.header, footer: ed.footer, pages: ed.pages, templates: tplToSave() };
-  await api('sfx_theme_customize_save', { p_install_id: ed.id, p_content: content });
-  i.draftContent = content; ed.saved = edJson(); edRefresh('b');
+  // the server refuses the save if someone else changed this design since it was opened (revision check, db/454)
+  const put = async () => { const r = await api('sfx_theme_customize_save', { p_install_id: ed.id, p_content: content, p_expected: ed.rev }); ed.rev = r.revision; i.revision = r.revision; };
+  try { await put(); } catch (e) {
+    if (!/changed by someone else/i.test(e.message || '')) throw e;
+    if (confirm('Someone else saved changes to this design after you opened it.\n\nOK = replace their changes with yours.\nCancel = load their version (your unsaved changes here are lost).')) {
+      await refreshInstalls(); const fresh = state.installs.find((x) => x.id === ed.id); ed.rev = fresh ? fresh.revision : 0; await put();
+    } else { await refreshInstalls(); ed = null; save('Loaded the latest version of this design.'); rerender(); return false; }
+  }
+  i.draftContent = content; ed.saved = edJson(); edRefresh('b'); return true;
 }
 async function saveDraft(installId, mutate) {
   const i = state.installs.find((x) => x.id === installId);
@@ -798,7 +805,8 @@ async function saveDraft(installId, mutate) {
   const content = { ...(i.draftContent || {}), sections: [...((i.draftContent || {}).sections || [])] };
   mutate(content);
   i.draftContent = content;
-  await api('sfx_theme_customize_save', { p_install_id: installId, p_content: content });
+  const r = await api('sfx_theme_customize_save', { p_install_id: installId, p_content: content });
+  if (r && r.revision != null) { i.revision = r.revision; if (ed && ed.id === installId) ed.rev = r.revision; }
 }
 function checkoutPage() {
   const connected = state.store.razorpayConnected;
@@ -2001,8 +2009,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     save('This theme is now active on your storefront.'); rerender();
   });
   if (a && a.startsWith('te-') && a !== 'te-save' && a !== 'te-publish') { if (edHandle(a, key)) return; }
-  if (a === 'te-save') return withBusy(async () => { await edSave(); save('Design saved as a draft.'); });
-  if (a === 'te-publish') return withBusy(async () => { if (!confirm('Publish this design to your live storefront?')) return; await edSave(); await api('sfx_theme_customize_publish', { p_install_id: ed.id }); await refreshInstalls(); save('Published to your storefront.'); rerender(); });
+  if (a === 'te-save') return withBusy(async () => { if (await edSave()) save('Design saved as a draft.'); });
+  if (a === 'te-publish') return withBusy(async () => { if (!confirm('Publish this design to your live storefront?')) return; if (!(await edSave())) return; await api('sfx_theme_customize_publish', { p_install_id: ed.id }); await refreshInstalls(); save('Published to your storefront.'); rerender(); });
   if (a === 'theme-history') return withBusy(async () => {
     const rows = await api('sfx_theme_history_list', { p_install_id: key });
     const fmt = (d) => new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(d));
@@ -2011,7 +2019,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
       '<p class="compact-copy">No published versions yet. Publish your theme to start a history.</p>');
   });
   if (a === 'theme-restore') return withBusy(async () => {
-    await api('sfx_theme_rollback', { p_install_id: detail, p_history_id: key });
+    await api('sfx_theme_rollback', { p_install_id: detail, p_history_id: key }); if (ed && ed.id === detail) ed = null;
     await refreshInstalls(); close(); save('Version restored to your draft. Publish to put it live.'); rerender();
   });
   if (a === 'theme-publish') return withBusy(async () => {
