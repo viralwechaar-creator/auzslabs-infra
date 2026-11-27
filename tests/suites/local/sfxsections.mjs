@@ -376,7 +376,7 @@ export default async function run({ browser, stack }) {
     await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
     const hrefs = await pg.evaluate(() => ({ ann: (document.querySelector('.announce a') || {}).getAttribute && document.querySelector('.announce a').getAttribute('href'), links: [...document.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]) }));
     const get = (t) => (hrefs.links.find((x) => x[0] === t) || [])[1];
-    assert(hrefs.ann === '#/page/sale', JSON.stringify(hrefs.ann)); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
+    assert(hrefs.ann === '#/page/sale', 'ann=' + hrefs.ann + ' ' + JSON.stringify(hrefs.links.slice(0, 12))); assert(get('Tee') === '#/p/' + pid, String(get('Tee'))); assert(get('Cart') === '#/bag', String(get('Cart')));
     assert(!e9.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e9.slice(0, 3).join(' | '));
   }, 'major');
   await ctx.close();
