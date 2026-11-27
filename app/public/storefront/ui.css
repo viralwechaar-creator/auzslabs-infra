@@ -793,6 +793,32 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
   .shell .setup .steps li{border-bottom:1px solid var(--line)}
   .shell .setup .steps li:last-child{border-bottom:0}
   .shell .setup .steps a.step{background:transparent;padding:16px 14px}
+  /* type, cards and spacing taken from Shopify's phone Home */
+  .shell{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif}
+  .shell .topbar.is-home .m-stats span{font-size:13px}
+  .shell .topbar.is-home .m-stats b{font-size:22px}
+  .shell .home-greet{font-size:20px;margin:4px 0 20px}
+  .shell .setup h2{font-size:17px;font-weight:650;margin:0 0 6px}
+  .shell .setup .muted{font-size:15px;margin:0 0 14px}
+  .shell .setup .setup-count{display:inline-flex;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14px;margin-bottom:22px}
+  .shell .setup h3{font-size:17px;font-weight:650;margin:22px 0 12px}
+  .shell .setup .steps a.step{padding:15px 14px;font-size:17px;font-weight:600;gap:14px}
+  .shell .setup .steps a.step.done{color:var(--ink)}
+  .shell .home-main .panel,.shell .home-side .panel{background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:16px!important;padding:16px 14px 8px;margin-top:26px;box-shadow:none!important}
+  .shell .home-main .panel tbody .pill,.shell .home-main .panel tbody .status{font-size:12px;padding:3px 10px}
+  .shell .setup .setup-count{border:1px solid var(--line)!important;background:var(--paper)!important}
+  .shell .home-main .panel-title h2{font-size:17px;font-weight:650}
+  .shell .home-main .panel .table-scroll{overflow:visible}
+  .shell .home-main .panel table,.shell .home-main .panel thead{display:block}
+  .shell .home-main .panel thead{display:none}
+  .shell .home-main .panel tbody{display:block}
+  .shell .home-main .panel tbody tr{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;padding:13px 0;border-top:1px solid var(--line)}
+  .shell .home-main .panel tbody td{display:inline-flex;width:auto;margin:0;padding:0;font-size:13px;color:var(--muted)}
+  .shell .home-main .panel tbody td::before{display:none}
+  .shell .home-main .panel tbody td[data-label=Order]{order:0;flex:1 1 auto;font-size:16px;font-weight:600;color:var(--ink)}
+  .shell .home-main .panel tbody td[data-label=Total]{order:1;font-size:16px;font-weight:600;color:var(--ink)}
+  .shell .home-main .panel tbody tr::after{content:"";flex-basis:100%;order:2;height:0}
+  .shell .home-main .panel tbody td[data-label=Date],.shell .home-main .panel tbody td[data-label=Customer],.shell .home-main .panel tbody td[data-label=Payment],.shell .home-main .panel tbody td[data-label=Fulfillment]{order:3}
 }
 /* 39. Live view on the phone (Shopify's phone Live View): globe first, round search and map buttons, cards underneath */
 @media (max-width:899px){

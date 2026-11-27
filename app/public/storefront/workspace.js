@@ -62,7 +62,6 @@ function setupSteps() {
 const greet = () => { const h = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hour12: false, timeZone: 'Asia/Kolkata' }).format(new Date())); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 function setupGuide() {
   const groups = setupSteps(); const all = groups.flatMap(([, steps]) => steps); const done = all.filter((x) => x[1]).length;
-  if (done === all.length) return '';
   return '<p class="home-greet"><span>' + greet() + '!</span> Here\'s your activity</p><section class="setup"><h2>Continue building your store</h2><p class="muted">Finish these steps to get your store up and running.</p><span class="pill setup-count">' + done + ' / ' + all.length + ' completed</span>' +
     groups.map(([title, steps]) => '<h3>' + esc(title) + '</h3><ul class="steps">' + steps.map(([label, ok, to]) => '<li><a href="' + pathFor(to) + '" class="step' + (ok ? ' done' : '') + '"><span class="mark" aria-hidden="true">' + (ok ? '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3.2 3.2L15 6.8"/></svg>' : '') + '</span><span class="label">' + esc(label) + '</span><span class="chev" aria-hidden="true">›</span><span class="sr-only">' + (ok ? 'Done' : 'To do') + '</span></a></li>').join('') + '</ul>').join('') + '</section>';
 }
