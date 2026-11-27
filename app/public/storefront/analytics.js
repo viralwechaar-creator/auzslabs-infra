@@ -1,4 +1,5 @@
 import {refreshLive, refreshVisitors} from './api.js';
+import {locate} from './places.js?v=1';
 import {button, close, dialog, esc, link, money, pathFor, rerender, save, state, uid} from './ecosystem.js';
 
 const DAY = 86400000;
@@ -203,16 +204,31 @@ function explorer(config){
     '<div class="actions"><button class="btn" type="submit" value="run">Run report</button><button class="btn primary" type="submit" value="save">Save report</button></div><output role="status"></output></form>')+'</div>';
 }
 function live(){
-  const orders = sourceOrders().slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const orders = sourceOrders().filter(o=>!o.isTest);
   const current = inRange(orders,{start:today(),end:today()});
-  const lv = state.liveVisitors;
-  const num = key => lv && !lv.error ? String(lv[key] ?? 0) : 'Unavailable';
-  const people = lv && !lv.error && lv.visitors && lv.visitors.length ? panel('On your store now',table(['Page','Device','Doing','Last seen'],lv.visitors.map(v=>[v.page||'/',v.device||'—',v.doing,new Intl.DateTimeFormat('en-IN',{hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'Asia/Kolkata'}).format(new Date(v.seen))])),button('Refresh','analytics-refresh','compact')) : '';
-  const zonesJson = esc(JSON.stringify(lv && !lv.error && lv.zones ? lv.zones : {}));
-  return '<div class="gl-host" data-globe data-zones="'+zonesJson+'" data-points="'+esc(JSON.stringify(lv && !lv.error && lv.points ? lv.points : []))+'"></div><div class="notice">Visitors are people active on your store in the last 5 minutes. It counts anonymous browsers, not names. A visitor is placed on the map from their browser time zone, or more closely (about 10 km) only if they chose to share their location. '+((lv&&lv.located)||0)+' shared it right now.</div>'+
-    '<div class="metrics">'+[['Sales today',money(total(paid(current),'total'))],['Orders today',current.length],['Visitors now',num('now')],['Visitors today',num('today')],['Bag now',num('inBag')],['At checkout now',num('inCheckout')]].map(([label,value])=>'<article class="metric"><span>'+label+'</span><strong>'+value+'</strong></article>').join('')+'</div>'+people+
-    panel('Recent order activity',table(['Order','Order date','Sales channel','Payment','Fulfillment','Total'],
-      orders.slice(0,12).map(row=>['#'+row.id,row.date,row.channel,row.payment,row.status,money(row.total)])),button('Refresh','analytics-refresh','compact'));
+  const lv = state.liveVisitors, ok = lv && !lv.error;
+  const n = key => ok ? Number(lv[key] || 0) : 0;
+  const todayKey = new Date().toISOString().slice(0,10);
+  const before = new Set(orders.filter(o=>o.date<todayKey).map(o=>o.customerId||(o.contact||{}).phone).filter(Boolean));
+  const mine = current.map(o=>o.customerId||(o.contact||{}).phone).filter(Boolean);
+  const returning = mine.filter(k=>before.has(k)).length, fresh = mine.length-returning;
+  const placed = {};
+  current.forEach(o=>{ const c=o.contact||{}, hit=locate(c.city,c.state); if(!hit) return; const key=(c.city||c.state); const e=placed[key]||(placed[key]={label:key,lat:hit[0],lng:hit[1],n:0}); e.n++; });
+  const zones = ok && lv.zones ? lv.zones : {};
+  const zoneRows = Object.entries(zones).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const byProduct = {}; current.forEach(o=>(o.lines||[]).forEach(l=>{ byProduct[l.name]=(byProduct[l.name]||0)+Number(l.price||0)*Number(l.qty||1); }));
+  const prodRows = Object.entries(byProduct).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const row = (a,b)=>'<div class="lv-row"><span>'+esc(a)+'</span><strong>'+b+'</strong></div>';
+  const card = (title,body)=>'<section class="lv-card"><h3>'+title+'</h3>'+body+'</section>';
+  const empty = '<p class="lv-empty">No data for this date range</p>';
+  return '<div class="lv" data-live-view data-orders="'+esc(JSON.stringify(Object.values(placed)))+'"><aside class="lv-side"><div class="lv-tiles">'+
+    [['Visitors right now',n('now')],['Total sales',money(total(paid(current),'total'))],['Sessions',n('today')],['Orders',current.length]].map(([a,b])=>'<div class="lv-tile"><span>'+a+'</span><strong>'+b+'</strong></div>').join('')+'</div>'+
+    card('Customer behavior',row('Active carts',n('inBag'))+row('Checking out',n('inCheckout'))+row('Purchased',current.length))+
+    card('Sessions by location',zoneRows.length?zoneRows.map(([z,c])=>row(z.split('/').pop().replace(/_/g,' '),c)).join(''):empty)+
+    card('New vs returning customers',mine.length?row('New customers',fresh)+row('Returning customers',returning):empty)+
+    card('Total sales by product',prodRows.length?prodRows.map(([a,b])=>row(a,money(b))).join(''):empty)+
+    '</aside><div class="lv-map"><div class="gl-host" data-globe data-live="1" data-zones="'+esc(JSON.stringify(zones))+'" data-points="'+esc(JSON.stringify(ok&&lv.points?lv.points:[]))+'"></div></div></div>'+
+    '<p class="lv-note">Visitors are people active on your store in the last 5 minutes, counted anonymously. Orders are placed on the map by the city or state on the order.</p>';
 }
 function exportCsv(name,headers,rows){
   const cell = value => {

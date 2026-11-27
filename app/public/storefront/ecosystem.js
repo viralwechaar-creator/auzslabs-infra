@@ -176,7 +176,7 @@ export function rerender(skipRefresh) {
   const homeHost = document.querySelector('[data-home-overview]'); if (homeHost) mountHomeOverview(homeHost, () => rerender(true));
   const healthHost = document.querySelector('[data-health]'); if (healthHost) import('/storefront/health.js?v=1').then((m) => m.mountHealth(healthHost)).catch(() => {});
   const globeHost = document.querySelector('[data-globe]');
-  if (globeHost) { let zones = {}, points = []; try { zones = JSON.parse(globeHost.dataset.zones || '{}'); points = JSON.parse(globeHost.dataset.points || '[]'); } catch {} import('/storefront/globe.js?v=3').then((m) => m.mountGlobe(globeHost, zones, { theme: accountTheme, points })).catch(() => { globeHost.innerHTML = '<p class="compact-copy">The globe could not load on this browser.</p>'; }); }
+  if (globeHost) { let zones = {}, points = []; try { zones = JSON.parse(globeHost.dataset.zones || '{}'); points = JSON.parse(globeHost.dataset.points || '[]'); } catch {} import('/storefront/globe.js?v=4').then((m) => m.mountGlobe(globeHost, zones, globeHost.dataset.live ? { theme: accountTheme, points, search: true, orders: (() => { try { return JSON.parse(document.querySelector('[data-live-view]').dataset.orders || '[]'); } catch { return []; } })(), onPanel: () => { const l = document.querySelector('[data-live-view]'); l.classList.toggle('lv-full'); return !l.classList.contains('lv-full'); } } : { theme: accountTheme, points })).catch(() => { globeHost.innerHTML = '<p class="compact-copy">The globe could not load on this browser.</p>'; }); }
   const adminHost = document.querySelector('[data-admin-pane]');
   if (adminHost && window.auzAdminTab) {
     const only = adminHost.dataset.adminPane || undefined;

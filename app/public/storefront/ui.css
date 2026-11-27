@@ -781,3 +781,31 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 .shell .hm-spark{color:#3d83c6}
 .shell .hm-dot{background:#1f9d55}
 .shell .hm-dot:not(.on){opacity:.55}
+
+/* 37. Live view: report cards on the left, globe or map on the right */
+.shell .lv{display:grid;grid-template-columns:340px minmax(0,1fr);gap:var(--sp-3);align-items:stretch;min-height:max(460px,calc(100vh - 230px))}
+.shell .lv.lv-full{grid-template-columns:minmax(0,1fr)}
+.shell .lv.lv-full .lv-side{display:none}
+.shell .lv-side{display:flex;flex-direction:column;gap:var(--sp-3);max-height:calc(100vh - 190px);overflow:auto;padding-right:2px}
+.shell .lv-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shell .lv-tile,.shell .lv-card{background:#fff;border:1px solid #e3e3e3;border-radius:12px;padding:12px 14px}
+.shell .lv-tile span{display:block;font-size:12px;color:#616161}
+.shell .lv-tile strong{display:block;font-size:22px;font-weight:600;margin-top:4px}
+.shell .lv-card h3{margin:0 0 8px;font-size:13px;font-weight:600}
+.shell .lv-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;color:#303030}
+.shell .lv-row strong{font-weight:600}
+.shell .lv-empty{margin:6px 0 2px;font-size:12px;color:#8a8a8a}
+.shell .lv-map .gl-host{margin:0;height:100%}
+.shell .lv-map .gl-wrap{height:100%;min-height:max(460px,calc(100vh - 230px));border-radius:12px}
+.shell .lv-note{font-size:12px;color:#8a8a8a;margin:10px 2px 0}
+.shell .gl-dot.gl-o{background:#7c4dff}
+.shell .gl-legend{left:auto;right:14px;top:auto;bottom:14px;flex-direction:column;gap:6px;border-radius:10px;font-size:12px}
+.shell .gl-search{position:absolute;left:14px;top:12px;width:240px}
+.shell .gl-search input{width:100%;height:36px;border:0;border-radius:18px;padding:0 14px;font-size:13px;background:rgb(255 255 255 / .92);box-shadow:0 1px 4px rgb(0 0 0 / .15)}
+.shell .gl-res{margin-top:4px;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgb(0 0 0 / .18);overflow:hidden}
+.shell .gl-res button{display:block;width:100%;text-align:left;padding:8px 14px;border:0;background:none;font-size:13px;cursor:pointer}
+.shell .gl-res button:hover{background:#f3f3f3}
+.shell .gl-tools{flex-direction:row;display:flex}
+.shell .gl-btn.on{outline:2px solid #7c4dff}
+.shell .gl-wrap:fullscreen{border-radius:0}
+@media (max-width:899px){.shell .lv{grid-template-columns:1fr;min-height:0}.shell .lv-side{max-height:none}.shell .lv-map .gl-wrap{min-height:420px}.shell .gl-search{width:calc(100% - 28px);top:60px}}
