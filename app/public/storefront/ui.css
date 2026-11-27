@@ -1091,3 +1091,21 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
 .shell .work .tabs[aria-label="Page tabs"],.shell .work .tabs[aria-label="Analytics pages"]{display:none!important}
 @media (max-width:899px){.shell .work>.tabs[aria-label="Product detail"]{display:flex!important}}
 .shell .summary-bar:not(:has(.sparkline)){display:none}
+
+/* 55. Smaller picture thumbnails and tighter vertical spacing */
+.shell img.thumb,.shell .cell-product img{width:32px!important;height:32px!important;border-radius:8px!important}
+.shell .work table td{padding-top:6px!important;padding-bottom:6px!important}
+.shell .work table thead th{padding-top:7px;padding-bottom:7px}
+.shell .work>.page-head:not(:has(.actions>*)){display:none}
+@media (min-width:900px){.shell .work{padding-top:10px}.shell .work .panel .filters{margin-bottom:6px}}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]){grid-template-columns:44px minmax(0,1fr) auto!important;padding:8px 0!important;row-gap:0!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product] img,.shell tbody tr:has(td[data-label=Product]) td[data-label=Product] .thumb{width:44px!important;height:44px!important;border-radius:10px!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]:not(:has(img))::before{width:44px;height:44px;border-radius:10px}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product] a{font-size:15px}
+  .shell tbody tr:has(td[data-label=Product]) td{font-size:12.5px}
+  .shell .order-card{padding:8px 0!important}
+  .shell .oc-day{margin:8px 0 2px!important}
+  .shell .work .panel .filters{margin-bottom:6px!important}
+}
+@media (min-width:900px){.shell .work{padding-top:2px}.shell .topbar{height:46px}}
