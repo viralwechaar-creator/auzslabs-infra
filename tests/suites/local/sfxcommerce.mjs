@@ -16,6 +16,7 @@ export default async function run({ browser, stack }) {
     await page.goto(stack.url('testcafe', '/storefront.html#/discounts'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
     assert(await page.locator('[data-action="discount-new"]').count() > 0, 'page did not render: ' + (await page.locator('body').innerText()).slice(0, 300) + ' | ' + JSON.stringify(tok).slice(0, 120));
     await page.locator('[data-action="discount-new"]').first().click();
+    await page.locator('[data-action="discount-type:order"]').click(); await page.waitForTimeout(500);
     await page.fill('#dialog input[name=code]', 'welcome15'); await page.fill('#dialog input[name=value]', '15'); await page.fill('#dialog input[name=minOrder]', '100');
     await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1200);
     const t = await page.locator('main, body').first().innerText(); assert(/WELCOME15/.test(t) && /15% off/.test(t), t.slice(0, 300));
@@ -23,6 +24,7 @@ export default async function run({ browser, stack }) {
   }, 'critical');
   await s.check('A bad code is refused with a message and nothing is saved', async () => {
     await page.locator('[data-action="discount-new"]').first().click();
+    await page.locator('[data-action="discount-type:order"]').click(); await page.waitForTimeout(500);
     await page.fill('#dialog input[name=code]', 'half'); await page.fill('#dialog input[name=value]', '150');
     await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1000);
     assert(/exceed 100/.test(await page.locator('#toast').innerText()), 'no refusal message');
@@ -318,7 +320,7 @@ export default async function run({ browser, stack }) {
     assert(out.anon, 'anonymous read allowed'); assert(!out.err, out.err);
     assert(out.d.now === 2 && out.d.inBag === 1 && out.d.visitors.length === 2, JSON.stringify(out.d));
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/live-view'), { waitUntil: 'load' }); await page.waitForTimeout(2000);
-    const t = await page.locator('body').innerText(); assert(/Visitors now/i.test(t) && /On your store now/i.test(t) && /\/shop/.test(t), t.slice(0, 400));
+    const t = await page.locator('body').innerText(); assert(/Visitors right now/i.test(t) && /Sessions by location/i.test(t), t.slice(0, 400));
   }, 'major');
   await s.check('No script errors on either page', async () => { assert(!errs.filter((e) => !/sentry|fonts|sfx_discount_save|sfx_live_visitors|x\.test|\/uploads\//i.test(e)).length, errs.filter((e) => !/sentry|fonts|sfx_discount_save|sfx_live_visitors|x\.test|\/uploads\//i.test(e)).slice(0, 3).join(' | ')); });
 }

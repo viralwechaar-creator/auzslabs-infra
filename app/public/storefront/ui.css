@@ -1009,3 +1009,31 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 .shell[data-theme=dark] .chip.warn{background:#5a4510;color:#ffe6a3}
 .shell[data-theme=dark] .chip.bad{background:#5a1f22;color:#fdd1d0}
 .shell[data-theme=dark] .chip.neutral{background:#333;color:#ddd}
+
+/* 51. Discounts: empty state, type picker, create form with live summary */
+.shell .dc-empty{display:grid;justify-items:center;text-align:center;gap:10px;padding:56px 16px 40px}
+.shell .dc-empty h2{margin:8px 0 0;font-size:18px;font-weight:650}
+.shell .dc-empty p{margin:0;max-width:420px;font-size:14px;color:var(--muted)}
+.shell .btn.dark{background:#1a1a1a;color:#fff;border-color:#1a1a1a;margin-top:8px}
+.dc-types{display:grid;margin:0 -6px}
+.dc-type{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid var(--line);padding:14px 6px;cursor:pointer;color:inherit;font:inherit}
+.dc-type:first-child{border-top:0}
+.dc-type:hover{background:var(--soft)}
+.dc-ti{display:grid;place-items:center;width:28px;color:var(--ink);flex:none;align-self:flex-start;margin-top:2px}
+.dc-tt{display:grid;gap:2px;flex:1;min-width:0}
+.dc-tt strong{font-size:14px;font-weight:600}
+.dc-tt small{font-size:13px;color:var(--muted)}
+dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
+.dc-wrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:24px;align-items:start}
+.dc-sec h3{margin:0 0 6px;font-size:14px;font-weight:600}
+.dc-sec{margin-bottom:14px}
+.dc-box{display:grid;gap:10px;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--paper)}
+.dc-box label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.dc-sum{border-left:1px solid var(--line);padding-left:20px;font-size:13px;position:sticky;top:0}
+.dc-sum-h{display:grid;gap:2px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.dc-sum-h strong{font-size:14px}
+.dc-sum h4{margin:0 0 6px;font-size:13px;font-weight:600}
+.dc-sum ul{margin:0;padding-left:18px;display:grid;gap:5px;color:var(--ink)}
+@media (max-width:899px){.dc-wrap{grid-template-columns:1fr}.dc-sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px;position:static}}
+.dc-main .field-grid{display:block}
+.dc-main .dc-box input,.dc-main .dc-box select{width:100%}

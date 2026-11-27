@@ -91,6 +91,15 @@ for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
         await page.screenshot({ path: path.join(out, 'dialog__' + sizeName + '.png') });
         await page.keyboard.press('Escape'); await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/orders'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
       }
+      if (process.env.DISC && route === 'discounts' && scheme === 'light') {
+        await page.screenshot({ path: path.join(out, 'disc_list__' + sizeName + '.png') });
+        await page.evaluate(() => document.querySelector('[data-action="discount-new"]').click()); await page.waitForTimeout(700);
+        await page.screenshot({ path: path.join(out, 'disc_type__' + sizeName + '.png') });
+        await page.evaluate(() => document.querySelector('[data-action="discount-type:products"]').click()); await page.waitForTimeout(800);
+        await page.fill('input[name=code]', 'SUMMER20').catch(() => {}); await page.fill('input[name=value]', '20').catch(() => {}); await page.waitForTimeout(300);
+        await page.screenshot({ path: path.join(out, 'disc_form__' + sizeName + '.png') });
+        await page.keyboard.press('Escape');
+      }
       if (process.env.HOVER && route === 'home' && scheme === 'light' && sizeName === 'desktop') {
         await page.hover('.hm-fig[data-hm-metric="sessions"]'); await page.waitForTimeout(500);
         await page.screenshot({ path: path.join(out, 'home_hover.png') });
