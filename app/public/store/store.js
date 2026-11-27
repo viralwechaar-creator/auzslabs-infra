@@ -892,25 +892,44 @@ function bookingSection(p) {
 // unsaved draft sections by postMessage, so the canvas updates as they type. Same-origin only; ignored otherwise.
 const PREVIEW = new URLSearchParams(location.search).get('preview') === 'draft';
 let PREVIEW_SECTIONS = null;
+function customEl(s, i) {
+  let el = customSection(s);
+  if (el && s.props) { if (s.props.space === 'compact' || s.props.space === 'roomy') el.classList.add('sp-' + s.props.space); if (s.props.align === 'left') el.classList.add('al-left'); }
+  if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));
+  if (!el) return null;
+  if (PREVIEW) {
+    el.setAttribute('data-sec', String(i)); el.style.cursor = 'pointer';
+    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); parent.postMessage({ type: 'auz-select', index: i }, location.origin); }, true);
+  }
+  return el;
+}
 function customSections(v, list) {
   const sections = list || (PREVIEW && PREVIEW_SECTIONS ? PREVIEW_SECTIONS : (cfg().customSections || []));
-  sections.forEach((s, i) => {
-    let el = customSection(s);
-    if (el && s.props) { if (s.props.space === 'compact' || s.props.space === 'roomy') el.classList.add('sp-' + s.props.space); if (s.props.align === 'left') el.classList.add('al-left'); }
-    if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));
-    if (!el) return;
-    if (PREVIEW) {
-      el.setAttribute('data-sec', String(i)); el.style.cursor = 'pointer';
-      el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); parent.postMessage({ type: 'auz-select', index: i }, location.origin); }, true);
-    }
-    v.append(el);
-  });
+  sections.forEach((s, i) => { const el = customEl(s, i); if (el) v.append(el); });
+}
+// Page templates (db/453): the Collection, Product and Cart pages can have sections above and below their own content.
+// The list holds one "main" entry (the page's own content); without one the sections go after it.
+let PREVIEW_TPL = null;
+const TEMPLATE_OF = { shop: 'collection', p: 'product', bag: 'cart' };
+function templateSections(kind) {
+  const t = PREVIEW && PREVIEW_TPL ? PREVIEW_TPL[kind] : (cfg().themeTemplates || {})[kind];
+  return t && Array.isArray(t.sections) ? t.sections : null;
+}
+function applyTemplate(id, view) {
+  const kind = TEMPLATE_OF[id]; const list = kind ? templateSections(kind) : null; if (!list || !list.length) return;
+  const ownContent = [...view.childNodes]; const mainAt = list.findIndex((x) => x.type === 'main');
+  const before = [], after = [];
+  list.forEach((x, i) => { if (x.type === 'main') return; const el = customEl(x, i); if (el) (mainAt >= 0 && i < mainAt ? before : after).push(el); });
+  const first = ownContent[0] || null;
+  before.forEach((el) => view.insertBefore(el, first));
+  after.forEach((el) => view.append(el));
 }
 if (PREVIEW) {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.type !== 'auz-draft' || !Array.isArray(e.data.sections)) return;
     PREVIEW_SECTIONS = e.data.sections.slice(0, 60);
-    const chrome = JSON.stringify({ h: e.data.header, f: e.data.footer, p: e.data.pages });
+    if (e.data.templates && typeof e.data.templates === 'object') PREVIEW_TPL = e.data.templates;
+    const chrome = JSON.stringify({ h: e.data.header, f: e.data.footer, p: e.data.pages, t: e.data.templates });
     const chromeChanged = chrome !== (PREVIEW_CHROME && PREVIEW_CHROME.__j);
     if (e.data.header !== undefined || e.data.footer !== undefined || e.data.pages !== undefined) PREVIEW_CHROME = { header: e.data.header || null, footer: e.data.footer || null, pages: Array.isArray(e.data.pages) ? e.data.pages : [], __j: chrome };
     const want = '#/' + (e.data.view || '');
@@ -1718,7 +1737,7 @@ function route() {
   document.body.classList.toggle('minimal-store', minimal);
   view.dataset.page = id;
   view.classList.toggle('minimal-home', id === 'home' && minimal);
-  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = Object.hasOwn(V, id) ? V[id] : V.home; try { const r = fn(view, parts[1]); if (r && r.catch) r.catch((e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
+  document.body.classList.toggle('homehero', id === 'home'); document.body.classList.toggle('onlist', id === 'shop'); view.classList.toggle('gw', id === 'home'); view.classList.toggle('dense', id === 'home' && denseOn()); paintDense(); const fn = Object.hasOwn(V, id) ? V[id] : V.home; try { const r = fn(view, parts[1]); if (r && r.then) r.then(() => applyTemplate(id, view), (e) => view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message))); else applyTemplate(id, view); } catch (e) { view.append(E('div', { class: 'empty' }, 'Something went wrong. ' + e.message)); }
   if (minimal && id === 'home') scheduleWelcome(() => $('#app .chatfab').click());
   else if (minimal) $('#chatwel')?.remove();
   $('#menu') && $('#menu').classList.remove('on'); $('#srch') && $('#srch').classList.remove('on');
