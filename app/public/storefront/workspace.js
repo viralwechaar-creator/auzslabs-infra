@@ -9,6 +9,7 @@
 // of a form that would quietly save nowhere.
 import { analyticsPage, visitorPanel, campaignBars } from './analytics.js';
 import { domainPage, domainDispatch } from './domains.js';
+import { homeOverview } from './home.js';
 import { templates } from './data.js';
 import { dirty, appLinks, $, badge, button, close, dialog, esc, flash, image, link, money, pathFor, rerender, save, state, uid, icon, settingsGroups, settingsRoutes } from './ecosystem.js';
 import { sb, api, apiPost, applyContext, refreshLanguages, refreshStoreDir, refreshStyleLink, refreshRoles, refreshCollections, refreshMemberships, uploadImage, refreshAbandoned, refreshCampaigns, refreshCategories, refreshCheckout, refreshCompanies, refreshCustomers, refreshDrafts, refreshReturns, refreshSegments, refreshDiscounts, refreshDomains, refreshInventory, refreshLocations, refreshOrders, refreshProducts, toCollection, toOrder, toProduct, refreshInsights, refreshAccess, refreshBlog, refreshRedirects, refreshRevisions, refreshCustomFields, refreshInstalls, refreshMarketplace, refreshPlan } from './api.js';
@@ -61,7 +62,7 @@ function setupSteps() {
 function setupGuide() {
   const groups = setupSteps(); const all = groups.flatMap(([, steps]) => steps); const done = all.filter((x) => x[1]).length;
   if (done === all.length) return '';
-  return '<section class="setup"><h2>Get ready to sell</h2><p class="muted">Use this guide to get your store up and running.</p><span class="pill setup-count">' + done + ' / ' + all.length + ' completed</span>' +
+  return '<section class="setup"><h2>Continue building your store</h2><p class="muted">Finish these steps to get your store up and running.</p><span class="pill setup-count">' + done + ' / ' + all.length + ' completed</span>' +
     groups.map(([title, steps]) => '<h3>' + esc(title) + '</h3><ul class="steps">' + steps.map(([label, ok, to]) => '<li><a href="' + pathFor(to) + '" class="step' + (ok ? ' done' : '') + '"><span class="mark" aria-hidden="true">' + (ok ? '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5l3.2 3.2L15 6.8"/></svg>' : '') + '</span><span class="label">' + esc(label) + '</span><span class="chev" aria-hidden="true">›</span><span class="sr-only">' + (ok ? 'Done' : 'To do') + '</span></a></li>').join('') + '</ul>').join('') + '</section>';
 }
 function homeStrip() {
@@ -79,7 +80,6 @@ function siteSide() {
   const imgs = (state.products || []).map((p) => p.image).filter(Boolean).slice(0, 6);
   const data = esc(JSON.stringify({ url, imgs, live: !!state.store?.published, pay: !!state.store?.razorpayConnected }));
   return '<aside class="home-side" aria-label="Website">' +
-    '<section class="panel live-card"><div class="lc-top"><span class="lc-dot' + (lv && lv.now ? ' on' : '') + '" aria-hidden="true"></span><strong>Live now</strong><a href="' + pathFor('live-view') + '">Live view ›</a></div><div class="lc-n">' + (lv ? lv.now : '—') + '</div><small>' + (lv && lv.now ? 'visitors on your store right now' : 'No one on your store right now') + '</small></section>' +
     '<section class="panel health" data-health="' + data + '"><div class="lc-top"><strong>Website health</strong><span class="pill" data-hc-overall>Checking…</span></div>' +
     '<ul class="hc-list"><li><span>Store online</span><b data-hc="live">…</b></li><li><span>Page response</span><b data-hc="resp">…</b></li><li><span>Images</span><b data-hc="img">…</b></li><li><span>Payments</span><b data-hc="pay">…</b></li></ul>' +
     '<div class="hc-seg" role="group" aria-label="Preview size"><button type="button" class="pill-tab" aria-pressed="true" data-hc-size="phone">Phone</button><button type="button" class="pill-tab" aria-pressed="false" data-hc-size="desktop">Desktop</button></div>' +
@@ -95,7 +95,7 @@ function home() {
   if (f.accounting) apps.push(['AUZsLedger', 'Accounting and GST books', 'https://auzsledger.auzslab.in/accounts.html']);
   if (f.salon && state.tenant?.slug) apps.push(['Salon console', 'Bookings, billing and your salon website', 'https://' + state.tenant.slug + '.auzslab.in/salon/admin/']);
   const appsList = apps.length ? panel('Your apps', body('<div class="stack">' + apps.map(([n, d, u]) => '<a class="btn" href="' + esc(u) + '" data-handoff="1"><strong>' + esc(n) + '</strong> · ' + esc(d) + '</a>').join('') + '</div>')) : '';
-  return head(greet + '! <span class="muted">Here\'s your activity</span>', esc(state.business.name || 'Your store'), '') + '<div class="home-cols"><div class="home-main">' + homeStrip() +
+  return homeOverview() + '<div class="home-cols"><div class="home-main">' +
     (state.plan?.blocked ? panel('Your trial has ended', body('<p class="compact-copy">Your store and data are safe, but editing and selling are paused. <a href="' + pathFor('billing') + '">Reactivate your plan</a> to switch it back on.</p>')) : '') +
     setupGuide() +
     (state.orders.length ? panel('Recent orders', recentOrders, wl('All orders', 'orders', 'compact')) : '') + appsList + '</div>' + siteSide() + '</div>';

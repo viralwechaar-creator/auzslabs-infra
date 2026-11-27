@@ -47,8 +47,12 @@ export default async function run({ browser, stack }) {
   await s.check('Home shows the visitor numbers in the stats strip (not the old "not recorded" message) and no "Local preview" label', async () => {
     await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/home'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
     const t = await page.locator('body').innerText();
-    assert(/Visitors, 14 days/.test(t) && /Live visitors/.test(t) && !/not recorded for online stores yet/.test(t), 'visitor strip missing: ' + t.slice(0, 300));
-    assert(await page.locator('.home-strip .hs-cell').count() === 5, 'the stats strip should have five numbers');
+    assert(/Sessions/.test(t) && /Total sales/.test(t) && /Conversion rate/.test(t) && /Live visitors/.test(t) && !/not recorded for online stores yet/.test(t), 'overview missing: ' + t.slice(0, 300));
+    assert(await page.locator('.hm-fig').count() === 4, 'the overview should have four figures');
+    await page.hover('.hm-fig[data-hm-metric="sessions"]'); await page.waitForTimeout(300);
+    assert(await page.locator('.hm-pop:not([hidden]) .hm-chart').count() === 1 && /Sessions over time/.test(await page.locator('.hm-pop').innerText()), 'hover report missing');
+    await page.click('.hm-pick-btn'); await page.click('[data-hm-channel="instore"]'); await page.waitForTimeout(600);
+    assert(/AUZsStyle shop/.test(await page.locator('.hm-pick-btn').innerText()), 'channel not applied');
     await s.shot(page, 'sfx-home-visitors');
   }, 'critical');
   await s.check('Home setup guide: ten steps in three groups, each opens its page, and Connect a domain ticks once a domain is verified', async () => {

@@ -276,7 +276,7 @@ export default async function run({ browser, stack }) {
     assert(/#\/orders\/[0-9a-f-]{36}/.test(page.url()), 'did not open the new order: ' + page.url());
     await page.goto(stack.url('testcafe', '/storefront.html#/home'), { waitUntil: 'load' }); await page.waitForTimeout(3500);
     assert(await page.locator('[data-health]').count() === 1, 'website card missing on Home');
-    assert(await page.locator('a.hs-cell[href*="live-view"]').count() === 1, 'live visitors not linked to Live view');
+    assert(await page.locator('a.hm-live[href*="live-view"]').count() === 1, 'live visitors not linked to Live view');
     const bad = errs.filter((e) => !/store\.html/.test(e)); assert(!bad.length, JSON.stringify(bad).slice(0, 200));
   });
   s.done();
