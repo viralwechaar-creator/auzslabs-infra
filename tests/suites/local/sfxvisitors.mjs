@@ -35,6 +35,13 @@ export default async function run({ browser, stack }) {
     assert(/storefront/i.test(JSON.stringify(po.data)), 'old order path should refuse: ' + JSON.stringify(po.data).slice(0, 160));
     await q("update tenant_settings set features = (features || '{\"storefront\":true}') - 'style' where tenant_id = $1", [tid]);
   }, 'critical');
+  await s.check('The demo business storefront is filled from its AUZsStyle catalogue (products, collections)', async () => {
+    const r = await rpc(stack, 'public_sfx_store', { p_slug: 'demo' });
+    const d = r.data && r.data.data !== undefined ? r.data.data : r.data;
+    assert(d && !d.closed && Array.isArray(d.styles) && d.styles.length > 0, 'demo store should list products: ' + JSON.stringify(d).slice(0, 200));
+    const own = (await q("select count(*)::int n from sty_styles where tenant_id=(select id from tenants where slug='demo')"))[0].n;
+    assert(d.styles.length >= own, 'every AUZsStyle style is listed: ' + d.styles.length + ' vs ' + own);
+  }, 'major');
   await s.check('Zero activity: the summary is empty but available', async () => {
     const v = await summary(); assert(v.tracking === true && v.visitors === 0 && v.series.length === 14, JSON.stringify(v).slice(0, 200));
   }, 'critical');
