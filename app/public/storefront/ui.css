@@ -922,3 +922,27 @@ dialog#dialog .dialog-head .btn:focus,dialog#dialog .dialog-head .btn:focus-visi
 
 .shell .dup-title{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .shell .panel-title.dup-title-box{margin:0;padding:0;height:0;border:0;min-height:0}
+
+/* 46. Desktop pages like Shopify's: pill header buttons, no boxy cards, thin blue trend lines, one bordered filter bar */
+@media (min-width:900px){
+  .shell .topbar .bc-ico{display:inline-grid;place-items:center;margin-right:10px;color:var(--ink)}
+  .shell .topbar .bc-ico svg{width:18px;height:18px}
+  .shell .topbar .breadcrumb{display:flex;align-items:center}
+  .shell .topbar .topbar-actions .btn,.shell .topbar .topbar-actions summary.btn{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:999px;min-height:36px;padding:0 16px;font-size:13px;font-weight:500;box-shadow:none}
+  .shell .topbar .topbar-actions .btn:hover{background:var(--soft)}
+  .shell .topbar .topbar-actions .btn.primary,.shell .topbar .topbar-actions details.plus-menu>summary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+  .shell .work:not(.settings-mode) .panel{background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important}
+  .shell .work .panel>.panel-body{padding:0}
+  .shell .work .record-layout .panel,.shell .work .home-side .panel{background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:14px!important;padding:16px!important}
+  .shell .work .panel .filters{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:6px 12px;margin:0 0 12px;box-shadow:none}
+  .shell .work .panel .filters input{background:transparent;border:0}
+  .shell .work .panel .filters select{background:transparent;border:0}
+  .shell .work table thead th{background:var(--soft);font-weight:500;color:var(--muted)}
+  .shell .work table thead th:first-child{border-radius:10px 0 0 10px}.shell .work table thead th:last-child{border-radius:0 10px 10px 0}
+  .shell .work table tbody tr{border-bottom:1px solid var(--line)}
+  .shell .summary-bar{gap:32px;padding:6px 0 14px;margin-bottom:12px}
+  .shell .summary-cell>span{border-bottom:1px dotted #8a8a8a;display:inline-block;color:var(--ink);font-weight:550}
+  .shell .summary-cell .sparkline{color:#3d83c6;width:90px;height:20px}
+  .shell .summary-cell .sparkline polyline{stroke-width:1.5}
+}
+@media (min-width:900px){.shell .work .panel .filters input,.shell .work .panel .filters input[type=search]{background:transparent!important;border:0!important}}
