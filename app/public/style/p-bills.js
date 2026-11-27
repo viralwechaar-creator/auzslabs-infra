@@ -82,7 +82,7 @@ page('bills', {
             returnSheet(sale, reload, { requestId: req.id, mode: req.mode, reason: req.reason, lines: req.lines.map((l) => ({ saleLineId: l.saleLineId, qty: l.qty })) });
           } }] });
     }
-    const srcSeg = seg([['shop', t('Shop bills')], ['quotes', t('Quotations')], ['returns', t('Returns & exchanges')], ['web', t('Website orders')], ['requests', t('Return requests')]], BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
+    const srcSeg = seg([['shop', t('Shop bills')], ['quotes', t('Quotations')], ['returns', t('Returns & exchanges')]].concat(storefrontOn() ? [] : [['web', t('Website orders')], ['requests', t('Return requests')]]), BU.src, (x) => { BU.src = x; v.refresh(); }, { full: true });
     v.root.append(h('div', { class: 'grid' }, srcSeg, custId ? banner('', 'user', t('Bills of one customer'), ' ', h('button', { class: 'btn plain sm', onclick: () => go('bills') }, t('Show all'))) : (BU.src === 'web' || BU.src === 'requests' || BU.src === 'quotes' ? null : rangePicker(BU, load)),
       BU.src === 'requests' || BU.src === 'returns' || BU.src === 'quotes' ? null : searchField(t('Bill number, customer, phone'), debounce((x) => { BU.q = x; load(); }, 250), BU.q), kp, list));
     load();
