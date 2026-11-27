@@ -988,6 +988,7 @@ export const RPC = {
   sfx_theme_install_set_active: { params: ['p_install_id'], auth: true },
   sfx_studs_settings_save: { params: ['p_install_id', 'p'], auth: true },
   sfx_studs_publish: { params: ['p_install_id'], auth: true },
+  sfx_kaarigari_publish: { params: ['p_install_id'], auth: true },
   sfx_theme_revert_active: { params: [], auth: true },
   sfx_theme_customize_save: { params: ['p_install_id', 'p_content'], jsonb: ['p_content'], auth: true },
   sfx_theme_history_list: { params: ['p_install_id'], auth: true },
