@@ -24,6 +24,14 @@ export default async function run({ browser, stack }) {
     assert(/Book your appointment/.test(t), 'booking section missing');
     assert(!e2.filter((x) => !/sentry|fonts/i.test(x)).length, e2.slice(0, 3).join(' | '));
   }, 'critical');
+  await s.check('A design can be previewed on the store\'s own address with its real products, then exited', async () => {
+    const pg = await ctx.newPage(); const e4 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html?preview=studs'), { waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    assert(await pg.locator('.prevbar').count() === 1, 'preview bar missing');
+    assert(await pg.evaluate(() => document.body.classList.contains('studs-on')), 'the Studs design did not render');
+    const href = await pg.locator('.prevbar a').getAttribute('href'); assert(!/preview=/.test(href), 'exit link still has preview: ' + href);
+    assert(!e4.filter((x) => !/sentry|fonts/i.test(x)).length, e4.slice(0, 3).join(' | '));
+  }, 'major');
   await s.check('Developer portal offers the booking section with its own form', async () => {
     const dev = await ctx.newPage(); const e3 = watch(dev);
     await dev.goto(stack.url('testcafe', '/theme-dev.html'), { waitUntil: 'load' }); await dev.waitForTimeout(1500);
