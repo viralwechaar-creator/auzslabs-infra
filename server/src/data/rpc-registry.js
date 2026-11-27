@@ -984,6 +984,7 @@ export const RPC = {
   sfx_theme_import: { params: ['p'], jsonb: ['p'], auth: true },
   sfx_theme_install_delete: { params: ['p_install_id'], auth: true },
   sfx_theme_install_list: { params: [], auth: true },
+  sfx_section_registry: { params: [], auth: true },
   sfx_theme_install_get: { params: ['p_install_id'], auth: true },
   sfx_theme_install_set_active: { params: ['p_install_id'], auth: true },
   sfx_studs_settings_save: { params: ['p_install_id', 'p'], auth: true },

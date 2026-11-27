@@ -1,0 +1,89 @@
+// Theme editor step 1 (db/452): the section registry, validation of saved drafts, blocks, and the new section types on the public store.
+import { suite, watch, assert } from '../../lib/harness.mjs';
+import { newCtx } from '../../lib/common.mjs';
+import { q, USERS, PASSWORD } from '../../lib/db.mjs';
+
+export default async function run({ browser, stack }) {
+  const s = suite('Storefront sections', 'A registry of section types, server-side checks on saved designs, items inside sections, and the public store drawing them.');
+  await q("update tenant_settings set features = features || '{\"storefront\":true}' where tenant_id = (select id from tenants where slug='testcafe')");
+  await q("insert into sfx_stores (tenant_id, published) select id, true from tenants where slug='testcafe' on conflict (tenant_id) do update set published=true");
+  const tid = (await q("select id from tenants where slug='testcafe'"))[0].id;
+  await q("delete from sfx_products where tenant_id=$1 and name='Section Tee'", [tid]);
+  await q("insert into sfx_products (tenant_id, name, handle, status, price, images) values ($1, 'Section Tee', 'section-tee', 'active', 700, '[]'::jsonb)", [tid]);
+  const pid = (await q("select id from sfx_products where tenant_id=$1 and handle='section-tee'", [tid]))[0].id;
+  await q("insert into sfx_variants (tenant_id, product_id, label, price, stock, position) values ($1, $2, 'M', 700, 5, 0)", [tid, pid]);
+  const ctx = await newCtx(browser, stack, { w: 1280, h: 900 }); const page = await ctx.newPage(); const errs = watch(page);
+  await page.goto(stack.url('testcafe', '/storefront.html'), { waitUntil: 'load' }); await page.waitForTimeout(800);
+  const content = { sections: [
+    { id: 'f1', type: 'faq', props: { heading: 'Good questions' }, blocks: [{ id: 'q1', type: 'question', props: { question: 'Do you ship everywhere?', answer: 'Across India.' } }, { id: 'q2', type: 'question', props: { question: 'Can I return it?', answer: 'Within 30 days.' } }] },
+    { id: 'c1', type: 'columns', props: { heading: 'Why us' }, blocks: [{ id: 'k1', type: 'column', props: { title: 'Made slowly', text: 'By hand.', href: '/shop', link_text: 'See more' } }] },
+    { id: 'p1', type: 'featured_collection', props: { heading: 'Fresh in', count: '4', columns: '3', button: 'Shop all' } },
+    { id: 'i1', type: 'image_text', props: { heading: 'Our story', body: 'Since 2019.', layout: 'right', button: 'Read', href: '/about' } },
+    { id: 'g1', type: 'gallery', props: { heading: 'Looks' }, blocks: [{ id: 'g1a', type: 'picture', props: { image: 'https://example.com/a.jpg', caption: 'One' } }] },
+  ] };
+  const out = await page.evaluate(async ([e, p, content]) => {
+    const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: p });
+    const reg = await c.rpc('sfx_section_registry'); if (reg.error) return { error: reg.error.message };
+    const made = await c.rpc('sfx_theme_install_create', { p: { name: 'Sections test', starter: 'blank', base: 'minimal' } }); if (made.error) return { error: made.error.message };
+    const id = made.data.installId;
+    const save = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: content }); if (save.error) return { error: save.error.message };
+    const bad = [
+      { sections: [{ type: 'nope', props: {} }] },
+      { sections: [{ type: 'hero', props: { href: 'javascript:alert(1)' } }] },
+      { sections: [{ type: 'columns', props: {}, blocks: [1, 2, 3, 4, 5].map((n) => ({ type: 'column', props: { title: 'x' + n } })) }] },
+      { sections: [{ type: 'faq', props: {}, blocks: [{ type: 'not_a_block', props: {} }] }] },
+    ];
+    const refused = []; for (const b of bad) { const r = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: b }); refused.push(r.error ? r.error.message : 'ACCEPTED'); }
+    await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: content });
+    const a = await c.rpc('sfx_theme_install_set_active', { p_install_id: id }); if (a.error) return { error: a.error.message };
+    const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); if (pub.error) return { error: pub.error.message };
+    return { ok: true, types: reg.data.map((t) => t.type), blockTypes: Object.fromEntries(reg.data.filter((t) => t.blockTypes).map((t) => [t.type, t.maxBlocks])), refused };
+  }, [USERS.cafeOwner, PASSWORD, content]);
+  await s.check('The registry lists the six built-in types and the five new ones', async () => {
+    assert(out.ok, JSON.stringify(out));
+    for (const t of ['hero', 'text', 'image', 'button', 'announcement', 'booking', 'featured_collection', 'image_text', 'faq', 'columns', 'gallery']) assert(out.types.includes(t), 'missing ' + t);
+    assert(out.blockTypes.columns === 4 && out.blockTypes.faq === 12, JSON.stringify(out.blockTypes));
+  }, 'critical');
+  await s.check('The server refuses an unknown type, an unsafe link, too many items and an unknown item type', async () => {
+    assert(out.ok, JSON.stringify(out));
+    assert(/unknown type/.test(out.refused[0]), out.refused[0]); assert(/links must start/.test(out.refused[1]), out.refused[1]);
+    assert(/up to 4 items/.test(out.refused[2]), out.refused[2]); assert(/unknown item type/.test(out.refused[3]), out.refused[3]);
+  }, 'critical');
+  await s.check('A saved draft keeps its items, their ids and its order', async () => {
+    const row = (await q("select draft_content from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].draft_content;
+    assert(row.sections.length === 5 && row.sections[0].id === 'f1', JSON.stringify(row.sections.map((x) => x.id)));
+    assert(row.sections[0].blocks.length === 2 && row.sections[0].blocks[1].id === 'q2', 'blocks lost');
+    assert(row.sections[3].props.layout === 'right' && !('javascript' in row.sections[3].props), 'props wrong');
+  }, 'critical');
+  await s.check('The public store draws the new sections with their items', async () => {
+    const pg = await ctx.newPage(); const e2 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const t = await pg.locator('body').innerText();
+    assert(/Good questions/.test(t) && /Do you ship everywhere/.test(t) && /Can I return it/.test(t), 'faq missing: ' + t.slice(0, 200));
+    assert(await pg.locator('.custom-faq details').count() === 2, 'faq items');
+    assert(/Made slowly/.test(t) && /See more/.test(t), 'columns missing');
+    assert(/Fresh in/.test(t) && /Section Tee/.test(t), 'featured products missing');
+    assert(/Our story/.test(t) && await pg.locator('.custom-imgtext.pic-right').count() === 1, 'image with text missing');
+    assert(await pg.locator('.custom-gallery img').count() === 1, 'gallery missing');
+    assert(!e2.filter((x) => !/sentry|fonts|example\.com/i.test(x)).length, e2.slice(0, 3).join(' | '));
+  }, 'critical');
+  await s.check('The editor adds a section with items, edits an item and saves', async () => {
+    const before = errs.length;
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    const types = await page.locator('#te-add-type option').allInnerTexts();
+    assert(types.includes('Questions and answers') && types.includes('Picture gallery'), 'types not from the registry: ' + types.join(','));
+    await page.selectOption('#te-add-type', 'faq'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(500);
+    assert(await page.locator('form[data-form="te-block"]').count() === 2, 'starter items missing');
+    await page.click('[data-action="te-badd"]'); await page.waitForTimeout(300);
+    assert(await page.locator('form[data-form="te-block"]').count() === 3, 'item not added');
+    await page.locator('form[data-form="te-block"]').nth(2).locator('input[name=question]').fill('Is it cotton?');
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1200);
+    const row = (await q("select draft_content from sfx_theme_installs where id=$1", [inst]))[0].draft_content;
+    const last = row.sections[row.sections.length - 1];
+    assert(last.type === 'faq' && last.blocks.length === 3 && last.blocks[2].props.question === 'Is it cotton?', JSON.stringify(last));
+    assert(!errs.slice(before).filter((x) => !/sentry|fonts|example\.com|reading 'open'/i.test(x)).length, errs.slice(before).slice(0, 3).join(' | '));
+  }, 'major');
+  await ctx.close();
+  return s.done();
+}
