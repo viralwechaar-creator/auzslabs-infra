@@ -108,7 +108,8 @@ export function rerender(skipRefresh) {
   const accountTheme = localStorage.getItem('auzslab.preview.theme') || 'auto';
   const activeName = allItems.find(([id]) => id === active)?.[1] || 'Overview';
   const dark = accountTheme === 'dark';
-  const headerActions = '<div class="topbar-actions">' +
+  // Notifications, View site and Dark mode live only on Home; other pages show their own main button here.
+  const headerActions = active !== 'home' ? '<div class="topbar-actions"></div>' : '<div class="topbar-actions">' +
     '<a class="btn top-action" href="' + pathFor('notifications') + '" aria-label="Notifications' + (unread ? ', ' + unread + ' unread' : '') + '" title="Notifications">' + icon('bell') + '<span class="top-action-label">Notifications</span>' + (unread ? '<span class="top-count" aria-hidden="true">' + unread + '</span>' : '') + '</a>' +
     (state.tenant?.slug ? '<a class="btn top-action" href="https://' + esc(state.tenant.slug) + '.auzslab.in/store.html" target="_blank" rel="noopener" aria-label="View site" title="View site">' + icon('globe') + '<span class="top-action-label">View site</span></a>' : '') +
     '<button type="button" class="btn top-action" data-action="account-theme" aria-label="Switch to ' + (dark ? 'light' : 'dark') + ' mode" title="Switch to ' + (dark ? 'light' : 'dark') + ' mode">' + icon(dark ? 'sun' : 'moon') + '<span class="top-action-label">' + (dark ? 'Light' : 'Dark') + '</span></button>' +
@@ -161,6 +162,15 @@ export function rerender(skipRefresh) {
   // Phone: the create menu lives in the top bar next to the bell, like Shopify.
   const plus = document.querySelector('.page-head .plus-menu'), tb = document.querySelector('.topbar .topbar-actions');
   if (plus && tb && matchMedia('(max-width:899px)').matches) { plus.classList.add('in-top'); plus.querySelector('summary').innerHTML = '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/></svg>'; tb.insertBefore(plus, tb.firstChild); }
+  // Every page except Home: its main action sits in the top bar (links and data-action buttons only, so forms keep working).
+  if (active !== 'home') {
+    const tbx = document.querySelector('.topbar .topbar-actions');
+    document.querySelectorAll('.page-head .actions').forEach((box) => {
+      if (!tbx) return;
+      const main = box.querySelector(':scope > .plus-menu') || [...box.querySelectorAll('a.btn.primary, button.btn.primary[data-action]')].find((el) => !el.closest('form') && el.offsetParent !== null);
+      if (main) { main.classList.add('in-top'); tbx.appendChild(main); }
+    });
+  }
   // Calm pages: keep one primary action visible, fold the others into a single "More actions" menu.
   document.querySelectorAll('.page-head .actions').forEach((box) => {
     const items = [...box.children].filter((el) => el.matches('.btn, button, a'));
