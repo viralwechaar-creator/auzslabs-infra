@@ -1043,3 +1043,32 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
 .shell .work>.dc-wrap{max-width:1040px;margin:0 auto;grid-template-columns:minmax(0,1fr) 300px;gap:32px}
 .shell .work>.dc-wrap .dc-main .actions{position:sticky;bottom:0;background:var(--paper);padding:12px 0;border-top:1px solid var(--line);margin-top:8px;justify-content:flex-end}
 @media (max-width:899px){.shell .work>.dc-wrap{grid-template-columns:1fr}}
+
+/* 52. Phone product rows: picture left; name, category and stock in the middle; status and price at the right */
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]){display:grid!important;grid-template-columns:auto minmax(0,1fr) auto;column-gap:12px;row-gap:2px;align-items:center;padding:12px 0}
+  .shell tbody tr:has(td[data-label=Product]) td{display:block;width:auto;margin:0;padding:0;font-size:13px;color:var(--muted);order:0}
+  .shell tbody tr:has(td[data-label=Product])::after{display:none}
+  .shell tbody tr:has(td[data-label=Product]) td:first-child:not([data-label=Product]){display:none}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product],.shell tbody tr:has(td[data-label=Product]) td[data-label=Product] .cell-product{display:contents!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product] img,.shell tbody tr:has(td[data-label=Product]) td[data-label=Product] .thumb,.shell tbody tr:has(td[data-label=Product]) td[data-label=Product] .img-ph{grid-column:1;grid-row:1/4;width:56px;height:56px;border-radius:12px;border:1px solid var(--line);object-fit:cover;align-self:start}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product] a{grid-column:2;grid-row:1;font-size:16px;font-weight:600;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Category]{grid-column:2;grid-row:2}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Available]{grid-column:2;grid-row:3}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status]{grid-column:3;grid-row:1;justify-self:end;margin:0}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Price]{grid-column:3;grid-row:2;justify-self:end;font-size:15px;font-weight:600;color:var(--ink)}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td::before{display:none!important;content:none!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Available]::after{content:" available"}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]>a,.shell tbody tr:has(td[data-label=Product]) td[data-label=Product] a{grid-column:2!important;grid-row:1!important}
+}
+
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Category],.shell tbody tr:has(td[data-label=Product]) td[data-label=Available]{display:block!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Status],.shell tbody tr:has(td[data-label=Product]) td[data-label=Price]{display:block!important;margin:0!important}
+}
+@media (max-width:899px){
+  .shell tbody tr:has(td[data-label=Product]){grid-template-columns:56px minmax(0,1fr) auto!important}
+  .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]:not(:has(img))::before{display:block!important;content:""!important;grid-column:1;grid-row:1/4;width:56px;height:56px;border-radius:12px;border:1px solid var(--line);background:var(--soft);align-self:start}
+}
