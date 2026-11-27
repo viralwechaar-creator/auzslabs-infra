@@ -937,23 +937,41 @@ function discountsPage() {
     (d.usedCount ? '<a href="#" data-action="discount-orders:' + esc(d.code) + '">' + d.usedCount + '</a>' : '0') + (d.usageLimit ? ' / ' + d.usageLimit : ''), badge(d.status === 'active' ? 'Active' : 'Archived', d.status === 'active' ? '' : 'neutral'),
     canWrite() ? button('Edit', 'discount-edit:' + d.id, 'compact') + button(d.status === 'active' ? 'Archive' : 'Activate', 'discount-toggle:' + d.id, 'compact') : '',
   ]);
+  const empty = '<div class="dc-empty"><svg viewBox="0 0 160 130" width="150" height="122" aria-hidden="true"><circle cx="82" cy="70" r="46" fill="#eef0f0"/><rect x="22" y="22" width="76" height="40" rx="3" fill="#e0b062"/><rect x="29" y="28" width="62" height="28" fill="#cc9840"/><path d="M45 34l14 16M45 50l14-16" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M76 30v22" stroke="#fff" stroke-width="2.5" stroke-dasharray="3 4"/><path d="M92 12l-12 56 14 14M104 14l-10 54" stroke="#c9ccd0" stroke-width="5" stroke-linecap="round"/><circle cx="68" cy="106" r="11" fill="none" stroke="#559c97" stroke-width="6"/><path d="M96 80l10 22a11 11 0 11-8 6" fill="none" stroke="#3a7d5c" stroke-width="6" stroke-linecap="round"/></svg><h2>Manage discounts and promotions</h2><p>Create discount codes and automatic discounts that apply at checkout.</p>' + (canWrite() ? '<button type="button" class="btn dark" data-action="discount-new">Create discount</button>' : '') + '</div>';
   return head('Discounts', 'Codes your customers type at checkout.', canWrite() ? button('Create discount', 'discount-new', 'primary') : '') +
-    panel('All discounts', table(['Code', 'Offer', 'Minimum order', 'Expires', 'Used', 'Status', ''], rows));
+    (rows.length ? panel('All discounts', table(['Code', 'Offer', 'Minimum order', 'Expires', 'Used', 'Status', ''], rows)) : empty);
 }
-function discountForm(d) {
+const DISCOUNT_TYPES = [['products', 'Amount off products', 'Discount specific products or collections of products', 'tag'], ['bxgy', 'Buy X get Y', 'Discount specific products or collections of products', 'tag'], ['order', 'Amount off order', 'Discount the total order amount', 'inbox'], ['shipping', 'Free shipping', 'Offer free shipping on an order', 'truck']];
+const discountTypeIcon = (k) => k === 'inbox' ? '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 11l2-6h10l2 6v4H3zM3 11h4l1 2h4l1-2h4"/></svg>' : k === 'truck' ? '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M2 5h10v8H2zM12 8h4l2 3v2h-6zM5 15a1.5 1.5 0 100-.01M14 15a1.5 1.5 0 100-.01"/></svg>' : '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 3h6l8 8-6 6-8-8z"/><circle cx="6.5" cy="6.5" r="1.2"/></svg>';
+function discountTypePicker() {
+  return '<div class="dc-types">' + DISCOUNT_TYPES.map(([id, t, d, ic]) => '<button type="button" class="dc-type" data-action="discount-type:' + id + '"><span class="dc-ti">' + discountTypeIcon(ic) + '</span><span class="dc-tt"><strong>' + t + '</strong><small>' + d + '</small></span><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 4.5L13 10l-5.5 5.5"/></svg></button>').join('') + '</div><div class="actions"><button type="button" class="btn" data-action="close-dialog">Cancel</button></div>';
+}
+const discountTypeOf = (d) => !d ? 'products' : d.kind === 'free_shipping' ? 'shipping' : d.kind === 'buy_x_get_y' ? 'bxgy' : ((d.productIds || []).length ? 'products' : 'order');
+const discountSummary = (v) => {
+  const t = v.type, val = Number(v.value || 0), pct = v.kind !== 'flat';
+  const offer = t === 'shipping' ? 'Free shipping' : t === 'bxgy' ? 'Buy ' + (v.buyQty || '?') + ', get ' + (v.getQty || '?') + (Number(v.getPercent || 100) < 100 ? ' at ' + v.getPercent + '% off' : ' free') : val ? (pct ? val + '% off' : 'Rs ' + val + ' off') : 'No value yet';
+  const rows = [v.code ? '<strong>' + esc(v.code) + '</strong>' : '<strong>No discount code yet</strong>', '<span class="muted">' + (v.automatic === 'yes' ? 'Automatic discount' : 'Code') + '</span>'];
+  const det = [offer, t === 'order' || t === 'shipping' ? 'On the whole order' : v.productId ? 'On a chosen product' : 'On all products', v.minOrder ? 'Minimum order Rs ' + v.minOrder : 'No minimum purchase requirement', v.usageLimit ? v.usageLimit + ' uses in total' : 'No usage limits', v.perCustomerLimit ? v.perCustomerLimit + ' per customer' : '', v.firstOrderOnly === 'yes' ? 'First order only' : 'All customers', v.startsAt ? 'Starts ' + v.startsAt : 'Active from today', v.expiresAt ? 'Ends ' + v.expiresAt : ''].filter(Boolean);
+  return '<div class="dc-sum-h">' + rows.join('') + '</div><h4>Details</h4><ul>' + det.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>';
+};
+function discountForm(d, preType) {
   const exp = d?.expiresAt ? String(d.expiresAt).slice(0, 10) : ''; const st = d?.startsAt ? String(d.startsAt).slice(0, 10) : '';
+  const type = preType || discountTypeOf(d);
   const prods = [['', 'All products']].concat((state.products || []).map((p) => [p.id, p.name]));
-  return editForm('discount-record', d?.id, input('Code or name', 'code', d?.code || '', 'text', 'required maxlength="30"') +
-    select('Type', 'kind', [['percent', 'Percentage off'], ['flat', 'Flat amount off (Rs)'], ['free_shipping', 'Free shipping'], ['buy_x_get_y', 'Buy X get Y']], d?.kind || 'percent') +
-    input('Value (percent or Rs, not needed for free shipping or Buy X get Y)', 'value', d?.value ?? '', 'number', 'min="0" step="0.01"') +
-    input('Buy this many (Buy X get Y)', 'buyQty', d?.buyQty ?? '', 'number', 'min="1" step="1"') + input('Get this many (Buy X get Y)', 'getQty', d?.getQty ?? '', 'number', 'min="1" step="1"') +
-    input('Gift discount percent (100 = free)', 'getPercent', d?.getPercent ?? 100, 'number', 'min="1" max="100" step="1"') +
-    select('Applies to', 'productId', prods, (d?.productIds || [])[0] || '') +
-    select('How customers get it', 'automatic', [['no', 'They type the code'], ['yes', 'Applied automatically (no code needed)']], d?.automatic ? 'yes' : 'no') +
-    input('Minimum order (Rs, optional)', 'minOrder', d?.minOrder ?? '', 'number', 'min="0" step="0.01"') +
-    input('Starts on (optional)', 'startsAt', st, 'date') + input('Expires on (optional)', 'expiresAt', exp, 'date') +
-    input('Total uses allowed (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"') + input('Uses per customer (optional)', 'perCustomerLimit', d?.perCustomerLimit ?? '', 'number', 'min="1" step="1"') +
-    select('First order only', 'firstOrderOnly', [['no', 'Any customer'], ['yes', 'Only a customer\'s first order']], d?.firstOrderOnly ? 'yes' : 'no'));
+  const sec = (title, body) => '<section class="dc-sec"><h3>' + title + '</h3><div class="dc-box">' + body + '</div></section>';
+  const kindField = type === 'shipping' ? '<input type="hidden" name="kind" value="free_shipping">' : type === 'bxgy' ? '<input type="hidden" name="kind" value="buy_x_get_y">' : select('Discount type', 'kind', [['percent', 'Percentage'], ['flat', 'Fixed amount (Rs)']], d?.kind === 'flat' ? 'flat' : 'percent');
+  const valueSec = type === 'shipping' ? '' : type === 'bxgy'
+    ? sec('Customer buys', input('Quantity', 'buyQty', d?.buyQty ?? 1, 'number', 'min="1" step="1"')) + sec('Customer gets', input('Quantity', 'getQty', d?.getQty ?? 1, 'number', 'min="1" step="1"') + input('Discount percent (100 = free)', 'getPercent', d?.getPercent ?? 100, 'number', 'min="1" max="100" step="1"'))
+    : sec('Discount value', kindField + input('Value (percent or Rs)', 'value', d?.value ?? '', 'number', 'min="0" step="0.01"'));
+  const appliesSec = type === 'products' || type === 'bxgy' ? sec('Applies to', select('Product', 'productId', prods, (d?.productIds || [])[0] || '')) : '<input type="hidden" name="productId" value="">';
+  const body = '<input type="hidden" name="dtype" value="' + type + '">' + (type === 'shipping' || type === 'bxgy' ? kindField : '') +
+    sec('Method', select('How customers get it', 'automatic', [['no', 'Discount code'], ['yes', 'Automatic discount']], d?.automatic ? 'yes' : 'no') + input('Discount code or name', 'code', d?.code || '', 'text', 'required maxlength="30"')) +
+    valueSec + appliesSec +
+    sec('Eligibility', input('Minimum order (Rs, optional)', 'minOrder', d?.minOrder ?? '', 'number', 'min="0" step="0.01"') + select('Customers', 'firstOrderOnly', [['no', 'All customers'], ['yes', 'Only a customer\'s first order']], d?.firstOrderOnly ? 'yes' : 'no')) +
+    sec('Maximum uses', input('Total uses allowed (optional)', 'usageLimit', d?.usageLimit ?? '', 'number', 'min="1" step="1"') + input('Uses per customer (optional)', 'perCustomerLimit', d?.perCustomerLimit ?? '', 'number', 'min="1" step="1"')) +
+    sec('Active dates', input('Starts on (optional)', 'startsAt', st, 'date') + input('Expires on (optional)', 'expiresAt', exp, 'date'));
+  const init = { type, code: d?.code || '', kind: d?.kind || (type === 'shipping' ? 'free_shipping' : type === 'bxgy' ? 'buy_x_get_y' : 'percent'), value: d?.value ?? '', buyQty: d?.buyQty ?? '', getQty: d?.getQty ?? '', getPercent: d?.getPercent ?? 100, productId: (d?.productIds || [])[0] || '', automatic: d?.automatic ? 'yes' : 'no', minOrder: d?.minOrder ?? '', usageLimit: d?.usageLimit ?? '', perCustomerLimit: d?.perCustomerLimit ?? '', firstOrderOnly: d?.firstOrderOnly ? 'yes' : 'no', startsAt: st, expiresAt: exp };
+  return '<div class="dc-wrap"><div class="dc-main">' + editForm('discount-record', d?.id, body) + '</div><aside class="dc-sum" aria-label="Summary">' + discountSummary(init) + '</aside></div>';
 }
 
 // ---------- Inventory, Transfers, Categories ----------
@@ -1728,7 +1746,8 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'customer-edit') return dialog('Edit customer', customerForm(state.customers.find((c) => c.id === key)));
   if (a === 'customer-adopt') { const c = state.customers.find((x) => x.phone === decodeURIComponent(key)); return dialog('Save as customer', customerForm({ ...c, id: null })); }
   if (a === 'customer-delete') return withBusy(async () => { if (!confirm('Delete this customer record? Their past orders are not affected.')) return; await api('sfx_customer_delete', { p_id: key }); await refreshCustomers(); save('Customer deleted.'); rerender(true); });
-  if (a === 'discount-new') return dialog('Create discount', discountForm(null));
+  if (a === 'discount-new') return dialog('Select discount type', discountTypePicker());
+  if (a === 'discount-type') return dialog('Create discount', discountForm(null, key));
   if (a === 'discount-edit') return dialog('Edit discount', discountForm(state.discounts.find((d) => d.id === key)));
   if (a === 'discount-toggle') return withBusy(async () => { const d = state.discounts.find((x) => x.id === key); await api('sfx_discount_set_status', { p_id: key, p_status: d.status === 'active' ? 'archived' : 'active' }); await refreshDiscounts(); save('Discount updated.'); rerender(true); });
   if (a === 'stock-details') return dialog('Stock details', stockDetailsForm(state.inventory.find((v) => v.variantId === key)));
@@ -1945,3 +1964,11 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
     rerender();
   });
 }
+
+// Discount form: the summary on the right follows what is typed
+document.addEventListener('input', (e) => {
+  const f = e.target.closest && e.target.closest('form[data-key="discount-record"]'); if (!f) return;
+  const box = f.closest('.dc-wrap')?.querySelector('.dc-sum'); if (!box) return;
+  const v = Object.fromEntries(new FormData(f).entries()); v.type = v.dtype;
+  box.innerHTML = discountSummary(v);
+});
