@@ -946,6 +946,12 @@ const discountTypeIcon = (k) => k === 'inbox' ? '<svg viewBox="0 0 20 20" width=
 function discountTypePicker() {
   return '<div class="dc-types">' + DISCOUNT_TYPES.map(([id, t, d, ic]) => '<button type="button" class="dc-type" data-action="discount-type:' + id + '"><span class="dc-ti">' + discountTypeIcon(ic) + '</span><span class="dc-tt"><strong>' + t + '</strong><small>' + d + '</small></span><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 4.5L13 10l-5.5 5.5"/></svg></button>').join('') + '</div><div class="actions"><button type="button" class="btn" data-action="close-dialog">Cancel</button></div>';
 }
+function discountPage(record) {
+  const d = record === 'new' ? null : (state.discounts || []).find((x) => String(x.id) === decodeURIComponent(record));
+  if (record !== 'new' && !d) return head('Discount not found', '', '', ['discounts', 'Discounts']) + '<p class="empty">This discount no longer exists.</p>';
+  const type = d ? '' : (new URLSearchParams(location.hash.split('?')[1]).get('type') || 'products');
+  return head(d ? 'Edit discount' : 'Create discount', '', '', ['discounts', 'Discounts']) + discountForm(d, d ? '' : type).replace('data-action="close-dialog"', 'data-action="discount-cancel"');
+}
 const discountTypeOf = (d) => !d ? 'products' : d.kind === 'free_shipping' ? 'shipping' : d.kind === 'buy_x_get_y' ? 'bxgy' : ((d.productIds || []).length ? 'products' : 'order');
 const discountSummary = (v) => {
   const t = v.type, val = Number(v.value || 0), pct = v.kind !== 'flat';
@@ -1454,6 +1460,7 @@ export function workspace(id, record) {
   else if (['website', 'templates', 'builder', 'domains', 'checkout', 'store-pages', 'store-directory'].includes(id)) html = websitePage(id);
   else if (id === 'insights') html = insightsPage();
   else if (id === 'customers') html = customersPage();
+  else if (id === 'discounts' && record) html = discountPage(record);
   else if (id === 'discounts') html = discountsPage();
   else if (id === 'segments') html = segmentsPage();
   else if (id === 'companies') html = companiesPage();
@@ -1625,7 +1632,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
         const startsAt = data.startsAt ? new Date(data.startsAt + 'T00:00:00').toISOString() : '';
         await api('sfx_discount_save', { p_id: rid, p: { code: data.code, kind: data.kind, value: data.value, minOrder: data.minOrder, expiresAt, startsAt, usageLimit: data.usageLimit, perCustomerLimit: data.perCustomerLimit,
           buyQty: data.buyQty, getQty: data.getQty, getPercent: data.getPercent, automatic: data.automatic === 'yes', firstOrderOnly: data.firstOrderOnly === 'yes', productIds: data.productId ? [data.productId] : [] } });
-        await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); rerender(true);
+        await refreshDiscounts(); save(rid ? 'Discount updated.' : 'Discount created.'); close(); if (/#\/?discounts\/./.test(location.hash)) location.hash = pathFor('discounts').split('#')[1]; else rerender(true);
       } else if (key === 'stock-details') {
         await api('sfx_variant_meta_save', { p_variant: rid, p: { cost: data.cost === '' ? '' : String(data.cost), needsShipping: data.needsShipping !== 'no' } });
         const n = Number(data.units || 0);
@@ -1747,8 +1754,9 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (a === 'customer-adopt') { const c = state.customers.find((x) => x.phone === decodeURIComponent(key)); return dialog('Save as customer', customerForm({ ...c, id: null })); }
   if (a === 'customer-delete') return withBusy(async () => { if (!confirm('Delete this customer record? Their past orders are not affected.')) return; await api('sfx_customer_delete', { p_id: key }); await refreshCustomers(); save('Customer deleted.'); rerender(true); });
   if (a === 'discount-new') return dialog('Select discount type', discountTypePicker());
-  if (a === 'discount-type') return dialog('Create discount', discountForm(null, key));
-  if (a === 'discount-edit') return dialog('Edit discount', discountForm(state.discounts.find((d) => d.id === key)));
+  if (a === 'discount-type') { close(); location.hash = pathFor('discounts/new?type=' + key).split('#')[1]; return; }
+  if (a === 'discount-cancel') { location.hash = pathFor('discounts').split('#')[1]; return; }
+  if (a === 'discount-edit') { location.hash = pathFor('discounts/' + encodeURIComponent(key)).split('#')[1]; return; }
   if (a === 'discount-toggle') return withBusy(async () => { const d = state.discounts.find((x) => x.id === key); await api('sfx_discount_set_status', { p_id: key, p_status: d.status === 'active' ? 'archived' : 'active' }); await refreshDiscounts(); save('Discount updated.'); rerender(true); });
   if (a === 'stock-details') return dialog('Stock details', stockDetailsForm(state.inventory.find((v) => v.variantId === key)));
   if (a === 'stock-buffer') return dialog('Stock buffer', editForm('stock-buffer', '', '<p class="compact-copy wide">Online orders cannot take a variant below this many units. Your own till is not held to it.</p>' + input('Units to keep back', 'buffer', (state.checkout && state.checkout.stockBuffer) || 0, 'number', 'min="0" step="1" required'), 'Save buffer'));
