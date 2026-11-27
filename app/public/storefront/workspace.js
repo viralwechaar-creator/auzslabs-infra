@@ -757,6 +757,11 @@ if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data || !ed) return;
   if (e.data.type === 'auz-ready') { const th = [...document.querySelectorAll('.te-thumb')].find((f) => f.contentWindow === e.source); if (th) { try { e.source.postMessage(edDraftMsg(th.dataset.view), location.origin); } catch (err) { /* not ready */ } } else edPost(); }
   if (e.data.type === 'auz-select' && (e.data.group === 'header' || e.data.group === 'footer') && ed.cur !== 'group:' + e.data.group) { ed.cur = 'group:' + e.data.group; edBind(); edRefresh('lrbp'); }
+  if (e.data.type === 'auz-edit' && canWrite() && ['text', 'label'].includes(e.data.field) && typeof e.data.value === 'string') {
+    const x = ed.sections[e.data.index], bi = e.data.block;
+    if (x && x.blocks && x.blocks[bi]) { if (!ed.snapped) { edSnapshot(); ed.snapped = true; } x.blocks[bi] = { ...x.blocks[bi], props: { ...(x.blocks[bi].props || {}), [e.data.field]: e.data.value.slice(0, 500) } }; ed.sel = e.data.index; ed.blk = bi; ed.snapped = false; edRefresh('lrb'); edPost(); }
+    return;
+  }
   if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.blk = Number.isInteger(e.data.block) ? e.data.block : -1; ed.snapped = false; edRefresh('lrb'); }
 });
 // ---------- Studs theme: settings editor with a live preview of the DRAFT (nothing here changes the live store) ----------

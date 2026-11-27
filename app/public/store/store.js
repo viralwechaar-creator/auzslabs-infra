@@ -965,6 +965,18 @@ function customEl(s, i, group) {
   if (PREVIEW) {
     el.setAttribute('data-sec', group ? group + ':' + i : String(i)); el.style.cursor = 'pointer';
     el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); const bl = ev.target.closest('[data-blk]'); parent.postMessage({ type: 'auz-select', index: i, group: group || '', block: bl ? Number(bl.dataset.blk) : -1 }, location.origin); }, true);
+    // double-click a heading, text or button inside a Content section to type directly on the page
+    el.addEventListener('dblclick', (ev) => {
+      const bl = ev.target.closest('[data-blk]'); if (!bl || el.dataset.editing) return;
+      const b = (s.blocks || [])[Number(bl.dataset.blk)]; const field = b && { heading: 'text', text: 'text', button: 'label' }[b.type]; if (!field) return;
+      ev.preventDefault(); ev.stopPropagation(); el.dataset.editing = '1';
+      const before = bl.textContent; bl.contentEditable = 'plaintext-only'; bl.style.outline = '2px solid #3b82f6'; bl.focus();
+      const done = (save) => { bl.removeEventListener('blur', onBlur); bl.removeEventListener('keydown', onKey); bl.contentEditable = 'false'; bl.style.outline = ''; delete el.dataset.editing;
+        const val = bl.textContent.replace(/\s+$/, ''); if (!save || val === before) { bl.textContent = before; return; }
+        parent.postMessage({ type: 'auz-edit', index: i, group: group || '', block: Number(bl.dataset.blk), field, value: val }, location.origin); };
+      const onBlur = () => done(true); const onKey = (k) => { if (k.key === 'Escape') { k.preventDefault(); done(false); } else if (k.key === 'Enter' && b.type !== 'text') { k.preventDefault(); bl.blur(); } };
+      bl.addEventListener('blur', onBlur); bl.addEventListener('keydown', onKey);
+    });
   }
   return el;
 }
