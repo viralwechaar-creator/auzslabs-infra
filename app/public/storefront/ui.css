@@ -1072,3 +1072,17 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
   .shell tbody tr:has(td[data-label=Product]){grid-template-columns:56px minmax(0,1fr) auto!important}
   .shell tbody tr:has(td[data-label=Product]) td[data-label=Product]:not(:has(img))::before{display:block!important;content:""!important;grid-column:1;grid-row:1/4;width:56px;height:56px;border-radius:12px;border:1px solid var(--line);background:var(--soft);align-self:start}
 }
+
+/* 53. No divider lines between items anywhere (cards, inputs and buttons keep their own borders) */
+.shell tbody tr,.shell tbody td,.shell tbody th,.shell thead th,.shell thead tr,.shell table,
+.shell .order-card,.shell .oc-day,.shell .setup .steps li,.shell .setup .steps a.step,
+.shell .home-main .panel tbody tr,.shell .panel-title,.shell .panel>.panel-title,
+.shell .lv-row,.shell .lv-3 .lv-row,.shell .hc-list li,.shell .hc-list>*,.shell .sl-row,.shell .pay-row,
+.shell .dc-type,.shell .dc-sum-h,.shell .record-layout>aside .panel,.shell .pay-meta,.shell .tl-item,
+.shell .summary-bar,.shell .topbar,.shell .work-area>.topbar,.shell .page-head,.shell .tabs,.shell .filters{border-top:0!important;border-bottom:0!important;border-left:0!important;border-right:0!important}
+.shell .lv-3 .lv-row{border-left:0!important}
+.shell .home-main .panel tbody tr{border-top:0!important}
+.shell hr,.shell .rule,.shell .divider{display:none}
+.shell .filters{border:0!important}
+@media (min-width:900px){.shell .work .panel .filters{border:1px solid var(--line)!important}}
+@media (max-width:899px){.shell .work .panel .filters{border:1px solid var(--line)!important}}
