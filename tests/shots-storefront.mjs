@@ -96,7 +96,7 @@ for (const [sizeName, [w, h, mobile]] of Object.entries(SIZES)) {
         await page.evaluate(() => document.querySelector('[data-action="discount-new"]').click()); await page.waitForTimeout(700);
         await page.screenshot({ path: path.join(out, 'disc_type__' + sizeName + '.png') });
         await page.evaluate(() => document.querySelector('[data-action="discount-type:products"]').click()); await page.waitForTimeout(800);
-        await page.fill('input[name=code]', 'SUMMER20').catch(() => {}); await page.fill('input[name=value]', '20').catch(() => {}); await page.waitForTimeout(300);
+        await page.fill('form[data-key=discount-record] input[name=code]', 'SUMMER20').catch(() => {}); await page.fill('form[data-key=discount-record] input[name=value]', '20').catch(() => {}); await page.waitForTimeout(300);
         await page.screenshot({ path: path.join(out, 'disc_form__' + sizeName + '.png') });
         await page.keyboard.press('Escape');
       }

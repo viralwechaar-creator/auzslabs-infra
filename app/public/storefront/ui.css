@@ -1037,3 +1037,7 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
 @media (max-width:899px){.dc-wrap{grid-template-columns:1fr}.dc-sum{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:12px;position:static}}
 .dc-main .field-grid{display:block}
 .dc-main .dc-box input,.dc-main .dc-box select{width:100%}
+
+.shell .work>.dc-wrap{max-width:1040px;margin:0 auto;grid-template-columns:minmax(0,1fr) 300px;gap:32px}
+.shell .work>.dc-wrap .dc-main .actions{position:sticky;bottom:0;background:var(--paper);padding:12px 0;border-top:1px solid var(--line);margin-top:8px;justify-content:flex-end}
+@media (max-width:899px){.shell .work>.dc-wrap{grid-template-columns:1fr}}

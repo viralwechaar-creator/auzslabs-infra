@@ -17,19 +17,20 @@ export default async function run({ browser, stack }) {
     assert(await page.locator('[data-action="discount-new"]').count() > 0, 'page did not render: ' + (await page.locator('body').innerText()).slice(0, 300) + ' | ' + JSON.stringify(tok).slice(0, 120));
     await page.locator('[data-action="discount-new"]').first().click();
     await page.locator('[data-action="discount-type:order"]').click(); await page.waitForTimeout(500);
-    await page.fill('#dialog input[name=code]', 'welcome15'); await page.fill('#dialog input[name=value]', '15'); await page.fill('#dialog input[name=minOrder]', '100');
-    await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1200);
+    assert(/discounts\/new/.test(page.url()), 'did not open its own page: ' + page.url());
+    await page.fill('form[data-key=discount-record] input[name=code]', 'welcome15'); await page.fill('form[data-key=discount-record] input[name=value]', '15'); await page.fill('form[data-key=discount-record] input[name=minOrder]', '100');
+    await page.locator('form[data-key=discount-record] button.primary').click(); await page.waitForTimeout(1500);
     const t = await page.locator('main, body').first().innerText(); assert(/WELCOME15/.test(t) && /15% off/.test(t), t.slice(0, 300));
     const r = await q("select code, value::float v, min_order::float m from sfx_discounts where upper(code)='WELCOME15'"); assert(r.length === 1 && r[0].v === 15 && r[0].m === 100, JSON.stringify(r));
   }, 'critical');
   await s.check('A bad code is refused with a message and nothing is saved', async () => {
     await page.locator('[data-action="discount-new"]').first().click();
     await page.locator('[data-action="discount-type:order"]').click(); await page.waitForTimeout(500);
-    await page.fill('#dialog input[name=code]', 'half'); await page.fill('#dialog input[name=value]', '150');
-    await page.locator('#dialog button.primary').click(); await page.waitForTimeout(1000);
+    await page.fill('form[data-key=discount-record] input[name=code]', 'half'); await page.fill('form[data-key=discount-record] input[name=value]', '150');
+    await page.locator('form[data-key=discount-record] button.primary').click(); await page.waitForTimeout(1000);
     assert(/exceed 100/.test(await page.locator('#toast').innerText()), 'no refusal message');
     assert((await q("select count(*)::int n from sfx_discounts where upper(code)='HALF'"))[0].n === 0, 'saved anyway');
-    page.once('dialog', (d) => d.accept()); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    await page.goto('about:blank'); await page.goto(stack.url('testcafe', '/storefront.html#/discounts'), { waitUntil: 'load' }); await page.waitForTimeout(1500);
   });
   await s.check('Archive then re-activate a code', async () => {
     await page.locator('[data-action^="discount-toggle:"]').first().click(); await page.waitForTimeout(900);
