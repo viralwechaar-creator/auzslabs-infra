@@ -1302,9 +1302,9 @@ function loadRzp() { return new Promise((res, rej) => { if (window.Razorpay) ret
 async function rzpPay(token, ok, later) {
   const base = (window.CFG || {}).url || '';
   const post = async (path, body) => { const r = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || j.message || 'Payment could not start'); return j; };
-  let st; try { st = await post('/payments/sty/start', { token }); await loadRzp(); } catch (e) { toast(e.message); later(); return; }
+  let st; try { st = await post('/payments/' + PFX + '/start', { token }); await loadRzp(); } catch (e) { toast(e.message); later(); return; }
   const rz = new window.Razorpay({ key: st.key, order_id: st.orderId, amount: st.amount, currency: 'INR', name: D.shop.name, description: 'Order ' + st.number, prefill: { name: st.name, contact: st.phone, email: st.email },
-    handler: async (resp) => { try { await post('/payments/sty/verify', { token, razorpay_order_id: resp.razorpay_order_id, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature }); toast('Payment received'); } catch (e) { toast('We could not confirm the payment yet. The store will check it.'); } ok(); },
+    handler: async (resp) => { try { await post('/payments/' + PFX + '/verify', { token, razorpay_order_id: resp.razorpay_order_id, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature }); toast('Payment received'); } catch (e) { toast('We could not confirm the payment yet. The store will check it.'); } ok(); },
     modal: { ondismiss: () => { toast('Payment not completed. You can pay from your order page.'); later(); } } });
   rz.open();
 }
