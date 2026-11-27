@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore Kaarigari, an Indian handicrafts storefront for clay, block-printed cotton, brass, woven baskets and carved wood.">
+  <title>Kaarigari — Objects made by hand</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,700&amp;family=DM+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="catalog.js" defer></script>
+  <script src="pages.js" defer></script>
+  <script src="shop.js" defer></script>
+  <script src="interactions.js" defer></script>
+  <script src="checkout.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="notice">Clay, cloth &amp; metal · Indian craft for the home</div>
+  <header class="site-head">
+    <div class="head-nav">
+      <nav aria-label="Main navigation"><a href="#/shop">Shop</a><a href="#/collections">Collections</a><a href="#/our-story">Our story</a></nav>
+    </div>
+    <a class="wordmark" href="#/" aria-label="Kaarigari home">Kaarigari<span>.</span></a>
+    <div class="tools">
+      <button class="icon" data-dialog="search" aria-label="Search" aria-haspopup="dialog"><span class="magnify" aria-hidden="true"></span></button>
+      <button class="icon bag-trigger" data-dialog="bag" aria-label="Shopping bag, 0 items" aria-haspopup="dialog">
+        <span class="bag-icon" aria-hidden="true"></span><span id="bag-count" aria-hidden="true" hidden>0</span>
+      </button>
+      <button class="icon menu-trigger" data-dialog="menu" aria-label="Open menu" aria-haspopup="dialog"><span class="menu-icon" aria-hidden="true"></span></button>
+    </div>
+  </header>
+  <main id="main" tabindex="-1"></main>
+  <footer class="site-footer">
+    <div class="footer-paper">
+      <div class="footer-content">
+      <div class="foot-intro">
+        <div><a class="wordmark footer-brand" href="#/"><img id="footer-mark" alt="" width="44" height="44"><span class="footer-brand-name">Kaarigari<span>.</span></span></a><p>Indian handicrafts for the home, from wheel-thrown clay and printed cotton to woven fibres and carved wood.</p></div>
+        <form id="newsletter-form"><label for="newsletter-email">Notes from Kaarigari</label><div class="newsletter-field"><input id="newsletter-email" type="email" autocomplete="email" placeholder="Your email address" required><button class="button">Subscribe</button></div><p data-newsletter-status role="status">Collection news and stories about the craft.</p></form>
+      </div>
+      <div class="foot-main">
+        <nav aria-label="Shop"><h2>Shop</h2><a href="#/shop">All objects</a><a href="#/collections">Collections</a><a href="#/pottery">Pottery edit</a><a href="#/shop/gifts">Gifts</a></nav>
+        <nav aria-label="Customer care"><h2>Customer care</h2><a href="#/faq">FAQs</a><a href="#/care">Care guide</a><a href="#/shipping">Shipping</a><a href="#/returns">Returns</a></nav>
+        <nav aria-label="Company"><h2>Company</h2><a href="#/our-story">Our story</a><a href="#/contact">Contact</a></nav>
+        <nav aria-label="Connect"><h2>Connect with us</h2><a href="#/contact">Contact us</a><a href="#/orders">Demo order history</a><button type="button" class="footer-button" id="cookie-notice-button" aria-controls="welcome-popup">Cookie notice</button><div class="footer-icons"><a href="https://www.instagram.com/auzslab.in" aria-label="AUZslab on Instagram"><span class="footer-instagram" aria-hidden="true"></span></a><a href="https://www.facebook.com/share/1FMd3FoFyZ/?mibextid=wwXIfr" aria-label="AUZslab on Facebook"><span class="footer-facebook" aria-hidden="true">f</span></a><a href="#/contact" aria-label="Contact Kaarigari"><span class="footer-envelope" aria-hidden="true"></span></a></div></nav>
+      </div>
+      </div>
+      <div class="footer-skyline">
+        <img id="footer-art" class="footer-art" alt="" width="1536" height="599" loading="lazy">
+        <div class="foot-note"><span>© Kaarigari</span><nav aria-label="Store policies"><a href="#/privacy">Privacy</a><a href="#/terms">Store terms</a></nav></div>
+      </div>
+    </div>
+  </footer>
+  <dialog id="drawer" aria-labelledby="drawer-title">
+    <div class="drawer-head"><h2 id="drawer-title"></h2><button class="icon" id="drawer-close" aria-label="Close panel">×</button></div>
+    <div id="drawer-body"></div>
+  </dialog>
+  <aside class="welcome-popup" id="welcome-popup" aria-labelledby="welcome-title" hidden>
+    <div class="welcome-head"><h2 id="welcome-title">Welcome to Kaarigari</h2><button type="button" class="icon" data-welcome-dismiss aria-label="Close welcome notice">×</button></div>
+    <p>We use browser storage for your bag and demo orders. <a class="text-link" href="#/privacy" data-welcome-dismiss>Privacy details</a></p>
+    <div class="welcome-actions"><button type="button" class="button" data-welcome-dismiss>Got it</button><a class="text-link" href="#/contact" data-welcome-dismiss>Contact us</a></div>
+  </aside>
+</body>
+</html>
