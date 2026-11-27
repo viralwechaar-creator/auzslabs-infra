@@ -61,6 +61,15 @@ export default async function run({ browser, stack }) {
     assert(await p3.locator('.geoask').count() === 0, 'asked again right after Not now'); await c3.close();
     await q("delete from sfx_web_events where kind='loc'");
   });
+  await s.check('A business whose public store is the AUZsStyle store still shows its visitors on Home and Live view', async () => {
+    const tid3 = (await q("select id from tenants where slug='testcafe'"))[0].id;
+    await q("insert into sty_web_events (tenant_id, sid, kind, page, device, tz, lat, lng) values ($1,'styVisitor0001','view','/','phone','Asia/Kolkata',26.3,73.0), ($1,'styVisitor0002','view','/shop','desktop','Europe/London',null,null)", [tid3]);
+    const live = (await rpc(stack, 'sfx_live_visitors', {}, owner)).data.data;
+    assert(live.now >= 2 && live.located >= 1 && live.zones['Europe/London'] === 1, JSON.stringify(live).slice(0, 300));
+    const sum = (await rpc(stack, 'sfx_visitor_summary', { p_days: 7 }, owner)).data.data;
+    assert(sum.visitors >= 5, 'summary should count the AUZsStyle store visits too: ' + sum.visitors);
+    await q("delete from sty_web_events where sid like 'styVisitor%'");
+  });
   await s.check('Only this store: another business\'s events are not counted', async () => {
     const other = (await q("select id from tenants where slug <> 'testcafe' limit 1"))[0].id;
     await q("insert into sfx_web_events (tenant_id, sid, kind, page) values ($1,'other-sid-1','view','/x')", [other]);
