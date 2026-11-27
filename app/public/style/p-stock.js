@@ -206,12 +206,23 @@ function styleForm(s, done, scannedBarcode = '') {
   const badgeField = h('div', { class: 'field' }, h('label', null, t('Show on the till as')), badgeHost, h('div', { class: 'hint' }, t('Limited stock is only a label for exclusivity. Sold out also stops this style from being added to a bill.')));
   const seeCost = S.ctx.canSeeCost;
   const spanOf = (n) => { n.classList.add('span'); return n; };
-  const body = h('div', { class: 'grid edgrid' }, spanOf(pics), field(t('Name'), f.name), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.')), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), h('div', { class: 'two' }, field(t('Brand'), f.brand), field(t('Gender'), f.gender)),
-    h('div', { class: 'two' }, field(t('Selling price'), f.price), field(t('MRP'), f.mrp)), seeCost ? h('div', { class: 'two' }, field(t('Cost'), f.cost), field(t('Tax %'), f.tax)) : field(t('Tax %'), f.tax),
-    h('div', { class: 'two' }, field(t('Type'), f.type), field(t('Fabric'), f.fabric)), h('div', { class: 'two' }, field(t('Collection'), f.collection), field(t('Weight') + ' (g)', f.weight)), field(t('Tags'), f.tags),
-    spanOf(cols), spanOf(colWrap), spanOf(useWrap), spanOf(szs), spanOf(badgeField), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash)),
-    isNew ? h('div', { class: 'two' }, field(t('Opening stock per size'), f.qty), h('div')) : null,
-    spanOf(h('details', { class: 'more' }, h('summary', null, t('More details')), h('div', { class: 'grid', style: { marginTop: '10px' } }, h('div', { class: 'two' }, field(t('Season'), f.season), field(t('HSN code'), f.hsn))))));
+  const w0 = (s && s.web) || {};
+  f.seoTitle = input({ value: w0.seoTitle || '', placeholder: t('Defaults to the name') });
+  f.handle = input({ value: w0.handle || '', placeholder: 'blue-slim-shirt' });
+  f.seoDesc = h('textarea', { class: 'textarea', rows: 2, placeholder: t('Shown in search results') }, w0.seoDescription || '');
+  f.origin = input({ value: w0.origin || '', placeholder: 'India' });
+  f.webStatus = selectEl([['active', t('Active')], ['draft', t('Draft, hidden on the website')]], w0.webStatus === 'draft' ? 'draft' : 'active');
+  const card = (title, ...kids) => h('section', { class: 'card grid edgrid ed-card' }, h('div', { class: 'ed-h span' }, title), ...kids);
+  const body = h('div', { class: 'grid ed-cards' },
+    card(t('Product information'), spanOf(field(t('Title'), f.name)), spanOf(field(t('Description'), f.desc)), spanOf(field(t('Details'), f.det)), spanOf(field(t('Wash care'), f.wash))),
+    card(t('Media'), spanOf(pics), spanOf(colWrap), spanOf(useWrap)),
+    card(t('Pricing'), field(t('Selling price'), f.price), field(t('Compare-at price (MRP)'), f.mrp), seeCost ? field(t('Cost per item'), f.cost) : null, field(t('Tax %'), f.tax), field(t('HSN code'), f.hsn)),
+    card(t('Organization'), field(t('Category'), cat, t('Type any name to add your own category. It appears everywhere once the style is saved.')), spanOf(catList), field(t('Product type'), f.type), field(t('Vendor or brand'), f.brand),
+      field(t('Gender'), f.gender), field(t('Collection'), f.collection), field(t('Season'), f.season), field(t('Fabric'), f.fabric), field(t('Weight') + ' (g)', f.weight), field(t('Country of origin'), f.origin), spanOf(field(t('Tags'), f.tags))),
+    card(t('Search listing'), field(t('Page title'), f.seoTitle), field(t('URL handle'), f.handle), spanOf(field(t('Search description'), f.seoDesc))),
+    card(t('Status'), field(t('Website status'), f.webStatus, t('Draft keeps this style off the website. The till is not affected.')), spanOf(badgeField)),
+    card(t('Variants and stock'), spanOf(cols), spanOf(szs), isNew ? field(t('Opening stock per size'), f.qty) : null),
+    card(t('In-store'), field(t('Product code'), f.code, t('Used to find the style and as the start of each size barcode label. Leave empty to skip.'))));
   // simple entry (new styles only): name, optional variant, selling price, stock. Everything else keeps its default.
   let simple = false; try { simple = isNew && localStorage.getItem('sty.simpleNew') === '1'; } catch (e) {}
   const sf = { name: input({ placeholder: 'Blue slim shirt' }), variant: input({ placeholder: t('e.g. M, 32 or Blue (leave empty if none)') }), price: input({ type: 'number', mode: 'decimal' }), qty: input({ type: 'number', mode: 'numeric' }) };
@@ -253,6 +264,8 @@ function styleForm(s, done, scannedBarcode = '') {
       { const want = JSON.stringify(Object.keys(use).sort().map((k) => [k, use[k]])), had = JSON.stringify(Object.keys((s && s.photoUse) || {}).sort().map((k) => [k, s.photoUse[k]])); if (want !== had) await api('sty_set_photo_use', { p_id: r.id, p: { card: use.card || '', hero: use.hero || '', banner: use.banner || '' } }); }
       { const tagList = f.tags.value.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean), had = ((s && s.tags) || []).join(','); if (tagList.join(',') !== had) await api('sty_set_tags', { p_id: r.id, p_tags: tagList }); }
       if (badge !== ((s && s.badge) || '')) await api('sty_set_badge', { p_id: r.id, p_badge: badge || null });
+      { const wp = { seoTitle: f.seoTitle.value, seoDescription: f.seoDesc.value, handle: f.handle.value, origin: f.origin.value, webStatus: f.webStatus.value }, had = (s && s.web) || {};
+        if (Object.keys(wp).some((k) => String(wp[k] || (k === 'webStatus' ? 'active' : '')).trim() !== String(had[k] || (k === 'webStatus' ? 'active' : '')).trim())) await api('sty_set_web', { p_id: r.id, p: wp }); }
       close(); S.catAt = 0; toast(t('Saved'));
       done && done();
       if (isNew && r && r.variants && r.variants.length) { const st = await promptAfterCreate(r); }
