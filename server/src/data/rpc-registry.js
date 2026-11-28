@@ -935,6 +935,10 @@ export const RPC = {
   admin_set_product_price: { params: ['p_key', 'p_monthly_price'], auth: true },
   public_sfx_store: { params: ['p_slug'], auth: false },
   public_sfx_theme_registry: { params: [], auth: false },
+  // Minimal theme's template preview (db/472): a frozen, one-time copy of the demo account's catalogue
+  // and settings, so the template always looks exactly as designed even after the real demo account's
+  // products or settings change. See db/472_minimal_demo_snapshot.sql for how/when it's taken.
+  public_frozen_theme_demo: { params: ['p_theme'], auth: false },
   public_sfx_reviews: { params: ['p_slug', 'p_style'], auth: false },
   public_sfx_review_submit: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },
   public_sfx_notify_me: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
