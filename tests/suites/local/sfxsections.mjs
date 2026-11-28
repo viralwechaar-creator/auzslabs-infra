@@ -476,6 +476,21 @@ export default async function run({ browser, stack }) {
     const row = sec.blocks.find((b) => b.type === 'row');
     assert(row && row.blocks.length === 2 && row.blocks[0].type === 'heading' && row.blocks[0].props.text === 'Inside the row' && row.blocks[1].type === 'button', JSON.stringify(sec.blocks));
   }, 'major');
+  await s.check('Floating panel: clicking an element in the preview opens quick controls beside it and editing them changes the draft', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.selectOption('#te-add-type', 'content'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(2500);
+    await page.frameLocator('#te-frame').locator('.cb-heading').first().click(); await page.waitForTimeout(800);
+    assert(await page.locator('#te-float').count() === 1, 'floating panel did not open');
+    const box = await page.locator('#te-float').boundingBox(); assert(box && box.width > 200, 'panel has no size');
+    await page.fill('#te-float textarea[name="text"], #te-float input[name="text"]', 'Changed in float'); await page.waitForTimeout(600);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content.sections[0];
+    assert(row.blocks[0].props.text === 'Changed in float', JSON.stringify(row.blocks[0]));
+    await page.click('[data-action="te-fclose"]'); await page.waitForTimeout(200);
+    assert(await page.locator('#te-float').count() === 0, 'panel did not close');
+  }, 'major');
   await ctx.close();
   return s.done();
 }
