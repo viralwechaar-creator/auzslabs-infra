@@ -140,7 +140,11 @@ function loadBespokeChrome(slug) {
   return new Promise((resolve) => {
     const css = (BESPOKE_CAPS[slug] || {}).formsStylesheet;
     if (css) { const lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = css; document.head.append(lk); }
-    const sc = document.createElement('script'); sc.src = '/store/' + slug + '.js?v=1';
+    // Bump this version whenever ANY bespoke theme's own .js file changes. A browser that already loaded a
+    // bespoke theme once caches this exact URL -- the same stale-cache bug class as theme-previews/*.jpg
+    // (see CLAUDE.md) -- so without bumping this, an edit to studs.js/kaarigari.js/outpace.js is invisible to
+    // anyone who has already visited that theme, no matter how many times the server file is redeployed.
+    const sc = document.createElement('script'); sc.src = '/store/' + slug + '.js?v=2';
     sc.onload = () => resolve(window[g] ? window[g].ready() : null); sc.onerror = () => resolve(null);
     document.head.append(sc);
   });

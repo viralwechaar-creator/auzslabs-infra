@@ -61,7 +61,8 @@
         g.textContent = 'body.outpace-on #app{display:none!important}#outpace-host{display:block}#outpace-host[hidden]{display:none!important}';
         document.head.append(g);
       }
-      cssText = await (await fetch('/store/outpace.css?v=1')).text();
+      // Bump this whenever outpace.css changes -- see store.js's loadBespokeChrome for why.
+      cssText = await (await fetch('/store/outpace.css?v=2')).text();
     })();
     return ready;
   }
