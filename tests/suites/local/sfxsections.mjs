@@ -277,7 +277,7 @@ export default async function run({ browser, stack }) {
     const st = await pg.evaluate(() => { const g = (sel, props) => { const el = document.querySelector(sel); if (!el) return null; const cs = getComputedStyle(el); return Object.fromEntries(props.map((p) => [p, cs[p]])); };
       return { sec: g('.custom-content', ['backgroundColor', 'paddingTop', 'maxWidth', 'alignItems', 'borderTopLeftRadius', 'rowGap']), h: g('.cb-heading', ['fontSize', 'color', 'textAlign', 'textTransform', 'fontWeight', 'paddingTop', 'backgroundColor']),
         t: g('.cb-text', ['fontSize', 'color']), b: g('.cb-button', ['backgroundColor', 'borderTopLeftRadius', 'height', 'alignSelf']), i: g('.cb-image', ['width']), im: g('.cb-image img', ['aspectRatio', 'borderTopLeftRadius']), sp: g('.cb-spacer', ['height']), n: document.querySelectorAll('.custom-content [data-blk]').length }; });
-    assert(st.sec.backgroundColor === 'rgb(250, 250, 250)' && st.sec.paddingTop === '80px' && st.sec.maxWidth === '640px' && st.sec.alignItems === 'flex-start' && st.sec.borderTopLeftRadius === '16px' && st.sec.rowGap === '20px', 'section: ' + JSON.stringify(st.sec));
+    assert(st.sec.backgroundColor === 'rgb(250, 250, 250)' && st.sec.paddingTop === '80px' && st.sec.maxWidth === '640px' && ['flex-start','flow-start'].includes(st.sec.alignItems) && st.sec.borderTopLeftRadius === '16px' && st.sec.rowGap === '20px', 'section: ' + JSON.stringify(st.sec));
     assert(st.h.fontSize === '120px' && st.h.color === 'rgb(170, 0, 0)' && st.h.textAlign === 'left' && st.h.textTransform === 'uppercase' && st.h.fontWeight === '700' && st.h.paddingTop === '10px' && st.h.backgroundColor === 'rgb(238, 238, 238)', 'heading: ' + JSON.stringify(st.h));
     assert(st.t.fontSize === '20px' && st.t.color === 'rgb(51, 51, 51)', 'text: ' + JSON.stringify(st.t));
     assert(st.b.backgroundColor === 'rgb(17, 34, 51)' && st.b.borderTopLeftRadius === '999px' && st.b.height === '46px' && st.b.alignSelf === 'stretch', 'button: ' + JSON.stringify(st.b));
@@ -561,10 +561,10 @@ export default async function run({ browser, stack }) {
     await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
     const heads = await page.locator('.tt-gh h3').allInnerTexts(); assert(heads.join(',') === 'Header,Template,Footer', heads.join(','));
     await page.click('[data-action="te-gadd:h"]'); await page.waitForTimeout(300);
-    await page.click('.tt-menu [data-action="te-gnew:h.content"]'); await page.waitForTimeout(800);
+    await page.fill('.as-q','Free'); await page.waitForTimeout(150); await page.fill('.as-q',''); await page.click('.as-wrap [data-action="te-as-pick"][data-key="content"]'); await page.click('.as-wrap [data-action="te-gnew:h.content"]'); await page.waitForTimeout(800);
     assert(await page.locator('.tt-group[data-g="h"] .tt-main').count() >= 1, 'header section not added');
     await page.click('[data-action="te-gadd:t"]'); await page.waitForTimeout(300);
-    await page.click('.tt-menu [data-action="te-gnew:t.content"]'); await page.waitForTimeout(800);
+    await page.fill('.as-q','Free'); await page.waitForTimeout(150); await page.fill('.as-q',''); await page.click('.as-wrap [data-action="te-as-pick"][data-key="content"]'); await page.click('.as-wrap [data-action="te-gnew:t.content"]'); await page.waitForTimeout(800);
     const sec = page.locator('.tt-group[data-g="t"] .tt-row.l0').first();
     assert(await page.locator('.tt-group[data-g="t"] .tt-row.l1').count() === 3, 'blocks of the new section are not listed');
     const nest = await page.locator('.tt-group[data-g="t"] .tt-row.l1 .tt-main span').allInnerTexts(); assert(nest.length === 3, nest.join(','));

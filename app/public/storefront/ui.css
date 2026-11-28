@@ -1275,3 +1275,19 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
 .shell .te-dg[open] summary::after{transform:rotate(-135deg)}
 .shell .te-dg summary small{margin-left:auto;color:var(--muted,#777);font-weight:400;font-size:.76rem}
 .shell .te-dg .te-fields{padding-bottom:14px}
+
+/* 62 Add-section sheet */
+.as-wrap{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.as-box{background:#fff;color:#111;width:min(560px,100%);max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:10px}
+@media(min-width:700px){.as-wrap{align-items:center}.as-box{border-radius:20px}}
+.as-head{display:flex;justify-content:space-between;align-items:center}.as-head h3{margin:0;font-size:1.05rem}
+.as-head button{all:unset;cursor:pointer;font-size:1.5rem;padding:0 8px}
+.as-q{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:12px;font-size:16px}
+.as-cats{display:flex;gap:6px;overflow-x:auto}.as-cats button{all:unset;cursor:pointer;white-space:nowrap;padding:6px 12px;border-radius:99px;background:rgba(0,0,0,.06);font-size:.82rem}.as-cats .on{background:#111;color:#fff}
+.as-list{display:grid;gap:4px;max-height:34vh;overflow:auto}
+.as-row{all:unset;cursor:pointer;display:grid;gap:2px;padding:9px 12px;border-radius:12px}.as-row b{font-size:.9rem}.as-row span{font-size:.78rem;opacity:.65}.as-row.on{background:rgba(0,0,0,.07)}
+.as-prev{background:rgba(0,0,0,.04);border-radius:14px;padding:10px;display:grid;gap:6px}.as-prev p{margin:0;font-size:.8rem;opacity:.7}
+.as-skel{height:84px;border-radius:10px;background:#fff;border:1px solid rgba(0,0,0,.08);padding:10px;display:grid;gap:6px;align-content:center}
+.as-skel i{display:block;height:8px;border-radius:4px;background:rgba(0,0,0,.14)}.as-skel i:first-child{width:55%;height:12px;background:rgba(0,0,0,.28)}.as-skel i:last-child{width:35%}
+.as-hero{background:rgba(0,0,0,.12)}.as-featured_collection{grid-template-columns:repeat(3,1fr)}.as-featured_collection i{height:50px!important;width:auto!important}
+.as-add{padding:12px;border-radius:12px;font-size:.95rem}
