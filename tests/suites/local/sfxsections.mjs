@@ -183,8 +183,9 @@ export default async function run({ browser, stack }) {
     await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
     assert((await page.locator('#te-page option').allInnerTexts()).includes('Design settings'), 'no Design entry');
     await page.selectOption('#te-page', 'design'); await page.waitForTimeout(600);
-    assert(await page.locator('form[data-form="te-design"] input[type=color]').count() === 4, 'colour controls');
+    assert(await page.locator('form[data-form="te-design"] input[type=color]').count() === 7, 'colour controls');
     await page.locator('form[data-form="te-design"] input[name=accent]').fill('#123456'); await page.waitForTimeout(400);
+    await page.locator('details.te-dg summary', { hasText: 'Page' }).click(); await page.waitForTimeout(200);
     await page.selectOption('form[data-form="te-design"] select[name=radius]', 'round'); await page.waitForTimeout(400);
     await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
     let row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
@@ -193,6 +194,26 @@ export default async function run({ browser, stack }) {
     await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
     row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
     assert(!row.design || Object.keys(row.design).length === 0, 'reset did not clear: ' + JSON.stringify(row.design));
+  }, 'major');
+  await s.check('Theme settings groups: foldable in the editor, and the new settings change the public store', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.selectOption('#te-page', 'design'); await page.waitForTimeout(600);
+    const names = await page.locator('details.te-dg summary span').allInnerTexts();
+    for (const g of ['Colours', 'Typography', 'Buttons', 'Product cards', 'Badges', 'Prices', 'Input fields', 'Icons', 'Swatches and variant pickers', 'Animations']) assert(names.includes(g), 'missing group ' + g + ': ' + names.join());
+    assert(await page.locator('details.te-dg[open]').count() === 1, 'only the first group should start open');
+    const r = await page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const ok = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { sections: [], design: { cardRatio: 'square', cardHover: 'lift', badgeShape: 'pill', priceWeight: 'bold', muted: '#336699', badgeColor: '#aa0000', headingCase: 'upper', cardRatio2: 'x', iconWeight: 'weird' } } });
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); return { ok: ok.error && ok.error.message, pub: pub.error && pub.error.message }; }, inst);
+    assert(!r.ok && !r.pub, JSON.stringify(r));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.design.cardRatio === 'square' && !('cardRatio2' in row.design) && !('iconWeight' in row.design), JSON.stringify(row.design));
+    const pg = await ctx.newPage(); await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    const css = await pg.evaluate(() => ({ cls: document.body.className, mut: document.documentElement.style.getPropertyValue('--mut'), badge: document.documentElement.style.getPropertyValue('--badge') }));
+    for (const c of ['d-cardRatio-square', 'd-cardHover-lift', 'd-badgeShape-pill', 'd-priceWeight-bold', 'd-headingCase-upper']) assert(css.cls.includes(c), c + ' missing: ' + css.cls);
+    assert(css.mut === '#336699' && css.badge === '#aa0000', JSON.stringify(css));
+    await q("update sfx_theme_installs set draft_content = draft_content - 'design', published_content = published_content - 'design' where id=$1", [inst]);
+    await pg.close();
   }, 'major');
   await s.check('Shared groups: the server checks them, and every public page shows the header group on top and the footer group at the bottom', async () => {
     const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;

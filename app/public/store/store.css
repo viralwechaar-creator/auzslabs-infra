@@ -1150,3 +1150,34 @@ body.d-font-mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 .custom-df{padding-top:10px;padding-bottom:10px;display:flex;gap:6px 12px;flex-wrap:wrap;align-items:baseline}.df-stacked{flex-direction:column;gap:2px}.df-l{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.df-v{font-weight:600}
 
 .custom-pi{max-width:760px;margin:22px auto;padding:0 16px}.custom-pi h2{font-size:15px;margin:0 0 8px}.custom-pi ul{margin:0;padding-left:18px}.custom-pi .pi-r{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line,#e5e5e5);font-size:13px}
+
+/* Theme settings groups (db/474): each class is set by applyDesign() from content.design */
+body.d-headingCase-upper h1,body.d-headingCase-upper h2,body.d-headingCase-upper h3,body.d-headingCase-upper .custom-section h1,body.d-headingCase-upper .custom-section h2{text-transform:uppercase;letter-spacing:.06em}
+body.d-headingWeight-light h1,body.d-headingWeight-light h2,body.d-headingWeight-light h3{font-weight:300}
+body.d-headingWeight-bold h1,body.d-headingWeight-bold h2,body.d-headingWeight-bold h3{font-weight:700}
+body.d-buttonCase-upper .btn{text-transform:uppercase;letter-spacing:.08em}
+body.d-buttonSize-small .btn{min-height:30px;padding-inline:14px;font-size:.85em}
+body.d-buttonSize-large .btn{min-height:50px;padding-inline:30px;font-size:1.08em}
+body.d-cardRatio-square .pc .ph{aspect-ratio:1/1}
+body.d-cardRatio-landscape .pc .ph{aspect-ratio:4/3}
+body.d-cardAlign-center .pc .in{justify-content:center;text-align:center}
+body.d-cardAdd-hide .pc .add{display:none}
+body.d-cardFit-contain .pc .sc img{object-fit:contain;background:var(--soft)}
+body.d-badgeShape-pill .pc .tag{border-radius:999px}
+body.d-badgeShape-square .pc .tag{border-radius:0}
+.pc .tag{background:var(--badge,rgba(255,255,255,.92));color:var(--on-badge,inherit)}
+body.d-priceWeight-bold .pc .in .pr,body.d-priceWeight-bold .info .pr{font-weight:700;color:var(--ink)}
+body.d-priceSize-large .pc .in .pr{font-size:12px}body.d-priceSize-large .info .pr{font-size:14px}
+.info .pr b{color:var(--sale,#1a7f37)}
+body.d-inputStyle-outline input,body.d-inputStyle-outline select,body.d-inputStyle-outline textarea{background:transparent;box-shadow:inset 0 0 0 1px var(--ink)}
+body.d-inputStyle-filled input,body.d-inputStyle-filled select,body.d-inputStyle-filled textarea{background:var(--soft);box-shadow:none;border-color:transparent}
+body.d-iconWeight-thin svg{stroke-width:1!important}
+body.d-iconWeight-bold svg{stroke-width:2.4!important}
+body.d-swatchShape-square .sw{border-radius:2px}
+body.d-sizeShape-square .sz{border-radius:0}
+body.d-cardHover-lift .pc{transition:transform .2s}body.d-cardHover-lift .pc:hover{transform:translateY(-4px)}
+body.d-cardHover-scale .pc{transition:transform .2s}body.d-cardHover-scale .pc:hover{transform:scale(1.03)}
+body.d-cardHover-zoom .pc .ph img{transition:transform .35s}body.d-cardHover-zoom .pc:hover .ph img{transform:scale(1.07)}
+body.d-pageFade-on #view,body.d-pageFade-on main{animation:dfade .35s ease both}
+@keyframes dfade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){body.d-pageFade-on #view,body.d-pageFade-on main{animation:none}body[class*="d-cardHover"] .pc,body[class*="d-cardHover"] .pc .ph img{transition:none;transform:none!important}}
