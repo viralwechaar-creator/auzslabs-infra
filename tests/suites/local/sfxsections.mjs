@@ -534,6 +534,20 @@ export default async function run({ browser, stack }) {
     assert(/About it/.test(await pg.locator('.custom-pi h2').first().innerText()) && /Soft linen shirt/.test(await pg.locator('.custom-pi').first().innerText()), 'section not shown');
     assert(await pg.locator('.tabs2').count() === 0, 'built-in tabs still shown');
   }, 'major');
+  await s.check('Pages follow the store to a newly activated theme', async () => {
+    const r = await page.evaluate(async ([e, pw]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: pw });
+      const a = await c.rpc('sfx_theme_install_create', { p: { name: 'Pages A', starter: 'blank', base: 'minimal' } }); if (a.error) return { error: a.error.message };
+      const b = await c.rpc('sfx_theme_install_create', { p: { name: 'Pages B', starter: 'blank', base: 'minimal' } }); if (b.error) return { error: b.error.message };
+      const pages = [{ slug: 'our-story', title: 'Our story', template: 'about', sections: [{ id: 's1', type: 'text', props: { body: 'hello' } }] }];
+      const sv = await c.rpc('sfx_theme_customize_save', { p_install_id: a.data.installId, p_content: { sections: [], pages } }); if (sv.error) return { error: sv.error.message };
+      await c.rpc('sfx_theme_customize_publish', { p_install_id: a.data.installId });
+      let x = await c.rpc('sfx_theme_install_set_active', { p_install_id: a.data.installId }); if (x.error) return { error: x.error.message };
+      x = await c.rpc('sfx_theme_install_set_active', { p_install_id: b.data.installId }); if (x.error) return { error: x.error.message };
+      const l = (await c.rpc('sfx_theme_install_list')).data.find((i) => i.id === b.data.installId);
+      return { draft: (l.draftContent || {}).pages, pub: (l.publishedContent || {}).pages }; }, [USERS.cafeOwner, PASSWORD]);
+    assert(!r.error, JSON.stringify(r));
+    assert(r.draft && r.draft[0] && r.draft[0].slug === 'our-story', 'draft pages not carried: ' + JSON.stringify(r));
+  }, 'major');
   await ctx.close();
   return s.done();
 }
