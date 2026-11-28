@@ -1000,7 +1000,7 @@ function customEl(s, i, group) {
       const onBlur = () => done(true); const onKey = (k) => { if (k.key === 'Escape') { k.preventDefault(); done(false); } else if (k.key === 'Enter' && b.type !== 'text') { k.preventDefault(); bl.blur(); } };
       bl.addEventListener('blur', onBlur); bl.addEventListener('keydown', onKey);
     }, true);
-    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); const bl = ev.target.closest('[data-blk]'); const cb = ev.target.closest('[data-cblk]'); parent.postMessage({ type: 'auz-select', index: i, group: group || '', block: bl ? Number(bl.dataset.blk) : -1, child: cb && bl && bl.contains(cb) ? Number(cb.dataset.cblk) : -1 }, location.origin); }, true);
+    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); const bl = ev.target.closest('[data-blk]'); const cb = ev.target.closest('[data-cblk]'); const tg = cb && bl && bl.contains(cb) ? cb : bl, rc = tg ? tg.getBoundingClientRect() : null; parent.postMessage({ type: 'auz-select', index: i, group: group || '', rect: rc ? { x: rc.left, y: rc.top, w: rc.width, h: rc.height } : null, block: bl ? Number(bl.dataset.blk) : -1, child: cb && bl && bl.contains(cb) ? Number(cb.dataset.cblk) : -1 }, location.origin); }, true);
   }
   return el;
 }

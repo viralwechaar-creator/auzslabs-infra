@@ -773,7 +773,7 @@ if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
     if (x && x.blocks && x.blocks[bi]) { if (!ed.snapped) { edSnapshot(); ed.snapped = true; } x.blocks[bi] = { ...x.blocks[bi], props: { ...(x.blocks[bi].props || {}), [e.data.field]: e.data.value.slice(0, 500) } }; ed.sel = e.data.index; ed.blk = bi; ed.snapped = false; edRefresh('lrb'); edPost(); }
     return;
   }
-  if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.blk = Number.isInteger(e.data.block) ? e.data.block : -1; ed.cblk = Number.isInteger(e.data.child) ? e.data.child : -1; ed.snapped = false; edRefresh('lrb'); }
+  if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.blk = Number.isInteger(e.data.block) ? e.data.block : -1; ed.cblk = Number.isInteger(e.data.child) ? e.data.child : -1; ed.snapped = false; edRefresh('lrb'); if (ed.blk >= 0 && e.data.rect && !(e.data.group)) edFloatShow(e.data.rect); else edFloatHide(); }
 });
 // ---------- Studs theme: settings editor with a live preview of the DRAFT (nothing here changes the live store) ----------
 let sd = null; // { id, settings, saved }
@@ -837,8 +837,8 @@ function edHandle(a, key, detail) {
   if (!ed) return false;
   if (a === 'te-mode') { ed.mode = key === 'board' ? 'board' : 'edit'; rerender(); return true; }
   if (a === 'te-open') { ed.mode = 'edit'; edPicked(key + (detail ? ':' + detail : '')); rerender(); return true; }
-  if (a === 'te-select') { ed.sel = Number(key); ed.blk = -1; ed.cblk = -1; ed.snapped = false; edRefresh('lr', true); return true; }
-  if (a === 'te-device') { ed.device = key; const f = $('#te-frame'); if (f) f.className = 'te-frame ' + key; document.querySelectorAll('[data-action^="te-device:"]').forEach((b) => b.classList.toggle('primary', b.dataset.action === 'te-device:' + key)); return true; }
+  if (a === 'te-select') { edFloatHide(); ed.sel = Number(key); ed.blk = -1; ed.cblk = -1; ed.snapped = false; edRefresh('lr', true); return true; }
+  if (a === 'te-device') { edFloatHide(); ed.device = key; const f = $('#te-frame'); if (f) f.className = 'te-frame ' + key; document.querySelectorAll('[data-action^="te-device:"]').forEach((b) => b.classList.toggle('primary', b.dataset.action === 'te-device:' + key)); return true; }
   if (!canWrite()) return false;
   if (a === 'te-addpage') {
     if (ed.pages.length >= 8) return true;
@@ -854,6 +854,8 @@ function edHandle(a, key, detail) {
   if (a === 'te-remove') { if (ed.sel < 0 || ed.sections[ed.sel]?.type === 'main') return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
   if (a === 'te-dclear') { edSnapshot(); ed.snapped = true; delete ed.design[key]; edRefresh('rb'); return true; }
   if (a === 'te-dreset') { edSnapshot(); ed.snapped = true; ed.design = {}; edRefresh('rb'); return true; }
+  if (a === 'te-fclose') { edFloatHide(); return true; }
+  if (a === 'te-fclear') { const t = edTarget(); if (!t) return true; edSnapshot(); ed.snapped = true; const pr = { ...(t.b.props || {}) }; delete pr[key]; t.set({ ...t.b, props: pr }); edRefresh('r'); edPost(); edFloatHide(); return true; }
   if (a === 'te-bsel') { ed.blk = Number(key); ed.cblk = -1; ed.snapped = false; edRefresh('rb', true); return true; }
   if (a === 'te-csel') { ed.cblk = Number(key); ed.snapped = false; edRefresh('rb', true); return true; }
   if (a === 'te-cclear') { const row = edRow(); if (!row || !row.blocks || !row.blocks[Number(key)]) return true; edSnapshot(); ed.snapped = true; delete row.blocks[Number(key)].props[detail]; edRefresh('rb'); return true; }
@@ -891,6 +893,35 @@ function edChromeInput(target) {
   else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
   else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12), columns: parseColumns(d.columns) };
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
+  edPost(); return true;
+}
+// ---- floating settings panel: the few controls people reach for most, next to the element clicked in the preview ----
+const FLOAT_FIELDS = { heading: ['text', 'size', 'color', 'align'], text: ['text', 'size', 'color', 'align'], button: ['label', 'bg', 'color'], image: ['src', 'width', 'radius'], spacer: ['height'], row: ['direction', 'gap', 'bg'] };
+function edTarget() { const x = ed && ed.sections[ed.sel]; if (!x || !x.blocks) return null; const b = x.blocks[ed.blk]; if (!b) return null; if (b.type === 'row' && ed.cblk >= 0 && b.blocks && b.blocks[ed.cblk]) return { b: b.blocks[ed.cblk], x, set: (nb) => { b.blocks[ed.cblk] = nb; } }; return { b, x, set: (nb) => { x.blocks[ed.blk] = nb; } }; }
+function edFloatHide() { const f = $('#te-float'); if (f) f.remove(); }
+function edFloatShow(rc) {
+  edFloatHide(); const stage = $('.te-stage'), fr = $('#te-frame'), t = edTarget(); if (!stage || !fr || !t || !canWrite()) return;
+  const def = secDef(t.x.type), bt = def && (def.blockTypes || []).find((z) => z.type === t.b.type), ids = FLOAT_FIELDS[t.b.type]; if (!bt || !ids) return;
+  const defs = ids.map((id) => bt.settings.find((d) => d.id === id)).filter(Boolean); if (!defs.length) return;
+  const el = document.createElement('div'); el.id = 'te-float'; el.className = 'te-float';
+  el.innerHTML = '<div class="te-float-head"><strong>' + esc(bt.label) + '</strong><button type="button" class="btn compact" data-action="te-fclose" aria-label="Close">Close</button></div><form data-form="te-float" class="te-float-body">' +
+    defs.map((d) => regField(d, (t.b.props || {})[d.id], '', (id) => 'te-fclear:' + id)).join('') + '</form><p class="compact-copy">More settings are in the panel on the right.</p>';
+  stage.appendChild(el);
+  const sr = stage.getBoundingClientRect(), frr = fr.getBoundingClientRect(), W = 250, ox = frr.left - sr.left, oy = frr.top - sr.top;
+  const H = Math.min(el.offsetHeight || 220, 340), ex = ox + rc.x, ey = oy + rc.y; let left, top;
+  if (ex + rc.w + 10 + W <= sr.width - 6) { left = ex + rc.w + 10; top = ey; }
+  else if (ex - W - 10 >= 6) { left = ex - W - 10; top = ey; }
+  else if (ey + rc.h + 8 + H <= sr.height - 6 || ey - H - 8 < 6) { left = ex; top = ey + rc.h + 8; }
+  else { left = ex; top = ey - H - 8; }
+  left = Math.max(6, Math.min(left, sr.width - W - 6)); top = Math.max(6, top);
+  el.style.left = left + 'px'; el.style.top = top + 'px';
+}
+function edFloatInput(target, type) {
+  const form = target.closest('form[data-form="te-float"]'); if (!form || !ed || !canWrite() || !target.name) return false;
+  const t = edTarget(); if (!t) return true; if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
+  t.set({ ...t.b, props: { ...(t.b.props || {}), [target.name]: target.value } });
+  const b = $('#te-actions'); if (b) { const html = edBarHtml(); if (b.dataset.html !== html) { b.dataset.html = html; b.innerHTML = html; } }
+  if (type === 'change') edRefresh('r');
   edPost(); return true;
 }
 const edRow = () => { const x = ed && ed.sections[ed.sel], r = x && x.blocks && x.blocks[ed.blk]; return r && r.type === 'row' ? r : null; };
@@ -1699,6 +1730,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'builder' && ed && type === 'input' && target.closest && target.closest('form[data-form="te-chrome"], form[data-form="te-page"]')) { edChromeInput(target); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-design"]')) { edDesignInput(target, type); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-block"]')) { edBlockInput(target, type); return; }
+  if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-float"]')) { edFloatInput(target, type); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-cblock"]')) { edCBlockInput(target, type); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); else if (target.type === 'color') edRefresh('r'); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
