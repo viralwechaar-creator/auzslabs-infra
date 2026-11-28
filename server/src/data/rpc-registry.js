@@ -967,6 +967,8 @@ export const RPC = {
   sfdev_theme_version_save: { params: ['p_theme_id', 'p_content'], jsonb: ['p_content'], auth: true },
   sfdev_theme_submit: { params: ['p_theme_id'], auth: true },
   sfdev_theme_delist: { params: ['p_theme_id'], auth: true },
+  sfdev_theme_import: { params: ['p', 'p_dry'], jsonb: ['p'], defaults: { p_dry: true }, auth: true },
+  sfdev_theme_export: { params: ['p_id'], auth: true },
   sfdev_ledger_list: { params: [], auth: true },
   sfx_admin_theme_queue: { params: [], auth: true },
   sfx_admin_theme_list: { params: [], auth: true },

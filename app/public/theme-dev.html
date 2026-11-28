@@ -110,16 +110,64 @@ function ledgerTable() {
 function render() {
   app.innerHTML = '<header class="top"><h1>Theme developer portal</h1><button class="btn sm" id="signout">Sign out</button></header>' +
     '<div class="wrap">' +
-    '<div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Your themes</h2><button class="btn primary" id="new-theme">New theme</button></div>' +
+    '<div class="row" style="justify-content:space-between;margin-bottom:6px"><h2 style="margin:0">Your themes</h2><span class="row"><button class="btn" id="upload-theme">Upload theme package</button><button class="btn primary" id="new-theme">New theme</button></span></div>' +
     (themes.length ? themes.map(themeCard).join('') : '<p class="empty">You haven\'t created a theme yet.</p>') +
     '<div class="card"><h2>Your commission ledger</h2><p class="muted">64% of every sale is yours; 36% goes to AUZslab. Payouts are made by hand (bank transfer / UPI) -- an admin marks a row "Paid" once they\'ve sent it.</p>' + ledgerTable() + '</div>' +
     '</div>';
   document.getElementById('signout').onclick = () => sb.auth.signOut().then(() => location.reload());
   document.getElementById('new-theme').onclick = () => editThemeDialog(null);
+  document.getElementById('upload-theme').onclick = uploadDialog;
   app.querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => editThemeDialog(themes.find((t) => t.id === b.dataset.edit)));
   app.querySelectorAll('[data-sections]').forEach((b) => b.onclick = () => sectionsDialog(themes.find((t) => t.id === b.dataset.sections)));
   app.querySelectorAll('[data-submit]').forEach((b) => b.onclick = () => withBusy(async () => { await call('sfdev_theme_submit', { p_theme_id: b.dataset.submit }); toast('Submitted for review.'); await reload(); }));
   app.querySelectorAll('[data-delist]').forEach((b) => b.onclick = () => withBusy(async () => { await call('sfdev_theme_delist', { p_theme_id: b.dataset.delist }); toast('Delisted from the marketplace.'); await reload(); }));
+}
+
+
+// ---- Theme package upload: .json or a .zip holding theme.json. Checked on the server; nothing runs from the file.
+async function readPackage(file) {
+  if (file.size > 3 * 1024 * 1024) throw new Error('The file is larger than 3 MB.');
+  const buf = await file.arrayBuffer();
+  const u8 = new Uint8Array(buf);
+  if (u8[0] !== 0x50 || u8[1] !== 0x4b) return JSON.parse(new TextDecoder().decode(u8));
+  const dv = new DataView(buf); let e = u8.length - 22;
+  while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('This is not a valid zip file.');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const names = [];
+  for (let i = 0; i < n; i++) {
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    names.push(new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl)));
+    if (names[names.length - 1] === 'theme.json') {
+      const lnl = dv.getUint16(lo + 26, true), lxl = dv.getUint16(lo + 28, true), data = u8.subarray(lo + 30 + lnl + lxl, lo + 30 + lnl + lxl + csize);
+      let out = data;
+      if (method === 8) { const ds = new DecompressionStream('deflate-raw'); const w = ds.writable.getWriter(); w.write(data); w.close(); out = new Uint8Array(await new Response(ds.readable).arrayBuffer()); }
+      else if (method !== 0) throw new Error('Unsupported zip compression.');
+      const extra = names.filter((x) => x !== 'theme.json' && !x.endsWith('/'));
+      const pkg = JSON.parse(new TextDecoder().decode(out));
+      pkg.__extraFiles = extra;
+      return pkg;
+    }
+    p += 46 + nl + xl + cl;
+  }
+  throw new Error('The zip has no theme.json file at its top level.');
+}
+function uploadDialog() {
+  openDialog('<h2>Upload theme package</h2><p class="muted">A .zip with a theme.json file inside, or the .json file itself. Themes are sections and settings only: no scripts or code are accepted.</p>' +
+    '<input type="file" id="pk-file" accept=".zip,.json,application/json,application/zip"><div id="pk-result" style="margin-top:12px"></div>');
+  document.getElementById('pk-file').onchange = (ev) => withBusy(async () => {
+    const f = ev.target.files[0]; if (!f) return;
+    const box = document.getElementById('pk-result'); box.innerHTML = '<p class="muted">Checking…</p>';
+    let pkg; try { pkg = await readPackage(f); } catch (e) { box.innerHTML = '<span class="chip bad">Rejected</span><ul><li>' + esc(e.message) + '</li></ul>'; return; }
+    const extra = pkg.__extraFiles || []; delete pkg.__extraFiles;
+    const r = await call('sfdev_theme_import', { p: pkg, p_dry: true });
+    const errs = (r.errors || []).slice(); if (extra.length) errs.push('The zip holds extra files (' + extra.slice(0, 3).map(esc).join(', ') + '). Only theme.json is allowed.');
+    const warns = r.warnings || [];
+    if (errs.length) { box.innerHTML = '<span class="chip bad">Rejected</span><ul>' + errs.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>'; return; }
+    box.innerHTML = '<span class="chip ok">Accepted</span> <span class="muted">' + esc(pkg.name) + ' &middot; ' + r.stats.sections + ' sections, ' + r.stats.pages + ' pages</span>' +
+      (warns.length ? '<ul>' + warns.map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') +
+      '<div class="row" style="margin-top:10px"><button class="btn primary" id="pk-go">Add as a draft theme</button></div>';
+    document.getElementById('pk-go').onclick = () => withBusy(async () => { const x = await call('sfdev_theme_import', { p: pkg, p_dry: false }); if (!x.imported) throw new Error('Not imported.'); closeDialog(); toast('Added as a draft. Submit it for review when ready.'); await reload(); });
+  });
 }
 
 async function withBusy(fn) { try { await fn(); } catch (e) { toast(e.message); } }
