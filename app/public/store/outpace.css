@@ -39,7 +39,7 @@
 .hero-utility a{text-decoration:none}.hero-utility small,.hero-utility strong,.clock span{display:block}.hero-utility strong,.clock span,.hero-utility small{font:700 10px var(--mono);text-transform:uppercase}.hero-utility small{color:#c4c4d2;margin-top:5px}.hero-utility .clock{justify-self:end;text-align:right}.clock time{display:block;font:700 clamp(17px,2.3vw,33px) var(--mono);letter-spacing:-.06em}.scroll-link{border:0}
 #lineup{scroll-margin-top:110px}.styles-band,.service-band{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px var(--gutter);background:var(--panel);border-block:1px solid var(--line);font:700 12px var(--mono);text-transform:uppercase}
 .styles-band span{color:var(--muted)}.styles-band a,.service-band a{text-decoration:none}.styles-band a:hover,.service-band a:hover{color:var(--lime)}
-.button{background:var(--ink);color:var(--paper);text-transform:uppercase;font:700 12px var(--mono)}
+.button{background:var(--ink);color:var(--paper);text-transform:uppercase;font:700 14px var(--mono);min-height:46px;padding:11px 20px}
 .button.lime,.signup .button{border-color:var(--lime);color:#171b10}
 .button.outline{border-color:var(--line);color:var(--ink)}.eyebrow{color:var(--lime)}
 .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,2vw,24px);row-gap:28px}
@@ -198,3 +198,16 @@ input,select{background:#181820;border-color:var(--line);color:var(--ink)}input:
  .cart-row{grid-template-columns:60px minmax(0,1fr) auto;gap:8px}.cart-row>strong,.cart-row>div>strong{font-size:13px}
  .quantity{flex-wrap:wrap;gap:4px}.quantity button{min-width:32px;min-height:40px}
 }
+
+/* Owner-reported fixes: icon buttons were picking up the platform's own default button chrome (a filled/
+   bordered pill, most visible around the bag icon on iOS Safari); reset them to plain icon buttons. The menu
+   dialog used the UA default centred-in-viewport <dialog> position, which read as "the menu floats in the
+   middle of the page" instead of a real menu -- it's a proper right-side slide-in panel now, with its nav
+   links as a plain vertical list instead of the unstyled two-column wrap the bare <nav><a> markup produced. */
+.header-search,.bag-trigger,.menu-toggle{appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;padding:6px;display:inline-flex;align-items:center;gap:6px}
+.ic-arrow{display:inline-block;vertical-align:-2px;margin-left:2px}
+dialog{position:fixed;inset:0 0 0 auto;margin:0;height:100%;max-height:100vh;width:min(86vw,360px);max-width:360px;border-radius:0;display:flex;flex-direction:column}
+.drawer-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+#drawer-body{flex:1;overflow:auto}
+#drawer-body nav{display:flex;flex-direction:column;gap:2px}
+#drawer-body nav a{display:block;padding:15px 4px;border-bottom:1px solid var(--line);font:700 12px var(--mono);text-transform:uppercase;text-decoration:none;color:inherit}

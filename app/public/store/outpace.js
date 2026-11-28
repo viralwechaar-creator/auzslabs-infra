@@ -22,6 +22,12 @@
   const money = (n) => '₹' + Math.round(+n || 0).toLocaleString('en-IN');
   const safeUrl = (u) => (/^(https?:)?\/\/|^\//.test(String(u || '')) ? String(u) : '');
   const ASSET = (name) => '/store/outpace/' + name;
+  // No emoji / Unicode symbol glyphs in the UI -- some platforms (iOS Safari among them) render plain
+  // arrow/undo characters as colourful emoji-style icons instead of plain text, which looked like a stray
+  // emoji in testing. Small inline SVGs instead, same discipline as the rest of this codebase's icon() helpers.
+  const ARROW = '<svg class="ic-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>';
+  const ICON_RETURN = '<svg class="ic-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-1"/></svg>';
+  const ICON_FIT = '<svg class="ic-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7 4 12l4 5M16 7l4 5-4 5"/></svg>';
 
   // ---------- data from the store, in the shape the Outpace pages use ----------
   function products() {
@@ -60,10 +66,24 @@
     return ready;
   }
 
+  // Real store contact/social details -- the same fields the shared storefront's own footer already reads
+  // (cfg().social.instagram/facebook, D.shop.phone, cfg().email), never placeholder links.
+  function connectColumn() {
+    const so = H.cfg().social || {}; const phone = String(H.D.shop.phone || '').replace(/\D/g, '');
+    const email = H.cfg().email || '';
+    const ext = (t, u) => (u ? `<a href="${esc(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener">${esc(t)}</a>` : '');
+    const rows = [
+      phone ? `<a href="https://wa.me/${phone.length === 10 ? '91' + phone : phone}" target="_blank" rel="noopener">WhatsApp</a>` : '',
+      ext('Instagram', so.instagram), ext('Facebook', so.facebook),
+      email ? `<a href="mailto:${esc(email)}">Email</a>` : '',
+    ].filter(Boolean);
+    if (!rows.length) return '';
+    return `<nav aria-label="Connect"><h2>Connect</h2>${rows.join('')}</nav>`;
+  }
   const SHELL = (name) => `
     <a class="skip" href="#main">Skip to content</a>
     <div class="site-top">
-      <div class="announcement"><span>${esc(H.cfg().announce || 'Free standard delivery')}</span><a href="#/shop">Shop the lineup</a><a href="#/early-access">Early access ↗</a></div>
+      <div class="announcement"><span>${esc(H.cfg().announce || 'Free standard delivery')}</span><a href="#/shop">Shop the lineup</a><a href="#/early-access">Early access ${ARROW}</a></div>
       <header class="header">
         <a class="brand" href="#/" aria-label="${esc(name)} home">${esc(name.toUpperCase())}<sup>®</sup></a>
         <div class="header-tools">
@@ -81,6 +101,7 @@
         <nav aria-label="Shop"><h2>Shop</h2><a href="#/shop">All sneakers</a></nav>
         <nav aria-label="Explore"><h2>Explore</h2><a href="#/drops">Limited drops</a><a href="#/early-access">Early access</a><a href="#/faq">FAQ</a></nav>
         <nav aria-label="Help"><h2>Help</h2><a href="#/policy/shipping">Shipping &amp; returns</a><a href="#/policy/privacy">Privacy</a></nav>
+        ${connectColumn()}
       </div>
       <div class="footer-bottom"><small>© ${new Date().getFullYear()} ${esc(name)}</small></div>
     </footer>
@@ -128,8 +149,8 @@
     const cats = categoriesOf(all);
     if (!cats.length) return '';
     const firstPhoto = (cat) => { const p = all.find((x) => x.category === cat && x.files[0]); return p ? H.thumb(p.files[0], 480) : ''; };
-    return `<section class="section collections"><div class="section-head"><div><span class="eyebrow">Explore by style</span><h2>Find your lane.</h2></div><a href="#/shop">Shop all ↗</a></div><div class="collection-grid">${
-      cats.map((cat) => `<a class="collection-card" href="#/shop?style=${encodeURIComponent(cat)}">${firstPhoto(cat) ? `<img loading="lazy" src="${esc(firstPhoto(cat))}" alt="">` : ''}<span>${esc(cat)} <b aria-hidden="true">↗</b></span></a>`).join('')
+    return `<section class="section collections"><div class="section-head"><div><span class="eyebrow">Explore by style</span><h2>Find your lane.</h2></div><a href="#/shop">Shop all ${ARROW}</a></div><div class="collection-grid">${
+      cats.map((cat) => `<a class="collection-card" href="#/shop?style=${encodeURIComponent(cat)}">${firstPhoto(cat) ? `<img loading="lazy" src="${esc(firstPhoto(cat))}" alt="">` : ''}<span>${esc(cat)} <b aria-hidden="true">${ARROW}</b></span></a>`).join('')
     }</div></section>`;
   }
 
@@ -143,13 +164,13 @@
   function drops(all) {
     const items = dropsOf(all);
     const feature = items[0];
-    return `<section class="editorial-break"><div class="field-story"><div class="field-copy"><span class="eyebrow">Limited drops</span><h2>The blue hour.</h2><p>Small runs in colours that take a different route.</p>${feature ? `<a class="button outline" href="#/product/${esc(feature.slug)}">Explore ${esc(feature.name)} ↗</a>` : ''}</div>${feature && feature.files[0] ? `<figure><img loading="lazy" src="${esc(H.thumb(feature.files[0], 900))}" alt=""><figcaption>${esc(feature.name)} / field notes</figcaption></figure>` : ''}</div></section>
+    return `<section class="editorial-break"><div class="field-story"><div class="field-copy"><span class="eyebrow">Limited drops</span><h2>The blue hour.</h2><p>Small runs in colours that take a different route.</p>${feature ? `<a class="button outline" href="#/product/${esc(feature.slug)}">Explore ${esc(feature.name)} ${ARROW}</a>` : ''}</div>${feature && feature.files[0] ? `<figure><img loading="lazy" src="${esc(H.thumb(feature.files[0], 900))}" alt=""><figcaption>${esc(feature.name)} / field notes</figcaption></figure>` : ''}</div></section>
       <section class="section" id="drops-list">${heading('Limited drops', 'Don’t sleep on these')}${tiles(items)}</section>`;
   }
   function dropsPage(all) { return drops(all); }
 
   function serviceGuide() {
-    return `<section class="section service-guide" aria-label="Shopping information"><article><span class="service-mark" aria-hidden="true">↗</span><h3>Free standard delivery</h3><p>${esc((H.cfg().shipping || {}).note || 'Delivery across India.')}</p><a href="#/policy/shipping">Delivery details ↗</a></article><article><span class="service-mark" aria-hidden="true">↶</span><h3>Returns</h3><p>Return unworn pairs in their original packaging.</p><a href="#/policy/returns">Return details ↗</a></article><article><span class="service-mark" aria-hidden="true">↔</span><h3>Find your fit</h3><p>Filter the lineup by the size you wear.</p><a href="#/shop">Browse available sizes ↗</a></article></section>`;
+    return `<section class="section service-guide" aria-label="Shopping information"><article><span class="service-mark" aria-hidden="true">${ARROW}</span><h3>Free standard delivery</h3><p>${esc((H.cfg().shipping || {}).note || 'Delivery across India.')}</p><a href="#/policy/shipping">Delivery details ${ARROW}</a></article><article><span class="service-mark" aria-hidden="true">${ICON_RETURN}</span><h3>Returns</h3><p>Return unworn pairs in their original packaging.</p><a href="#/policy/returns">Return details ${ARROW}</a></article><article><span class="service-mark" aria-hidden="true">${ICON_FIT}</span><h3>Find your fit</h3><p>Filter the lineup by the size you wear.</p><a href="#/shop">Browse available sizes ${ARROW}</a></article></section>`;
   }
   function faqPage() {
     return `<section class="section faq">${heading('Before you lace up.', 'Sale and delivery')}<div><details open><summary>Is standard delivery free?</summary><p>Yes. See <a href="#/policy/shipping">shipping and returns</a> for timings.</p></details><details><summary>How do I choose a size?</summary><p>Check the size picker on the product page.</p></details><details><summary>How does early access work?</summary><p><a href="#/early-access">Join the early access list</a> to hear about limited colourways first.</p></details><details><summary>Can I return to checkout later?</summary><p>Your bag stays in this browser. You’ll enter your delivery details when you check out.</p></details></div></section>`;
@@ -193,9 +214,9 @@
 
   function home(all) {
     const heroImg = safeUrl((H.cfg().heroImages || [])[0]) || ASSET('hero.jpg');
-    return `<section class="hero" style="--hero:url('${esc(heroImg)}')"><div class="hero-content"><span class="eyebrow">${esc(H.D.shop.name)}</span><h1>Shop the <em>lineup.</em></h1><p>Street, court and trail sneakers for wherever the day takes you.</p><a class="button lime" href="#/shop">Shop now ↗</a></div></section>
-      <div class="styles-band" aria-label="Shop by style">${categoriesOf(all).map((c) => `<a href="#/shop?style=${encodeURIComponent(c)}">${esc(c)} ↗</a>`).join('')}</div>
-      <section class="section" id="lineup"><div class="section-head"><div><span class="eyebrow">New in</span><h2>Shop the lineup.</h2></div><a href="#/shop">Shop all ↗</a></div>${tiles(all.slice(0, 8))}</section>
+    return `<section class="hero" style="--hero:url('${esc(heroImg)}')"><div class="hero-content"><span class="eyebrow">${esc(H.D.shop.name)}</span><h1>Shop the <em>lineup.</em></h1><p>Street, court and trail sneakers for wherever the day takes you.</p><a class="button lime" href="#/shop">Shop now ${ARROW}</a></div></section>
+      <div class="styles-band" aria-label="Shop by style">${categoriesOf(all).map((c) => `<a href="#/shop?style=${encodeURIComponent(c)}">${esc(c)} ${ARROW}</a>`).join('')}</div>
+      <section class="section" id="lineup"><div class="section-head"><div><span class="eyebrow">New in</span><h2>Shop the lineup.</h2></div><a href="#/shop">Shop all ${ARROW}</a></div>${tiles(all.slice(0, 8))}</section>
       ${collections(all)}${drops(all)}${signupSection()}${serviceGuide()}${faqPage()}`;
   }
 
@@ -207,16 +228,16 @@
           p.sizes.length ? p.sizes.map((s) => `<label><input name="size" type="radio" value="${esc(s)}" ${p.stock ? 'required' : 'disabled'}><span>${esc(s)}</span></label>`).join('') : '<span class="muted">One size</span>'
         }</div></fieldset><button class="button lime" type="submit"${p.stock ? '' : ' disabled'}>${p.stock ? 'Add to bag' : 'Sold out'}</button></form>
         <details><summary>Delivery and returns</summary><p><a href="#/policy/shipping">Shipping</a> · <a href="#/policy/returns">Returns</a></p></details></div></div></section>
-      <section class="section"><div class="section-head"><h2>More to try.</h2><a href="#/shop">Shop all ↗</a></div>${tiles(products().filter((x) => x.id !== p.id).slice(0, 4))}</section>`;
+      <section class="section"><div class="section-head"><h2>More to try.</h2><a href="#/shop">Shop all ${ARROW}</a></div>${tiles(products().filter((x) => x.id !== p.id).slice(0, 4))}</section>`;
   }
 
   // ---------- bag (its own page, same style as the approved demo; checkout itself is the shared flow) ----------
   function bagMarkup() {
     const ls = H.bagLines();
-    if (!ls.length) return '<p>Your bag is empty.</p><a class="button" href="#/shop">Shop sneakers ↗</a>';
+    if (!ls.length) return `<p>Your bag is empty.</p><a class="button" href="#/shop">Shop sneakers ${ARROW}</a>`;
     const rows = ls.map((l, i) => `<div class="cart-row">${H.photos(l.s)[0] ? `<img src="${esc(H.thumb(H.photos(l.s)[0], 160))}" alt="">` : ''}<div><strong>${esc(l.s.name)}</strong>${l.vr.size ? `<p>${esc(l.vr.size)}</p>` : ''}
       <div class="quantity"><button type="button" data-step="-1" data-i="${i}" aria-label="Remove one">−</button><span>${l.q}</span><button type="button" data-step="1" data-i="${i}" aria-label="Add one">+</button><button class="remove" type="button" data-step="0" data-i="${i}">Remove</button></div></div><strong>${money(l.vr.price * l.q)}</strong></div>`).join('');
-    return `<div class="cart-layout"><div>${rows}<p><a href="#/shop">Continue shopping ↗</a></p></div><aside class="summary"><h2>Order summary</h2><dl><div><dt>Subtotal</dt><dd>${money(H.bagTotal())}</dd></div></dl><a class="button lime" href="#/checkout">Checkout ↗</a></aside></div>`;
+    return `<div class="cart-layout"><div>${rows}<p><a href="#/shop">Continue shopping ${ARROW}</a></p></div><aside class="summary"><h2>Order summary</h2><dl><div><dt>Subtotal</dt><dd>${money(H.bagTotal())}</dd></div></dl><a class="button lime" href="#/checkout">Checkout ${ARROW}</a></aside></div>`;
   }
   function cartPage() { return `<section class="section"><h1>Your bag.</h1>${bagMarkup()}</section>`; }
   function paintBagCount() { const n = H.bagCount(); const el = $('#bag-count'); if (el) el.textContent = n; }
