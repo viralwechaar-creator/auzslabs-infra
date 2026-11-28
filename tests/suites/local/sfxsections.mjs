@@ -510,6 +510,17 @@ export default async function run({ browser, stack }) {
     await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(3000);
     assert(!/hidden value/.test(await pg.locator('body').innerText()) && await pg.locator('.custom-df').count() === 0, 'a private field leaked or left an empty block');
   }, 'major');
+  await s.check('Tags: the public store returns product tags and ?tag= filters the shop', async () => {
+    await q("update sfx_products set tags = array['summer'] where id=$1", [pid]);
+    const pg = await ctx.newPage();
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); });
+    const tags = await pg.evaluate(async (slug) => { const c = window.supabase.createClient(CFG.url, CFG.key); const r = await c.rpc('public_sfx_store', { p_slug: slug }); return ((r.data.styles || []).find((x) => x.tags) || {}).tags; }, 'testcafe');
+    assert(Array.isArray(tags) && tags[0] === 'summer', JSON.stringify(tags));
+    await pg.goto(stack.url('testcafe', '/store.html#/shop?tag=nomatch'), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    assert(await pg.locator('.pc').count() === 0, 'a tag with no products still listed products');
+    await pg.goto(stack.url('testcafe', '/store.html#/shop?tag=summer'), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    assert(await pg.locator('.pc').count() >= 1, 'tag filter showed nothing');
+  }, 'major');
   await ctx.close();
   return s.done();
 }

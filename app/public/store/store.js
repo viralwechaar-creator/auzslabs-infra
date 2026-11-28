@@ -1150,6 +1150,7 @@ function filterSet(q) {
   let list = STY.slice();
   if (isMin() && Object.hasOwn(minimalCategoryGroups, q.group)) list = minimalGroupProducts(q.group, list);
   if (q.cat) list = list.filter((s) => s.category === q.cat);
+  if (q.tag) list = list.filter((s) => (s.tags || []).includes(q.tag));
   if (q.col) { const cl = D.collections.find((x) => x.id === q.col); list = cl ? list.filter((s) => cl.styleIds.includes(s.id)) : []; }
   if (q.colour) list = list.filter((s) => colours(s).includes(q.colour));
   if (q.fam) list = list.filter((s) => colours(s).some((c) => famOf(c) === q.fam));
@@ -1177,13 +1178,14 @@ function refine(anchor) {
   const base = q$(); const draft = { ...base };
   const prices = STY.map((s) => s.price); const lo = Math.floor(Math.min(...prices, 0)), hi = Math.ceil(Math.max(...prices, 1) / 100) * 100;
   const body = E('div'); const showBtn = E('button', { class: 'btn wide' }, 'View items'); const live = () => { const n = filterSet(draft).length; showBtn.textContent = 'View ' + n + (n === 1 ? ' item' : ' items'); };
-  const allSizes = [...new Set(STY.flatMap(sizesOf))]; const allCols = [...new Set(STY.flatMap(colours))]; const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))];
+  const allSizes = [...new Set(STY.flatMap(sizesOf))]; const allCols = [...new Set(STY.flatMap(colours))]; const cats = [...new Set(STY.map((s) => s.category).filter(Boolean))]; const allTags = [...new Set(STY.flatMap((s) => s.tags || []))].sort();
   const paint = () => {
     clear(body);
     const pick = (key, val) => { draft[key] = draft[key] === val ? '' : val; if (key === 'size') delete draft.sizes; if (key === 'colour') { delete draft.colours; delete draft.fam; } paint(); };
     body.append(
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Sort'), E('div', { class: 'fwrap' }, [['new', 'Newest'], ['low', 'Price low'], ['high', 'Price high'], ['az', 'A to Z']].map(([k, l]) => E('button', { class: 'sz' + ((draft.sort || 'new') === k ? ' on' : ''), onclick: () => { draft.sort = k; paint(); } }, l)))),
       cats.length > 1 ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Type'), E('div', { class: 'fwrap' }, cats.map((c) => E('button', { class: 'sz' + (draft.cat === c ? ' on' : ''), onclick: () => pick('cat', c) }, c)))) : null,
+      allTags.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Tag'), E('div', { class: 'fwrap' }, allTags.map((t) => E('button', { class: 'sz' + (draft.tag === t ? ' on' : ''), onclick: () => pick('tag', t) }, t)))) : null,
       allSizes.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Size'), E('div', { class: 'fwrap' }, allSizes.map((z) => E('button', { class: 'sz' + (draft.size === z ? ' on' : ''), onclick: () => pick('size', z) }, z)))) : null,
       allCols.length ? E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Colour'), E('div', { class: 'fwrap' }, allCols.map((c) => E('button', { class: 'sz cl' + (draft.colour === c ? ' on' : ''), onclick: () => pick('colour', c) }, E('span', { class: 'c', style: { background: hex(c) } }), c)))) : null,
       E('div', { class: 'fgrp' }, E('span', { class: 'lbl' }, 'Budget'), (() => { const mn = E('input', { type: 'range', min: lo, max: hi, value: draft.min || lo, step: 100 }), mx = E('input', { type: 'range', min: lo, max: hi, value: draft.max || hi, step: 100 }); const rv = E('div', { class: 'rv' }); const up = () => { if (+mn.value > +mx.value) mn.value = mx.value; draft.min = +mn.value > lo ? mn.value : ''; draft.max = +mx.value < hi ? mx.value : ''; rv.textContent = ''; add(rv, [E('span', null, inr(mn.value)), E('span', null, inr(mx.value))]); live(); }; mn.oninput = up; mx.oninput = up; up(); return E('div', { class: 'range' }, rv, mn, mx); })()),
@@ -1191,7 +1193,7 @@ function refine(anchor) {
     live();
   };
   paint();
-  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); if (isMin()) setQ({ cat: '', size: '', sizes: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', stock: '', gender: '' }); else location.hash = '#/shop'; } }, 'Clear all'));
+  const foot = E('div', { class: 'rf' }, showBtn, E('button', { class: 'rclr', onclick: () => { sh.close(); if (isMin()) setQ({ tag: '', cat: '', size: '', sizes: '', colour: '', colours: '', fam: '', min: '', max: '', sort: '', stock: '', gender: '' }); else location.hash = '#/shop'; } }, 'Clear all'));
   const sh = sheet('Filter', body, foot); sh.el.querySelector('.sheet').classList.add('refine');
   sh.el.setAttribute('aria-label', 'Filter products');
   sh.el.addEventListener('keydown', (event) => { if (event.key === 'Escape') { sh.close(); anchor?.focus(); } });
@@ -1207,13 +1209,13 @@ function pagedGrid(list, withBlanks = true, categoryTile = null) {
 }
 V.shop = (v) => {
   const q = q$(); const list = filterSet(q); const cols = D.collections;
-  const act = []; const lab = { cat: 'Type', colour: 'Colour', fam: 'Colour', size: 'Size', gender: '', stock: 'In stock', new: 'New in' };
+  const act = []; const lab = { tag: 'Tag', cat: 'Type', colour: 'Colour', fam: 'Colour', size: 'Size', gender: '', stock: 'In stock', new: 'New in' };
   let dens = false; try { dens = localStorage.getItem('st.dens') === '1'; } catch (x) {}
   const gw = E('div', { class: 'gw' + (dens ? ' dense' : '') });
   const colName = q.col ? (cols.find((x) => x.id === q.col) || {}).name : '';
   const groupName = isMin() && Object.hasOwn(minimalCategoryGroups, q.group) ? minimalCategoryGroups[q.group].label : '';
   const title = colName || q.cat || groupName || (q.new ? 'New arrivals' : 'All products');
-  for (const k of ['cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? (q[k] === 'sold-out' ? 'Out of stock' : 'In stock') : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
+  for (const k of ['tag', 'cat', 'colour', 'fam', 'size', 'gender', 'stock', 'new', 'min', 'max']) if (q[k]) act.push([k, k === 'stock' ? (q[k] === 'sold-out' ? 'Out of stock' : 'In stock') : k === 'new' ? 'New in' : k === 'min' ? 'From ' + inr(q[k]) : k === 'max' ? 'Up to ' + inr(q[k]) : (lab[k] ? lab[k] + ': ' : '') + q[k]]);
   if (q.col) act.push(['col', colName || 'Collection']);
   if (groupName) act.push(['group', groupName]);
   if (isMin()) {
