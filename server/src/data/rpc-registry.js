@@ -952,6 +952,7 @@ export const RPC = {
   public_sfx_order: { params: ['p_token'], auth: false },
   public_sfx_order_paid: { params: ['p_token', 'p_utr'], auth: false },
   public_sfx_order_abandon: { params: ['p_token'], auth: false },
+  public_sfx_newsletter_subscribe: { params: ['p_slug', 'p_email'], auth: false },
   public_sfx_order_find: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
   public_sfx_return_request: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },
   // sfx_online_start / sfx_online_set_order / sfx_online_confirm / sfx_domain_verify_prepare /
