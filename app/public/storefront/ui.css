@@ -1181,3 +1181,42 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
 .te-thumb-plain{padding:14px;font-size:13px;color:var(--muted,#666)}
 .te-thumb-hit{position:absolute;inset:0;border:0;background:transparent;cursor:pointer;padding:0}
 .te-thumb-hit:hover,.te-thumb-hit:focus-visible{box-shadow:inset 0 0 0 2px #3b82f6;border-radius:10px;outline:none}
+
+/* 58. Page tree (Shopify-style): Header / Template / Footer groups, nested blocks, "..." menu, phone pill bar */
+.shell .tt{display:grid;gap:14px}
+.shell .tt-gh{display:flex;align-items:center;justify-content:space-between;margin:0 0 2px}
+.shell .tt-gh h3{margin:0;font-size:.95rem;font-weight:600}
+.shell .tt-plus{all:unset;cursor:pointer;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:20px;line-height:1;border:1px solid var(--line)}
+.shell .tt-plus:hover{background:rgba(0,0,0,.06)}
+.shell .tt-row{display:flex;align-items:center;gap:2px;border-radius:9px;min-height:36px}
+.shell .tt-row:hover{background:rgba(0,0,0,.045)}
+.shell .tt-row.on{background:#111;color:#fff}
+.shell .tt-row.l1{margin-left:16px;border-left:1px solid var(--line);border-radius:0 9px 9px 0}
+.shell .tt-row.l2{margin-left:32px;border-left:1px solid var(--line);border-radius:0 9px 9px 0}
+.shell .tt-row.on.l1,.shell .tt-row.on.l2{border-left-color:#111}
+.shell .tt-main,.shell .tt-row .te-item.tt-main{all:unset;box-sizing:border-box;cursor:pointer;flex:1;min-width:0;display:flex;gap:8px;align-items:baseline;padding:7px 6px;font-size:.86rem;font-weight:500;border:0;background:none}
+.shell .tt-main span{white-space:nowrap}
+.shell .tt-main small{color:var(--muted,#777);font-weight:400;font-size:.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell .tt-row.on .tt-main small{color:rgba(255,255,255,.7)}
+.shell .tt-chev{all:unset;cursor:pointer;width:22px;height:28px;display:grid;place-items:center;flex:none}
+.shell .tt-chev::before{content:"";width:6px;height:6px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.shell .tt-chev.open::before{transform:rotate(45deg)}
+.shell .tt-chev.none{cursor:default}.shell .tt-chev.none::before{display:none}
+.shell .tt-more{all:unset;cursor:pointer;width:30px;height:30px;display:grid;place-items:center;border-radius:8px;font-size:18px;line-height:1;flex:none}
+.shell .tt-more:hover{background:rgba(0,0,0,.08)}.shell .tt-row.on .tt-more:hover{background:rgba(255,255,255,.18)}
+.shell .tt-empty{margin:4px 0 0;font-size:.8rem;color:var(--muted,#777)}
+.tt-menu{position:fixed;z-index:80;width:230px;background:#fff;color:#111;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);padding:6px;display:grid}
+.tt-menu button{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 12px;border-radius:9px;font-size:.88rem}
+.tt-menu button:hover:not([disabled]){background:rgba(0,0,0,.06)}
+.tt-menu button[disabled]{opacity:.4;cursor:default}
+.tt-menu button.danger{color:#c4261d}
+.tt-menu hr{border:0;border-top:1px solid #eee;margin:4px 0;width:100%}
+.tt-pill{display:none}
+@media (max-width:899px){
+  .tt-pill{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));z-index:70;gap:10px;align-items:center}
+  .tt-pill-in{display:flex;gap:2px;background:#fff;border-radius:999px;padding:6px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+  .tt-pill-in button,.tt-x{all:unset;cursor:pointer;box-sizing:border-box;padding:10px 14px;border-radius:999px;font-size:.84rem;font-weight:600}
+  .tt-pill-in button:active{background:rgba(0,0,0,.08)}
+  .tt-x{width:46px;height:46px;padding:0;display:grid;place-items:center;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+  .te{padding-bottom:84px}
+}

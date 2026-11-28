@@ -534,6 +534,36 @@ export default async function run({ browser, stack }) {
     assert(/About it/.test(await pg.locator('.custom-pi h2').first().innerText()) && /Soft linen shirt/.test(await pg.locator('.custom-pi').first().innerText()), 'section not shown');
     assert(await pg.locator('.tabs2').count() === 0, 'built-in tabs still shown');
   }, 'major');
+  await s.check('Page tree: header/template/footer groups, nested blocks, and the "..." menu (duplicate, copy, paste, hide, add block, move, remove)', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    const heads = await page.locator('.tt-gh h3').allInnerTexts(); assert(heads.join(',') === 'Header,Template,Footer', heads.join(','));
+    await page.click('[data-action="te-gadd:h"]'); await page.waitForTimeout(300);
+    await page.click('.tt-menu [data-action="te-gnew:h.content"]'); await page.waitForTimeout(800);
+    assert(await page.locator('.tt-group[data-g="h"] .tt-main').count() >= 1, 'header section not added');
+    await page.click('[data-action="te-gadd:t"]'); await page.waitForTimeout(300);
+    await page.click('.tt-menu [data-action="te-gnew:t.content"]'); await page.waitForTimeout(800);
+    const sec = page.locator('.tt-group[data-g="t"] .tt-row.l0').first();
+    assert(await page.locator('.tt-group[data-g="t"] .tt-row.l1').count() === 3, 'blocks of the new section are not listed');
+    const nest = await page.locator('.tt-group[data-g="t"] .tt-row.l1 .tt-main span').allInnerTexts(); assert(nest.length === 3, nest.join(','));
+    await sec.locator('.tt-more').click(); await page.waitForTimeout(200);
+    await page.click('.tt-menu [data-action="te-mo:dup"]'); await page.waitForTimeout(500);
+    assert(await page.locator('.tt-group[data-g="t"] .tt-row.l0').count() === 2, 'duplicate failed');
+    await page.locator('.tt-group[data-g="t"] .tt-row.l0').first().locator('.tt-more').click(); await page.click('.tt-menu [data-action="te-mo:copy"]'); await page.waitForTimeout(200);
+    await page.locator('.tt-group[data-g="t"] .tt-row.l0').nth(1).locator('.tt-more').click(); await page.click('.tt-menu [data-action="te-mo:paste"]'); await page.waitForTimeout(500);
+    assert(await page.locator('.tt-group[data-g="t"] .tt-row.l0').count() === 3, 'paste failed');
+    await page.locator('.tt-group[data-g="t"] .tt-row.l0').nth(2).locator('.tt-more').click(); await page.click('.tt-menu [data-action="te-mo:hide"]'); await page.waitForTimeout(400);
+    assert(/hidden/.test(await page.locator('.tt-group[data-g="t"] .tt-row.l0').nth(2).innerText()), 'hide not shown');
+    await page.locator('.tt-group[data-g="t"] .tt-row.l1').first().locator('.tt-more').click(); await page.click('.tt-menu [data-action="te-mo:adda"]'); await page.waitForTimeout(400);
+    assert(await page.locator('.tt-group[data-g="t"] .tt-row.l1').count() === 4, 'add block after failed');
+    await page.locator('.tt-group[data-g="t"] .tt-row.l0').nth(2).locator('.tt-more').click(); await page.click('.tt-menu [data-action="te-mo:rm"]'); await page.waitForTimeout(400);
+    assert(await page.locator('.tt-group[data-g="t"] .tt-row.l0').count() === 2, 'remove failed');
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.groups.header.sections.length === 1 && row.sections.length === 2, 'not saved: ' + JSON.stringify([row.groups, row.sections.length]));
+    assert(new Set(row.sections.map((x) => x.id)).size === 2, 'duplicate ids');
+  });
   await s.check('Pages follow the store to a newly activated theme', async () => {
     const r = await page.evaluate(async ([e, pw]) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.auth.signInWithPassword({ email: e, password: pw });
       const a = await c.rpc('sfx_theme_install_create', { p: { name: 'Pages A', starter: 'blank', base: 'minimal' } }); if (a.error) return { error: a.error.message };
