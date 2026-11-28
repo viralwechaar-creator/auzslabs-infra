@@ -27,5 +27,12 @@ export default async function run({ browser, stack }) {
   await bad({ ...good, content: { sections: [{ id: 'a', type: 'text', props: { body: '<script>alert(1)</script>' } }] } }, /script/i, 'script tag');
   await bad({ ...good, content: { sections: [{ id: 'a', type: 'text', props: { body: 'x' } }], code: 'x' } }, /Unknown content part/i, 'unknown content part');
   await bad({ ...good, content: { sections: [{ id: 'a', type: 'button', props: { label: 'go', href: 'javascript:alert(1)' } }] } }, /javascript|refused/i, 'javascript link');
+  await s.check('Section and item names and locks survive the cleaner', async () => {
+    const pk = { ...good, content: { sections: [{ id: 'a1', type: 'text', name: 'My <b>intro</b>', locked: true, props: { heading: 'Hi' } }, { id: 'f1', type: 'faq', props: {}, blocks: [{ id: 'b1', type: 'question', name: 'First', locked: true, props: { question: 'Q?', answer: 'A' } }] }] } };
+    const r = await call(pk, false); assert(r.imported, JSON.stringify(r));
+    const g = await page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key); const x = await c.rpc('sfdev_theme_export', { p_id: id }); return x.error ? x.error.message : x.data.content; }, r.id);
+    const a = g.sections[0], b = g.sections[1].blocks[0];
+    assert(a.name === 'My bintro/b' && a.locked === true && b.name === 'First' && b.locked === true, JSON.stringify(g));
+  }, 'major');
   s.done();
 }
