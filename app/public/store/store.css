@@ -1144,3 +1144,6 @@ body.d-font-mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 .custom-news{text-align:center;padding-top:32px;padding-bottom:32px}.custom-news h2{margin:0 0 6px}.nl-text{margin:0 0 12px;color:var(--mut)}
 .nl-form{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.nl-form input{flex:1 1 220px;max-width:320px;min-width:0;padding:11px 12px;border:1px solid var(--line,#ddd);border-radius:var(--r2,8px);font:inherit;background:var(--card,#fff);color:inherit}
 .nl-msg{margin:8px 0 0;min-height:1em;font-size:12px;color:var(--mut)}.nl-thanks{font-weight:600}
+.cb-row{display:flex;width:100%;box-sizing:border-box}.cb-rowdir{flex-direction:row;flex-wrap:wrap;gap:12px}.cb-col{flex-direction:column;gap:12px}.cb-rowdir>*{flex:1 1 220px;min-width:0}.cb-col>*{width:100%}
+@media(max-width:600px){.cb-rowdir{flex-direction:column;flex-wrap:nowrap}.cb-rowdir>*{flex:none;width:100%}}
+.cb-row:empty{min-height:28px;outline:1px dashed #bbb}

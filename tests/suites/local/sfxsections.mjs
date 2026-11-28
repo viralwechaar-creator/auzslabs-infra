@@ -446,6 +446,36 @@ export default async function run({ browser, stack }) {
     await pg.fill('.nl-form input', 'fan@example.com'); await pg.click('.nl-form button'); await pg.waitForTimeout(1000);
     assert((await q("select 1 from sfx_customers where tenant_id=$1 and email='fan@example.com'", [tid])).length === 1, 'duplicate customer');
   }, 'major');
+  await s.check('Row container: children are checked like top-level elements, rows cannot nest, and the store draws them', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    const out2 = await page.evaluate(async ([id]) => { const c = window.supabase.createClient(CFG.url, CFG.key); const tr = (kids, extra) => ({ sections: [{ id: 'r1', type: 'content', props: {}, blocks: [{ id: 'row1', type: 'row', props: { direction: 'row', gap: 500, bg: '#112233', ...(extra || {}) }, blocks: kids }] }] });
+      const heading = { id: 'h', type: 'heading', props: { text: 'In a row', bogus: 'x' } };
+      const bad = [tr([{ type: 'row', props: {} }]), tr(Array.from({ length: 9 }, () => ({ type: 'text', props: { text: 'x' } }))), tr([{ type: 'nope', props: {} }]), tr([{ type: 'button', props: { label: 'x', href: 'javascript:alert(1)' } }])];
+      const refused = []; for (const b of bad) { const r = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: b }); refused.push(r.error ? r.error.message : 'ACCEPTED'); }
+      const ok = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: tr([heading, { id: 't', type: 'text', props: { text: 'Side text' } }]) }); if (ok.error) return { error: ok.error.message, refused };
+      const pub = await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); return { refused, pubErr: pub.error && pub.error.message }; }, [inst]);
+    assert(!out2.error && !out2.pubErr, JSON.stringify(out2));
+    assert(/another row/.test(out2.refused[0]) && /up to 8/.test(out2.refused[1]) && /unknown item type/.test(out2.refused[2]) && /links must start/.test(out2.refused[3]), JSON.stringify(out2.refused));
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content.sections[0].blocks[0];
+    assert(row.blocks.length === 2 && row.blocks[0].props.text === 'In a row' && !('bogus' in row.blocks[0].props) && row.props.gap === 80 && row.props.bg === '#112233', JSON.stringify(row));
+    const pg = await ctx.newPage();
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    assert(await pg.locator('.cb-row > [data-cblk]').count() === 2, 'row children not drawn');
+  }, 'major');
+  await s.check('Row container in the editor: add a row, add elements inside it, edit one', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.selectOption('#te-add-type', 'content'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(2000);
+    await page.selectOption('#te-badd-type', 'row'); await page.click('[data-action="te-badd"]'); await page.waitForTimeout(800);
+    await page.selectOption('#te-cadd-type', 'heading'); await page.click('[data-action="te-cadd"]'); await page.waitForTimeout(600);
+    await page.fill('form[data-form="te-cblock"] input[name="text"], form[data-form="te-cblock"] textarea[name="text"]', 'Inside the row'); await page.waitForTimeout(600);
+    await page.selectOption('#te-cadd-type', 'button'); await page.click('[data-action="te-cadd"]'); await page.waitForTimeout(600);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const sec = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content.sections[0];
+    const row = sec.blocks.find((b) => b.type === 'row');
+    assert(row && row.blocks.length === 2 && row.blocks[0].type === 'heading' && row.blocks[0].props.text === 'Inside the row' && row.blocks[1].type === 'button', JSON.stringify(sec.blocks));
+  }, 'major');
   await ctx.close();
   return s.done();
 }

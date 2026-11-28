@@ -694,9 +694,19 @@ function blocksHtml(x) {
     const open = t.settings.length <= 4 || i === ed.blk; const sum = String(pr.text || pr.label || pr.question || pr.title || pr.src || '').slice(0, 30);
     return '<form data-form="te-block" data-bi="' + i + '" class="te-block' + (i === ed.blk ? ' on' : '') + '"><div class="te-block-head" data-action="te-bsel:' + i + '"><strong>' + esc(t.label) + ' ' + (i + 1) + '</strong>' + (open ? '' : '<small>' + esc(sum) + '</small>') +
       (w ? '<span>' + (i > 0 ? button('Up', 'te-bup:' + i, 'compact') : '') + (i < list.length - 1 ? button('Down', 'te-bdown:' + i, 'compact') : '') + button('Remove', 'te-bremove:' + i, 'compact danger') + '</span>' : '') + '</div>' +
-      (open ? '<div class="field-grid te-fields">' + t.settings.map((d) => regField(d, pr[d.id], w ? '' : 'disabled', (id) => 'te-bclear:' + i + ':' + id).replace(/(<input type="url" name="(?:href|src|image)")/, '$1 list="te-links"')).join('') + '</div>' : '') + '</form>'; }).join('');
+      (open ? '<div class="field-grid te-fields">' + t.settings.map((d) => regField(d, pr[d.id], w ? '' : 'disabled', (id) => 'te-bclear:' + i + ':' + id).replace(/(<input type="url" name="(?:href|src|image)")/, '$1 list="te-links"')).join('') + '</div>' : '') + '</form>' + (b.type === 'row' && i === ed.blk ? childrenHtml(b, def, w) : ''); }).join('');
   const add = w && list.length < def.maxBlocks ? (multi ? '<div class="te-badd-row"><select id="te-badd-type" aria-label="Element type">' + def.blockTypes.map((t) => '<option value="' + t.type + '">' + esc(t.label) + '</option>').join('') + '</select>' + button('Add element', 'te-badd', 'primary') + '</div>' : button('Add ' + def.blockTypes[0].label.toLowerCase(), 'te-badd', 'primary')) : '';
   return '<div class="te-blocks"><h3>' + (multi ? 'Elements' : 'Items') + '</h3>' + (rows || '<p class="compact-copy">No ' + (multi ? 'elements' : 'items') + ' yet.</p>') + add + '</div>';
+}
+// the elements inside a Row (one level only): each has its own small form, shown while selected
+function childrenHtml(b, def, w) {
+  const kids = b.blocks || [], types = def.blockTypes.filter((t) => t.type !== 'row'); if (!types.length) return '';
+  const rows = kids.map((c, k) => { const t = types.find((z) => z.type === c.type) || types[0], pr = c.props || {}, open = k === ed.cblk; const sum = String(pr.text || pr.label || pr.src || '').slice(0, 30);
+    return '<form data-form="te-cblock" data-ci="' + k + '" class="te-block te-child' + (open ? ' on' : '') + '"><div class="te-block-head" data-action="te-csel:' + k + '"><strong>' + esc(t.label) + ' ' + (k + 1) + '</strong>' + (open ? '' : '<small>' + esc(sum) + '</small>') +
+      (w ? '<span>' + (k > 0 ? button('Up', 'te-cup:' + k, 'compact') : '') + (k < kids.length - 1 ? button('Down', 'te-cdown:' + k, 'compact') : '') + button('Remove', 'te-cremove:' + k, 'compact danger') + '</span>' : '') + '</div>' +
+      (open ? '<div class="field-grid te-fields">' + t.settings.map((d) => regField(d, pr[d.id], w ? '' : 'disabled', (id) => 'te-cclear:' + k + ':' + id).replace(/(<input type="url" name="(?:href|src|image)")/, '$1 list="te-links"')).join('') + '</div>' : '') + '</form>'; }).join('');
+  const add = w && kids.length < 8 ? '<div class="te-badd-row"><select id="te-cadd-type" aria-label="Element type">' + types.map((t) => '<option value="' + t.type + '">' + esc(t.label) + '</option>').join('') + '</select>' + button('Add to row', 'te-cadd', 'primary') + '</div>' : '';
+  return '<div class="te-children"><h4>Inside this row</h4>' + (rows || '<p class="compact-copy">Nothing in this row yet.</p>') + add + '</div>';
 }
 // ---- Design settings: controls come from the server's list (db/455); only a setting the owner touches is saved ----
 const lumOf = (h) => { const m = /^#([0-9a-f]{6})$/i.exec(h || ''); if (!m) return 0; const c = [0, 2, 4].map((i) => { const v = parseInt(m[1].slice(i, i + 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
@@ -763,7 +773,7 @@ if (typeof window !== 'undefined') window.addEventListener('message', (e) => {
     if (x && x.blocks && x.blocks[bi]) { if (!ed.snapped) { edSnapshot(); ed.snapped = true; } x.blocks[bi] = { ...x.blocks[bi], props: { ...(x.blocks[bi].props || {}), [e.data.field]: e.data.value.slice(0, 500) } }; ed.sel = e.data.index; ed.blk = bi; ed.snapped = false; edRefresh('lrb'); edPost(); }
     return;
   }
-  if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.blk = Number.isInteger(e.data.block) ? e.data.block : -1; ed.snapped = false; edRefresh('lrb'); }
+  if (e.data.type === 'auz-select' && Number.isInteger(e.data.index) && ed.sections[e.data.index]) { ed.sel = e.data.index; ed.blk = Number.isInteger(e.data.block) ? e.data.block : -1; ed.cblk = Number.isInteger(e.data.child) ? e.data.child : -1; ed.snapped = false; edRefresh('lrb'); }
 });
 // ---------- Studs theme: settings editor with a live preview of the DRAFT (nothing here changes the live store) ----------
 let sd = null; // { id, settings, saved }
@@ -827,7 +837,7 @@ function edHandle(a, key, detail) {
   if (!ed) return false;
   if (a === 'te-mode') { ed.mode = key === 'board' ? 'board' : 'edit'; rerender(); return true; }
   if (a === 'te-open') { ed.mode = 'edit'; edPicked(key + (detail ? ':' + detail : '')); rerender(); return true; }
-  if (a === 'te-select') { ed.sel = Number(key); ed.blk = -1; ed.snapped = false; edRefresh('lr', true); return true; }
+  if (a === 'te-select') { ed.sel = Number(key); ed.blk = -1; ed.cblk = -1; ed.snapped = false; edRefresh('lr', true); return true; }
   if (a === 'te-device') { ed.device = key; const f = $('#te-frame'); if (f) f.className = 'te-frame ' + key; document.querySelectorAll('[data-action^="te-device:"]').forEach((b) => b.classList.toggle('primary', b.dataset.action === 'te-device:' + key)); return true; }
   if (!canWrite()) return false;
   if (a === 'te-addpage') {
@@ -839,12 +849,21 @@ function edHandle(a, key, detail) {
   }
   if (a === 'te-rmpage') { const p = edCurPage(); if (!p || !confirm('Remove the page "' + p.title + '"?')) return true; edSnapshot(); ed.pages.splice(Number(ed.cur.slice(2)), 1); ed.cur = 'home'; edBind(); ed.sel = ed.sections.length ? 0 : -1; ed.snapped = true; edRefresh('lrbp'); return true; }
   if (a === 'te-add') { if ((edTplKind() && ed.sections.length >= 13) || (edGroupKind() && ed.sections.length >= 8)) return true; const type = $('#te-add-type')?.value || 'text'; const st = STARTERS[type]; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(st ? st.props : SECTION_DEFAULTS[type] || {}) }, ...(st && st.blocks ? { blocks: st.blocks.map((b) => ({ id: uid(), type: b.type, props: { ...b.props } })) } : {}) }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
-  if (a === 'te-dup') { const x = ed.sections[ed.sel]; if (!x || x.type === 'main' || ed.sections.length >= 30) return true; edSnapshot(); const c = JSON.parse(JSON.stringify(x)); c.id = 's' + Date.now().toString(36); (c.blocks || []).forEach((b, i) => { b.id = 'b' + Date.now().toString(36) + i; }); ed.sections.splice(ed.sel + 1, 0, c); ed.sel += 1; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-dup') { const x = ed.sections[ed.sel]; if (!x || x.type === 'main' || ed.sections.length >= 30) return true; edSnapshot(); const c = JSON.parse(JSON.stringify(x)); c.id = 's' + Date.now().toString(36); (c.blocks || []).forEach((b, i) => { b.id = 'b' + Date.now().toString(36) + i; (b.blocks || []).forEach((k, n) => { k.id = 'c' + Date.now().toString(36) + i + n; }); }); ed.sections.splice(ed.sel + 1, 0, c); ed.sel += 1; ed.snapped = true; edRefresh('lrb', true); return true; }
   if (a === 'te-hide') { const x = ed.sections[ed.sel]; if (!x || x.type === 'main') return true; edSnapshot(); x.props = x.props || {}; if (x.props.hidden === 'yes') delete x.props.hidden; else x.props.hidden = 'yes'; ed.snapped = true; edRefresh('lrb', true); return true; }
   if (a === 'te-remove') { if (ed.sel < 0 || ed.sections[ed.sel]?.type === 'main') return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
   if (a === 'te-dclear') { edSnapshot(); ed.snapped = true; delete ed.design[key]; edRefresh('rb'); return true; }
   if (a === 'te-dreset') { edSnapshot(); ed.snapped = true; ed.design = {}; edRefresh('rb'); return true; }
-  if (a === 'te-bsel') { ed.blk = Number(key); ed.snapped = false; edRefresh('rb', true); return true; }
+  if (a === 'te-bsel') { ed.blk = Number(key); ed.cblk = -1; ed.snapped = false; edRefresh('rb', true); return true; }
+  if (a === 'te-csel') { ed.cblk = Number(key); ed.snapped = false; edRefresh('rb', true); return true; }
+  if (a === 'te-cclear') { const row = edRow(); if (!row || !row.blocks || !row.blocks[Number(key)]) return true; edSnapshot(); ed.snapped = true; delete row.blocks[Number(key)].props[detail]; edRefresh('rb'); return true; }
+  if (a === 'te-cadd' || a === 'te-cremove' || a === 'te-cup' || a === 'te-cdown') {
+    const row = edRow(); if (!row) return true; const list = row.blocks || [], i = Number(key); edSnapshot(); ed.snapped = true;
+    if (a === 'te-cadd') { if (list.length >= 8) return true; const type = ($('#te-cadd-type') && $('#te-cadd-type').value) || 'text'; row.blocks = [...list, { id: uid(), type, props: {} }]; ed.cblk = row.blocks.length - 1; }
+    else if (a === 'te-cremove') { row.blocks = list.filter((_, n) => n !== i); ed.cblk = -1; }
+    else { const to = i + (a === 'te-cup' ? -1 : 1); if (!list[to]) return true; const c = [...list]; [c[i], c[to]] = [c[to], c[i]]; row.blocks = c; if (ed.cblk === i) ed.cblk = to; }
+    edRefresh('rb', true); return true;
+  }
   if (a === 'te-bclear' || a === 'te-sclear') {
     const x = ed.sections[ed.sel]; if (!x) return true; edSnapshot(); ed.snapped = true;
     const pr = a === 'te-bclear' ? (x.blocks && x.blocks[Number(key)] && x.blocks[Number(key)].props) : x.props; if (pr) delete pr[a === 'te-bclear' ? detail : key];
@@ -872,6 +891,16 @@ function edChromeInput(target) {
   else if (form.dataset.kind === 'header') ed.header = { announceText: String(d.announceText || ''), announceHref: String(d.announceHref || ''), links: parseLinks(d.links, 8) };
   else ed.footer = { about: String(d.about || ''), note: String(d.note || ''), links: parseLinks(d.links, 12), columns: parseColumns(d.columns) };
   const b = $('#te-actions'); if (b) b.innerHTML = edBarHtml();
+  edPost(); return true;
+}
+const edRow = () => { const x = ed && ed.sections[ed.sel], r = x && x.blocks && x.blocks[ed.blk]; return r && r.type === 'row' ? r : null; };
+function edCBlockInput(target, type) {
+  const form = target.closest('form[data-form="te-cblock"]'); if (!form || !ed || !canWrite()) return false;
+  const row = edRow(), k = Number(form.dataset.ci); if (!row || !row.blocks || !row.blocks[k] || !target.name) return true;
+  if (!ed.snapped) { edSnapshot(); ed.snapped = true; }
+  row.blocks[k] = { ...row.blocks[k], props: { ...(row.blocks[k].props || {}), [target.name]: target.value } };
+  const b = $('#te-actions'); if (b) { const html = edBarHtml(); if (b.dataset.html !== html) { b.dataset.html = html; b.innerHTML = html; } }
+  if (type === 'change' && target.type === 'color') edRefresh('r');
   edPost(); return true;
 }
 function edBlockInput(target, type) {
@@ -1670,6 +1699,7 @@ async function dispatch(id, type, target, event, clickKey, clickDetail) {
   if (id === 'builder' && ed && type === 'input' && target.closest && target.closest('form[data-form="te-chrome"], form[data-form="te-page"]')) { edChromeInput(target); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-design"]')) { edDesignInput(target, type); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-block"]')) { edBlockInput(target, type); return; }
+  if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-cblock"]')) { edCBlockInput(target, type); return; }
   if (id === 'builder' && ed && (type === 'input' || type === 'change') && target.closest && target.closest('form[data-form="te-section"]')) { if (type === 'input') edInput(target); else if (target.type === 'color') edRefresh('r'); return; }
   if (id === 'domains' && domainDispatch(type, target)) return;
   if (type === 'change' && /^pf-(status|category|tag|stock|sort)$/.test(target.id)) { pf[target.id.slice(3)] = target.value; $('#table-results').innerHTML = productsList($('#table-query')?.value || ''); return; }

@@ -839,6 +839,11 @@ function contentBlockBase(b, sec) {
     setStyle(img, { 'border-radius': pxOf(p.radius, 0, 60), 'aspect-ratio': { square: '1 / 1', wide: '16 / 9', portrait: '4 / 5' }[p.aspect] || '', 'object-fit': p.aspect && p.aspect !== 'auto' ? 'cover' : '' });
     const wrap = E('div', { class: 'cb-image' }, href ? E('a', { href }, img) : img);
     setStyle(wrap, { width: { full: '100%', large: '80%', medium: '60%', small: '40%' }[p.width] || '100%' }); return wrap; }
+  if (b.type === 'row') { const el = E('div', { class: 'cb-row cb-' + (p.direction === 'column' ? 'col' : 'rowdir') });
+    setStyle(el, { 'background-color': colorOf(p.bg), padding: pxOf(p.pad, 0, 80), 'border-radius': pxOf(p.radius, 0, 60), gap: pxOf(p.gap, 0, 80),
+      'align-items': { center: 'center', end: 'flex-end' }[p.align] || '' });
+    (Array.isArray(b.blocks) ? b.blocks : []).slice(0, 8).forEach((c, k) => { if (!c || c.type === 'row' || !c.props) return; const ce = contentBlock(c, sec); if (ce) { ce.setAttribute('data-cblk', String(k)); el.append(ce); } });
+    return el; }
   if (b.type === 'spacer') { const el = E('div', { class: 'cb-spacer', 'aria-hidden': 'true' }); setStyle(el, { height: pxOf(p.height, 4, 200) || '24px' }); return el; }
   return null;
 }
@@ -995,7 +1000,7 @@ function customEl(s, i, group) {
       const onBlur = () => done(true); const onKey = (k) => { if (k.key === 'Escape') { k.preventDefault(); done(false); } else if (k.key === 'Enter' && b.type !== 'text') { k.preventDefault(); bl.blur(); } };
       bl.addEventListener('blur', onBlur); bl.addEventListener('keydown', onKey);
     }, true);
-    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); const bl = ev.target.closest('[data-blk]'); parent.postMessage({ type: 'auz-select', index: i, group: group || '', block: bl ? Number(bl.dataset.blk) : -1 }, location.origin); }, true);
+    el.addEventListener('click', (ev) => { if (ev.target.closest('a,button,input,select')) ev.preventDefault(); ev.stopPropagation(); const bl = ev.target.closest('[data-blk]'); const cb = ev.target.closest('[data-cblk]'); parent.postMessage({ type: 'auz-select', index: i, group: group || '', block: bl ? Number(bl.dataset.blk) : -1, child: cb && bl && bl.contains(cb) ? Number(cb.dataset.cblk) : -1 }, location.origin); }, true);
   }
   return el;
 }
