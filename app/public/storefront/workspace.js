@@ -693,9 +693,9 @@ function edTreeHtml() {
     const head = '<div class="tt-gh"><h3>' + GROUPS[g][0] + '</h3>' + (w ? '<button type="button" class="tt-plus" data-action="te-gadd:' + g + '" aria-label="Add a section to ' + GROUPS[g][0] + '">+</button>' : '') + '</div>';
     const body = list.map((x, si) => {
       const main = x.type === 'main', blocks = x.blocks || [], hid = x.props && x.props.hidden === 'yes';
-      const r = row({ g, si, bi: -1, ci: -1 }, secLabel(x.type) + (hid ? ' (hidden)' : ''), main ? 'The page itself' : String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 24), 0, blocks.length > 0, main);
+      const r = row({ g, si, bi: -1, ci: -1 }, (x.name || secLabel(x.type)) + (x.locked ? ' (locked)' : '') + (hid ? ' (hidden)' : ''), main ? 'The page itself' : String((x.props || {}).heading || (x.props || {}).text || (x.props || {}).caption || '').slice(0, 24), 0, blocks.length > 0, main);
       const kids = r.open ? blocks.map((b, bi) => {
-        const [bl, bs] = treeBlockLabel(x, b), sub = b.blocks || [];
+        const [bl0, bs] = treeBlockLabel(x, b), sub = b.blocks || [], bl = (b.name || bl0) + (b.locked ? ' (locked)' : '');
         const br = row({ g, si, bi, ci: -1 }, bl, bs, 1, sub.length > 0);
         const subs = br.open ? sub.map((c, ci) => { const [cl, cs] = treeBlockLabel(x, c); return row({ g, si, bi, ci }, cl, cs, 2, false).html; }).join('') : '';
         return br.html + subs;
@@ -724,8 +724,10 @@ function edMenuFor(key) {
   if (!main) items.push({ t: 'Copy', a: 'te-mo:copy' }, { t: 'Paste', a: 'te-mo:paste', off: !clipOk || n.list.length >= n.max }, { t: 'Duplicate', a: 'te-mo:dup', off: n.list.length >= n.max });
   if (n.kind === 'section' && !main) items.push({ t: n.node.props && n.node.props.hidden === 'yes' ? 'Show' : 'Hide', a: 'te-mo:hide' });
   if (n.kind !== 'section') items.push({ t: 'Add block before', a: 'te-mo:addb', off: n.list.length >= n.max }, { t: 'Add block after', a: 'te-mo:adda', off: n.list.length >= n.max });
-  items.push('-', { t: 'Move up', a: 'te-mo:up', off: n.idx <= 0 }, { t: 'Move down', a: 'te-mo:down', off: n.idx >= n.list.length - 1 });
-  if (!main) items.push('-', { t: 'Remove', a: 'te-mo:rm', danger: true });
+  const lk = !!n.node.locked;
+  if (!main && n.kind !== 'child') items.push('-', { t: 'Rename', a: 'te-mo:rename' }, { t: lk ? 'Unlock' : 'Lock', a: 'te-mo:lock' });
+  items.push('-', { t: 'Move up', a: 'te-mo:up', off: lk || n.idx <= 0 }, { t: 'Move down', a: 'te-mo:down', off: lk || n.idx >= n.list.length - 1 });
+  if (!main) items.push('-', { t: 'Remove', a: 'te-mo:rm', danger: true, off: lk });
   if (!w) return;
   edMenuOpen(document.querySelector('[data-action="te-menu:' + key + '"]'), items);
 }
@@ -736,6 +738,9 @@ function edTreeOp(op) {
   const done = (idx) => { ed.snapped = true; if (idx !== undefined) pick(idx); edRefresh('lrbp', true); };
   if (op === 'copy') { ed.clip = { kind: n.kind, type: n.node.type, data: JSON.stringify(n.node) }; try { localStorage.setItem('sfx.clip', JSON.stringify(ed.clip)); } catch (e) { /* private window */ } flash('Copied', 'ok'); return; }
   if (n.node.type === 'main' && !['up', 'down'].includes(op)) return;
+  if (op === 'lock') { edSnapshot(); if (n.node.locked) delete n.node.locked; else n.node.locked = true; return done(i); }
+  if (op === 'rename') { const nm = window.prompt('Name for this ' + (n.kind === 'section' ? 'section' : 'block'), n.node.name || ''); if (nm === null) return; edSnapshot(); const v = nm.trim().slice(0, 60).replace(/[<>]/g, ''); if (v) n.node.name = v; else delete n.node.name; return done(i); }
+  if ((op === 'rm' || op === 'up' || op === 'down') && n.node.locked) { flash('Unlock it first', 'warn'); return; }
   if (op === 'dup') { if (list.length >= n.max) return; edSnapshot(); list.splice(i + 1, 0, edReId(JSON.parse(JSON.stringify(n.node)))); return done(i + 1); }
   if (op === 'paste') { if (!ed.clip || list.length >= n.max) return; const sameKind = n.kind === 'section' ? ed.clip.kind === 'section' : ed.clip.kind !== 'section' && (n.allowed || []).includes(ed.clip.type); if (!sameKind) return; edSnapshot(); list.splice(i + 1, 0, edReId(JSON.parse(ed.clip.data))); return done(i + 1); }
   if (op === 'hide') { if (n.kind !== 'section') return; edSnapshot(); n.node.props = n.node.props || {}; if (n.node.props.hidden === 'yes') delete n.node.props.hidden; else n.node.props.hidden = 'yes'; return done(i); }
