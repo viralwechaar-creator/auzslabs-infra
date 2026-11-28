@@ -504,6 +504,9 @@ function themePreview(t) {
 }
 // the picture markup: an uploaded or stock picture, or the small drawn storefront (built only from fixed shapes and a hue number, never from user text)
 const themePreviewHtml = (t) => { const p = themePreview(t); return typeof p === 'string' ? image(p, t.name) : p.svg.replace('<svg ', '<svg role="img" aria-label="' + esc(t.name || 'Theme') + ' preview" style="width:100%;height:100%;display:block" '); };
+const LIVE_PREVIEW = ['classic', 'minimal', 'studs', 'kaarigari'];
+// a real rendered picture of the theme running on this store's own products (scaled iframe), over the static picture as a fallback
+const themeLive = (slug) => { const sl = String(slug || '').toLowerCase(); return LIVE_PREVIEW.includes(sl) && state.tenant?.slug ? '<iframe class="tc-iframe" tabindex="-1" loading="lazy" src="/store.html?preview=' + sl + '&shop=' + encodeURIComponent(state.tenant.slug) + '#/" title="' + esc(sl) + ' theme preview"></iframe>' : ''; };
 function themeCard(t) {
   const price = t.priceCents > 0 ? money(t.priceCents / 100) : 'Free';
   const buy = t.installed ? badge('Installed') :
@@ -518,15 +521,15 @@ function themeCard(t) {
   const demo = { studs: 'studs-preview/', minimal: 'store.html?demo=minimal', classic: 'store.html?demo=classic', salon: 'salon/index.html?preview=1', kiln: 'site-kiln.html', 'kiln-salon': 'site-kiln.html' }[tslug];
   const previewHref = own || (demo ? 'https://auzslab.in/' + demo : '');
   const previewBtn = previewHref ? '<a class="btn" href="' + previewHref + '" target="_blank" rel="noopener" aria-label="Preview ' + esc(t.name) + ' theme">Preview</a>' : '';
-  return '<article class="card theme-card"><div class="tile-img">' + themePreviewHtml(t) + '</div><div class="tc-body"><div class="tc-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
+  return '<article class="card theme-card"><div class="tile-img">' + themePreviewHtml(t) + themeLive(t.slug) + '</div><div class="tc-body"><div class="tc-row"><h3>' + esc(t.name) + '</h3>' + badge(price, t.priceCents > 0 ? '' : 'neutral') + '</div>' +
     '<p class="tc-desc">' + esc(t.description || (t.isBuiltin ? 'AUZslab first-party theme.' : 'By ' + (t.developerName || 'a theme developer') + '.')) + '</p>' + ((buy || previewBtn) ? '<div class="tc-foot">' + previewBtn + buy + '</div>' : '') + '</div></article>';
 }
 function installRow(i) {
-  const actions = (canWrite() ? button('Customize', 'theme-customize:' + i.id) : '') +
-    (canWrite() && !i.active ? button('Make active', 'theme-activate:' + i.id, 'primary') : i.active ? badge('Active on your storefront') : '') +
-    (canWrite() ? button('Rename', 'theme-rename:' + i.id, 'compact') + button('Duplicate', 'theme-duplicate:' + i.id, 'compact') + (!i.active ? button(i.custom ? 'Delete' : 'Remove', 'theme-delete:' + i.id, 'compact danger') : '') : '');
-  return '<article class="card"><div class="tile-img">' + themePreviewHtml({ slug: i.themeName, name: i.themeName }) + '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
-    '<p class="compact-copy">' + (i.custom ? 'Your own theme.' : i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' ' + (i.custom ? 'Created' : 'Installed') + ' ' + dateValue(i.installedAt) + '.</p>' + actions + '</div></article>';
+  const w = canWrite();
+  const main = w ? button('Customize', 'theme-customize:' + i.id, 'primary') + (!i.active ? button('Make active', 'theme-activate:' + i.id) : '') : '';
+  const more = w ? '<div class="tc-more">' + button('Rename', 'theme-rename:' + i.id, 'compact') + button('Duplicate', 'theme-duplicate:' + i.id, 'compact') + (!i.active ? button(i.custom ? 'Delete' : 'Remove', 'theme-delete:' + i.id, 'compact danger') : '') + '</div>' : '';
+  return '<article class="card theme-card' + (i.active ? ' is-active' : '') + '"><div class="tile-img">' + themePreviewHtml({ slug: i.themeName, name: i.themeName }) + themeLive(i.themeName) + '</div><div class="tc-body"><div class="tc-row"><h3>' + esc(i.themeName) + '</h3>' + (i.active ? badge('Live') : i.published ? badge('Published', 'neutral') : badge('Draft', 'warn')) + '</div>' +
+    '<p class="tc-desc">' + (i.custom ? 'Your own theme.' : i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' ' + (i.custom ? 'Created' : 'Installed') + ' ' + dateValue(i.installedAt) + '.</p>' + '<div class="tc-foot">' + main + '</div>' + more + '</div></article>';
 }
 function themePage() {
   const owned = new Set(state.installs.filter((i) => !i.custom).map((i) => i.themeId));
@@ -1088,12 +1091,24 @@ function checkoutPage() {
 }
 function websiteOverview() {
   const t = templates.find((x) => x.id === state.store.theme) || templates[0];
-  const url = state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html' : '';
-  return head('Online store', 'Publish your storefront, pick its theme, and connect payments.', url ? link('View website', url) : '') + tabs('website', websiteTabs) +
-    '<div class="cols">' +
-    panel('Status', body('<div class="stack">' + (state.store.published ? badge('Live') : badge('Not published', 'warn')) + '<p class="compact-copy">' + (state.store.published ? 'Customers can open your store at ' + esc(url) + '.' : 'Turn your store on below once you’re ready for customers.') + '</p>' + (canWrite() ? editForm('store-publish', null, '<label class="inline"><input type="checkbox" name="published" ' + (state.store.published ? 'checked' : '') + '> Store is open to customers</label>', 'Save') : '') + '</div>')) +
-    panel('Current theme', '<div class="tile-img">' + image(t.image, t.name) + '</div>' + body('<h3>' + esc(t.name) + '</h3><p>' + esc(t.description) + '</p>' + wl('Change theme', 'builder', 'compact'))) +
-    '</div>';
+  const slug = state.tenant?.slug || '', url = slug ? 'https://' + slug + '.auzslab.in/store.html' : '';
+  const live = !!state.store.published, act = state.installs.find((x) => x.active), w = canWrite();
+  const src = '/store.html?' + (live ? '' : 'preview=draft&') + 'shop=' + encodeURIComponent(slug) + '#/';
+  const name = act ? act.themeName : t.name;
+  const dom = slug ? slug + '.auzslab.in' : 'your store';
+  const rowLink = (label, sub, route) => '<a class="os-link" href="' + pathFor(route) + '"><span><strong>' + label + '</strong><small>' + sub + '</small></span><i aria-hidden="true"></i></a>';
+  return head('Online store', 'Your live website, its theme and your sales channel settings.', url ? link('View your store', url) : '') + tabs('website', websiteTabs) +
+    '<div class="os">' +
+    '<section class="os-preview" aria-label="Preview of your website"><div class="os-chrome"><span class="os-dots"><b></b><b></b><b></b></span><span class="os-url">' + esc(dom) + '</span>' + (live ? badge('Live') : badge('Not live yet', 'warn')) + '</div>' +
+    '<div class="os-stage"><div class="os-frame"><iframe class="os-iframe" tabindex="-1" loading="lazy" src="' + src + '" title="Your website, desktop"></iframe><a class="os-hit" href="' + (act && w ? pathFor('builder/' + act.id) : pathFor('builder')) + '" aria-label="Customize ' + esc(name) + '"></a></div>' +
+    '<div class="os-phone"><iframe class="os-iframe" tabindex="-1" loading="lazy" src="' + src + '" title="Your website, phone"></iframe></div></div>' +
+    '<p class="os-cap">' + (live ? 'This is what customers see right now.' : 'Draft preview. Turn your store on to make it public.') + '</p></section>' +
+    '<aside class="os-side">' +
+    '<section class="os-card"><h3>Theme</h3><div class="os-theme"><strong>' + esc(name) + '</strong><p>' + esc(t.description || 'Your storefront theme.') + '</p></div><div class="os-actions">' + (act && w ? button('Customize', 'theme-customize:' + act.id, 'primary') : '') + wl('Change theme', 'builder', 'btn') + '</div></section>' +
+    '<section class="os-card"><h3>Store status</h3>' + (live ? badge('Live') : badge('Not published', 'warn')) + '<p>' + (live ? 'Customers can open your store at ' + esc(url) + '.' : 'Turn your store on when you’re ready for customers.') + '</p>' +
+    (w ? editForm('store-publish', null, '<label class="inline"><input type="checkbox" name="published" ' + (live ? 'checked' : '') + '> Store is open to customers</label>', 'Save') : '') + '</section>' +
+    '<section class="os-card os-links"><h3>Set up</h3>' + rowLink('Pages', 'About, contact and your own pages', 'store-pages') + rowLink('Domains', 'Your store address', 'domains') + rowLink('Payments', 'How customers pay', 'checkout') + rowLink('Products', 'What you sell', 'products') + '</section>' +
+    '</aside></div>';
 }
 function websitePage(id) {
   if (id === 'website') return websiteOverview();

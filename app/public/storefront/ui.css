@@ -1220,3 +1220,48 @@ dialog#dialog:has(.dc-wrap){width:min(980px,96vw)}
   .tt-x{width:46px;height:46px;padding:0;display:grid;place-items:center;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.18)}
   .te{padding-bottom:84px}
 }
+
+/* 59. Themes page: even cards (picture, title row, description, buttons always on the same lines) */
+.shell .theme-card{display:flex;flex-direction:column;height:100%}
+.shell .theme-card .tile-img{flex:none;aspect-ratio:16/10;background:var(--soft);overflow:hidden;display:block}
+.shell .theme-card .tile-img img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;font-size:0}
+.shell .theme-card .tc-body{display:flex;flex-direction:column;gap:6px;flex:1;padding:14px 16px 16px}
+.shell .theme-card .tc-row{min-height:28px}
+.shell .theme-card .tc-desc{flex:1;min-height:calc(2 * 1.45em);margin:0}
+.shell .theme-card .tc-foot{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.shell .theme-card .tc-foot .btn{min-height:36px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center}
+.shell .theme-card .tc-more{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}
+.shell .theme-card.is-active{box-shadow:0 0 0 2px #111 inset}
+
+/* 60. Online store overview: live website preview (desktop frame + phone frame) beside theme, status and setup links */
+.shell .os{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:20px;align-items:start;margin-top:6px}
+.shell .os-preview{background:var(--soft);border-radius:18px;padding:16px;display:grid;gap:10px}
+.shell .os-chrome{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.shell .os-dots{display:flex;gap:5px}.shell .os-dots b{width:9px;height:9px;border-radius:50%;background:#d5d5d5;display:block}
+.shell .os-url{flex:1;min-width:0;font-size:.8rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shell .os-stage{position:relative}
+.shell .os-frame{position:relative;aspect-ratio:16/10;overflow:hidden;border-radius:12px;background:#fff;border:1px solid var(--line)}
+.shell .os-iframe{position:absolute;left:0;top:0;border:0;pointer-events:none;background:#fff;width:400%;height:400%;transform:scale(.25);transform-origin:0 0}
+.shell .os-hit{position:absolute;inset:0;z-index:2}
+.shell .os-phone{position:absolute;right:14px;bottom:-14px;width:22%;aspect-ratio:9/18;border-radius:16px;border:5px solid #111;background:#fff;overflow:hidden;z-index:3;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.shell .os-phone .os-iframe{width:calc(100% * 390 / 100);width:325%;height:325%;transform:scale(.3077)}
+.shell .os-cap{margin:6px 0 4px;font-size:.82rem;color:var(--muted)}
+.shell .os-side{display:grid;gap:14px}
+.shell .os-card{background:var(--card,#fff);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:8px}
+.shell .os-card h3{margin:0;font-size:.95rem;font-weight:650}
+.shell .os-card p{margin:0;font-size:.86rem;color:var(--muted);line-height:1.45}
+.shell .os-theme strong{font-size:1.05rem}
+.shell .os-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.shell .os-links{gap:0}.shell .os-links h3{margin-bottom:6px}
+.shell .os-link{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;color:inherit;text-decoration:none;border-top:1px solid var(--line)}
+.shell .os-link span{display:grid;gap:1px}.shell .os-link strong{font-size:.9rem;font-weight:600}.shell .os-link small{font-size:.78rem;color:var(--muted)}
+.shell .os-link i{width:7px;height:7px;border-right:1.6px solid currentColor;border-top:1.6px solid currentColor;transform:rotate(45deg);opacity:.5}
+@media (max-width:899px){
+  .shell .os{grid-template-columns:1fr}
+  .shell .os-preview{padding:12px}
+  .shell .os-phone{width:28%;right:10px}
+}
+.shell .theme-card .tile-img{position:relative}
+.shell .theme-card .tc-iframe{position:absolute;left:0;top:0;width:400%;height:400%;border:0;transform:scale(.25);transform-origin:0 0;pointer-events:none;background:#fff;z-index:1}
+.shell .theme-card .tc-desc{flex:none;height:calc(2 * 1.45em);min-height:0}
+.shell .os-card label.inline{display:flex;align-items:center;gap:8px;font-size:.88rem}
