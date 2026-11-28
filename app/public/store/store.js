@@ -27,6 +27,7 @@ const IC = {
   dense: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z', big: 'M4 5h16v14H4z',
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm9 3-4.2-4.2', x: 'M6 6l12 12M18 6 6 18', plus: 'M12 5v14M5 12h14', left: 'M15 6l-6 6 6 6', right: 'M9 6l6 6-6 6',
   bell: 'M18 8a6 6 0 0 0-12 0c0 6-3 7-3 9h18c0-2-3-3-3-9m-8 12a2 2 0 0 0 4 0',
+  arrow: 'M7 17L17 7M9 7h8v8',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0',
   chat: 'M5 6h14v9H10l-5 4V6Z', home: 'M4 11 12 4l8 7v9h-5v-6H9v6H4v-9Z', compass: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3-12-2 5-5 2 2-5 5-2Z', filter: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4',
 };
@@ -144,7 +145,7 @@ function loadBespokeChrome(slug) {
     // bespoke theme once caches this exact URL -- the same stale-cache bug class as theme-previews/*.jpg
     // (see CLAUDE.md) -- so without bumping this, an edit to studs.js/kaarigari.js/outpace.js is invisible to
     // anyone who has already visited that theme, no matter how many times the server file is redeployed.
-    const sc = document.createElement('script'); sc.src = '/store/' + slug + '.js?v=2';
+    const sc = document.createElement('script'); sc.src = '/store/' + slug + '.js?v=3';
     sc.onload = () => resolve(window[g] ? window[g].ready() : null); sc.onerror = () => resolve(null);
     document.head.append(sc);
   });
