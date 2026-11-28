@@ -492,7 +492,7 @@ function themePreview(t) {
   if (t.previewImageUrl) return t.previewImageUrl;
   const slug = String(t.slug || t.themeSlug || t.name || '').toLowerCase();
   // every built-in theme has a real screenshot of its storefront (site/theme-previews)
-  const shot = { minimal: 'minimal', classic: 'classic', salon: 'salon', kiln: 'kiln', 'kiln-salon': 'kiln', studs: 'studs' }[slug];
+  const shot = { minimal: 'minimal', classic: 'classic', salon: 'salon', kiln: 'kiln', 'kiln-salon': 'kiln', studs: 'studs', kaarigari: 'kaarigari' }[slug];
   if (shot) return '/theme-previews/' + shot + '.jpg';
   let h = 0; for (const ch of slug) h = (h * 31 + ch.charCodeAt(0)) % 360;
   const dark = /stud|noir|black|kiln/.test(slug), bg = dark ? '#161616' : '#f6f4f1', ink = dark ? '#ffffff' : '#171717', acc = 'hsl(' + h + ' 45% ' + (dark ? '55%' : '42%') + ')', tile = dark ? '#2a2a2a' : '#e4dfd8';
@@ -524,7 +524,7 @@ function themeCard(t) {
 function installRow(i) {
   const actions = (canWrite() ? button('Customize', 'theme-customize:' + i.id) : '') +
     (canWrite() && !i.active ? button('Make active', 'theme-activate:' + i.id, 'primary') : i.active ? badge('Active on your storefront') : '') +
-    (canWrite() ? button('Rename', 'theme-rename:' + i.id, 'compact') + button('Duplicate', 'theme-duplicate:' + i.id, 'compact') + (i.custom && !i.active ? button('Delete', 'theme-delete:' + i.id, 'compact danger') : '') : '');
+    (canWrite() ? button('Rename', 'theme-rename:' + i.id, 'compact') + button('Duplicate', 'theme-duplicate:' + i.id, 'compact') + (!i.active ? button(i.custom ? 'Delete' : 'Remove', 'theme-delete:' + i.id, 'compact danger') : '') : '');
   return '<article class="card"><div class="tile-img">' + themePreviewHtml({ slug: i.themeName, name: i.themeName }) + '</div><div class="card-body"><div class="theme-title-row"><h3>' + esc(i.themeName) + '</h3>' + (i.published ? badge('Published') : badge('Not published yet', 'warn')) + '</div>' +
     '<p class="compact-copy">' + (i.custom ? 'Your own theme.' : i.isBuiltin ? 'First-party theme.' : 'Developer theme.') + ' ' + (i.custom ? 'Created' : 'Installed') + ' ' + dateValue(i.installedAt) + '.</p>' + actions + '</div></article>';
 }
@@ -1659,7 +1659,7 @@ async function themeAction(a, key) {
   }
   if (a === 'theme-rename') { const i = state.installs.find((x) => x.id === key); dialog('Rename theme', editForm('theme-rename', key, input('Name', 'name', i?.themeName || '', 'text', 'required maxlength="80"'), 'Rename')); return true; }
   if (a === 'theme-duplicate') { try { await api('sfx_theme_install_duplicate', { p_install_id: key }); await refreshInstalls(); save('Theme duplicated.'); rerender(true); } catch (e) { flash(e.message); } return true; }
-  if (a === 'theme-delete') { if (!confirm('Delete this theme? Its draft is lost. Your live store is not affected.')) return true; try { await api('sfx_theme_install_delete', { p_install_id: key }); await refreshInstalls(); save('Theme deleted.'); rerender(true); } catch (e) { flash(e.message); } return true; }
+  if (a === 'theme-delete') { if (!confirm('Remove this theme? Any customization you made to it is lost. Your live store is not affected -- you can reinstall it from the marketplace any time.')) return true; try { await api('sfx_theme_install_delete', { p_install_id: key }); await refreshInstalls(); save('Theme removed.'); rerender(true); } catch (e) { flash(e.message); } return true; }
   return false;
 }
 async function themeSubmit(key, rid, data) {
