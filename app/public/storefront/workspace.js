@@ -743,10 +743,35 @@ function edTreeOp(op) {
   if (op === 'up' || op === 'down') { const to = i + (op === 'up' ? -1 : 1); if (!list[to]) return; edSnapshot(); const [x] = list.splice(i, 1); list.splice(to, 0, x); return done(to); }
   if (op === 'rm') { edSnapshot(); list.splice(i, 1); if (n.kind === 'section') { edSelectPath({ g: m.g, si: Math.min(i, list.length - 1), bi: -1, ci: -1 }); } else edSelectPath({ g: m.g, si: m.si, bi: n.kind === 'child' ? m.bi : -1, ci: -1 }); return done(); }
 }
-function edGroupAddMenu(g, anchor) {
-  const types = (state.sectionTypes?.length ? state.sectionTypes.map((x) => [x.type, x.label]) : Object.entries(sectionLabel));
+const SEC_CAT = { hero: 'Banners', announcement: 'Banners', image_text: 'Banners', image: 'Basics', text: 'Basics', content: 'Basics', button: 'Basics', featured_collection: 'Products', product_info: 'Products', data_field: 'Products', newsletter: 'Engagement', faq: 'Engagement', columns: 'Engagement', gallery: 'Engagement', booking: 'Engagement' };
+const SEC_DESC = { hero: 'A large banner with a headline and button.', announcement: 'A slim bar for offers and news.', image_text: 'A picture beside your story.', image: 'A single picture.', text: 'A block of text.', content: 'A free area: heading, text, buttons.', button: 'A call-to-action button.', featured_collection: 'A grid of your products.', newsletter: 'Collect email sign-ups.', faq: 'Questions and answers that fold open.', columns: 'Side-by-side columns.', gallery: 'A grid of pictures.', booking: 'Let people book an appointment.' };
+function edAddSheetClose() { const m = $('#te-addsheet'); if (m) m.remove(); }
+function edAddSheetBody(g, q, cat, sel) {
+  const all = (state.sectionTypes?.length ? state.sectionTypes.map((x) => [x.type, x.label]) : Object.entries(sectionLabel)).map(([t, l]) => ({ t, l, c: SEC_CAT[t] || 'More' }));
+  const cats = ['All', ...new Set(all.map((x) => x.c))]; q = (q || '').toLowerCase();
+  const rows = all.filter((x) => (cat === 'All' || x.c === cat) && (!q || x.l.toLowerCase().includes(q) || x.t.includes(q)));
+  const cur = rows.find((x) => x.t === sel) || rows[0];
+  return '<div class="as-cats">' + cats.map((c) => '<button type="button" class="' + (c === cat ? 'on' : '') + '" data-action="te-as-cat" data-key="' + esc(c) + '">' + esc(c) + '</button>').join('') + '</div>' +
+    '<div class="as-list">' + (rows.map((x) => '<button type="button" class="as-row' + (cur && x.t === cur.t ? ' on' : '') + '" data-action="te-as-pick" data-key="' + esc(x.t) + '"><b>' + esc(x.l) + '</b><span>' + esc(SEC_DESC[x.t] || x.c) + '</span></button>').join('') || '<p class="tt-empty">No sections match.</p>') + '</div>' +
+    (cur ? '<div class="as-prev"><div class="as-skel as-' + esc(cur.t) + '"><i></i><i></i><i></i></div><p>' + esc(cur.l) + ': ' + esc(SEC_DESC[cur.t] || cur.c) + '</p></div><button type="button" class="primary as-add" data-action="te-gnew:' + g + '.' + esc(cur.t) + '">Add ' + esc(cur.l) + '</button>' : '');
+}
+function edGroupAddMenu(g) {
   const list = edListFor(g), max = g === 't' ? ((ed.pageCur || '').startsWith('tpl:') ? 13 : 30) : 8;
-  edMenuOpen(anchor, list.length >= max ? [{ t: 'This group is full', a: 'te-menu-x', off: true }] : types.map(([t, l]) => ({ t: l, a: 'te-gnew:' + g + '.' + t })), g === 'f');
+  edMenuClose(); edAddSheetClose(); const m = document.createElement('div'); m.id = 'te-addsheet'; m.className = 'as-wrap'; m.dataset.g = g;
+  if (list.length >= max) { m.innerHTML = '<div class="as-box" role="dialog" aria-label="Add section"><div class="as-head"><h3>Add section</h3><button type="button" data-action="te-as-x" aria-label="Close">×</button></div><p class="tt-empty">This group is full.</p></div>'; document.body.appendChild(m); return; }
+  m._st = { q: '', cat: 'All', sel: '' };
+  m.innerHTML = '<div class="as-box" role="dialog" aria-label="Add section"><div class="as-head"><h3>Add section</h3><button type="button" data-action="te-as-x" aria-label="Close">×</button></div><input type="search" class="as-q" placeholder="Search sections" aria-label="Search sections"><div class="as-body">' + edAddSheetBody(g, '', 'All', '') + '</div></div>';
+  document.body.appendChild(m);
+  const redo = () => { m.querySelector('.as-body').innerHTML = edAddSheetBody(g, m._st.q, m._st.cat, m._st.sel); };
+  m.querySelector('.as-q').addEventListener('input', (e) => { m._st.q = e.target.value; redo(); });
+  m.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-action]');
+    if (!b) { if (e.target === m) edAddSheetClose(); return; }
+    const a = b.dataset.action;
+    if (a === 'te-as-x') edAddSheetClose();
+    else if (a === 'te-as-cat') { m._st.cat = b.dataset.key; m._st.sel = ''; redo(); }
+    else if (a === 'te-as-pick') { m._st.sel = b.dataset.key; redo(); }
+  });
 }
 function edGroupAdd(g, type) {
   if (!canWrite()) return; const list = edListFor(g), max = g === 't' ? ((ed.pageCur || '').startsWith('tpl:') ? 13 : 30) : 8; if (list.length >= max) return;
@@ -939,7 +964,7 @@ function edHandle(a, key, detail) {
   if (a === 'te-menu') { edMenuFor(key); return true; }
   if (a === 'te-mo') { edMenuClose(); edTreeOp(key); return true; }
   if (a === 'te-gadd') { edGroupAddMenu(key, document.querySelector('[data-action="te-gadd:' + key + '"]')); return true; }
-  if (a === 'te-gnew') { edMenuClose(); const [g, ...t] = key.split('.'); edGroupAdd(g, t.join('.')); return true; }
+  if (a === 'te-gnew') { edMenuClose(); edAddSheetClose(); const [g, ...t] = key.split('.'); edGroupAdd(g, t.join('.')); return true; }
   if (a === 'te-pill') { edMenuClose(); if (key === 'sec') { const l = $('#te-list'); if (l) l.scrollIntoView({ behavior: 'smooth', block: 'start' }); } else if (key === 'set') { edPicked('design'); const r = $('#te-right'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } else if (key === 'add') edGroupAddMenu('t', document.querySelector('[data-action="te-pill:add"]')); return true; }
   if (a === 'te-select') { edFloatHide(); ed.sel = Number(key); ed.blk = -1; ed.cblk = -1; ed.snapped = false; edRefresh('lr', true); return true; }
   if (a === 'te-device') { edFloatHide(); ed.device = key; const f = $('#te-frame'); if (f) f.className = 'te-frame ' + key; document.querySelectorAll('[data-action^="te-device:"]').forEach((b) => b.classList.toggle('primary', b.dataset.action === 'te-device:' + key)); return true; }
