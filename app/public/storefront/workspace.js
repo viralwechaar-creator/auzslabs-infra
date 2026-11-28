@@ -582,7 +582,7 @@ function sectionFieldsFor(s) {
 }
 function sectionFieldsBase(s) {
   const p = s.props || {};
-  if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.filter((d) => d.id !== 'hidden').map((d) => regField(d, p[d.id], dis, (id) => 'te-sclear:' + id)).join(''); }
+  if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.filter((d) => d.id !== 'hidden').map((d) => { let h = regField(d, p[d.id], dis, (id) => 'te-sclear:' + id); if (s.type === 'data_field' && d.id === 'key') h = h.replace('<input ', '<input list="te-mf-keys" ') + '<datalist id="te-mf-keys">' + (state.metaDefs || []).filter((x) => x.storefront && ['product', 'collection'].includes(x.ownerType)).map((x) => '<option value="' + esc(x.key) + '">' + esc(x.label) + ' (' + esc(x.ownerType) + ')</option>').join('') + '</datalist>'; return h; }).join(''); }
   if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + linkField('Button link', 'href', p.href);
   if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
   if (s.type === 'image') return input('Image URL', 'url', p.url, 'url') + input('Caption', 'caption', p.caption);
@@ -683,6 +683,7 @@ const STARTERS = {
   faq: { props: { heading: 'Questions' }, blocks: [{ type: 'question', props: { question: 'How long does delivery take?', answer: 'Write your answer here.' } }, { type: 'question', props: { question: 'Can I return an item?', answer: 'Write your answer here.' } }] },
   columns: { props: { heading: 'Why shop with us' }, blocks: [1, 2, 3].map((n) => ({ type: 'column', props: { title: 'Point ' + n, text: 'A short line about it.' } })) },
   gallery: { props: { heading: 'Gallery' }, blocks: [] },
+  data_field: { props: { key: '', showLabel: 'yes', layout: 'inline' } },
   newsletter: { props: { heading: 'Join our list', text: 'New pieces and offers, straight to your inbox.', button: 'Sign up', thanks: 'Thank you. You are on the list.' } },
 };
 // the items (blocks) of the selected section: each has its own small form, in order. A block with many settings (an element of the

@@ -906,6 +906,26 @@ const CUSTOM_RENDERERS = {
     } }, input, btn);
     return E('section', { class: 'custom-section custom-news' }, p.heading ? E('h2', null, p.heading) : null, p.text ? E('p', { class: 'nl-text' }, p.text) : null, form, msg);
   },
+  data_field(s, p) {
+    const key = String(p.key || '').trim(); if (!/^[a-z0-9_]{1,40}$/.test(key)) return PREVIEW ? E('section', { class: 'custom-section custom-df' }, E('span', { class: 'mut' }, 'Pick a field key in the settings.')) : null;
+    const m = /^#\/p\/([^?\/]+)/.exec(location.hash || ''), c = /[?&]col=([^&]+)/.exec(location.hash || '');
+    const owner = m ? ['product', decodeURIComponent(m[1])] : /^#\/shop/.test(location.hash || '') && c ? ['collection', decodeURIComponent(c[1])] : null;
+    if (!owner) return PREVIEW ? E('section', { class: 'custom-section custom-df' }, E('span', { class: 'mut' }, 'Shows on product and collection pages: ' + key)) : null;
+    const root = E('section', { class: 'custom-section custom-df df-' + (p.layout === 'stacked' ? 'stacked' : 'inline') });
+    const show = (label, value, type) => {
+      let v = value; if (type === 'boolean' || value === 'true' || value === 'false') v = value === 'true' ? 'Yes' : value === 'false' ? 'No' : value;
+      const href = /^https:\/\//.test(value) ? value : '';
+      root.append(p.showLabel === 'no' ? null : E('span', { class: 'df-l' }, label), href ? E('a', { class: 'df-v', href, rel: 'noopener' }, value) : E('span', { class: 'df-v' }, v));
+    };
+    rpc('public_sfx_metafields', { p_slug: SLUG, p_type: owner[0], p_owner: owner[1] }).then((r) => {
+      const f = r && r[key];
+      if (f && f.value !== '' && f.value != null) show(f.label || key, String(f.value));
+      else if (p.fallback) show(p.showLabel === 'no' ? '' : key, p.fallback);
+      else if (PREVIEW) show(key, 'No value on this item');
+      else root.remove();
+    }).catch(() => { if (!PREVIEW) root.remove(); });
+    return root;
+  },
   links(s, p) {
     const items = blocksOf(s).filter((b) => b.props.label && safeHref(b.props.href));
     if (!items.length) return null;

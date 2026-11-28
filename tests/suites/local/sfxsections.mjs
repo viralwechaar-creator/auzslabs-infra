@@ -491,6 +491,25 @@ export default async function run({ browser, stack }) {
     await page.click('[data-action="te-fclose"]'); await page.waitForTimeout(200);
     assert(await page.locator('#te-float').count() === 0, 'panel did not close');
   }, 'major');
+  await s.check('Custom data field section: shows a storefront field of this product, never a private one', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("delete from sfx_metafields where tenant_id=$1", [tid]); await q("delete from sfx_metafield_defs where tenant_id=$1", [tid]);
+    await q("insert into sfx_metafield_defs (tenant_id, owner_type, key, label, value_type, storefront) values ($1,'product','material','Material','text',true), ($1,'product','secret','Secret','text',false)", [tid]);
+    await q("insert into sfx_metafields (tenant_id, owner_type, owner_id, key, value) values ($1,'product',$2,'material','Pure cotton'), ($1,'product',$2,'secret','hidden value')", [tid, pid]);
+    const r = await page.evaluate(async ([id]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const tpl = (k) => ({ sections: [], templates: { product: { sections: [{ id: 'm', type: 'main' }, { id: 'd1', type: 'data_field', props: { key: k, layout: 'stacked' } }] } } });
+      const a = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: tpl('material') }); if (a.error) return a.error.message;
+      const p = await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); return p.error ? p.error.message : 'ok'; }, [inst]);
+    assert(r === 'ok', r);
+    const pg = await ctx.newPage();
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.goto(stack.url('testcafe', '/store.html#/p/' + pid), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    assert(/Pure cotton/.test(await pg.locator('.custom-df .df-v').first().innerText()), 'value not shown');
+    const r2 = await page.evaluate(async ([id]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { sections: [], templates: { product: { sections: [{ id: 'm', type: 'main' }, { id: 'd1', type: 'data_field', props: { key: 'secret' } }] } } } });
+      await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); return 'ok'; }, [inst]);
+    await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    assert(!/hidden value/.test(await pg.locator('body').innerText()) && await pg.locator('.custom-df').count() === 0, 'a private field leaked or left an empty block');
+  }, 'major');
   await ctx.close();
   return s.done();
 }
