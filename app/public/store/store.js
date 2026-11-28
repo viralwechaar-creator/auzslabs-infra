@@ -886,6 +886,21 @@ const CUSTOM_RENDERERS = {
     blocks.forEach((b, i) => { const el = contentBlock(b, p); if (el) { el.setAttribute('data-blk', String(i)); root.append(el); } });
     return root;
   },
+  newsletter(s, p) {
+    const input = E('input', { type: 'email', placeholder: 'Your email', 'aria-label': 'Email address', autocomplete: 'email' });
+    const msg = E('p', { class: 'nl-msg', role: 'status' });
+    const btn = E('button', { class: 'btn', type: 'submit' }, p.button || 'Sign up');
+    const form = E('form', { class: 'nl-form', novalidate: '', onsubmit: async (ev) => {
+      ev.preventDefault(); if (PREVIEW) { msg.textContent = 'Preview only. Nothing is saved here.'; return; }
+      btn.disabled = true; msg.textContent = '';
+      try {
+        const r = await rpc('public_sfx_newsletter_subscribe', { p_slug: SLUG, p_email: input.value });
+        if (r && r.ok) { form.replaceChildren(E('p', { class: 'nl-thanks' }, p.thanks || 'Thank you. You are on the list.')); }
+        else { msg.textContent = (r && r.error) || 'Could not sign you up. Please try again.'; btn.disabled = false; }
+      } catch (e) { msg.textContent = 'Could not sign you up. Please try again.'; btn.disabled = false; }
+    } }, input, btn);
+    return E('section', { class: 'custom-section custom-news' }, p.heading ? E('h2', null, p.heading) : null, p.text ? E('p', { class: 'nl-text' }, p.text) : null, form, msg);
+  },
   links(s, p) {
     const items = blocksOf(s).filter((b) => b.props.label && safeHref(b.props.href));
     if (!items.length) return null;

@@ -1140,3 +1140,7 @@ body.d-font-mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 .anim-rise{transform:translateY(24px)}.anim-left{transform:translateX(-32px)}.anim-right{transform:translateX(32px)}.anim-zoom{transform:scale(.94)}
 .anim.anim-in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.anim{opacity:1!important;transform:none!important;transition:none}}
+
+.custom-news{text-align:center;padding-top:32px;padding-bottom:32px}.custom-news h2{margin:0 0 6px}.nl-text{margin:0 0 12px;color:var(--mut)}
+.nl-form{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.nl-form input{flex:1 1 220px;max-width:320px;min-width:0;padding:11px 12px;border:1px solid var(--line,#ddd);border-radius:var(--r2,8px);font:inherit;background:var(--card,#fff);color:inherit}
+.nl-msg{margin:8px 0 0;min-height:1em;font-size:12px;color:var(--mut)}.nl-thanks{font-weight:600}

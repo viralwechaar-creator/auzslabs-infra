@@ -428,6 +428,24 @@ export default async function run({ browser, stack }) {
     await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
     assert(await pg.locator('.custom-content').count() === 1, 'expected exactly one visible content section');
   }, 'major');
+  await s.check('Newsletter: a visitor signs up, consent is recorded, a bad address and a repeat are handled', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("delete from sfx_customers where tenant_id=$1 and email='fan@example.com'", [tid]);
+    await page.evaluate(async ([id]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { sections: [{ id: 'n1', type: 'newsletter', props: { heading: 'Join us', text: 'Hello', button: 'Join', thanks: 'Welcome aboard' } }] } });
+      await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); }, [inst]);
+    const pg = await ctx.newPage(); const e3 = watch(pg);
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    await pg.fill('.nl-form input', 'not-an-email'); await pg.click('.nl-form button'); await pg.waitForTimeout(800);
+    assert(/valid email/i.test(await pg.locator('.nl-msg').innerText()), 'bad address not refused');
+    await pg.fill('.nl-form input', 'Fan@Example.com'); await pg.click('.nl-form button'); await pg.waitForTimeout(1000);
+    assert(/Welcome aboard/.test(await pg.locator('.nl-thanks').innerText()), 'no thanks message');
+    const r = await q("select accepts_marketing, consent_source, email from sfx_customers where tenant_id=$1 and email='fan@example.com'", [tid]);
+    assert(r.length === 1 && r[0].accepts_marketing === true && r[0].consent_source === 'newsletter', JSON.stringify(r));
+    await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2000);
+    await pg.fill('.nl-form input', 'fan@example.com'); await pg.click('.nl-form button'); await pg.waitForTimeout(1000);
+    assert((await q("select 1 from sfx_customers where tenant_id=$1 and email='fan@example.com'", [tid])).length === 1, 'duplicate customer');
+  }, 'major');
   await ctx.close();
   return s.done();
 }

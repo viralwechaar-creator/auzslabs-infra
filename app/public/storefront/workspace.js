@@ -683,6 +683,7 @@ const STARTERS = {
   faq: { props: { heading: 'Questions' }, blocks: [{ type: 'question', props: { question: 'How long does delivery take?', answer: 'Write your answer here.' } }, { type: 'question', props: { question: 'Can I return an item?', answer: 'Write your answer here.' } }] },
   columns: { props: { heading: 'Why shop with us' }, blocks: [1, 2, 3].map((n) => ({ type: 'column', props: { title: 'Point ' + n, text: 'A short line about it.' } })) },
   gallery: { props: { heading: 'Gallery' }, blocks: [] },
+  newsletter: { props: { heading: 'Join our list', text: 'New pieces and offers, straight to your inbox.', button: 'Sign up', thanks: 'Thank you. You are on the list.' } },
 };
 // the items (blocks) of the selected section: each has its own small form, in order. A block with many settings (an element of the
 // Content section) shows its form only while it is selected, either here or by clicking it in the preview.
