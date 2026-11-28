@@ -112,7 +112,12 @@ informal convention documented only in `studs.js`'s own top comment.
 
 May use, through `window.StoreHost`: **read the catalogue** (`H.STY()`, `H.D.collections`, `H.photos`,
 `H.isGone`, `H.leftOf`, `H.sizesOf`, `H.colours`) and **use the shared bag** (`H.bag`, `H.saveBag`, `H.addBag`,
-`H.bagLines`, `H.bagTotal`, `H.bagCount`). Nothing else. It must NOT:
+`H.bagLines`, `H.bagTotal`, `H.bagCount`). A theme with the `'full'` checkout exception below additionally
+needs, and may use, the real place-order path: `H.rpc`, `H.PFX`, `H.SLUG`, `H.STATES`, `H.shipFee`, `H.shipLine`,
+`H.taxCfg`, `H.taxOn` -- the exact same shipping/tax logic and `public_${PFX}_place_order` RPC the shared
+checkout itself calls, never a theme-local reimplementation of any of it. Every theme may also use `H.thumbImg`
+in place of a bare `H.thumb()` for any image that is not guaranteed to have a pre-generated resized variant
+(e.g. a collection cover image, as opposed to a product photo). Otherwise, nothing else. It must NOT:
 
 - touch another tenant's data, directly or indirectly;
 - bypass the real `public_sfx_*`/`public_sty_*` RPCs (fetch its own endpoints, fabricate orders, fake stock);
@@ -123,11 +128,23 @@ May use, through `window.StoreHost`: **read the catalogue** (`H.STY()`, `H.D.col
 
 **A bespoke theme wraps its own header/footer around the SHARED, generic checkout/account/orders/policies UI.
 It does not have to re-theme checkout's own form/fields.** This is the owner-approved baseline for every
-bespoke theme going forward (confirmed against what Studs and Kaarigari already do), declared explicitly in
-the registry as `capabilities.checkoutOwnership = 'header_footer'`. A future theme that genuinely needs fuller
-checkout ownership (re-themed form fields, a different checkout layout) is an **explicit, reviewed exception**
--- a different declared `checkoutOwnership` value, added with its own migration and sign-off -- never a
-default expectation for a new theme.
+bespoke theme going forward (confirmed against what Studs already does), declared explicitly in the registry
+as `capabilities.checkoutOwnership = 'header_footer'`. A future theme that genuinely needs fuller checkout
+ownership (re-themed form fields, a different checkout layout) is an **explicit, reviewed exception** -- a
+different declared `checkoutOwnership` value, added with its own migration and sign-off -- never a default
+expectation for a new theme.
+
+**Kaarigari is that exception -- so far the only one** (`capabilities.checkoutOwnership = 'full'`,
+`db/471_kaarigari_full_checkout.sql`), because its originally approved handoff explicitly specified its own
+checkout layout (`theme-handoffs/kaarigari/source/checkout.js` + `style.css`: Contact / Delivery address /
+Delivery method / Payment method fieldsets beside a "Shopping bag" summary, in Kaarigari's own
+`.checkout-page`/`.checkout-layout`/`.site-form`/`.choice` classes). The real integration initially left
+checkout on the shared, generic form instead; the owner asked for Kaarigari's own design back. Kaarigari's
+`checkout` route is in its `OWN` set (`app/public/store/kaarigari.js`'s `checkoutPage()`): it draws checkout
+itself, but still reads the real catalogue/bag and submits through the same `public_${PFX}_place_order` RPC
+and `window.StoreHost` surface (see above) every other theme uses -- never the handoff's own fixture/
+localStorage order history, which is reference-only. This is still a one-off, reviewed exception: it does not
+change the header/footer-only default for any other theme, Studs included.
 
 ### Required real-data behaviors (in addition to the "every theme" list above)
 

@@ -120,7 +120,13 @@
     drawer = wrap.querySelector('#drawer');
     main = wrap.querySelector('#content');
     root.addEventListener('click', onClick);
+    // img 'error' events are not composed, so they never reach store.js's own document-level fallback
+    // listener from inside this shadow root -- any theme drawn in a shadow root that uses H.thumbImg() needs
+    // this same fallback registered on its OWN root. Mirrors store.js's listener exactly.
+    root.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.dataset.orig && im.src !== im.dataset.orig) im.src = im.dataset.orig; }, true);
     root.addEventListener('input', (e) => { if (e.target.id === 'kg-query') search(e.target.value); });
+    root.addEventListener('change', (e) => { if (e.target.form && e.target.form.id === 'kg-checkout-form' && e.target.name === 'state') refreshCheckoutShip(); });
+    root.addEventListener('submit', (e) => { if (e.target.id !== 'kg-checkout-form') return; e.preventDefault(); submitCheckout(e.target); });
     wrap.querySelector('.skip').addEventListener('click', (e) => { e.preventDefault(); main.focus(); });
     const img = wrap.querySelector('.footer-art');
     if (img) img.style.setProperty('--rangoli-image', 'url("' + ASSET('rangoli.png') + '")');
@@ -139,7 +145,9 @@
   const heading = (title, kicker) => `<div class="section-head"><div>${kicker ? `<p class="kicker">${esc(kicker)}</p>` : ''}<h1>${esc(title)}</h1></div></div>`;
 
   function collectionTiles(tiles) {
-    return '<div class="collection-grid">' + tiles.map((t) => `<a class="collection-card" href="#/shop/${encodeURIComponent(t.name)}"><img src="${esc(H.thumb(t.image, 600))}" alt="" loading="lazy"><span class="collection-name">${esc(t.name)}</span></a>`).join('') + '</div>';
+    // Collection cover images aren't guaranteed to have a pre-generated resized variant (unlike product photos),
+    // so this goes through the safe H.thumbImg() fallback instead of a bare H.thumb() -- see store.js.
+    return '<div class="collection-grid">' + tiles.map((t) => `<a class="collection-card" href="#/shop/${encodeURIComponent(t.name)}"><img ${H.thumbImg(t.image, 600)} alt="" loading="lazy"><span class="collection-name">${esc(t.name)}</span></a>`).join('') + '</div>';
   }
 
   function home(all, c) {
@@ -195,6 +203,108 @@
     return `<section class="wrap section">${heading('Collections', 'Browse by collection')}${c.tiles.length ? collectionTiles(c.tiles) : '<p class="muted">No collections yet.</p>'}</section>`;
   }
 
+  // ---------- checkout ----------
+  // Kaarigari's own checkout layout (Contact / Delivery address / Delivery method / Payment method on the left,
+  // a "Shopping bag" summary on the right), matching the approved handoff
+  // (theme-handoffs/kaarigari/source/checkout.js + style.css, classes kept: .checkout-page, .checkout-layout,
+  // .checkout-fields, .checkout-summary, .site-form, .choice). This is the reviewed, explicit "full" checkout
+  // ownership exception documented in docs/STOREFRONT_THEME_CONTRACT.md -- unlike the header/footer-only
+  // default every other theme keeps, this page reads and submits REAL data through window.StoreHost and the
+  // same public_${PFX}_place_order RPC the shared checkout uses. The handoff's own fake localStorage order
+  // history (historyKey/sessionOrders) is reference-only and is never ported here.
+  const payMethods = () => {
+    const m = [];
+    if (H.D.cod) m.push(['cod', 'Cash on delivery', 'Pay when the order reaches you']);
+    if (H.D.upi) m.push(['upi', 'Pay by UPI', 'Scan a QR with any UPI app after you place the order']);
+    if (H.cfg().payOnline) m.push(['online', 'Card, UPI or net banking', 'Pay securely now']);
+    return m;
+  };
+  function checkoutItems(ls) {
+    return ls.map((l, i) => {
+      const img = H.photos(l.s)[0];
+      return `<div class="summary-item">${img ? `<img src="${esc(H.thumb(img, 160))}" alt="" loading="lazy">` : ''}<div><strong>${esc(l.s.name)}</strong>${l.vr.size ? `<small>${esc(l.vr.size)}</small>` : ''}
+        <div class="checkout-qty"><button type="button" data-kg-step="-1" data-kg-i="${i}" aria-label="Remove one ${esc(l.s.name)}">−</button><span>${l.q}</span><button type="button" data-kg-step="1" data-kg-i="${i}" aria-label="Add one ${esc(l.s.name)}">+</button></div></div>
+        <div class="summary-tail"><span class="price">${money(l.vr.price * l.q)}</span><button type="button" class="checkout-remove" data-kg-step="0" data-kg-i="${i}" aria-label="Remove ${esc(l.s.name)}">×</button></div></div>`;
+    }).join('');
+  }
+  function checkoutTotals(state) {
+    const t = H.bagTotal(); const sh = H.shipFee(t, state);
+    const tc = H.taxCfg(); const tax = H.taxOn(Math.max(t, 0)); const addTax = tc && !tc.inclusive ? tax : 0;
+    return `<dl class="totals"><div><dt>Subtotal</dt><dd>${money(t)}</dd></div><div><dt>Delivery</dt><dd>${sh ? money(sh) : 'Free'}</dd></div>` +
+      (tc && tax ? `<div><dt>${esc(tc.label)}${tc.inclusive ? ' (included)' : ''}</dt><dd>${money(tax)}</dd></div>` : '') +
+      `<div><dt>Total</dt><dd>${money(t + sh + addTax)}</dd></div></dl>`;
+  }
+  function checkoutPage() {
+    const ls = H.bagLines();
+    if (!ls.length) return `<section class="section wrap checkout-page"><p><a href="#/shop" class="text-link">Continue shopping</a></p>${heading('Checkout')}<p class="muted">Your bag is empty.</p><a class="button" href="#/shop">Explore the collection</a></section>`;
+    const methods = payMethods(); const defState = 'Rajasthan';
+    return `<section class="section wrap checkout-page"><p><a href="#/shop" class="text-link">Continue shopping</a></p>${heading('Checkout')}
+      <form id="kg-checkout-form" class="checkout-layout" novalidate><div class="checkout-fields">
+        <fieldset><legend>Contact</legend><div class="site-form">
+          <label>Email<input type="email" name="email" autocomplete="email"></label>
+          <label><span>Phone <small>(10 digits)</small></span><input name="phone" type="tel" autocomplete="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" required></label>
+        </div></fieldset>
+        <fieldset><legend>Delivery address</legend><div class="site-form">
+          <label>First name<input name="first" autocomplete="given-name" required></label>
+          <label>Last name<input name="last" autocomplete="family-name"></label>
+          <label class="wide">Street address<input name="address" autocomplete="address-line1" required></label>
+          <label class="wide">Apartment or landmark (optional)<input name="address2" autocomplete="address-line2"></label>
+          <label>City<input name="city" autocomplete="address-level2" required></label>
+          <label>State or union territory<select name="state" autocomplete="address-level1">${H.STATES.map((s) => `<option value="${esc(s)}"${s === defState ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+          <label>PIN code<input name="pin" autocomplete="postal-code" inputmode="numeric" pattern="[1-9][0-9]{5}" maxlength="6" required></label>
+          <label>Country<input name="country" value="India" autocomplete="country-name" readonly></label>
+        </div></fieldset>
+        <fieldset><legend>Delivery method</legend><div class="choice"><span>Delivery<small id="kg-ship-note">${esc((H.cfg().shipping || {}).note || 'We ship across India.')}</small></span><strong id="kg-ship-fee">${(() => { const sh = H.shipFee(H.bagTotal(), defState); return sh ? money(sh) : 'Free'; })()}</strong></div></fieldset>
+        <fieldset><legend>Payment method</legend>${methods.length ? methods.map(([k, l, d], i) => `<label class="choice"><input name="payment" type="radio" value="${esc(k)}"${i === 0 ? ' checked' : ''}><span>${esc(l)}<small>${esc(d)}</small></span></label>`).join('') : '<p class="muted">This store is not taking online orders right now. Please contact the store.</p>'}</fieldset>
+      </div>
+      <aside class="checkout-summary"><h2>Shopping bag</h2><div class="checkout-items" id="kg-checkout-items">${checkoutItems(ls)}</div>
+        <div id="kg-checkout-totals" aria-live="polite">${checkoutTotals(defState)}</div></aside>
+      <div class="checkout-confirm"><p class="muted" role="alert" id="kg-checkout-error"></p>
+        <p class="muted">See <a class="text-link" href="#/policy/privacy">Privacy</a> and <a class="text-link" href="#/policy/terms">Store terms</a>.</p>
+        <button class="button" type="submit"${methods.length ? '' : ' disabled'}>Place order</button></div></form></section>`;
+  }
+  function checkoutState() { const sel = $('#kg-checkout-form [name="state"]'); return (sel && sel.value) || 'Rajasthan'; }
+  function refreshCheckoutShip() {
+    const note = $('#kg-ship-note'), fee = $('#kg-ship-fee'); if (!note || !fee) return;
+    const state = checkoutState(); fee.textContent = (() => { const sh = H.shipFee(H.bagTotal(), state); return sh ? money(sh) : 'Free'; })();
+    const totals = $('#kg-checkout-totals'); if (totals) totals.innerHTML = checkoutTotals(state);
+  }
+  function refreshCheckoutItems() {
+    const ls = H.bagLines();
+    if (!ls.length) { render(['checkout']); return; }
+    const items = $('#kg-checkout-items'); if (items) items.innerHTML = checkoutItems(ls);
+    refreshCheckoutShip();
+    paintBagCount();
+  }
+  function checkoutStep(i, step) {
+    const ls = H.bagLines(); const l = ls[i]; if (!l) return;
+    const row = H.bag.find((b) => b.v === l.v); if (!row) return;
+    if (step < 0 && row.q <= 1) H.bag.splice(H.bag.indexOf(row), 1); else row.q += step;
+    H.saveBag(); refreshCheckoutItems();
+  }
+  async function submitCheckout(form) {
+    const errBox = $('#kg-checkout-error'); if (errBox) errBox.textContent = '';
+    const g = (k) => { const el = form.elements[k]; return el ? String(el.value || '').trim() : ''; };
+    const name = [g('first'), g('last')].filter(Boolean).join(' ');
+    const miss = !g('phone') ? 'your phone number' : !g('first') ? 'your first name' : !g('pin') ? 'your PIN code' : !g('address') ? 'your address' : !g('city') ? 'your city' : '';
+    const payment = (form.querySelector('input[name="payment"]:checked') || {}).value || '';
+    if (miss) { if (errBox) errBox.textContent = 'Please enter ' + miss + '.'; return; }
+    if (!payment) { if (errBox) errBox.textContent = 'Choose how you want to pay.'; return; }
+    const btn = form.querySelector('button[type="submit"]'); if (btn) { btn.disabled = true; btn.textContent = 'Placing…'; }
+    try {
+      const r = await H.rpc(`public_${H.PFX}_place_order`, { p_slug: H.SLUG, p: {
+        name, email: g('email'), phone: g('phone'), address: g('address'), address2: g('address2'),
+        city: g('city'), state: g('state'), pin: g('pin'), country: g('country'), note: '', payment, coupon: '',
+        lines: H.bagLines().map((l) => ({ variantId: l.v, qty: l.q })),
+      } });
+      H.bag.splice(0, H.bag.length); H.saveBag(); paintBagCount();
+      location.hash = '/order/' + r.token;
+    } catch (e) {
+      if (errBox) errBox.textContent = e.message || 'Something went wrong. Please try again.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Place order'; }
+    }
+  }
+
   // ---------- bag ----------
   const lines = () => H.bagLines();
   function paintBagCount() { const n = H.bagCount(); const el = $('#bag-count'); if (el) { el.hidden = !n; el.textContent = n; } }
@@ -238,7 +348,10 @@
       const row = H.bag.find((b) => b.v === l.v); if (!row) return;
       const d = Number(step.dataset.step); if (d < 0 && row.q <= 1) H.bag.splice(H.bag.indexOf(row), 1); else row.q += d;
       H.saveBag(); paintBagCount(); openDrawer('bag');
+      return;
     }
+    const kgStep = t.closest && t.closest('[data-kg-step]');
+    if (kgStep) { checkoutStep(Number(kgStep.dataset.kgI), Number(kgStep.dataset.kgStep)); return; }
   }
   function render(parts) {
     const all = products(); const c = settings(all);
@@ -249,15 +362,18 @@
     else if (id === 'featured') main.innerHTML = featuredPage(all, c);
     else if (id === 'our-story') main.innerHTML = ourStoryPage(c);
     else if (id === 'p' && bySlug(all, arg)) main.innerHTML = detail(bySlug(all, arg));
+    else if (id === 'checkout') main.innerHTML = checkoutPage();
     else main.innerHTML = `<section class="section wrap prose"><a class="text-link" href="#/shop">Browse the collection</a></section>`;
     window.scrollTo(0, 0);
     paintBagCount();
   }
 
   // ---------- routing ----------
-  const OWN = new Set(['home', 'shop', 'collections', 'featured', 'our-story', 'p']);
+  const OWN = new Set(['home', 'shop', 'collections', 'featured', 'our-story', 'p', 'checkout']);
   function owns(id) { return OWN.has(id); }
-  // Routes Kaarigari does not draw itself (checkout, account, orders, policies, contact) keep the Kaarigari header
+  // Kaarigari is the one approved exception to the header/footer-only checkout default (capabilities.checkoutOwnership
+  // = 'full' in the theme registry -- see docs/STOREFRONT_THEME_CONTRACT.md): it draws checkout itself, above.
+  // Every other route it does not draw itself (account, orders, policies, contact) keeps the Kaarigari header
   // and footer around the store's own shared content -- same "frame" contract as studs.js.
   let framed = false, viewHome = null;
   function unframe() {

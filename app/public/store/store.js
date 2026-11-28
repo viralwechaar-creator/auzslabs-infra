@@ -67,6 +67,22 @@ async function shopIcon(d) {
 // a picture that failed to load (flaky network, phone memory) is asked for once more before giving up
 // small copy of an uploaded picture for cards (see server storage.js makeThumbs); older pictures without one fall back to the original
 const thumb = (u, w) => (u && /\/uploads\/site\//.test(u) ? u.replace(/\.(jpe?g|png|webp)$/i, '.w' + (w || 480) + '.webp') : u);
+// thumb() assumes a resized variant always exists at the rewritten path. That holds for product photos (always
+// run through the resize pipeline) but not for every uploaded image -- e.g. older collection cover images --
+// so any <img> built from a URL that is not guaranteed to have a resized variant should go through thumbImg()
+// instead of calling thumb() directly: it points src at the resized URL but also sets data-orig to the real
+// original, which the document-level 'error' listener below already falls back to once if the resized request
+// 404s (the listener's own im.src !== im.dataset.orig check stops it from looping if the original also fails).
+// Returns an HTML attribute string, e.g. `src="..." data-orig="..."`, for inline use in a template literal.
+// NOTE for a theme that draws in its own shadow root (any bespoke-chrome theme): an <img> 'error' event is
+// NOT composed, so it never reaches this file's document-level listener from inside a shadow tree -- that
+// theme must register the same fallback on its OWN root (see kaarigari.js's mount() for the one-line pattern).
+const escAttr = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function thumbImg(u, w) {
+  const orig = u || '';
+  const resized = thumb(orig, w);
+  return resized !== orig ? `src="${escAttr(resized)}" data-orig="${escAttr(orig)}"` : `src="${escAttr(orig)}"`;
+}
 document.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.dataset.orig && im.src !== im.dataset.orig) { im.src = im.dataset.orig; return; } if (!im || im.tagName !== 'IMG' || im.dataset.retry || !im.src || im.src.startsWith('data:')) return; im.dataset.retry = '1'; const u = im.src; im.removeAttribute('loading'); setTimeout(() => { im.src = u + (u.includes('?') ? '&' : '?') + 'r=1'; }, 600); }, true);
 let D = null;            // public_sty_store (or public_sfx_store) result
 // Which product's public RPCs this store talks to: 'sty' (AUZsStyle) or 'sfx' (the AUZslab storefront
@@ -91,7 +107,9 @@ let THEME_REGISTRY = new Map([
   ['kiln', { slug: 'kiln', kind: 'section', template: 'minimal', isBespoke: false, capabilities: {} }],
   ['kiln-salon', { slug: 'kiln-salon', kind: 'section', template: 'minimal', isBespoke: false, capabilities: {} }],
   ['studs', { slug: 'studs', kind: 'bespoke', template: 'studs', isBespoke: true, capabilities: { checkoutOwnership: 'header_footer', formsStylesheet: '/store/studs-forms.css?v=1' } }],
-  ['kaarigari', { slug: 'kaarigari', kind: 'bespoke', template: 'kaarigari', isBespoke: true, capabilities: { checkoutOwnership: 'header_footer' } }],
+  // Kaarigari is the documented, reviewed exception to the header/footer-only baseline (docs/STOREFRONT_THEME_CONTRACT.md):
+  // its approved handoff explicitly specified its own checkout layout, so it owns and draws checkout itself.
+  ['kaarigari', { slug: 'kaarigari', kind: 'bespoke', template: 'kaarigari', isBespoke: true, capabilities: { checkoutOwnership: 'full' } }],
 ]);
 let BESPOKE = new Set([...THEME_REGISTRY.values()].filter((t) => t.isBespoke).map((t) => t.slug));
 let BESPOKE_CAPS = Object.fromEntries([...THEME_REGISTRY.values()].filter((t) => t.isBespoke).map((t) => [t.slug, t.capabilities]));
@@ -2029,8 +2047,12 @@ function waitStudsPreview() {
 }
 // What the Studs theme (studs.js) may use from this file: read the catalogue, use the shared bag. Nothing else.
 window.StoreHost = {
-  get D() { return D; }, STY: () => STY, get bag() { return bag; }, cfg, photos, thumb, isGone, leftOf, sizesOf, colours,
+  get D() { return D; }, STY: () => STY, get bag() { return bag; }, cfg, photos, thumb, thumbImg, isGone, leftOf, sizesOf, colours,
   saveBag, addBag, bagLines, bagTotal, bagCount,
+  // Added for Kaarigari's full checkout ownership (docs/STOREFRONT_THEME_CONTRACT.md's reviewed exception):
+  // the real shipping/tax/payment-method logic and the real place-order RPC, so a bespoke theme that owns its
+  // own checkout page can wire real data instead of re-deriving (or worse, faking) any of it.
+  rpc, get PFX() { return PFX; }, SLUG, STATES, shipFee, shipLine, taxCfg, taxOn,
 };
 // Loading each bespoke theme's own chrome file is now one generic call (loadBespokeChrome, declared near
 // THEME_REGISTRY above): the file naming convention and any extra stylesheet come from the registry, not a
