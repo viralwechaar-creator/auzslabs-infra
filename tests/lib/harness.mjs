@@ -52,10 +52,12 @@ export function watch(page) {
   page.on('requestfailed', (r) => {
     const u = r.url();
     if (IGNORE_HOSTS.test(u) || /^data:|^blob:/.test(u) || /\.auzslab\.in\/store\.html$/.test(u)) return; // Home's website-health ping
+    if (/\/store\.html\?preview=/.test(u) && /ERR_ABORTED/.test(String(r.failure() && r.failure().errorText))) return; // theme preview thumbnails cancelled by leaving the page
     errors.push('request failed: ' + u.slice(0, 120) + ' (' + (r.failure() && r.failure().errorText) + ')');
   });
   page.on('response', (r) => {
     const u = r.url(), s = r.status();
+    if (s === 404 && /\/uploads\//.test(u) && r.frame() && r.frame() !== page.mainFrame()) return; // seeded demo pictures missing inside theme preview thumbnails
     if (s >= 400 && !IGNORE_HOSTS.test(u) && !/favicon|\/sw\.js|manifest/.test(u)) errors.push('HTTP ' + s + ': ' + u.slice(0, 120) + ' (loaded by page ' + page.url().slice(0, 80) + ')');
   });
   return errors;
