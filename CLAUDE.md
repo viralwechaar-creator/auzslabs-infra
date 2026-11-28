@@ -3491,3 +3491,7 @@ Design target (owner, from Shopify's Horizon editor): every visible thing is an 
 ## Storefront theme editor, step 17: product tags in the public filters (db/465)
 - `public_sfx_store` now adds each product's `tags` (from `sfx_products.tags`) to its style entry. The store's Filter sheet has a **Tag** group, `?tag=<name>` filters the shop list (`filterSet`), the active tag shows as a chip, and Clear all resets it. Tags still come from Inventory -> Categories and tags (db/378).
 - Test: `sfxsections` (28 checks). Deploy: `bash tools/migrate.sh apply` (db/465), `git pull` (no API rebuild). Not seen on a real phone or desktop.
+
+## Storefront theme editor, step 18: Product information section (db/466)
+- New section type `product_info` (kind: description, details, specs, washcare, shipping; optional heading). Place it in the Product page template: it shows that part of the product being viewed (read from `BYID` via the `#/p/<id>` address). When a product template holds a visible one, the page's built-in Details/Washcare/Shipping tabs are hidden. The gallery and buy box stay inside the main content (not movable). Minimal theme keeps its own tabs.
+- Test: `sfxsections` (29 checks). Deploy: `bash tools/migrate.sh apply` (db/466), `git pull`. Not seen on a real phone or desktop.
