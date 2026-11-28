@@ -1153,7 +1153,7 @@ const hexLum = (h) => { const m = /^#([0-9a-f]{6})$/i.exec(h || ''); if (!m) ret
 function applyDesign(d) {
   d = d && typeof d === 'object' ? d : {};
   const st = document.documentElement.style;
-  ['--bg', '--card', '--ink', '--accent', '--on-ink', '--on-accent', '--r1', '--r2', '--r3', '--pad'].forEach((k) => st.removeProperty(k));
+  ['--bg', '--card', '--ink', '--accent', '--on-ink', '--on-accent', '--r1', '--r2', '--r3', '--pad', '--mut', '--sale', '--badge', '--on-badge'].forEach((k) => st.removeProperty(k));
   [...document.body.classList].filter((c) => /^d-/.test(c)).forEach((c) => document.body.classList.remove(c));
   // Studs draws every page (including the shared checkout it frames) in its own fixed palette and never
   // reads these document-level design tokens; Kaarigari's shadow-scoped styles are self-contained but the
@@ -1169,6 +1169,10 @@ function applyDesign(d) {
   if (d.buttons === 'accent' || d.buttons === 'outline') document.body.classList.add('d-btn-' + d.buttons);
   if (['pill', 'soft', 'square'].includes(d.buttonShape)) document.body.classList.add('d-bs-' + d.buttonShape);
   if (['serif', 'humanist', 'mono'].includes(d.font)) document.body.classList.add('d-font-' + d.font);
+  if (hex('muted')) st.setProperty('--mut', d.muted);
+  if (hex('sale')) st.setProperty('--sale', d.sale);
+  if (hex('badgeColor')) { st.setProperty('--badge', d.badgeColor); st.setProperty('--on-badge', hexLum(d.badgeColor) > 0.5 ? '#0c0c0c' : '#ffffff'); }
+  ['headingCase', 'headingWeight', 'buttonCase', 'buttonSize', 'cardRatio', 'cardAlign', 'cardAdd', 'cardFit', 'badgeShape', 'priceWeight', 'priceSize', 'inputStyle', 'iconWeight', 'swatchShape', 'sizeShape', 'cardHover', 'pageFade'].forEach((k) => { if (/^[a-z]+$/.test(d[k] || '') && d[k] !== 'default') document.body.classList.add('d-' + k + '-' + d[k]); });
 }
 // Shared header and footer groups (db/456): sections shown on every page, the header group at the top and the footer group at the bottom.
 let PREVIEW_GROUPS = null;

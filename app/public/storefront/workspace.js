@@ -813,9 +813,11 @@ function edDesignHtml() {
     if (d.type === 'color') return '<label class="te-color">' + esc(d.label) + '<span><input type="color" name="' + d.id + '" value="' + esc(val(d)) + '"' + dis + '><code>' + esc(val(d)) + '</code>' + (set && w ? button('Reset', 'te-dclear:' + d.id, 'compact') : '') + '</span></label>';
     return select(d.label, d.id, d.options || [], val(d), dis); };
   const low = ed.design.ink || ed.design.bg ? contrastOf(val(list.find((d) => d.id === 'ink') || { default: '#0c0c0c' }), val(list.find((d) => d.id === 'bg') || { default: '#efeeed' })) < 4.5 : false;
-  return '<div class="panel-title"><h2>Design settings</h2></div><div class="panel-body"><form data-form="te-design">' + groups.map((g) => '<h3 class="te-dgroup">' + esc(g) + '</h3><div class="field-grid te-fields">' + list.filter((d) => d.group === g).map(field).join('') + '</div>').join('') + '</form>' +
+  return '<div class="panel-title"><h2>Design settings</h2></div><div class="panel-body"><form data-form="te-design">' + groups.map((g, gi) => { const items = list.filter((d) => d.group === g), changed = items.filter((d) => ed.design[d.id] != null && ed.design[d.id] !== '').length; ed.dopen = ed.dopen || {}; const open = ed.dopen[g] === undefined ? gi === 0 : ed.dopen[g];
+      return '<details class="te-dg" data-g="' + esc(g) + '"' + (open ? ' open' : '') + '><summary><span>' + esc(g) + '</span>' + (changed ? '<small>' + changed + ' changed</small>' : '') + '</summary><div class="field-grid te-fields">' + items.map(field).join('') + '</div></details>'; }).join('') + '</form>' +
     (low ? '<p class="notice">The text colour is hard to read on this background. Choose colours with more contrast.</p>' : '') + (w && Object.keys(ed.design).length ? '<div class="actions">' + button('Reset all design settings', 'te-dreset') + '</div>' : '') + '</div>';
 }
+if (typeof document !== 'undefined') document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.classList && d.classList.contains('te-dg') && ed) { ed.dopen = ed.dopen || {}; ed.dopen[d.dataset.g] = d.open; } }, true);
 function edDesignInput(target, type) {
   if (!target.name || !ed || !canWrite()) return false;
   if (!(state.designSettings || []).some((d) => d.id === target.name)) return true;
