@@ -67,7 +67,7 @@
         document.head.append(g);
       }
       // Bump this whenever outpace.css changes -- see store.js's loadBespokeChrome for why.
-      cssText = await (await fetch('/store/outpace.css?v=4')).text();
+      cssText = await (await fetch('/store/outpace.css?v=5')).text();
     })();
     return ready;
   }
