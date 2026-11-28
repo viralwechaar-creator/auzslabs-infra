@@ -204,10 +204,37 @@ input,select{background:#181820;border-color:var(--line);color:var(--ink)}input:
    dialog used the UA default centred-in-viewport <dialog> position, which read as "the menu floats in the
    middle of the page" instead of a real menu -- it's a proper right-side slide-in panel now, with its nav
    links as a plain vertical list instead of the unstyled two-column wrap the bare <nav><a> markup produced. */
-.header-search,.bag-trigger,.menu-toggle{appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;padding:6px;display:inline-flex;align-items:center;gap:6px}
+/* display is deliberately left out here: .menu-toggle must stay display:none above 640px (set at line 128) --
+   an earlier version of this rule set display:inline-flex unconditionally and leaked the hamburger button onto
+   desktop, where Outpace keeps its own .nav tab row instead (the owner's explicit call, unlike studs/kaarigari
+   which show their menu button at every width). */
+.header-search,.bag-trigger{appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;padding:6px;display:inline-flex;align-items:center;gap:6px}
+.menu-toggle{appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;padding:6px}
 .ic-arrow{display:inline-block;vertical-align:-2px;margin-left:2px}
 dialog{position:fixed;inset:0 0 0 auto;margin:0;height:100%;max-height:100vh;width:min(86vw,360px);max-width:360px;border-radius:0;display:flex;flex-direction:column}
 .drawer-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 #drawer-body{flex:1;overflow:auto}
 #drawer-body nav{display:flex;flex-direction:column;gap:2px}
 #drawer-body nav a{display:block;padding:15px 4px;border-bottom:1px solid var(--line);font:700 12px var(--mono);text-transform:uppercase;text-decoration:none;color:inherit}
+
+/* Phone menu, rebuilt on the same mechanism as studs.js/studs.css's own #menu-drawer: a dedicated LEFT-side
+   slide-in dialog (studs/kaarigari's bag/search panels stay right-side -- only this one is left), a circular
+   close button top-left, collapsible <details> groups for Shop/Explore instead of a flat link list, and an
+   account link pinned to the bottom with margin-top:auto. Desktop is untouched: .nav above still owns the
+   desktop tab row, and .menu-toggle (which opens this) stays display:none above 640px. */
+#menu-drawer{inset:0 auto 0 0;width:min(86vw,360px);max-width:360px;padding:0;background:#101017;color:var(--paper);border:0;border-right:1px solid var(--line);box-shadow:12px 0 40px #0008}
+.dr-close{display:grid;place-items:center;width:40px;height:40px;margin:18px 0 6px 18px;border:0;border-radius:50%;background:#1d1e26;color:inherit}
+.dr-close svg{width:18px;height:18px}
+.dr-nav{display:grid;padding:0 18px}
+.dr-nav>a,.dr-grp>summary{display:flex;justify-content:space-between;align-items:center;min-height:50px;font:700 13px var(--mono);letter-spacing:.02em;text-transform:uppercase;color:inherit;cursor:pointer;list-style:none;text-decoration:none;border-bottom:1px solid var(--line)}
+.dr-grp>summary::-webkit-details-marker{display:none}
+.dr-nav a:hover{color:var(--lime)}
+.dr-grp .chev{width:17px;height:17px;transition:transform .2s}
+.dr-grp[open]>summary .chev{transform:rotate(180deg)}
+.dr-sub{display:grid;padding:2px 0 8px}
+.dr-sub a{padding:10px 4px;border-bottom:0;font:600 12px var(--mono);letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.dr-sub a:hover{color:var(--lime)}
+.dr-account{display:flex;align-items:center;gap:10px;margin-top:auto;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);font:700 13px var(--mono);text-transform:uppercase;text-decoration:none;color:inherit}
+.dr-account svg{width:22px;height:22px}
+.dr-account:hover{color:var(--lime)}
+@media(prefers-reduced-motion:no-preference){#menu-drawer[open]{animation:dr-in .2s ease-out}@keyframes dr-in{from{transform:translateX(-20px);opacity:0}}}

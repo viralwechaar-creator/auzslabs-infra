@@ -28,6 +28,11 @@
   const ARROW = '<svg class="ic-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>';
   const ICON_RETURN = '<svg class="ic-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-1"/></svg>';
   const ICON_FIT = '<svg class="ic-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 7 4 12l4 5M16 7l4 5-4 5"/></svg>';
+  // Phone menu is a dedicated left-side drawer, same mechanism as studs.js's #menu-drawer (own dialog, circular
+  // close button, collapsible <details> groups, account link pinned to the bottom) -- NOT the shared right-side
+  // #drawer this theme already uses for the bag. Desktop keeps Outpace's own horizontal .nav tab row untouched;
+  // this drawer only ever opens from the phone-width menu-toggle button (menu-toggle is display:none above 640px).
+  const CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   // ---------- data from the store, in the shape the Outpace pages use ----------
   function products() {
@@ -49,7 +54,7 @@
   const bySlug = (all, id) => all.find((p) => p.slug === id);
 
   // ---------- shadow root ----------
-  let host = null, root = null, drawer = null, main = null, cssText = null, ready = null, lastPath = '';
+  let host = null, root = null, drawer = null, menuDrawer = null, main = null, cssText = null, ready = null, lastPath = '';
   const $ = (s) => root.querySelector(s);
   const $$ = (s) => [...root.querySelectorAll(s)];
 
@@ -62,7 +67,7 @@
         document.head.append(g);
       }
       // Bump this whenever outpace.css changes -- see store.js's loadBespokeChrome for why.
-      cssText = await (await fetch('/store/outpace.css?v=3')).text();
+      cssText = await (await fetch('/store/outpace.css?v=4')).text();
     })();
     return ready;
   }
@@ -109,7 +114,8 @@
     <dialog id="drawer" aria-labelledby="drawer-title">
       <div class="drawer-head"><h2 id="drawer-title"></h2><button class="close" id="drawer-close" type="button" aria-label="Close">×</button></div>
       <div id="drawer-body"></div>
-    </dialog>`;
+    </dialog>
+    <dialog id="menu-drawer" aria-label="Store menu"></dialog>`;
 
   function mount() {
     if (host) return;
@@ -120,6 +126,7 @@
     root.append(st, wrap);
     wrap.innerHTML = SHELL(H.D.shop.name);
     drawer = wrap.querySelector('#drawer');
+    menuDrawer = wrap.querySelector('#menu-drawer');
     main = wrap.querySelector('#main');
     root.addEventListener('click', onClick);
     // img 'error' events are not composed, so any shadow-DOM theme using H.thumbImg() needs its own fallback
@@ -243,12 +250,20 @@
   function cartPage() { return `<section class="section"><h1>Your bag.</h1>${bagMarkup()}</section>`; }
   function paintBagCount() { const n = H.bagCount(); const el = $('#bag-count'); if (el) el.textContent = n; }
 
-  function openDrawer(kind) {
-    $('#drawer-title').textContent = kind === 'bag' ? 'Your bag' : 'Menu';
-    const body = $('#drawer-body');
-    if (kind === 'menu') body.innerHTML = '<nav aria-label="Menu"><a href="#/">Home</a><a href="#/shop">Shop all</a><a href="#/drops">Limited drops</a><a href="#/early-access">Early access</a><a href="#/faq">FAQ</a></nav>';
-    else { drawer.close(); location.hash = '/cart'; return; }
-    if (!drawer.open) drawer.showModal();
+  function openDrawer() {
+    $('#drawer-title').textContent = 'Your bag';
+    drawer.close(); location.hash = '/cart';
+  }
+  function openMenuDrawer() {
+    const all = products(); const cats = categoriesOf(all);
+    const grp = (title, links) => `<details class="dr-grp"><summary>${esc(title)}${CHEV}</summary><div class="dr-sub">${links}</div></details>`;
+    menuDrawer.innerHTML = `<button class="dr-close" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    <nav class="dr-nav" aria-label="Store menu"><a href="#/">Home</a>
+    ${grp('Shop', '<a href="#/shop">All sneakers</a>' + cats.map((c) => `<a href="#/shop?style=${encodeURIComponent(c)}">${esc(c)}</a>`).join(''))}
+    ${grp('Explore', '<a href="#/drops">Limited drops</a><a href="#/early-access">Early access</a><a href="#/faq">FAQ</a>')}
+    <a href="#/policy/shipping">Shipping &amp; returns</a></nav>
+    <a class="dr-account" href="#/me"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>My Account</a>`;
+    if (!menuDrawer.open) menuDrawer.showModal();
   }
   function search(q) {
     const all = products(); const r = all.filter((p) => p.name.toLowerCase().includes(String(q || '').trim().toLowerCase()));
@@ -261,12 +276,15 @@
     const size = sizeInput ? sizeInput.value : '';
     const v = (p.style.variants || []).find((x) => String(x.size) === size) || (p.style.variants || [])[0];
     if (!v) return;
-    H.addBag(v.id, 1); paintBagCount(); openDrawer('bag');
+    H.addBag(v.id, 1); paintBagCount(); openDrawer();
   }
   function onClick(event) {
     const t = event.target;
-    const dlg = t.closest && t.closest('[data-dialog]'); if (dlg) { event.preventDefault(); openDrawer(dlg.dataset.dialog); return; }
+    const dlg = t.closest && t.closest('[data-dialog]');
+    if (dlg) { event.preventDefault(); if (dlg.dataset.dialog === 'menu') openMenuDrawer(); else openDrawer(); return; }
     if (t.id === 'drawer-close' || t === drawer) { drawer.close(); return; }
+    if (t.closest && (t.closest('.dr-close') || t.closest('.dr-nav a') || t.closest('.dr-account'))) { menuDrawer.close(); return; }
+    if (t === menuDrawer) { menuDrawer.close(); return; }
     const step = t.closest && t.closest('[data-step]');
     if (step) {
       const i = Number(step.dataset.i); const ls = H.bagLines(); const l = ls[i]; if (!l) return;
@@ -313,6 +331,7 @@
   async function frame() {
     await load(); mount(); host.hidden = false; document.body.classList.add('outpace-on');
     if (drawer.open) drawer.close();
+    if (menuDrawer.open) menuDrawer.close();
     const v = document.getElementById('view');
     if (v && v.parentNode !== host) { viewHome = { parent: v.parentNode, next: v.nextSibling }; host.append(v); }
     framed = true;
