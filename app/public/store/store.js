@@ -177,6 +177,14 @@ async function rpc(fn, args) {
           if (r.data.closed) return { closed: true, name: r.data.name || 'Live demo' };
           if (r.data.styles && r.data.styles.length) return window.StoreDemo.live(r.data, tpl);
         }
+        // public_sty_store returns plain NULL (not {closed:true}) once a tenant has moved onto the newer
+        // sfx_* storefront platform (see sfx_storefront_on() in the DB) -- a real, deliberate "ask the other
+        // table instead" signal, not a fetch failure, but indistinguishable from one by the catch block
+        // below. The demo account moved onto sfx_* while this file still only ever asked the old table, so
+        // every non-Minimal demo (Classic/Studs/Kaarigari) silently fell back to the fake sample catalogue
+        // even while the real demo account was open and fully stocked. Ask the new table before giving up.
+        const sfx = await sb.rpc('public_sfx_store', { p_slug: 'demo' });
+        if (sfx && sfx.data && sfx.data.styles && sfx.data.styles.length) return window.StoreDemo.live(sfx.data, tpl);
       } catch (e) { /* genuine fetch failure: fall back to the sample catalogue below so the template can still be previewed */ }
       return window.StoreDemo.build(tpl);
     } if (/_(track|notify_me|cart_save|reviews|coupon_check)$/.test(fn)) return null; throw new Error('This is a preview template. Ordering is switched off.'); }
