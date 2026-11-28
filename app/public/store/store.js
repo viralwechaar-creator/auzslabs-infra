@@ -157,7 +157,16 @@ async function rpc(fn, args) {
       // An id that is not a real, known theme at all falls back to the default template explicitly ('1'),
       // which is never a silent stand-in for a DIFFERENT real theme.
       const tpl = templateFor(DEMO) || '1';
-      try { const r = await sb.rpc('public_sty_store', { p_slug: 'demo' }); if (r && r.data && !r.data.closed && r.data.styles && r.data.styles.length) return window.StoreDemo.live(r.data, tpl); } catch (e) { /* fall back below */ }
+      try {
+        const r = await sb.rpc('public_sty_store', { p_slug: 'demo' });
+        if (r && r.data) {
+          // The demo account itself being switched to "closed" (Online store > Open the online store, off) is a real,
+          // deliberate state, not a fetch failure -- show that plainly instead of silently swapping in the built-in
+          // sample catalogue, which used to make a closed demo account look like a real (if odd) live product.
+          if (r.data.closed) return { closed: true, name: r.data.name || 'Live demo' };
+          if (r.data.styles && r.data.styles.length) return window.StoreDemo.live(r.data, tpl);
+        }
+      } catch (e) { /* genuine fetch failure: fall back to the sample catalogue below so the template can still be previewed */ }
       return window.StoreDemo.build(tpl);
     } if (/_(track|notify_me|cart_save|reviews|coupon_check)$/.test(fn)) return null; throw new Error('This is a preview template. Ordering is switched off.'); }
   const { data, error } = await sb.rpc(fn, args || {}); if (error) { const e = new Error(error.message || 'Something went wrong'); e.status = error.status; throw e; } return data; }
@@ -2097,7 +2106,7 @@ async function boot() {
   };
   const fresh = resolveStore();
   const fail = (e) => { clear(app).append(E('div', { class: 'empty' }, E('h2', null, 'Could not open the store'), E('div', { class: 'mut' }, e.message))); };
-  const closed = (d) => { clear(app).append(E('div', { class: 'empty' }, E('h1', null, d.name || 'Store'), E('div', { class: 'mut' }, 'Our online store is not open yet. Please check back soon.'))); document.title = d.name || 'Store'; };
+  const closed = (d) => { clear(app).append(E('div', { class: 'empty' }, E('h1', null, d.name || 'Store'), E('div', { class: 'mut' }, DEMO ? 'This live demo is temporarily closed while its sample account is being updated. Check back soon.' : 'Our online store is not open yet. Please check back soon.'))); document.title = d.name || 'Store'; };
   const remember = (d) => { if (DEMO) return; try { localStorage.setItem('st.cat.' + SLUG, JSON.stringify({ ...d, __pfx: PFX })); } catch (e) { /* storage full */ } };
   if (cached && cached.styles && !cached.closed) {
     ingest(cached); shell(); window.addEventListener('hashchange', route); route();
