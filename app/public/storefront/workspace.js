@@ -492,7 +492,7 @@ function themePreview(t) {
   if (t.previewImageUrl) return t.previewImageUrl;
   const slug = String(t.slug || t.themeSlug || t.name || '').toLowerCase();
   // every built-in theme has a real screenshot of its storefront (site/theme-previews)
-  const shot = { minimal: 'minimal', classic: 'classic', salon: 'salon', kiln: 'kiln', 'kiln-salon': 'kiln', studs: 'studs', kaarigari: 'kaarigari' }[slug];
+  const shot = { minimal: 'minimal', classic: 'classic', salon: 'salon', kiln: 'kiln', 'kiln-salon': 'kiln', studs: 'studs', kaarigari: 'kaarigari', outpace: 'outpace' }[slug];
   if (shot) return '/theme-previews/' + shot + '.jpg';
   let h = 0; for (const ch of slug) h = (h * 31 + ch.charCodeAt(0)) % 360;
   const dark = /stud|noir|black|kiln/.test(slug), bg = dark ? '#161616' : '#f6f4f1', ink = dark ? '#ffffff' : '#171717', acc = 'hsl(' + h + ' 45% ' + (dark ? '55%' : '42%') + ')', tile = dark ? '#2a2a2a' : '#e4dfd8';
@@ -504,7 +504,7 @@ function themePreview(t) {
 }
 // the picture markup: an uploaded or stock picture, or the small drawn storefront (built only from fixed shapes and a hue number, never from user text)
 const themePreviewHtml = (t) => { const p = themePreview(t); return typeof p === 'string' ? image(p, t.name) : p.svg.replace('<svg ', '<svg role="img" aria-label="' + esc(t.name || 'Theme') + ' preview" style="width:100%;height:100%;display:block" '); };
-const LIVE_PREVIEW = ['classic', 'minimal', 'studs', 'kaarigari'];
+const LIVE_PREVIEW = ['classic', 'minimal', 'studs', 'kaarigari', 'outpace'];
 // a real rendered picture of the theme running on this store's own products (scaled iframe), over the static picture as a fallback
 const themeLive = (slug) => { const sl = String(slug || '').toLowerCase(); return LIVE_PREVIEW.includes(sl) && state.tenant?.slug ? '<iframe class="tc-iframe" tabindex="-1" loading="lazy" src="/store.html?preview=' + sl + '&shop=' + encodeURIComponent(state.tenant.slug) + '#/" title="' + esc(sl) + ' theme preview"></iframe>' : ''; };
 function themeCard(t) {
@@ -517,7 +517,7 @@ function themeCard(t) {
   // itself reads the single theme registry -- db/467) preview on the store's OWN address with its real
   // products (the same address it runs on when live). Kaarigari was missing from this list until this fix,
   // the exact "forgot to add the new bespoke theme to a hardcoded list" bug this whole effort is about.
-  const own = ['classic', 'minimal', 'studs', 'kaarigari'].includes(tslug) && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html?preview=' + tslug : '';
+  const own = ['classic', 'minimal', 'studs', 'kaarigari', 'outpace'].includes(tslug) && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html?preview=' + tslug : '';
   const demo = { studs: 'studs-preview/', minimal: 'store.html?demo=minimal', classic: 'store.html?demo=classic', salon: 'salon/index.html?preview=1', kiln: 'site-kiln.html', 'kiln-salon': 'site-kiln.html' }[tslug];
   const previewHref = own || (demo ? 'https://auzslab.in/' + demo : '');
   const previewBtn = previewHref ? '<a class="btn" href="' + previewHref + '" target="_blank" rel="noopener" aria-label="Preview ' + esc(t.name) + ' theme">Preview</a>' : '';
