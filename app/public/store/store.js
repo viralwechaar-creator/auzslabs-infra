@@ -906,6 +906,20 @@ const CUSTOM_RENDERERS = {
     } }, input, btn);
     return E('section', { class: 'custom-section custom-news' }, p.heading ? E('h2', null, p.heading) : null, p.text ? E('p', { class: 'nl-text' }, p.text) : null, form, msg);
   },
+  product_info(s, p) {
+    const m = /^#\/p\/([^?\/]+)/.exec(location.hash || ''); const pr = m ? BYID[decodeURIComponent(m[1])] : null;
+    const kind = ['description', 'details', 'specs', 'washcare', 'shipping'].includes(p.kind) ? p.kind : 'description';
+    const names = { description: 'Description', details: 'Details', specs: 'Specs', washcare: 'Washcare', shipping: 'Shipping and returns' };
+    if (!pr) return PREVIEW ? E('section', { class: 'custom-section custom-pi' }, E('span', { class: 'mut' }, 'Shows on the product page: ' + names[kind])) : null;
+    const head = p.heading || names[kind]; let body = null;
+    if (kind === 'description') body = pr.description ? E('div', null, richNodes(pr.description)) : null;
+    else if (kind === 'details') { const b = String(pr.details || '').split(/\n+/).map((x) => x.trim()).filter(Boolean); body = b.length ? E('ul', null, b.map((x) => E('li', null, x))) : null; }
+    else if (kind === 'specs') { const rows = [['Brand', pr.brand], ['Fabric', pr.fabric], ['Season', pr.season], ['For', pr.gender], ['Collection', pr.collection], ['Weight', pr.weightG ? pr.weightG + ' g' : ''], ['Code', pr.code]].filter((r) => r[1]); body = rows.length ? E('div', { class: 'pi-rows' }, rows.map((r) => E('div', { class: 'pi-r' }, E('span', { class: 'mut' }, r[0]), E('span', null, String(r[1]))))) : null; }
+    else if (kind === 'washcare') body = E('div', null, pr.washcare || 'Wash cold, dry in shade, do not bleach.');
+    else body = E('div', null, (cfg().shipping || {}).note || 'We ship across India. Delivery usually takes 3 to 7 days.', ' Returns within ' + (D.shop.returnDays || 30) + ' days of delivery, tags intact.');
+    if (!body) return PREVIEW ? E('section', { class: 'custom-section custom-pi' }, E('span', { class: 'mut' }, 'This product has no ' + names[kind].toLowerCase() + '.')) : null;
+    return E('section', { class: 'custom-section custom-pi' }, E('h2', null, head), body);
+  },
   data_field(s, p) {
     const key = String(p.key || '').trim(); if (!/^[a-z0-9_]{1,40}$/.test(key)) return PREVIEW ? E('section', { class: 'custom-section custom-df' }, E('span', { class: 'mut' }, 'Pick a field key in the settings.')) : null;
     const m = /^#\/p\/([^?\/]+)/.exec(location.hash || ''), c = /[?&]col=([^&]+)/.exec(location.hash || '');
@@ -1356,7 +1370,7 @@ V.p = (v, id) => {
       } }, 'Add to bag'), E('button', { class: 'btn', disabled: gone || (chosen && chosen.left < 1), onclick: () => {
         if (need(chosen) && addBag(chosen.id, qty)) go('checkout');
       } }, 'Buy now')),
-      minimal ? null : E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
+      minimal || (templateSections('product') || []).some((x) => x.type === 'product_info' && (x.props || {}).hidden !== 'yes') ? null : E('div', { class: 'tabs2 fx' }, E('div', { class: 'tr' }, [['d', 'Details & Description'], ['w', 'Washcare'], ['s', 'Shipping']].map(([k, l]) => E('button', { class: k === tab ? 'on' : '', onclick: () => { tab = k; paintInfo(); } }, l))), E('div', { class: 'tb' }, dtl(tab))),
       E('div', { class: 'row2 fx' }, E('button', { class: 'btn out sm', onclick: share }, 'Share'), gone ? E('button', { class: 'btn out sm', onclick: notify }, 'Notify me') : null),
       E('button', { class: 'unfold', onclick: () => { pinned = true; folded = false; info.classList.remove('fold'); } }, 'Show size, colour and details'));
   };

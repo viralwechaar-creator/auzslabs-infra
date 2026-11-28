@@ -1148,3 +1148,5 @@ body.d-font-mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 @media(max-width:600px){.cb-rowdir{flex-direction:column;flex-wrap:nowrap}.cb-rowdir>*{flex:none;width:100%}}
 .cb-row:empty{min-height:28px;outline:1px dashed #bbb}
 .custom-df{padding-top:10px;padding-bottom:10px;display:flex;gap:6px 12px;flex-wrap:wrap;align-items:baseline}.df-stacked{flex-direction:column;gap:2px}.df-l{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.df-v{font-weight:600}
+
+.custom-pi{max-width:760px;margin:22px auto;padding:0 16px}.custom-pi h2{font-size:15px;margin:0 0 8px}.custom-pi ul{margin:0;padding-left:18px}.custom-pi .pi-r{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line,#e5e5e5);font-size:13px}

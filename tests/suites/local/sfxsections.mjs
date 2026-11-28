@@ -521,6 +521,19 @@ export default async function run({ browser, stack }) {
     await pg.goto(stack.url('testcafe', '/store.html#/shop?tag=summer'), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
     assert(await pg.locator('.pc').count() >= 1, 'tag filter showed nothing');
   }, 'major');
+  await s.check('Product information section: shows one part of the product and hides the built-in tabs', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_products set description='Soft linen shirt', tags='{}' where id=$1", [pid]);
+    const r = await page.evaluate(async ([id]) => { const c = window.supabase.createClient(CFG.url, CFG.key);
+      const a = await c.rpc('sfx_theme_customize_save', { p_install_id: id, p_content: { sections: [], templates: { product: { sections: [{ id: 'm', type: 'main' }, { id: 'pi', type: 'product_info', props: { kind: 'description', heading: 'About it' } }] } } } }); if (a.error) return a.error.message;
+      const p = await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); return p.error ? p.error.message : 'ok'; }, [inst]);
+    assert(r === 'ok', r);
+    const pg = await ctx.newPage();
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\\./.test(k)) localStorage.removeItem(k); });
+    await pg.goto(stack.url('testcafe', '/store.html#/p/' + pid), { waitUntil: 'load' }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(3000);
+    assert(/About it/.test(await pg.locator('.custom-pi h2').first().innerText()) && /Soft linen shirt/.test(await pg.locator('.custom-pi').first().innerText()), 'section not shown');
+    assert(await pg.locator('.tabs2').count() === 0, 'built-in tabs still shown');
+  }, 'major');
   await ctx.close();
   return s.done();
 }
