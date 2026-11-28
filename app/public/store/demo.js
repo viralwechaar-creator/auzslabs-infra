@@ -1,16 +1,20 @@
-/* Theme preview data for the storefront themes (Minimal, Classic). Opened as /store.html?demo=minimal on auzslab.in: the page is a
-   template filled with the AUZsStyle demo catalogue (GenX), not any business's live store. Ordering is switched off. */
+/* Theme preview data for the storefront themes. Opened as /store.html?demo=minimal on auzslab.in: the page is a
+   template filled with the AUZsStyle demo catalogue (GenX), not any business's live store. Ordering is switched off.
+   `template` here is the DISPATCH value the caller (store.js) already resolved the requested ?demo= id to, by
+   looking it up in the single theme registry (db/467, public_sfx_theme_registry()) -- this file never hardcodes
+   which theme ids are real, so it can never fall silently out of date the way the pre-registry version of this
+   file did (see fix/kaarigari-demo-theme-fallback, PR #1305). */
 (function () {
   const slug = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   window.StoreDemo = {
     // The real AUZsStyle demo account's public store, shown with the chosen template and ordering switched off.
-    live(d, theme) {
+    live(d, template) {
       const fix = (v) => { if (typeof v === 'string') return v.startsWith('/uploads/') ? 'https://api.auzslab.in' + v : v; if (Array.isArray(v)) return v.map(fix); if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v)) o[k] = fix(v[k]); return o; } return v; };
       const out = fix(d);
-      out.config = { ...(out.config || {}), template: theme === 'minimal' ? 'minimal' : '1', announce: 'Template preview: ordering is switched off' };
+      out.config = { ...(out.config || {}), template: template || '1', announce: 'Template preview: ordering is switched off' };
       return out;
     },
-    async build(theme) {
+    async build(template) {
       const rows = await (await fetch('/studs-preview/catalog.json')).json();
       const img = (f) => '/store/genx-studio/' + f;
       const banner = { 'Denim in Motion': 'denim-wide', 'Field Notes': 'field-wide', 'Offbeat Streetwear': 'street-wide', 'Small Essentials': 'essentials-wide', 'Urban Carry': 'urban-wide' };
@@ -29,7 +33,7 @@
       return {
         name: 'GenX Clothing', shop: { name: 'GenX Clothing', logoUrl: '', address: 'Jodhpur, Rajasthan', phone: '' },
         styles, collections,
-        config: { template: theme === 'minimal' ? 'minimal' : '1', brandName: 'GenX Clothing', tagline: 'Streetwear, made loud', announce: 'Template preview: ordering is switched off', heroImages: ['denim-wide', 'street-wide', 'field-wide', 'essentials-wide'].map((n) => '/store/demo-banners/' + n + '.jpg'), heroTitle: 'GenX Clothing', heroCta: 'Shop now',
+        config: { template: template || '1', brandName: 'GenX Clothing', tagline: 'Streetwear, made loud', announce: 'Template preview: ordering is switched off', heroImages: ['denim-wide', 'street-wide', 'field-wide', 'essentials-wide'].map((n) => '/store/demo-banners/' + n + '.jpg'), heroTitle: 'GenX Clothing', heroCta: 'Shop now',
           stores: [
             ['GenX Studio, Jodhpur', 'Sardarpura, Jodhpur, Rajasthan 342003', 'Daily 11:00 to 21:00'],
             ['GenX Pop-up, Jaipur', 'C-Scheme, Jaipur, Rajasthan 302001', 'Daily 11:00 to 21:30'],
