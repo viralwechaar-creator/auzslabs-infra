@@ -99,7 +99,11 @@ export default async function run({ browser, stack }) {
     }, 'major');
 
     if (t.isBespoke) {
-      await s.check(`[${t.slug}] frames the shared checkout with its own header/footer (header/footer-only checkout ownership)`, async () => {
+      // Header/footer-only (the baseline) frames the shared checkout page; 'full' (Kaarigari's reviewed,
+      // explicit exception -- see docs/STOREFRONT_THEME_CONTRACT.md) draws its own checkout instead of
+      // framing the shared one. Branches on the real declared capability, never a hardcoded slug check.
+      const full = (t.capabilities || {}).checkoutOwnership === 'full';
+      await s.check(`[${t.slug}] ${full ? 'draws its own checkout page (full checkout ownership)' : "frames the shared checkout with its own header/footer (header/footer-only checkout ownership)"}`, async () => {
         const ctx = await newCtx(browser, stack, { w: 1280, h: 800 }); const pg = await ctx.newPage(); const errs = watch(pg);
         const p = (await q("select id from sfx_products where tenant_id = $1 and name = 'Contract Tee'", [tid]))[0];
         const v = (await q('select id from sfx_variants where product_id = $1', [p.id]))[0];
@@ -107,10 +111,16 @@ export default async function run({ browser, stack }) {
         // the (still empty, in-memory) bag page -- set it via an init script, then load straight into #/checkout
         await pg.addInitScript(([slug, variantId]) => { try { localStorage.setItem('st.' + slug + '.bag', JSON.stringify([{ v: variantId, q: 1 }])); } catch (e) {} }, [T, v.id]);
         await pg.goto(stack.url(T, '/store.html#/checkout'), { waitUntil: 'load' }); await pg.waitForTimeout(3000);
-        const diag = await pg.evaluate((id) => { const h = document.getElementById(id); return { tpl: (window.StoreHost && window.StoreHost.cfg && window.StoreHost.cfg().template) || '?', hasGlobal: !!window.StudsTheme || !!window.KaarigariTheme, hasHost: !!h, hidden: h && h.hidden, hasView: !!document.getElementById('view'), viewInHost: !!(h && document.getElementById('view') && h.contains(document.getElementById('view'))), hash: location.hash }; }, t.slug + '-host');
-        const framed = diag.hasHost && !diag.hidden && diag.viewInHost;
-        assert(framed, `${t.slug} did not frame the shared checkout page with its own header/footer -- ` + JSON.stringify(diag));
-        const text = await pg.locator('#view').innerText(); assert(/checkout|delivery|contact|total/i.test(text), `${t.slug}: shared checkout did not render inside the frame: ` + text.slice(0, 120));
+        const diag = await pg.evaluate((id) => { const h = document.getElementById(id); return { tpl: (window.StoreHost && window.StoreHost.cfg && window.StoreHost.cfg().template) || '?', hasGlobal: !!window.StudsTheme || !!window.KaarigariTheme, hasHost: !!h, hidden: h && h.hidden, hasView: !!document.getElementById('view'), viewInHost: !!(h && document.getElementById('view') && h.contains(document.getElementById('view'))), hash: location.hash, shadowText: (h && h.shadowRoot ? (h.shadowRoot.querySelector('main') || h.shadowRoot).textContent : '').slice(0, 400) }; }, t.slug + '-host');
+        if (full) {
+          assert(diag.hasHost && !diag.hidden, `${t.slug} did not mount its own chrome host for checkout -- ` + JSON.stringify(diag));
+          assert(!diag.viewInHost, `${t.slug} declares 'full' checkout ownership but still framed the shared checkout page instead of drawing its own -- ` + JSON.stringify(diag));
+          assert(/checkout|delivery|contact|payment/i.test(diag.shadowText), `${t.slug}'s own checkout page did not render its own content -- ` + JSON.stringify(diag));
+        } else {
+          const framed = diag.hasHost && !diag.hidden && diag.viewInHost;
+          assert(framed, `${t.slug} did not frame the shared checkout page with its own header/footer -- ` + JSON.stringify(diag));
+          const text = await pg.locator('#view').innerText(); assert(/checkout|delivery|contact|total/i.test(text), `${t.slug}: shared checkout did not render inside the frame: ` + text.slice(0, 120));
+        }
         assert(!errs.filter((e) => !/sentry|fonts|googleapis|ERR_/i.test(e)).length, errs.slice(0, 3).join(' | '));
         await ctx.close();
       }, 'critical');
