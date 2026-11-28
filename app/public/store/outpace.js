@@ -66,6 +66,20 @@
     return ready;
   }
 
+  // Real store contact/social details -- the same fields the shared storefront's own footer already reads
+  // (cfg().social.instagram/facebook, D.shop.phone, cfg().email), never placeholder links.
+  function connectColumn() {
+    const so = H.cfg().social || {}; const phone = String(H.D.shop.phone || '').replace(/\D/g, '');
+    const email = H.cfg().email || '';
+    const ext = (t, u) => (u ? `<a href="${esc(/^https?:/.test(u) ? u : 'https://' + u)}" target="_blank" rel="noopener">${esc(t)}</a>` : '');
+    const rows = [
+      phone ? `<a href="https://wa.me/${phone.length === 10 ? '91' + phone : phone}" target="_blank" rel="noopener">WhatsApp</a>` : '',
+      ext('Instagram', so.instagram), ext('Facebook', so.facebook),
+      email ? `<a href="mailto:${esc(email)}">Email</a>` : '',
+    ].filter(Boolean);
+    if (!rows.length) return '';
+    return `<nav aria-label="Connect"><h2>Connect</h2>${rows.join('')}</nav>`;
+  }
   const SHELL = (name) => `
     <a class="skip" href="#main">Skip to content</a>
     <div class="site-top">
@@ -87,6 +101,7 @@
         <nav aria-label="Shop"><h2>Shop</h2><a href="#/shop">All sneakers</a></nav>
         <nav aria-label="Explore"><h2>Explore</h2><a href="#/drops">Limited drops</a><a href="#/early-access">Early access</a><a href="#/faq">FAQ</a></nav>
         <nav aria-label="Help"><h2>Help</h2><a href="#/policy/shipping">Shipping &amp; returns</a><a href="#/policy/privacy">Privacy</a></nav>
+        ${connectColumn()}
       </div>
       <div class="footer-bottom"><small>© ${new Date().getFullYear()} ${esc(name)}</small></div>
     </footer>
