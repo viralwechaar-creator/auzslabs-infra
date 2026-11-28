@@ -18,9 +18,6 @@ html[data-theme=dark] .themes-page{--t-bg:#151515;--t-card:#202020;--t-ink:#f5f5
 .t-card[hidden]{display:none}
 .t-img{display:block;aspect-ratio:1440/690;background:var(--t-line);overflow:hidden}
 .t-img img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
-.t-img-live{position:relative}
-.t-live-frame{position:absolute;top:0;left:0;width:1440px;height:690px;border:0;transform-origin:top left;pointer-events:none;background:var(--t-line)}
-.t-img-live-link{position:absolute;inset:0;z-index:1}
 .t-body{padding:clamp(14px,1.6vw,22px);display:grid;gap:8px}
 .t-row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .themes-page .t-card h2{font-size:1.35rem;letter-spacing:-.03em;font-weight:600}
