@@ -510,8 +510,11 @@ function themeCard(t) {
     t.priceCents > 0 ? (canWrite() ? button('Buy for ' + price, 'theme-buy:' + t.id, 'primary') : '<p class="compact-copy">Premium theme. Ask an owner or manager to buy it.</p>') :
     canWrite() ? button('Install', 'theme-install:' + t.id, 'primary') : '';
   const tslug = String(t.slug || '').toLowerCase();
-  // classic, minimal and studs preview on the store's OWN address with its real products (the same address it runs on when live)
-  const own = ['classic', 'minimal', 'studs'].includes(tslug) && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html?preview=' + tslug : '';
+  // classic, minimal and every bespoke-chrome theme (?preview=<slug> on store.js's PREVIEW_T allowlist, which
+  // itself reads the single theme registry -- db/467) preview on the store's OWN address with its real
+  // products (the same address it runs on when live). Kaarigari was missing from this list until this fix,
+  // the exact "forgot to add the new bespoke theme to a hardcoded list" bug this whole effort is about.
+  const own = ['classic', 'minimal', 'studs', 'kaarigari'].includes(tslug) && state.tenant?.slug ? 'https://' + state.tenant.slug + '.auzslab.in/store.html?preview=' + tslug : '';
   const demo = { studs: 'studs-preview/', minimal: 'store.html?demo=minimal', classic: 'store.html?demo=classic', salon: 'salon/index.html?preview=1', kiln: 'site-kiln.html', 'kiln-salon': 'site-kiln.html' }[tslug];
   const previewHref = own || (demo ? 'https://auzslab.in/' + demo : '');
   const previewBtn = previewHref ? '<a class="btn" href="' + previewHref + '" target="_blank" rel="noopener" aria-label="Preview ' + esc(t.name) + ' theme">Preview</a>' : '';

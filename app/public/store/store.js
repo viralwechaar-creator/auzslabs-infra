@@ -73,6 +73,60 @@ let D = null;            // public_sty_store (or public_sfx_store) result
 // platform, db/372). Resolved once at boot() from whichever one actually has this tenant (see boot()'s
 // resolveStore()) -- a tenant only ever has one of the two enabled, so this never needs to change mid-session.
 let PFX = 'sty';
+// THE theme registry (db/468, public_sfx_theme_registry()): every built-in theme, section-based (Minimal,
+// Classic, Salon, Kiln, Kiln (Salon)) or bespoke-chrome (fully custom-coded JS/CSS templates such as
+// Studs/Kaarigari, bypassing the shared section renderer entirely), keyed by slug, with its kind, its dispatch
+// "template" value (what ends up in cfg().template -- a bespoke theme's own slug, or a section-based theme's
+// generic base chrome) and its declared capabilities. This is the ONE place this file reads that list from --
+// every other spot below reads THEME_REGISTRY / BESPOKE / BESPOKE_CAPS instead of its own hardcoded
+// ['studs', 'kaarigari'] (or ['minimal', 'studs', 'kaarigari']) literal, so a new theme of EITHER kind
+// (db/468's row +, for a bespoke one, its own /store/<slug>.js chrome file) lights up everywhere in this file
+// with zero further edits here. See docs/STOREFRONT_THEME_CONTRACT.md. Seeded with today's known themes so the
+// very first paint before the registry fetch below resolves still behaves correctly; loadThemeRegistry()
+// replaces it with the authoritative server list as soon as it returns.
+let THEME_REGISTRY = new Map([
+  ['minimal', { slug: 'minimal', kind: 'section', template: 'minimal', isBespoke: false, capabilities: {} }],
+  ['classic', { slug: 'classic', kind: 'section', template: 'classic', isBespoke: false, capabilities: {} }],
+  ['salon', { slug: 'salon', kind: 'section', template: 'classic', isBespoke: false, capabilities: {} }],
+  ['kiln', { slug: 'kiln', kind: 'section', template: 'minimal', isBespoke: false, capabilities: {} }],
+  ['kiln-salon', { slug: 'kiln-salon', kind: 'section', template: 'minimal', isBespoke: false, capabilities: {} }],
+  ['studs', { slug: 'studs', kind: 'bespoke', template: 'studs', isBespoke: true, capabilities: { checkoutOwnership: 'header_footer', formsStylesheet: '/store/studs-forms.css?v=1' } }],
+  ['kaarigari', { slug: 'kaarigari', kind: 'bespoke', template: 'kaarigari', isBespoke: true, capabilities: { checkoutOwnership: 'header_footer' } }],
+]);
+let BESPOKE = new Set([...THEME_REGISTRY.values()].filter((t) => t.isBespoke).map((t) => t.slug));
+let BESPOKE_CAPS = Object.fromEntries([...THEME_REGISTRY.values()].filter((t) => t.isBespoke).map((t) => [t.slug, t.capabilities]));
+async function loadThemeRegistry() {
+  try {
+    const list = await rpc('public_sfx_theme_registry');
+    if (Array.isArray(list) && list.length) {
+      THEME_REGISTRY = new Map(list.map((t) => [t.slug, { slug: t.slug, kind: t.kind, template: t.template, isBespoke: !!t.isBespoke, capabilities: t.capabilities || {} }]));
+      BESPOKE = new Set([...THEME_REGISTRY.values()].filter((t) => t.isBespoke).map((t) => t.slug));
+      BESPOKE_CAPS = Object.fromEntries([...THEME_REGISTRY.values()].filter((t) => t.isBespoke).map((t) => [t.slug, t.capabilities]));
+    }
+  } catch (e) { /* keep the seeded default above -- the storefront must never break because this fetch failed */ }
+}
+// Looks up any requested theme SLUG (e.g. a marketplace slug like 'salon', not necessarily a dispatch
+// template) in the registry and returns the template it actually resolves to, or '' when the slug is not a
+// real, known theme at all. Used by demo.js so an unrecognized or stale id is an explicit, documented
+// fallback, never a silent substitution of a different real theme's slug.
+const templateFor = (slug) => { const t = THEME_REGISTRY.get(slug); return t ? t.template : ''; };
+// A bespoke theme's chrome script follows one fixed naming convention: /store/<slug>.js exposing
+// window.<Slug>Theme (Studs -> studs.js / window.StudsTheme, Kaarigari -> kaarigari.js / window.KaarigariTheme).
+// Adding a new bespoke theme never needs a new branch here: ship the file under that convention and it loads.
+// A theme may declare an extra stylesheet for the shared (non-shadow-DOM) checkout/account pages it frames --
+// see capabilities.formsStylesheet in the registry -- instead of this file hardcoding which slug needs one.
+const themeGlobal = (slug) => slug.charAt(0).toUpperCase() + slug.slice(1) + 'Theme';
+function loadBespokeChrome(slug) {
+  const g = themeGlobal(slug);
+  if (window[g]) return window[g].ready();
+  return new Promise((resolve) => {
+    const css = (BESPOKE_CAPS[slug] || {}).formsStylesheet;
+    if (css) { const lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = css; document.head.append(lk); }
+    const sc = document.createElement('script'); sc.src = '/store/' + slug + '.js?v=1';
+    sc.onload = () => resolve(window[g] ? window[g].ready() : null); sc.onerror = () => resolve(null);
+    document.head.append(sc);
+  });
+}
 let STY = [], BYID = {}, VAR = {};
 let bag = [], wish = [];
 const toast = (m) => { const t = E('div', { class: 'toast', role: 'status' }, m); document.body.append(t); setTimeout(() => t.remove(), 2200); };
@@ -80,8 +134,13 @@ async function rpc(fn, args) {
   if (DEMO) {
     if (fn === 'public_sty_store') {
       // the preview shows the real AUZsStyle demo account (its products, collections, stores and photos); built-in sample data only if that cannot be read
-      try { const r = await sb.rpc('public_sty_store', { p_slug: 'demo' }); if (r && r.data && !r.data.closed && r.data.styles && r.data.styles.length) return window.StoreDemo.live(r.data, DEMO); } catch (e) { /* fall back below */ }
-      return window.StoreDemo.build(DEMO);
+      // Resolve the requested ?demo= id (any real theme slug, e.g. 'minimal', 'studs' or 'salon') against the
+      // single theme registry to the template it actually dispatches to -- never demo.js's own hardcoded list.
+      // An id that is not a real, known theme at all falls back to the default template explicitly ('1'),
+      // which is never a silent stand-in for a DIFFERENT real theme.
+      const tpl = templateFor(DEMO) || '1';
+      try { const r = await sb.rpc('public_sty_store', { p_slug: 'demo' }); if (r && r.data && !r.data.closed && r.data.styles && r.data.styles.length) return window.StoreDemo.live(r.data, tpl); } catch (e) { /* fall back below */ }
+      return window.StoreDemo.build(tpl);
     } if (/_(track|notify_me|cart_save|reviews|coupon_check)$/.test(fn)) return null; throw new Error('This is a preview template. Ordering is switched off.'); }
   const { data, error } = await sb.rpc(fn, args || {}); if (error) { const e = new Error(error.message || 'Something went wrong'); e.status = error.status; throw e; } return data; }
 const saveBag = () => { LS.set('bag', bag); paintCounts(); };
@@ -116,8 +175,10 @@ const q$ = () => { const m = {}; for (const [k, v] of new URLSearchParams((locat
 const go = (p) => { location.hash = '#/' + p; };
 const link = (p) => '#/' + p;
 const cfg = () => D.config || {};
-// Studs (db/398) reuses the Minimal behaviour for every page it does not draw itself (checkout, account, orders, policies).
-const isMin = () => { const t = cfg().template; return t === 'minimal' || t === 'studs' || t === 'kaarigari'; };
+// Every bespoke-chrome theme (per the registry, db/468) reuses the Minimal behaviour for every page it does not
+// draw itself (checkout, account, orders, policies) -- that shared, header/footer-only ownership is the
+// contract every bespoke theme is held to (docs/STOREFRONT_THEME_CONTRACT.md).
+const isMin = () => { const t = cfg().template; return t === 'minimal' || BESPOKE.has(t); };
 const COURIERS = { 'Delhivery': 'https://www.delhivery.com/track-v2/package/', 'India Post': 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx?', 'DTDC': 'https://www.dtdc.in/tracking.asp?', 'Blue Dart': 'https://www.bluedart.com/tracking?trackfor=', 'Ecom Express': 'https://ecomexpress.in/tracking/?awb_field=', 'XpressBees': 'https://www.xpressbees.com/shipment/tracking?awb=', 'Shiprocket': 'https://shiprocket.co/tracking/' };
 function trackBox(o) {
   if (!o.trackingNo && !o.courier) return null;
@@ -1054,6 +1115,9 @@ function applyDesign(d) {
   const st = document.documentElement.style;
   ['--bg', '--card', '--ink', '--accent', '--on-ink', '--on-accent', '--r1', '--r2', '--r3', '--pad'].forEach((k) => st.removeProperty(k));
   [...document.body.classList].filter((c) => /^d-/.test(c)).forEach((c) => document.body.classList.remove(c));
+  // Studs draws every page (including the shared checkout it frames) in its own fixed palette and never
+  // reads these document-level design tokens; Kaarigari's shadow-scoped styles are self-contained but the
+  // shared checkout/account pages it frames DO use these tokens, same as Minimal, so only Studs opts out here.
   if (cfg().template === 'studs') return;
   const hex = (k) => (/^#[0-9a-f]{6}$/i.test(d[k] || '') ? d[k] : '');
   if (hex('bg')) st.setProperty('--bg', d.bg);
@@ -1895,23 +1959,15 @@ setTimeout(() => { try { TR.askLocation(); } catch (e) { /* never blocks the sto
 function route() {
   const raw = (location.hash || '').replace(/^#\/?/, '').split('?')[0]; const parts = raw.split('/').filter(Boolean).map(decodeURIComponent);
   const id = parts[0] || 'home'; const view = $('#view'); if (!view) return;
-  if (cfg().template === 'studs' && window.StudsTheme) {
-    if (window.StudsTheme.owns(id)) {
+  if (BESPOKE.has(cfg().template) && window[themeGlobal(cfg().template)]) {
+    const theme = window[themeGlobal(cfg().template)];
+    if (theme.owns(id)) {
       document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
-      window.StudsTheme.show(parts);
+      theme.show(parts);
       TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
       return;
     }
-    window.StudsTheme.frame();
-  }
-  if (cfg().template === 'kaarigari' && window.KaarigariTheme) {
-    if (window.KaarigariTheme.owns(id)) {
-      document.title = (id === 'home' ? '' : cap(id === 'p' ? (BYID[parts[1]] || {}).name || 'Product' : id) + ' · ') + D.shop.name;
-      window.KaarigariTheme.show(parts);
-      TR.enter(id === 'p' ? 'p/' + (parts[1] || '') : id); if (id === 'p' && BYID[parts[1]]) TR.push('product', null, { id: parts[1], name: BYID[parts[1]].name });
-      return;
-    }
-    window.KaarigariTheme.frame();
+    theme.frame();
   }
   view._disconnectProduct?.();
   view._disconnectProduct = null;
@@ -1953,8 +2009,12 @@ function ingest(d) {
   applyDesign(PREVIEW && PREVIEW_DESIGN ? PREVIEW_DESIGN : (d.config || {}).themeDesign);
 }
 const PREVIEW_STUDS = new URLSearchParams(location.search).get('preview') === 'studs' && window.parent !== window;
-// ?preview=classic|minimal|studs on the store's own address shows that design with the store's real products; the live design is not changed
-const PREVIEW_T = (() => { const v = new URLSearchParams(location.search).get('preview'); return ['classic', 'minimal', 'studs', 'kaarigari'].includes(v) && !PREVIEW_STUDS ? v : ''; })();
+// ?preview=classic|minimal|<any bespoke-chrome slug> on the store's own address shows that design with the store's
+// real products; the live design is not changed. The generic slugs are the two generic chromes; the bespoke ones
+// come from BESPOKE (seeded synchronously above, refined once loadThemeRegistry() resolves) -- never its own
+// separate hardcoded list.
+let PREVIEW_T = computePreviewT();
+function computePreviewT() { const v = new URLSearchParams(location.search).get('preview'); return (v === 'classic' || v === 'minimal' || BESPOKE.has(v)) && !PREVIEW_STUDS ? v : ''; }
 function waitStudsPreview() {
   return new Promise((resolve) => {
     let done = false; const finish = (v) => { if (!done) { done = true; resolve(v); } };
@@ -1972,26 +2032,9 @@ window.StoreHost = {
   get D() { return D; }, STY: () => STY, get bag() { return bag; }, cfg, photos, thumb, isGone, leftOf, sizesOf, colours,
   saveBag, addBag, bagLines, bagTotal, bagCount,
 };
-function loadStuds() {
-  if (window.StudsTheme) return window.StudsTheme.ready();
-  return new Promise((resolve) => {
-    const lk = document.createElement('link'); lk.rel = 'stylesheet'; lk.href = '/store/studs-forms.css?v=1'; document.head.append(lk);
-    const sc = document.createElement('script'); sc.src = '/store/studs.js?v=10';
-    sc.onload = () => resolve(window.StudsTheme ? window.StudsTheme.ready() : null); sc.onerror = () => resolve(null);
-    document.head.append(sc);
-  });
-}
-// Kaarigari has no own-chrome settings panel worth exposing to the builder's live preview yet (a fixed bespoke
-// design, like Studs' chrome but without Studs' per-field settings editor) -- it only needs its one script, no
-// extra forms stylesheet.
-function loadKaarigari() {
-  if (window.KaarigariTheme) return window.KaarigariTheme.ready();
-  return new Promise((resolve) => {
-    const sc = document.createElement('script'); sc.src = '/store/kaarigari.js?v=1';
-    sc.onload = () => resolve(window.KaarigariTheme ? window.KaarigariTheme.ready() : null); sc.onerror = () => resolve(null);
-    document.head.append(sc);
-  });
-}
+// Loading each bespoke theme's own chrome file is now one generic call (loadBespokeChrome, declared near
+// THEME_REGISTRY above): the file naming convention and any extra stylesheet come from the registry, not a
+// per-theme function here.
 async function boot() {
   const app = $('#app');
   if (!location.hash) {
@@ -2008,10 +2051,14 @@ async function boot() {
   // exists -- must not try to use it; drop the stale cache and fall through to a fresh fetch, which can only
   // ever return '1' or 'minimal' now.
   if (cached && cached.config && cached.config.template === '2') cached = null;
-  // Studs and Kaarigari each draw their own page chrome from the live data, so neither ever uses the instant
-  // first paint from the last visit.
-  if (cached && cached.config && (cached.config.template === 'studs' || cached.config.template === 'kaarigari')) cached = null;
+  // Every bespoke-chrome theme draws its own page chrome from the live data, so none of them ever use the
+  // instant first paint from the last visit (BESPOKE, from the single theme registry -- never its own list).
+  if (cached && cached.config && BESPOKE.has(cached.config.template)) cached = null;
   if (PREVIEW_STUDS || PREVIEW_T || DEMO) cached = null;
+  // Refresh the theme registry before resolving the store or a demo preview: both read it below (BESPOKE,
+  // templateFor). The seeded default above keeps everything working even if this fetch is slow or fails.
+  const registryReady = loadThemeRegistry();
+  if (DEMO) await registryReady;   // demo.js resolves the requested preview id against the registry; a real store can proceed on the seeded default while this finishes
   // Restore which product's RPCs the cached copy was fetched with, so an interaction fired before the fresh
   // fetch below resolves (see the cached-first-paint branch) still hits the right public_<prefix>_* functions.
   if (cached) PFX = cached.__pfx === 'sfx' ? 'sfx' : 'sty';
@@ -2033,7 +2080,7 @@ async function boot() {
   if (cached && cached.styles && !cached.closed) {
     ingest(cached); shell(); window.addEventListener('hashchange', route); route();
     fresh.then((d) => { if (!d || d.closed) return; remember(d);
-      if (d.config && (d.config.template === 'studs' || d.config.template === 'kaarigari')) { location.reload(); return; }
+      if (d.config && BESPOKE.has(d.config.template)) { location.reload(); return; }
       ingest(d); const h = (location.hash || '').replace(/^#\/?/, '').split('?')[0].split('/')[0]; if (!['checkout', 'order', 'orders', 'me'].includes(h) && !document.querySelector('.sheetwrap')) { const y = scrollY; route(); scrollTo(0, y); } }).catch(() => {});
     return;
   }
@@ -2048,8 +2095,8 @@ async function boot() {
   if (PREVIEW_STUDS && d.config) { const settings = await waitStudsPreview(); if (settings) d.config = { ...d.config, template: 'studs', studs: settings }; }
   if (PREVIEW_T && d.config) d.config = { ...d.config, template: PREVIEW_T };
   ingest(d);
-  if (cfg().template === 'studs') await loadStuds();
-  if (cfg().template === 'kaarigari') await loadKaarigari();
+  await registryReady;   // make sure BESPOKE reflects the real registry before deciding whether to load a chrome file
+  if (BESPOKE.has(cfg().template)) await loadBespokeChrome(cfg().template);
   shell(); window.addEventListener('hashchange', route); route();
   if (PREVIEW_T) { const u = new URL(location.href); u.searchParams.delete('preview'); document.body.append(E('div', { class: 'prevbar' }, E('span', null, 'Preview of the ' + PREVIEW_T[0].toUpperCase() + PREVIEW_T.slice(1) + ' design with your own products. Your live store is unchanged.'), E('a', { href: u.toString() }, 'Exit preview'))); }
 }

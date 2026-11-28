@@ -934,6 +934,7 @@ export const RPC = {
   public_product_prices: { params: [], auth: false },
   admin_set_product_price: { params: ['p_key', 'p_monthly_price'], auth: true },
   public_sfx_store: { params: ['p_slug'], auth: false },
+  public_sfx_theme_registry: { params: [], auth: false },
   public_sfx_reviews: { params: ['p_slug', 'p_style'], auth: false },
   public_sfx_review_submit: { params: ['p_token', 'p'], jsonb: ['p'], auth: false },
   public_sfx_notify_me: { params: ['p_slug', 'p'], jsonb: ['p'], auth: false },
