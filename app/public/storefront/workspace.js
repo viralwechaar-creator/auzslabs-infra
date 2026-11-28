@@ -1092,7 +1092,13 @@ function checkoutPage() {
     panel('Checkout appearance', body('<p class="compact-copy">Customizing checkout’s colours and confirmation text is coming in a later release. Checkout always uses your store’s own theme today.</p>'), badge('Coming soon', 'neutral'));
 }
 function websiteOverview() {
-  const t = templates.find((x) => x.id === state.store.theme) || templates[0];
+  // templates (data.js) is a tiny static array that only ever knew about Minimal and Classic -- any other
+  // active theme (Studs, Kaarigari, Outpace, ...) fell through to templates[0] and showed "Minimal" with the
+  // wrong description. state.marketplace is the real, server-fetched theme list (every row in sfx_themes,
+  // Outpace included, with no code change needed when a new one is registered) and is checked first; the
+  // static array is now only a last-resort fallback if the marketplace hasn't loaded yet.
+  const t = (state.marketplace || []).find((x) => x.slug === state.store.theme || x.id === state.store.theme)
+    || templates.find((x) => x.id === state.store.theme) || templates[0];
   const slug = state.tenant?.slug || '', url = slug ? 'https://' + slug + '.auzslab.in/store.html' : '';
   const live = !!state.store.published, act = state.installs.find((x) => x.active), w = canWrite();
   const src = '/store.html?' + (live ? '' : 'preview=draft&') + 'shop=' + encodeURIComponent(slug) + '#/';
