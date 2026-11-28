@@ -7,7 +7,7 @@
     live(d, theme) {
       const fix = (v) => { if (typeof v === 'string') return v.startsWith('/uploads/') ? 'https://api.auzslab.in' + v : v; if (Array.isArray(v)) return v.map(fix); if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v)) o[k] = fix(v[k]); return o; } return v; };
       const out = fix(d);
-      out.config = { ...(out.config || {}), template: theme === 'minimal' ? 'minimal' : '1', announce: 'Template preview: ordering is switched off' };
+      out.config = { ...(out.config || {}), template: ['minimal', 'studs', 'kaarigari'].includes(theme) ? theme : '1', announce: 'Template preview: ordering is switched off' };
       return out;
     },
     async build(theme) {
@@ -29,7 +29,7 @@
       return {
         name: 'GenX Clothing', shop: { name: 'GenX Clothing', logoUrl: '', address: 'Jodhpur, Rajasthan', phone: '' },
         styles, collections,
-        config: { template: theme === 'minimal' ? 'minimal' : '1', brandName: 'GenX Clothing', tagline: 'Streetwear, made loud', announce: 'Template preview: ordering is switched off', heroImages: ['denim-wide', 'street-wide', 'field-wide', 'essentials-wide'].map((n) => '/store/demo-banners/' + n + '.jpg'), heroTitle: 'GenX Clothing', heroCta: 'Shop now',
+        config: { template: ['minimal', 'studs', 'kaarigari'].includes(theme) ? theme : '1', brandName: 'GenX Clothing', tagline: 'Streetwear, made loud', announce: 'Template preview: ordering is switched off', heroImages: ['denim-wide', 'street-wide', 'field-wide', 'essentials-wide'].map((n) => '/store/demo-banners/' + n + '.jpg'), heroTitle: 'GenX Clothing', heroCta: 'Shop now',
           stores: [
             ['GenX Studio, Jodhpur', 'Sardarpura, Jodhpur, Rajasthan 342003', 'Daily 11:00 to 21:00'],
             ['GenX Pop-up, Jaipur', 'C-Scheme, Jaipur, Rajasthan 302001', 'Daily 11:00 to 21:30'],
