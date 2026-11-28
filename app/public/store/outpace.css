@@ -198,3 +198,16 @@ input,select{background:#181820;border-color:var(--line);color:var(--ink)}input:
  .cart-row{grid-template-columns:60px minmax(0,1fr) auto;gap:8px}.cart-row>strong,.cart-row>div>strong{font-size:13px}
  .quantity{flex-wrap:wrap;gap:4px}.quantity button{min-width:32px;min-height:40px}
 }
+
+/* Owner-reported fixes: icon buttons were picking up the platform's own default button chrome (a filled/
+   bordered pill, most visible around the bag icon on iOS Safari); reset them to plain icon buttons. The menu
+   dialog used the UA default centred-in-viewport <dialog> position, which read as "the menu floats in the
+   middle of the page" instead of a real menu -- it's a proper right-side slide-in panel now, with its nav
+   links as a plain vertical list instead of the unstyled two-column wrap the bare <nav><a> markup produced. */
+.header-search,.bag-trigger,.menu-toggle{appearance:none;-webkit-appearance:none;background:none;border:0;color:inherit;padding:6px;display:inline-flex;align-items:center;gap:6px}
+.ic-arrow{display:inline-block;vertical-align:-2px;margin-left:2px}
+dialog{position:fixed;inset:0 0 0 auto;margin:0;height:100%;max-height:100vh;width:min(86vw,360px);max-width:360px;border-radius:0;display:flex;flex-direction:column}
+.drawer-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+#drawer-body{flex:1;overflow:auto}
+#drawer-body nav{display:flex;flex-direction:column;gap:2px}
+#drawer-body nav a{display:block;padding:15px 4px;border-bottom:1px solid var(--line);font:700 12px var(--mono);text-transform:uppercase;text-decoration:none;color:inherit}
