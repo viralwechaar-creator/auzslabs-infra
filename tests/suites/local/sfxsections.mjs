@@ -413,6 +413,21 @@ export default async function run({ browser, stack }) {
     const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
     assert(row.sections[0].blocks[0].props.text === 'Typed on the page', JSON.stringify(row.sections[0].blocks[0].props));
   }, 'major');
+  await s.check('Duplicate and hide: a copy gets its own id, a hidden section is kept in the draft but not shown to visitors', async () => {
+    const inst = (await q("select id from sfx_theme_installs where tenant_id=$1 and name='Sections test' order by installed_at desc limit 1", [tid]))[0].id;
+    await q("update sfx_theme_installs set draft_content = '{}'::jsonb where id=$1", [inst]);
+    await page.goto(stack.url('testcafe', '/storefront.html#/builder/' + inst), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(3500);
+    await page.selectOption('#te-add-type', 'content'); await page.click('[data-action="te-add"]'); await page.waitForTimeout(2000);
+    await page.click('[data-action="te-dup"]'); await page.waitForTimeout(800);
+    await page.click('[data-action="te-hide"]'); await page.waitForTimeout(500);
+    await page.click('[data-action="te-save"]'); await page.waitForTimeout(1500);
+    const row = (await q('select draft_content from sfx_theme_installs where id=$1', [inst]))[0].draft_content;
+    assert(row.sections.length === 2 && row.sections[0].id !== row.sections[1].id && row.sections[1].props.hidden === 'yes' && !row.sections[0].props.hidden, JSON.stringify(row.sections.map((x) => [x.id, x.props.hidden])));
+    await page.evaluate(async (id) => { const c = window.supabase.createClient(CFG.url, CFG.key); await c.rpc('sfx_theme_customize_publish', { p_install_id: id }); }, inst);
+    const pg = await ctx.newPage();
+    await pg.goto(stack.url('testcafe', '/store.html'), { waitUntil: 'load' }); await pg.evaluate(() => { for (const k of Object.keys(localStorage)) if (/^st\./.test(k)) localStorage.removeItem(k); }); await pg.reload({ waitUntil: 'load' }); await pg.waitForTimeout(2500);
+    assert(await pg.locator('.custom-content').count() === 1, 'expected exactly one visible content section');
+  }, 'major');
   await ctx.close();
   return s.done();
 }
