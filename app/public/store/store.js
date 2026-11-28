@@ -959,6 +959,7 @@ const PREVIEW = new URLSearchParams(location.search).get('preview') === 'draft';
 let PREVIEW_SECTIONS = null;
 let PREVIEW_LAST = '';
 function customEl(s, i, group) {
+  if (s && s.props && s.props.hidden === 'yes') return null;
   let el = customSection(s);
   if (el && s.props) { if (s.props.space === 'compact' || s.props.space === 'roomy') el.classList.add('sp-' + s.props.space); if (s.props.align === 'left') el.classList.add('al-left'); }
   if (!el && PREVIEW) el = E('section', { class: 'custom-section custom-empty' }, E('div', { class: 'mut' }, 'Empty section. Fill in its settings.'));

@@ -582,7 +582,7 @@ function sectionFieldsFor(s) {
 }
 function sectionFieldsBase(s) {
   const p = s.props || {};
-  if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.map((d) => regField(d, p[d.id], dis, (id) => 'te-sclear:' + id)).join(''); }
+  if (!sectionLabel[s.type] && secDef(s.type)) { const dis = canWrite() ? '' : 'disabled'; return secDef(s.type).settings.filter((d) => d.id !== 'hidden').map((d) => regField(d, p[d.id], dis, (id) => 'te-sclear:' + id)).join(''); }
   if (s.type === 'hero') return input('Heading', 'heading', p.heading) + area('Subtext', 'sub', p.sub) + input('Button text', 'cta', p.cta) + linkField('Button link', 'href', p.href);
   if (s.type === 'text') return input('Heading', 'heading', p.heading) + area('Body', 'body', p.body);
   if (s.type === 'image') return input('Image URL', 'url', p.url, 'url') + input('Caption', 'caption', p.caption);
@@ -730,7 +730,7 @@ function edRightHtml() {
   if (x.type === 'main') return '<div class="panel-title"><h2>Main content</h2></div><div class="panel-body"><p class="compact-copy">This is the page itself: ' + ({ collection: 'the product grid with its filters', product: 'the product pictures, options and buy button', cart: 'the bag and checkout button' }[edTplKind()] || 'its own content') + '. It cannot be removed or edited here, but you can move it up or down to put your sections above or below it.</p>' +
     (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + '</div>' : '') + '</div>';
   return '<div class="panel-title"><h2>' + esc(secLabel(x.type)) + '</h2></div><div class="panel-body"><form data-form="te-section"><div class="field-grid te-fields">' + sectionFieldsFor(x) + '</div>' +
-    (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Remove section', 'te-remove') + '</div>' : '') + '</form>' + blocksHtml(x) + '</div>';
+    (w ? '<div class="actions">' + (ed.sel > 0 ? button('Move up', 'te-up') : '') + (ed.sel < ed.sections.length - 1 ? button('Move down', 'te-down') : '') + button('Duplicate', 'te-dup') + button(x.props && x.props.hidden === 'yes' ? 'Show section' : 'Hide section', 'te-hide') + button('Remove section', 'te-remove') + '</div>' : '') + '</form>' + blocksHtml(x) + '</div>';
 }
 function edPageTools() {
   if (edTplKind() || edGroupKind()) return '';
@@ -838,6 +838,8 @@ function edHandle(a, key, detail) {
   }
   if (a === 'te-rmpage') { const p = edCurPage(); if (!p || !confirm('Remove the page "' + p.title + '"?')) return true; edSnapshot(); ed.pages.splice(Number(ed.cur.slice(2)), 1); ed.cur = 'home'; edBind(); ed.sel = ed.sections.length ? 0 : -1; ed.snapped = true; edRefresh('lrbp'); return true; }
   if (a === 'te-add') { if ((edTplKind() && ed.sections.length >= 13) || (edGroupKind() && ed.sections.length >= 8)) return true; const type = $('#te-add-type')?.value || 'text'; const st = STARTERS[type]; edSnapshot(); ed.sections.push({ id: uid(), type, props: { ...(st ? st.props : SECTION_DEFAULTS[type] || {}) }, ...(st && st.blocks ? { blocks: st.blocks.map((b) => ({ id: uid(), type: b.type, props: { ...b.props } })) } : {}) }); ed.sel = ed.sections.length - 1; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-dup') { const x = ed.sections[ed.sel]; if (!x || x.type === 'main' || ed.sections.length >= 30) return true; edSnapshot(); const c = JSON.parse(JSON.stringify(x)); c.id = 's' + Date.now().toString(36); (c.blocks || []).forEach((b, i) => { b.id = 'b' + Date.now().toString(36) + i; }); ed.sections.splice(ed.sel + 1, 0, c); ed.sel += 1; ed.snapped = true; edRefresh('lrb', true); return true; }
+  if (a === 'te-hide') { const x = ed.sections[ed.sel]; if (!x || x.type === 'main') return true; edSnapshot(); x.props = x.props || {}; if (x.props.hidden === 'yes') delete x.props.hidden; else x.props.hidden = 'yes'; ed.snapped = true; edRefresh('lrb', true); return true; }
   if (a === 'te-remove') { if (ed.sel < 0 || ed.sections[ed.sel]?.type === 'main') return true; edSnapshot(); ed.sections.splice(ed.sel, 1); ed.sel = Math.min(ed.sel, ed.sections.length - 1); ed.snapped = true; edRefresh('lrb'); return true; }
   if (a === 'te-dclear') { edSnapshot(); ed.snapped = true; delete ed.design[key]; edRefresh('rb'); return true; }
   if (a === 'te-dreset') { edSnapshot(); ed.snapped = true; ed.design = {}; edRefresh('rb'); return true; }
