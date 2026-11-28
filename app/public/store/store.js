@@ -157,17 +157,11 @@ async function rpc(fn, args) {
       // An id that is not a real, known theme at all falls back to the default template explicitly ('1'),
       // which is never a silent stand-in for a DIFFERENT real theme.
       const tpl = templateFor(DEMO) || '1';
-      // Minimal was specifically asked to never move again, however the real demo account's data changes
-      // (products edited/removed, hero image swapped, store opened/closed) -- it reads a one-time frozen
-      // copy of that account (db/472_minimal_demo_snapshot.sql), not the live account, so it always shows
-      // exactly what was designed and approved. Every other theme's demo still follows the live account.
-      if (tpl === 'minimal') {
-        try {
-          const r = await sb.rpc('public_frozen_theme_demo', { p_theme: 'minimal' });
-          if (r && r.data && r.data.styles && r.data.styles.length) return window.StoreDemo.live(r.data, tpl);
-        } catch (e) { /* genuine fetch failure: fall back to the sample catalogue below so the template can still be previewed */ }
-        return window.StoreDemo.build(tpl);
-      }
+      // Minimal previously read a one-time frozen snapshot of the demo account (db/472) instead of the
+      // live account every other theme's demo uses -- the owner's actual, repeatedly-confirmed ask is
+      // simpler than that: Minimal should show exactly what Classic already correctly shows (the real,
+      // live demo account's hero image, products and collections), not a separately-maintained copy that
+      // can drift out of sync with it. Minimal now takes the identical live-data path as every other theme.
       try {
         const r = await sb.rpc('public_sty_store', { p_slug: 'demo' });
         if (r && r.data) {
